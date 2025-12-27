@@ -203,5 +203,5 @@ export async function execute_set_game_info(interaction) {
 export {
     markThreadPendingScore,
     handleSetGameInfo,
-    handleSetGameInfoModal,
+    handleSetGameInfoModal
 };

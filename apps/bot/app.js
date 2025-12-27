@@ -1,3 +1,14 @@
+// Robust error logging
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+// ...existing code...
+
+// ...existing code...
 // LEAGUEbuddy: Modern Discord bot entry
 import dotenv from 'dotenv';
 import fs, { readdirSync, createWriteStream } from 'fs';
@@ -14,6 +25,7 @@ client.interactionHandlers = [];
 
 // Register startseason_confirm button handler
 import * as startseasonConfirm from './src/interactions/startseason_confirm.js';
+// console.log('[DEBUG] Registering startseason_confirm button handler:', startseasonConfirm.customId);
 // client.interactions.set(startseasonConfirm.customId, startseasonConfirm); // Removed to fix TypeError
 
 // Dynamically load all interaction handlers from src/interactions
@@ -39,7 +51,8 @@ for (const file of interactionFiles) {
 }
 
 // Listen for image uploads in threads and run OCR only if thread is pending
-import { markThreadPendingScore } from './src/interactions/submit_score.js';
+import * as submitScorePkg from './src/interactions/submit_score.js';
+const { markThreadPendingScore } = submitScorePkg;
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
   // Only process if thread is marked as waiting for score
@@ -48,11 +61,13 @@ client.on('messageCreate', async (message) => {
 
 // Handle interactions (commands and autocomplete)
 client.on('interactionCreate', async interaction => {
+  // [DEBUG] interactionCreate event log removed for cleaner output
 
   // All interactions are now routed through the generic handler system below
 
   // Handle slash commands
   if (interaction.isChatInputCommand()) {
+    // console.log(`[COMMAND] /${interaction.commandName} used by ${interaction.user?.tag || interaction.user?.id}`);
     const command = client.commands.get(interaction.commandName);
     if (!command) {
       console.error(`❌ No command handler found for /${interaction.commandName}`);
@@ -78,6 +93,7 @@ client.on('interactionCreate', async interaction => {
 
   // Handle autocomplete interactions for slash commands
   if (interaction.isAutocomplete()) {
+    // console.log(`[AUTOCOMPLETE] /${interaction.commandName} triggered by ${interaction.user?.tag || interaction.user?.id}`);
     const command = client.commands.get(interaction.commandName);
     if (!command || typeof command.autocomplete !== 'function') {
       console.error(`❌ No autocomplete handler found for /${interaction.commandName}`);
@@ -94,11 +110,6 @@ client.on('interactionCreate', async interaction => {
   }
 
   // Improved logging for other interaction types
-  if (interaction.isButton()) {
-  } else if (interaction.isStringSelectMenu()) {
-  } else if (interaction.isAutocomplete()) {
-    // Handle trade and progression buttons, and generic interaction handlers as before
-  }
 
   // --- REGEX/GENERIC BUTTONS: robust customId matching ---
   if (interaction.customId) {
@@ -148,7 +159,6 @@ client.on('interactionCreate', async interaction => {
 
 // Bot clientReady event (Discord.js v15+)
 client.once('clientReady', (readyClient) => {
-  console.log(`ENVIRONMENT: ${process.env.NODE_ENV || 'undefined'}`);
   console.log('🏀 LEAGUEbuddy is online!');
   console.log(`📊 Logged in as ${readyClient.user.tag}`);
   console.log(`🏟️  Serving ${readyClient.guilds.cache.size} server(s)`);
@@ -182,13 +192,8 @@ async function loadCommands() {
   }
 }
 
-const token = process.env.DISCORD_TOKEN || process.env.TOKEN;
-if (!token) {
-  console.error('❌ DISCORD_TOKEN is not set in environment. Exiting.');
-  process.exit(1);
-}
+// ...existing code...
 
- 
 // Robust handleImageOCR implementation
 async function handleImageOCR(message) {
   // Only process if in a thread
@@ -205,7 +210,7 @@ async function handleImageOCR(message) {
   } else if (imageType === 'team_comparison' && typeof submitScore.handleTeamComparisonImage === 'function') {
     await submitScore.handleTeamComparisonImage(message);
   } else {
-    // Fallback: log and ignore
+    // No handler for image type; silently ignore
   }
 }
 
