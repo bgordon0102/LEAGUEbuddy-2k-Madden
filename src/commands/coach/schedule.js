@@ -15,6 +15,14 @@ export const data = new SlashCommandBuilder()
             .setAutocomplete(true)
     );
 async function autocomplete(interaction) {
+    let responded = false;
+    // Set a timeout to always respond within 1900ms
+    const timeout = setTimeout(async () => {
+        if (!responded) {
+            responded = true;
+            try { await interaction.respond([]); } catch { }
+        }
+    }, 1900);
     try {
         const focusedValue = interaction.options.getFocused();
         const teamsPath = path.join(process.cwd(), "data/teams.json");
@@ -40,14 +48,21 @@ async function autocomplete(interaction) {
         }
         // filtered is now always in ABC order
         console.log(`[autocomplete] Focused value: '${focusedValue}', Filtered:`, filtered);
-        await interaction.respond(
-            filtered.map(team => ({ name: team.name, value: team.name })).slice(0, 25)
-        );
+        if (!responded) {
+            responded = true;
+            clearTimeout(timeout);
+            await interaction.respond(
+                filtered.map(team => ({ name: team.name, value: team.name })).slice(0, 25)
+            );
+        }
         return;
     } catch (err) {
         console.error('[autocomplete] Fatal error:', err);
-        // If error, respond with empty array and return
-        try { await interaction.respond([]); } catch { }
+        if (!responded) {
+            responded = true;
+            clearTimeout(timeout);
+            try { await interaction.respond([]); } catch { }
+        }
         return;
     }
 }

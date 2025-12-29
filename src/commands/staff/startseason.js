@@ -75,6 +75,33 @@ function writeJSON(file, data) {
     }
 }
 
+function clearDataFiles() {
+    const targets = [
+        { file: 'activeTrades.json', data: {} },
+        { file: 'pendingTrades.json', data: {} },
+        { file: 'committeeVotes.json', data: {} },
+        { file: 'trade_block.json', data: {} },
+        { file: 'tradeblock.json', data: {} },
+        { file: 'tradeblock_messages.json', data: {} },
+        { file: 'gameStats.json', data: {} },
+        { file: 'playoffpicture.json', data: {} },
+        { file: 'prospectBoards.json', data: {} },
+        { file: 'regressionEmbeds.json', data: {} },
+        { file: 'regression.json', data: {} },
+        { file: 'freeagency_log.json', data: [] },
+        { file: 'resigning_log.json', data: [] },
+        { file: 'recruiting.json', data: [] },
+    ];
+    for (const { file, data } of targets) {
+        try {
+            const fullPath = path.join(DATA_DIR, file);
+            writeJSON(fullPath, data);
+        } catch (err) {
+            console.error(`[startseason] Failed to clear ${file}:`, err);
+        }
+    }
+}
+
 // Extracted season reset logic (no Discord interaction)
 // NOTE: This function should NEVER respond to any Discord interaction object.
 // NEVER modify or overwrite coachRoleMap.json or any trade-related state in this function.
@@ -90,6 +117,8 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown') {
         // Clear progressionRequests.json for new season
         fs.writeFileSync(path.join(DATA_DIR, 'progressionRequests.json'), '[]');
         console.log('[resetSeasonData] Cleared progressionRequests.json for new season');
+        // Clear additional league state for fresh season
+        clearDataFiles();
     } catch (err) {
         console.error('[resetSeasonData] Failed to clear gameInfo.json:', err);
     }
@@ -280,98 +309,19 @@ export async function execute(interaction) {
         console.error('[startseason] Error during deferReply:', err);
         return;
     }
-    const dataManager = new DataManager();
-    // fs and path are already imported at the top as ES modules
-    const SEASON_FILE = path.join(process.cwd(), 'data', 'season.json');
-    try {
-        // Check if season.json exists and is non-empty
-        let seasonExists = false;
-        try {
-            const stats = fs.statSync(SEASON_FILE);
-            if (stats.size > 10) seasonExists = true;
-        } catch { }
-        if (seasonExists) {
-            // Show confirmation button with season number in customId
-            const seasonno = interaction.options.getInteger('seasonno');
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`startseason_confirm_${seasonno}`)
-                    .setLabel('Are you sure? This will reset all season data!')
-                    .setStyle(ButtonStyle.Danger)
-            );
-            await interaction.editReply({
-                content: 'Season data already exists. Are you sure you want to reset everything?',
-                components: [row]
-            });
-            return;
-        }
-        // ...existing code for season initialization...
-        const seasonno = interaction.options.getInteger('seasonno');
-        const nbaTeams = [
-            { id: 1, name: "Atlanta Hawks", abbreviation: "ATL" },
-            { id: 2, name: "Boston Celtics", abbreviation: "BOS" },
-            { id: 3, name: "Brooklyn Nets", abbreviation: "BKN" },
-            { id: 4, name: "Charlotte Hornets", abbreviation: "CHA" },
-            { id: 5, name: "Chicago Bulls", abbreviation: "CHI" },
-            { id: 6, name: "Cleveland Cavaliers", abbreviation: "CLE" },
-            { id: 7, name: "Dallas Mavericks", abbreviation: "DAL" },
-            { id: 8, name: "Denver Nuggets", abbreviation: "DEN" },
-            { id: 9, name: "Detroit Pistons", abbreviation: "DET" },
-            { id: 10, name: "Golden State Warriors", abbreviation: "GSW" },
-            { id: 11, name: "Houston Rockets", abbreviation: "HOU" },
-            { id: 12, name: "Indiana Pacers", abbreviation: "IND" },
-            { id: 13, name: "LA Clippers", abbreviation: "LAC" },
-            { id: 14, name: "Los Angeles Lakers", abbreviation: "LAL" },
-            { id: 15, name: "Memphis Grizzlies", abbreviation: "MEM" },
-            { id: 16, name: "Miami Heat", abbreviation: "MIA" },
-            { id: 17, name: "Milwaukee Bucks", abbreviation: "MIL" },
-            { id: 18, name: "Minnesota Timberwolves", abbreviation: "MIN" },
-            { id: 19, name: "New Orleans Pelicans", abbreviation: "NOP" },
-            { id: 20, name: "New York Knicks", abbreviation: "NYK" },
-            { id: 21, name: "Oklahoma City Thunder", abbreviation: "OKC" },
-            { id: 22, name: "Orlando Magic", abbreviation: "ORL" },
-            { id: 23, name: "Philadelphia 76ers", abbreviation: "PHI" },
-            { id: 24, name: "Phoenix Suns", abbreviation: "PHX" },
-            { id: 25, name: "Portland Trail Blazers", abbreviation: "POR" },
-            { id: 26, name: "Sacramento Kings", abbreviation: "SAC" },
-            { id: 27, name: "San Antonio Spurs", abbreviation: "SAS" },
-            { id: 28, name: "Toronto Raptors", abbreviation: "TOR" },
-            { id: 29, name: "Utah Jazz", abbreviation: "UTA" },
-            { id: 30, name: "Washington Wizards", abbreviation: "WAS" }
-        ];
-        const staticTeams = nbaTeams.map(team => ({ ...team, coach: null }));
-        for (let i = staticTeams.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [staticTeams[i], staticTeams[j]] = [staticTeams[j], staticTeams[i]];
-        }
-        let coachRoleMap = {};
-        staticTeams.forEach(team => { coachRoleMap[team.name] = null; });
-        const standings = {};
-        staticTeams.forEach(team => {
-            standings[team.name] = { wins: 0, losses: 0, games: 0, pointsFor: 0, pointsAgainst: 0 };
-        });
-        const prospectBoards = [];
-        const recruitingData = [];
-        const seasonData = {
-            currentWeek: 0,
-            seasonNo: seasonno,
-            coachRoleMap: coachRoleMap
-        };
-        dataManager.writeData('season', seasonData);
-        dataManager.writeData('teams', staticTeams);
-        dataManager.writeData('standings', standings);
-        dataManager.writeData('scores', []);
-        dataManager.writeData('prospectBoards', prospectBoards);
-        dataManager.writeData('recruiting', recruitingData);
-        await interaction.editReply({ content: `Season ${seasonData.seasonNo} started! All data initialized.` });
-    } catch (err) {
-        console.error('[startseason] Error:', err);
-        try {
-            await interaction.editReply({ content: 'Error starting season.' });
-        } catch (e) {
-            // If interaction already acknowledged, do nothing
-        }
-    }
+    // Always show confirmation button before resetting season
+    const seasonno = interaction.options.getInteger('seasonno');
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`startseason_confirm_${seasonno}`)
+            .setLabel('Are you sure? This will reset all season data!')
+            .setStyle(ButtonStyle.Danger)
+    );
+    await interaction.editReply({
+        content: 'Are you sure you want to start a new season? This will clear ALL season data and cannot be undone.',
+        components: [row]
+    });
+    return;
 }
 
 export default { data, execute };

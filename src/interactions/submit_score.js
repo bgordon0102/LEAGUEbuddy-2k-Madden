@@ -1,5 +1,6 @@
 // Handle submit score button interaction
 import path from 'path';
+import fs from 'fs';
 
 const scoresPath = path.join(process.cwd(), 'data', 'scores.json');
 const standingsPath = path.join(process.cwd(), 'data', 'standings.json');
@@ -120,11 +121,11 @@ function normalize(name) {
 }
 import { DataManager } from '../utils/dataManager.js';
 import { ButtonBuilder, ButtonStyle, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
-import fs from 'fs';
 import Tesseract from 'tesseract.js';
 import https from 'https';
 
-const pendingScoreThreads = new Set();
+// Track threads awaiting score uploads; exported so app.js can check membership
+export const pendingScoreThreads = new Set();
 
 function markThreadPendingScore(threadId) {
     pendingScoreThreads.add(threadId);

@@ -1,69 +1,97 @@
-export const customId = /^trade_dm_(approve|deny)$/;
+export const customId = /^trade_dm_(approve|deny)_/;
 // Handles DM Approve/Deny buttons for trade proposals
 import { ButtonInteraction, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from "discord.js";
 import fs from "fs";
 import path from "path";
 
+const ACTIVE_TRADES_PATH = path.join(process.cwd(), 'data', 'activeTrades.json');
+
 const COMMITTEE_CHANNEL_ID = "1425555499440410812"; // Committee channel
 const APPROVED_CHANNEL_ID = "1425555422063890443";
 const DENIED_CHANNEL_ID = "1425567560241254520";
 
+function readActiveTrades() {
+    try {
+        return JSON.parse(fs.readFileSync(ACTIVE_TRADES_PATH, 'utf8'));
+    } catch {
+        return {};
+    }
+}
+function writeActiveTrades(trades) {
+    try {
+        fs.writeFileSync(ACTIVE_TRADES_PATH, JSON.stringify(trades ?? {}, null, 2));
+    } catch (err) {
+        console.error('[trade_dm_response] Failed to write activeTrades:', err);
+    }
+}
+
 export async function execute(interaction) {
     if (!(interaction instanceof ButtonInteraction)) return;
     const customId = interaction.customId;
-    // Find trade info: allow any user with the coach role for the team to approve/deny
-    let tradeId = null;
-    for (const id of Object.keys(global.activeTrades || {})) {
-        const t = global.activeTrades[id];
-        if (t && t.status === "pending") {
-            // Check if user has the coach role for the team
-            const guild = interaction.guild || interaction.client.guilds.cache.first();
-            if (guild) {
-                const roleId = t.coachBId;
-                const member = guild.members.cache.get(interaction.user.id);
-                if (member && member.roles.cache.has(roleId)) {
-                    tradeId = id;
-                    break;
-                }
-            }
-        }
-    }
-    if (!tradeId) {
-        await interaction.reply({ content: "Trade not found or expired.", ephemeral: true });
+    const tradeId = customId.replace('trade_dm_approve_', '').replace('trade_dm_deny_', '');
+    const trades = { ...global.activeTrades, ...readActiveTrades() };
+    const trade = trades[tradeId];
+    if (!trade) {
+        await interaction.reply({ content: "Trade not found or expired.", flags: 64 });
         return;
     }
-    const trade = global.activeTrades[tradeId];
+    if (trade.status && trade.status !== "pending") {
+        await interaction.reply({ content: `This trade has already been processed (${trade.status}).`, flags: 64 });
+        return;
+    }
     // Check 24 hour expiry
-    if (Date.now() - trade.submittedAt > 24 * 60 * 60 * 1000) {
+    if (trade.expiresAt && Date.now() > trade.expiresAt) {
         trade.status = "expired";
-        await interaction.reply({ content: "Trade has expired.", ephemeral: true });
+        trades[tradeId] = trade;
+        writeActiveTrades(trades);
+        try {
+            const userA = await interaction.client.users.fetch(trade.proposerId, { force: true });
+            await userA.send({ content: `Your trade with ${trade.otherTeam} expired (no response within 24 hours).` });
+        } catch (err) { console.error('[DM Error] Could not DM proposer about expiry:', err); }
+        await interaction.reply({ content: "Trade has expired.", flags: 64 });
         return;
     }
-    if (customId === "trade_dm_deny") {
+    if (customId.startsWith("trade_dm_deny_")) {
         trade.status = "denied";
-        // Notify Coach A with robust DM logic
+        trades[tradeId] = trade;
+        writeActiveTrades(trades);
+        // Notify Coach A with the reviewer name
         try {
             const userA = await interaction.client.users.fetch(trade.proposerId, { force: true });
             console.log(`[DM Attempt] Notifying Coach A (ID: ${trade.proposerId}) for team ${trade.yourTeam}`);
-            await userA.send({ content: `Your trade proposal with ${trade.otherTeam} was denied.` });
-            await interaction.reply({ content: "Trade denied. Coach A has been notified.", ephemeral: true });
+            await userA.send({ content: `Your trade proposal with ${trade.otherTeam} was denied by ${interaction.user.username}.` });
+            await interaction.reply({ content: `Trade denied by ${interaction.user.username}. Proposer notified.`, flags: 64 });
         } catch (err) {
             console.error(`[DM Error] Could not DM Coach A (ID: ${trade.proposerId}):`, err);
             // Retry after 2 seconds
             setTimeout(async () => {
                 try {
                     const userA = await interaction.client.users.fetch(trade.proposerId, { force: true });
-                    await userA.send({ content: `Your trade proposal with ${trade.otherTeam} was denied.` });
+                    await userA.send({ content: `Your trade proposal with ${trade.otherTeam} was denied by ${interaction.user.username}.` });
                 } catch (err2) {
                     console.error(`[DM Retry Error] Could not DM Coach A (ID: ${trade.proposerId}):`, err2);
                 }
             }, 2000);
-            await interaction.reply({ content: `Trade denied, but could not DM Coach A (ID: ${trade.proposerId}).`, ephemeral: true });
+            await interaction.reply({ content: `Trade denied by ${interaction.user.username}, but could not DM proposer (${trade.proposerId}).`, flags: 64 });
         }
         return;
     }
-    if (customId === "trade_dm_approve") {
+    if (customId.startsWith("trade_dm_approve_")) {
+        if (trade.postedToCommittee) {
+            await interaction.reply({ content: "This trade has already been sent to committee.", flags: 64 });
+            return;
+        }
         trade.status = "committee";
+        trade.postedToCommittee = true;
+        trades[tradeId] = trade;
+        writeActiveTrades(trades);
+        // Notify Coach A that Coach B approved and committee is next
+        try {
+            const userA = await interaction.client.users.fetch(trade.proposerId, { force: true });
+            await userA.send({ content: `Your trade with ${trade.otherTeam} was approved by ${interaction.user.username} and sent to committee.` });
+        } catch (err) {
+            console.error('[DM Error] Could not DM Coach A about committee submission:', err);
+        }
         // Post to committee channel
         const embed = new EmbedBuilder()
             .setTitle("Trade Committee Vote Required")
@@ -95,24 +123,36 @@ export async function execute(interaction) {
         } catch (err) {
             console.error('Failed to save pending trade for committee:', err);
         }
-        // Robust DM logic for Coach B
+        // Robust DM logic for Coach B (handle role IDs)
+        let notifiedB = false;
+        // Try user ID first
         try {
             const userB = await interaction.client.users.fetch(trade.coachBId, { force: true });
             console.log(`[DM Attempt] Notifying Coach B (ID: ${trade.coachBId}) for team ${trade.otherTeam}`);
             await userB.send({ content: `Your trade proposal with ${trade.yourTeam} was approved and sent to committee for voting.` });
+            notifiedB = true;
         } catch (err) {
-            console.error(`[DM Error] Could not DM Coach B (ID: ${trade.coachBId}):`, err);
-            // Retry after 2 seconds
-            setTimeout(async () => {
-                try {
-                    const userB = await interaction.client.users.fetch(trade.coachBId, { force: true });
-                    await userB.send({ content: `Your trade proposal with ${trade.yourTeam} was approved and sent to committee for voting.` });
-                } catch (err2) {
-                    console.error(`[DM Retry Error] Could not DM Coach B (ID: ${trade.coachBId}):`, err2);
-                }
-            }, 2000);
+            console.error(`[DM Error] Could not DM Coach B (ID may be role):`, err);
         }
-        await interaction.reply({ content: "Trade sent to committee for voting.", ephemeral: true });
+        // If coachBId is a role, DM members with that role in the guild
+        if (!notifiedB && trade.guildId) {
+            try {
+                const guild = await interaction.client.guilds.fetch(trade.guildId);
+                await guild.members.fetch();
+                const members = guild.members.cache.filter(m => m.roles.cache.has(trade.coachBId));
+                for (const member of members.values()) {
+                    try {
+                        await member.user.send({ content: `Your trade proposal with ${trade.yourTeam} was approved and sent to committee for voting.` });
+                        notifiedB = true;
+                    } catch (innerErr) {
+                        console.error('[DM Error] Could not DM role member:', innerErr);
+                    }
+                }
+            } catch (err) {
+                console.error('[DM Error] Could not resolve role members for Coach B:', err);
+            }
+        }
+        await interaction.reply({ content: "Trade sent to committee for voting.", flags: 64 });
         return;
     }
 }

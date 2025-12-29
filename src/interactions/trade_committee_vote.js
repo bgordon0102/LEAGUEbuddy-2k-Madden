@@ -111,6 +111,7 @@ export async function execute(interaction) {
     const approveCount = votesArr.filter(v => v === 'approve').length;
     const denyCount = votesArr.filter(v => v === 'deny').length;
     let finalized = false;
+    // Three-vote threshold
     if (approveCount >= 3) {
         entry.trade.status = 'approved';
         finalized = true;
@@ -148,8 +149,22 @@ export async function execute(interaction) {
         // Roster update logic
         const teamAFile = path.join(process.cwd(), 'data/teams_rosters', teamToFile(trade.yourTeam));
         const teamBFile = path.join(process.cwd(), 'data/teams_rosters', teamToFile(trade.otherTeam));
-        let teamARoster = JSON.parse(fs.readFileSync(teamAFile, 'utf8'));
-        let teamBRoster = JSON.parse(fs.readFileSync(teamBFile, 'utf8'));
+        let teamARoster, teamBRoster;
+        try {
+            teamARoster = JSON.parse(fs.readFileSync(teamAFile, 'utf8'));
+            teamBRoster = JSON.parse(fs.readFileSync(teamBFile, 'utf8'));
+        } catch (err) {
+            console.error('Failed to read roster files for trade:', err);
+            await interaction.reply({ content: 'Trade approved but roster files missing/corrupt; manual fix required.', flags: 64 });
+            return;
+        }
+        // Normalize roster shapes
+        if (Array.isArray(teamARoster)) teamARoster = { players: teamARoster, picks: [] };
+        if (Array.isArray(teamBRoster)) teamBRoster = { players: teamBRoster, picks: [] };
+        teamARoster.players = Array.isArray(teamARoster.players) ? teamARoster.players : [];
+        teamBRoster.players = Array.isArray(teamBRoster.players) ? teamBRoster.players : [];
+        teamARoster.picks = Array.isArray(teamARoster.picks) ? teamARoster.picks : [];
+        teamBRoster.picks = Array.isArray(teamBRoster.picks) ? teamBRoster.picks : [];
         function normalize(str) {
             return str.toLowerCase().replace(/[^a-z0-9]/gi, '');
         }
@@ -219,8 +234,12 @@ export async function execute(interaction) {
         movePlayers(receivedPlayers, teamBRoster, teamARoster);
         movePicks(sentPicks, teamARoster, teamBRoster, trade.yourTeam);
         movePicks(receivedPicks, teamBRoster, teamARoster, trade.otherTeam);
-        fs.writeFileSync(teamAFile, JSON.stringify(teamARoster, null, 2));
-        fs.writeFileSync(teamBFile, JSON.stringify(teamBRoster, null, 2));
+        try {
+            fs.writeFileSync(teamAFile, JSON.stringify(teamARoster, null, 2));
+            fs.writeFileSync(teamBFile, JSON.stringify(teamBRoster, null, 2));
+        } catch (err) {
+            console.error('Failed to write updated rosters:', err);
+        }
         // Post to approved channel
         let approvedChannel, userA;
         try {
@@ -257,9 +276,16 @@ export async function execute(interaction) {
             }
         }
     }
+    // Clean up pending trade entry when finalized
     if (finalized) {
+        try {
+            delete pendingTrades[messageId];
+            fs.writeFileSync(pendingPath, JSON.stringify(pendingTrades, null, 2));
+        } catch (err) {
+            console.error('Failed to prune pendingTrades after finalization:', err);
+        }
         await interaction.reply({ content: `Trade ${trade.status}.`, flags: 64 });
     } else {
-        await interaction.reply({ content: `Vote recorded: ${approveCount} approve, ${denyCount} deny. First to 3 wins.`, flags: 64 });
+        await interaction.reply({ content: `Vote recorded: ${approveCount} approve, ${denyCount} deny. First to 3 decides.`, flags: 64 });
     }
 }

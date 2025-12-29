@@ -23,17 +23,19 @@ async function execute(interaction) {
     }
     if (amountArg === 'all') {
       // Fetch all messages and delete in batches of 100
-      let fetched;
       let totalDeleted = 0;
-      do {
-        fetched = await channel.messages.fetch({ limit: 100 });
-        if (fetched.size > 0) {
-          const deleted = await channel.bulkDelete(fetched, true).catch(err => console.error(err));
-          totalDeleted += deleted?.size || 0;
-          console.log(`[DEBUG] Deleted ${totalDeleted} messages so far...`);
-          await interaction.followUp({ content: `Deleted ${totalDeleted} messages so far...`, ephemeral: true });
+      while (true) {
+        const fetched = await channel.messages.fetch({ limit: 100 });
+        if (!fetched.size) break;
+        const deleted = await channel.bulkDelete(fetched, true).catch(err => console.error(err));
+        const deletedCount = deleted?.size || 0;
+        totalDeleted += deletedCount;
+        console.log(`[DEBUG] Deleted ${totalDeleted} messages so far...`);
+        if (deletedCount === 0) {
+          // No more deletable messages (likely too old), avoid looping forever
+          break;
         }
-      } while (fetched.size >= 2); // stop when fewer than 2 messages left
+      }
       console.log('[DEBUG] All messages deleted');
       await interaction.editReply({ content: `All messages deleted in this channel. Total: ${totalDeleted}` });
     } else {

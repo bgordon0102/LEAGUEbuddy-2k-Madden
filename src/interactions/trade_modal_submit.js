@@ -4,11 +4,27 @@ import fs from "fs";
 import path from "path";
 import { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from "discord.js";
 
+const ACTIVE_TRADES_PATH = path.join(process.cwd(), 'data', 'activeTrades.json');
 // Channel IDs
 const SUBMISSION_CHANNEL_ID = "1425555037328773220";
 const COMMITTEE_CHANNEL_ID = "1425555499440410812"; // Committee channel
 const APPROVED_CHANNEL_ID = "1425555422063890443";
 const DENIED_CHANNEL_ID = "1425567560241254520";
+
+function readActiveTrades() {
+    try {
+        return JSON.parse(fs.readFileSync(ACTIVE_TRADES_PATH, 'utf8'));
+    } catch {
+        return {};
+    }
+}
+function writeActiveTrades(trades) {
+    try {
+        fs.writeFileSync(ACTIVE_TRADES_PATH, JSON.stringify(trades ?? {}, null, 2));
+    } catch (err) {
+        console.error('[trade_modal_submit] Failed to persist activeTrades:', err);
+    }
+}
 
 // Helper to get coach Discord ID from team name
 function getCoachId(teamName) {
@@ -46,6 +62,15 @@ function buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, note
 
 export async function execute(interaction) {
     if (!interaction.isModalSubmit() || interaction.customId !== "trade_modal_submit") return;
+    let responded = false;
+    // Defer reply immediately to avoid interaction expiry
+    try {
+        await interaction.deferReply({ flags: 64 });
+    } catch (err) {
+        console.error('[trade_modal_submit] deferReply failed (interaction may be expired):', err);
+        return;
+    }
+    try {
     const yourTeam = interaction.fields.getTextInputValue("yourTeam");
     const otherTeam = interaction.fields.getTextInputValue("otherTeam");
     const assetsSent = interaction.fields.getTextInputValue("assetsSent");
@@ -55,22 +80,35 @@ export async function execute(interaction) {
     // Build embed for proposer (Coach A)
     const embed = buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, notes });
 
-    // Find Coach B
-    const coachBId = getCoachId(otherTeam);
+    // Find Coach B (robust lookup)
+    const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/coachRoleMap.json'), 'utf8'));
+    let coachBId = coachMap[otherTeam];
     if (!coachBId) {
-        await interaction.reply({ content: `Could not find coach for team: ${otherTeam}`, ephemeral: true });
+        // Try case-insensitive and partial match
+        const normalized = otherTeam.trim().toLowerCase();
+        for (const [team, id] of Object.entries(coachMap)) {
+            if (team.toLowerCase() === normalized || team.toLowerCase().includes(normalized) || normalized.includes(team.toLowerCase())) {
+                coachBId = id;
+                console.log(`[DEBUG] Matched team '${otherTeam}' to '${team}' with ID '${id}'`);
+                break;
+            }
+        }
+    }
+    if (!coachBId) {
+        console.log(`[DEBUG] Could not find coach for team: ${otherTeam}`);
+        await interaction.editReply({ content: `Could not find coach for team: ${otherTeam}`, flags: 64 });
+        responded = true;
         return;
     }
 
     // DM Coach B with Approve/Deny buttons
-    const approveBtn = new ButtonBuilder().setCustomId("trade_dm_approve").setLabel("Approve").setStyle(ButtonStyle.Success);
-    const denyBtn = new ButtonBuilder().setCustomId("trade_dm_deny").setLabel("Deny").setStyle(ButtonStyle.Danger);
-    const row = new ActionRowBuilder().addComponents(approveBtn, denyBtn);
-
-    // Store trade info for later (in-memory or DB, here just ephemeral for demo)
-    // TODO: Implement persistent storage for trade proposals
+    // Store trade info for later (persist to survive restarts)
     global.activeTrades = global.activeTrades || {};
     const tradeId = `${Date.now()}`;
+    const approveBtn = new ButtonBuilder().setCustomId(`trade_dm_approve_${tradeId}`).setLabel("Approve").setStyle(ButtonStyle.Success);
+    const denyBtn = new ButtonBuilder().setCustomId(`trade_dm_deny_${tradeId}`).setLabel("Deny").setStyle(ButtonStyle.Danger);
+    const row = new ActionRowBuilder().addComponents(approveBtn, denyBtn);
+
     const tradeObj = {
         tradeId,
         proposerId: interaction.user.id,
@@ -81,13 +119,18 @@ export async function execute(interaction) {
         assetsReceived,
         notes,
         submittedAt: Date.now(),
+        guildId: interaction.guildId || interaction.guild?.id || interaction.client.guilds.cache.first()?.id || null,
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
         status: "pending"
     };
     global.activeTrades[tradeId] = tradeObj;
+    const persisted = readActiveTrades();
+    persisted[tradeId] = tradeObj;
+    writeActiveTrades(persisted);
     // Store in pendingTrades.json for persistence
     // No persistence to pendingTrades.json here. Only log after Coach B approves in pin_trade_channel_message.js.
 
-    // Send DM to all users with the coach role for the team
+    // Send DM to the coach user or role members
     let sent = false;
     let sentUsernames = [];
     let roleName = otherTeam;
@@ -103,31 +146,54 @@ export async function execute(interaction) {
     } catch { }
     try {
         const guild = interaction.guild || interaction.client.guilds.cache.first();
+        const membersToDm = [];
         if (guild) {
-            const roleId = getCoachId(otherTeam);
-            if (roleId) {
-                const members = guild.members.cache.filter(m => m.roles.cache.has(roleId));
-                for (const member of members.values()) {
-                    // Build embed for Coach B (reverse assets)
-                    const coachBEmbed = buildTradeEmbed({
-                        yourTeam: otherTeam,
-                        otherTeam: yourTeam,
-                        assetsSent: assetsReceived,
-                        assetsReceived: assetsSent,
-                        notes
-                    });
-                    await member.user.send({ embeds: [coachBEmbed], components: [row], content: `You have 24 hours to approve or deny this trade proposal.` });
-                    sent = true;
-                    sentUsernames.push(`${member.user.tag} (${member.user.id})`);
+            await guild.members.fetch().catch(() => {});
+            // Try as user ID
+            const memberById = await guild.members.fetch(coachBId).catch(() => null);
+            if (memberById) membersToDm.push(memberById);
+            // If not a user, try as role ID
+            if (!memberById) {
+                const role = await guild.roles.fetch(coachBId).catch(() => null);
+                if (role) {
+                    role.members.forEach(m => membersToDm.push(m));
                 }
             }
         }
+        if (membersToDm.length) {
+            for (const member of membersToDm) {
+                const coachBEmbed = buildTradeEmbed({
+                    yourTeam: otherTeam,
+                    otherTeam: yourTeam,
+                    assetsSent: assetsReceived,
+                    assetsReceived: assetsSent,
+                    notes
+                });
+                await member.user.send({ embeds: [coachBEmbed], components: [row], content: `You have 24 hours to approve or deny this trade proposal.` });
+                sent = true;
+                sentUsernames.push(`${member.user.tag} (${member.user.id})`);
+                console.log(`[DEBUG] DM sent to user: ${member.user.tag} (${member.user.id})`);
+            }
+        } else {
+            console.log(`[DEBUG] No user or role found for coachBId: ${coachBId}`);
+        }
     } catch (e) {
         sent = false;
+        console.log('[DEBUG] Error in DM logic:', e);
     }
     if (sent && sentUsernames.length) {
-        await interaction.reply({ content: `Trade proposal sent to ${roleName} for approval: ${sentUsernames.map(u => u.split(' ')[0]).join(", ")}`, ephemeral: true });
+        await interaction.editReply({ content: `Trade proposal sent to ${roleName} for approval: ${sentUsernames.map(u => u.split(' ')[0]).join(", ")}`, flags: 64 });
+        responded = true;
     } else {
-        await interaction.reply({ content: `Could not DM coach for team: ${roleName}. They may not be in the server or have the correct role.`, ephemeral: true });
+        await interaction.editReply({ content: `Could not DM coach for team: ${roleName}. They may not be in the server or have the correct role.`, flags: 64 });
+        responded = true;
+    }
+    } catch (err) {
+        console.error('[trade_modal_submit] Fatal error handling trade submission:', err);
+        if (!responded) {
+            try {
+                await interaction.editReply({ content: 'Error submitting trade. Please try again.', flags: 64 });
+            } catch {}
+        }
     }
 }

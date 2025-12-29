@@ -38,25 +38,38 @@ export async function execute(interaction) {
     if (!(interaction instanceof ButtonInteraction)) return;
     // Open a modal for trade entry
     const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = await import('discord.js');
+    const startTime = Date.now();
     const modal = new ModalBuilder()
         .setCustomId('trade_modal_submit')
         .setTitle('Submit Trade Proposal');
 
 
-    // Auto-detect coach's team from coachRoleMap.json
+    // Synchronously detect user's team before building modal
     let detectedTeam = '';
     try {
         const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/coachRoleMap.json'), 'utf8'));
+        // Try user ID match first
         for (const [team, coachId] of Object.entries(coachMap)) {
             if (coachId === interaction.user.id) {
                 detectedTeam = team;
                 break;
             }
         }
+        // If not found, try role ID match (check all user role IDs as strings)
+        if (!detectedTeam && interaction.member && interaction.member.roles) {
+            const userRoleIds = interaction.member.roles.cache ? Array.from(interaction.member.roles.cache.keys()) : [];
+            for (const [team, coachId] of Object.entries(coachMap)) {
+                if (userRoleIds.includes(coachId)) {
+                    detectedTeam = team;
+                    break;
+                }
+            }
+        }
     } catch (e) {
         // fallback: leave blank
     }
 
+    // Build modal with detected team value
     const yourTeamInput = new TextInputBuilder()
         .setCustomId('yourTeam')
         .setLabel('Your Team (name or keyword)')
@@ -97,5 +110,19 @@ export async function execute(interaction) {
         new ActionRowBuilder().addComponents(assetsReceivedInput),
         new ActionRowBuilder().addComponents(notesInput)
     );
-    await interaction.showModal(modal);
+    const beforeShowModal = Date.now();
+    console.log(`[DEBUG] trade_submit_button.js: Time from handler start to before showModal: ${beforeShowModal - startTime}ms`);
+    try {
+        await interaction.showModal(modal);
+        const afterShowModal = Date.now();
+        console.log(`[DEBUG] trade_submit_button.js: Time to showModal: ${afterShowModal - beforeShowModal}ms`);
+    } catch (err) {
+        if (err.code === 10062) {
+            // Unknown interaction, likely expired
+            console.error('❌ Cannot show modal: interaction expired.');
+        } else {
+            console.error('❌ Error showing modal:', err);
+        }
+        return;
+    }
 }

@@ -85,6 +85,7 @@ app.use(express.static(path.join(__dirname, 'dashboard'), {
 
 // --- Pending Trades API ---
 const pendingTradesFile = path.join(__dirname, 'data', 'pendingTrades.json');
+const rosterDir = path.join(__dirname, 'data', 'teams_rosters');
 
 function readPendingTrades() {
     try {

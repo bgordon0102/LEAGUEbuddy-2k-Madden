@@ -102,8 +102,10 @@ async function postTradeBlockEmbed(interaction, team, players) {
         const playerName = players[0].replace(/ /g, '_');
         thumbnailUrl = `https://cdn.nba2k.com/players/${playerName}.png`;
     }
+    // Format team name: remove underscores, capitalize each word
+    const formattedTeam = team.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     const embed = {
-        title: `${team} Trade Block`,
+        title: `${formattedTeam} Trade Block`,
         description: players.length ? players.map((p, i) => `${i + 1}. ${p}`).join('\n') : 'No players on trade block.',
         color: 0x00AE86,
         thumbnail: thumbnailUrl ? { url: thumbnailUrl } : undefined
@@ -139,17 +141,35 @@ const data = new SlashCommandBuilder()
 export default {
     data,
     async autocomplete(interaction) {
+        let responded = false;
+        // Set a timeout to always respond within 2 seconds
+        const timeout = setTimeout(async () => {
+            if (!responded) {
+                responded = true;
+                try { await interaction.respond([]); } catch { }
+            }
+        }, 2000);
         try {
             const focusedOption = interaction.options.getFocused(true);
             if (focusedOption.name === 'action') {
-                return interaction.respond([
-                    { name: 'add', value: 'add' },
-                    { name: 'remove', value: 'remove' }
-                ]);
+                if (!responded) {
+                    responded = true;
+                    clearTimeout(timeout);
+                    await interaction.respond([
+                        { name: 'add', value: 'add' },
+                        { name: 'remove', value: 'remove' }
+                    ]);
+                }
+                return;
             }
             const team = getCoachTeamFromRoles(interaction);
             if (!team) {
-                return interaction.respond([]);
+                if (!responded) {
+                    responded = true;
+                    clearTimeout(timeout);
+                    await interaction.respond([]);
+                }
+                return;
             }
             const tradeBlock = getTradeBlock();
             if (focusedOption.name === 'player') {
@@ -158,18 +178,39 @@ export default {
                     const teamPlayers = getTeamPlayers(team);
                     const blocked = tradeBlock[team] || [];
                     const available = teamPlayers.filter(p => !blocked.includes(p));
-                    return interaction.respond(available.map(p => ({ name: p, value: p })).slice(0, 25));
+                    if (!responded) {
+                        responded = true;
+                        clearTimeout(timeout);
+                        await interaction.respond(available.map(p => ({ name: p, value: p })).slice(0, 25));
+                    }
+                    return;
                 } else if (action === 'remove') {
                     const blocked = tradeBlock[team] || [];
-                    return interaction.respond(blocked.map(p => ({ name: p, value: p })).slice(0, 25));
+                    if (!responded) {
+                        responded = true;
+                        clearTimeout(timeout);
+                        await interaction.respond(blocked.map(p => ({ name: p, value: p })).slice(0, 25));
+                    }
+                    return;
                 }
             }
-            return interaction.respond([]);
+            if (!responded) {
+                responded = true;
+                clearTimeout(timeout);
+                await interaction.respond([]);
+            }
         } catch (err) {
             console.error('TRADEBLOCK AUTOCOMPLETE ERROR:', err);
-            try {
-                await interaction.respond([{ name: 'Error loading options', value: 'none' }]);
-            } catch { }
+            if (!responded) {
+                responded = true;
+                clearTimeout(timeout);
+                try {
+                    await interaction.respond([{ name: 'Error loading options', value: 'none' }]);
+                } catch (e) {
+                    // If interaction already acknowledged/expired, just log
+                    console.error('TRADEBLOCK AUTOCOMPLETE RESPOND ERROR:', e);
+                }
+            }
         }
     },
     async execute(interaction) {
@@ -181,14 +222,19 @@ export default {
         if (!teamPlayers.includes(player)) {
             return interaction.reply({ content: 'You can only add/remove players from your own team.', ephemeral: true });
         }
+        // Always reload trade block from disk to avoid race conditions
         let tradeBlock = getTradeBlock();
         tradeBlock[team] = tradeBlock[team] || [];
         const tradeBlockMessages = getTradeBlockMessages();
         if (action === 'add') {
+            // Reload again right before check
+            tradeBlock = getTradeBlock();
+            tradeBlock[team] = tradeBlock[team] || [];
             if (tradeBlock[team].length >= 5) {
                 return interaction.reply({ content: 'You can only have 5 players on your trade block.', ephemeral: true });
             }
             if (tradeBlock[team].includes(player)) {
+                console.log(`[DEBUG] Attempted to add duplicate player to trade block: ${player} for team ${team}`);
                 return interaction.reply({ content: `${player} is already on your trade block.`, ephemeral: true });
             }
             tradeBlock[team].push(player);
@@ -210,7 +256,7 @@ export default {
                 }
             }
             const embed = {
-                title: `${player} added to the ${team} trade block!`,
+                title: `${player} added to the ${team.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} trade block!`,
                 description: `<@&${GHOST_PARADISE_ROLE_ID}>\nPosition: ${position}`,
                 color: 0x00AE86,
                 thumbnail: thumbnailUrl ? { url: thumbnailUrl } : undefined
