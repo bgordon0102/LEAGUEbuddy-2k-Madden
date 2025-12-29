@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import { ButtonInteraction, EmbedBuilder } from "discord.js";
+import { canTrade, getSeasonState } from "../utils/seasonUtils.js";
 
 export const customId = "trade_submit_button";
 
@@ -36,6 +37,14 @@ function parseTradeMessage(msg) {
 
 export async function execute(interaction) {
     if (!(interaction instanceof ButtonInteraction)) return;
+    if (!canTrade()) {
+        const state = getSeasonState();
+        await interaction.reply({
+            content: `Trades are only available during the regular season through week ${state.tradeCutoff ?? 15}. Current week: ${state.currentWeek}, phase: ${state.phase}.`,
+            ephemeral: true
+        });
+        return;
+    }
     // Open a modal for trade entry
     const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = await import('discord.js');
     const startTime = Date.now();

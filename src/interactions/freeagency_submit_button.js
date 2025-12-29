@@ -9,14 +9,19 @@ import {
 } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
-import { readRoster, saveRoster, upsertPlayer, removePlayerFromOtherRosters } from '../utils/rosterUtils.js';
+import { readRoster, saveRoster, upsertPlayer, removePlayerFromOtherRostersFuzzy, normalizeName } from '../utils/rosterUtils.js';
 
-const STORE_PATH = path.join(process.cwd(), 'data', 'freeagency.json');
+const STORE_PATH = path.join(process.cwd(), 'data', 'freeagency_entries.json');
 const STAFF_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
+const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json');
 const STAFF_ROLES = ['Paradise Commish', 'Schedule Tracker'];
-const FREEAGENCY_LOG_PATH = path.join(process.cwd(), 'data', 'freeagency_log.json');
+const STAFF_OFFER_CHANNEL_ID = process.env.FREE_AGENCY_STAFF_CHANNEL_ID || '1455151770383814666';
+const ANNOUNCE_CHANNEL_ID = process.env.FREE_AGENCY_ANNOUNCE_CHANNEL_ID || '1455152984089694218';
+const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
+const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
 
-function readStore() {
+// Data store helpers
+function readEntries() {
   try {
     return JSON.parse(fs.readFileSync(STORE_PATH, 'utf8'));
   } catch {
@@ -24,73 +29,198 @@ function readStore() {
   }
 }
 
-function writeStore(entries) {
+function writeEntries(entries) {
   fs.writeFileSync(STORE_PATH, JSON.stringify(entries ?? [], null, 2));
 }
 
-function readLog() {
+function readCoachRoleMap() {
   try {
-    return JSON.parse(fs.readFileSync(FREEAGENCY_LOG_PATH, 'utf8'));
+    return JSON.parse(fs.readFileSync(COACH_ROLE_MAP_PATH, 'utf8'));
   } catch {
-    return [];
+    return {};
   }
 }
 
-function writeLog(log) {
+function getTeamFromMemberRoles(member) {
+  const map = readCoachRoleMap(); // Team -> roleId
+  if (!member?.roles?.cache) return null;
+  const roleToTeam = Object.entries(map).reduce((acc, [team, roleId]) => {
+    if (roleId) acc[roleId] = team;
+    return acc;
+  }, {});
+  for (const [roleId] of member.roles.cache) {
+    if (roleToTeam[roleId]) return roleToTeam[roleId];
+  }
+  return null;
+}
+
+function findPlayerDataAcrossRosters(targetName) {
+  const targetNorm = normalizeName(targetName);
+  const dist = (a, b) => {
+    const m = a.length, n = b.length;
+    const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + cost,
+        );
+      }
+    }
+    return dp[m][n];
+  };
+  // free agency roster first
+  const fa = readRoster('free agency');
+  const sources = [];
+  if (fa?.roster?.players) sources.push({ roster: fa.roster.players, team: 'free agency' });
   try {
-    fs.writeFileSync(FREEAGENCY_LOG_PATH, JSON.stringify(log ?? [], null, 2));
-  } catch (err) {
-    console.error('[freeagency] Failed to write log:', err);
+    const dir = path.join(process.cwd(), 'data', 'teams_rosters');
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+      const data = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+      const rosterArr = Array.isArray(data) ? data : (Array.isArray(data.players) ? data.players : []);
+      sources.push({ roster: rosterArr, team: file.replace('.json', '').replace(/_/g, ' ') });
+    }
+  } catch {
+    // ignore
+  }
+  for (const src of sources) {
+    const found = src.roster.find(p => {
+      const n = normalizeName(p.name || '');
+      if (!n) return false;
+      if (n === targetNorm || n.includes(targetNorm) || targetNorm.includes(n)) return true;
+      // fuzzy: allow small typos
+      return dist(n, targetNorm) <= 2;
+    });
+    if (found) return { player: found, team: src.team };
+  }
+  return null;
+}
+
+function computeSeasonAge(birthdate) {
+  if (!birthdate) return null;
+  let seasonNo = 1;
+  try {
+    const seasonData = JSON.parse(fs.readFileSync(SEASON_PATH, 'utf8'));
+    if (seasonData.seasonNo) seasonNo = Number(seasonData.seasonNo);
+  } catch {
+    // ignore
+  }
+  const seasonYear = 2024 + seasonNo; // season 1 = 2025
+  const refDate = new Date(`${seasonYear}-10-20`);
+  const birth = new Date(birthdate);
+  if (Number.isNaN(birth.getTime())) return null;
+  let age = refDate.getFullYear() - birth.getFullYear();
+  if (refDate.getMonth() < birth.getMonth() || (refDate.getMonth() === birth.getMonth() && refDate.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+function buildFAEmbed(entry, statusText = 'Open for offers') {
+  const embed = new EmbedBuilder()
+    .setTitle(`Free Agent: ${entry.player}`)
+    .setColor(entry.status === 'signed' ? 0x57f287 : 0x5865f2)
+    .setDescription(
+      [
+        `<@&${GHOST_PARADISE_ROLE_ID}>`,
+        'Click the button to submit your offer (coaches only). Staff will review and finalize.',
+        `Status: ${statusText}`,
+      ].join('\n'),
+    )
+    .setFooter({ text: `FA ID: ${entry.id}` });
+  if (entry.thumbnail) {
+    embed.setThumbnail(entry.thumbnail);
+  }
+  embed.addFields(
+    { name: 'Position', value: entry.position || '-', inline: true },
+    { name: 'OVR', value: entry.ovr != null ? String(entry.ovr) : '-', inline: true },
+    { name: 'Age', value: entry.age != null ? String(entry.age) : '-', inline: true },
+  );
+  return embed;
+}
+
+function buildStaffEmbed(entry) {
+  const lines = entry.offers?.length
+    ? entry.offers.map(o => `• ${o.team}${o.note ? ` — ${o.note}` : ''}`)
+    : ['No offers yet'];
+  const embed = new EmbedBuilder()
+    .setTitle(`FA Review: ${entry.player}`)
+    .setColor(entry.status === 'signed' ? 0x57f287 : 0x5865f2)
+    .setDescription(lines.join('\n').slice(0, 4000))
+    .setFooter({ text: `FA ID: ${entry.id}` });
+  if (entry.thumbnail) embed.setThumbnail(entry.thumbnail);
+  return embed;
+}
+
+function chunkButtons(buttons, size = 5) {
+  const rows = [];
+  const limited = buttons.slice(0, 25); // Discord max components per message
+  for (let i = 0; i < limited.length; i += size) {
+    rows.push(new ActionRowBuilder().addComponents(limited.slice(i, i + size)));
+  }
+  return rows;
+}
+
+function getStaffRoleMentions() {
+  try {
+    const staffMap = JSON.parse(fs.readFileSync(STAFF_MAP_PATH, 'utf8'));
+    return STAFF_ROLES.map(r => staffMap[r]).filter(Boolean).map(id => `<@&${id}>`).join(' ');
+  } catch {
+    return '';
   }
 }
 
-// One handler covers submit + approve/deny buttons
-export const customId = /^freeagency_(submit_button|approve|deny)_?.*/;
-export const customId_modal_freeagency = 'freeagency_modal_submit';
+// Custom IDs
+export const customId = /^freeagency_(staff_add_button|staff_add_modal|offer_[a-zA-Z0-9]+|offer_modal_[a-zA-Z0-9]+|staff_pick_[a-zA-Z0-9]+_.+)_?.*/;
+export const customId_modal_staff_add = 'freeagency_staff_add_modal';
+export const customId_modal_offer_prefix = 'freeagency_offer_modal_';
 
+// Staff add button handler (from pinned message)
 export async function execute(interaction) {
-  if (interaction.customId.startsWith('freeagency_submit_button')) {
+  // Handle modal submits first so we don't try to showModal on them
+  if (interaction.isModalSubmit()) {
+    if (interaction.customId === customId_modal_staff_add) {
+      await execute_modal_staff_add(interaction);
+      return;
+    }
+    if (interaction.customId.startsWith(customId_modal_offer_prefix)) {
+      await execute_modal_offer(interaction);
+      return;
+    }
+  }
+
+  if (!interaction.isButton()) {
+    return;
+  }
+
+  if (interaction.customId === 'freeagency_staff_add_button') {
+    // Staff gate
+    try {
+      const staffMap = JSON.parse(fs.readFileSync(STAFF_MAP_PATH, 'utf8'));
+      const allowedRoleIds = STAFF_ROLES.map(r => staffMap[r]).filter(Boolean);
+      const memberRoles = interaction.member?.roles?.cache;
+      const isStaff = allowedRoleIds.length ? allowedRoleIds.some(rid => memberRoles?.has(rid)) : true;
+      if (!isStaff) {
+        await interaction.reply({ content: 'Staff only.', ephemeral: true });
+        return;
+      }
+    } catch {
+      // allow if map missing
+    }
     const modal = new ModalBuilder()
-      .setCustomId(customId_modal_freeagency)
-      .setTitle('Submit Free Agency Offer')
+      .setCustomId(customId_modal_staff_add)
+      .setTitle('Add Free Agent (Staff)')
       .addComponents(
-        new ActionRowBuilder().addComponents(
-          new TextInputBuilder()
-            .setCustomId('team')
-            .setLabel('Your Team')
-            .setPlaceholder('e.g., New York Knicks')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true),
-        ),
         new ActionRowBuilder().addComponents(
           new TextInputBuilder()
             .setCustomId('player')
             .setLabel('Player Name')
-            .setPlaceholder('e.g., Julius Randle')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true),
-        ),
-        new ActionRowBuilder().addComponents(
-          new TextInputBuilder()
-            .setCustomId('ovr')
-            .setLabel('OVR')
-            .setPlaceholder('e.g., 86')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true),
-        ),
-        new ActionRowBuilder().addComponents(
-          new TextInputBuilder()
-            .setCustomId('years')
-            .setLabel('Years')
-            .setPlaceholder('e.g., 3')
-            .setStyle(TextInputStyle.Short)
-            .setRequired(true),
-        ),
-        new ActionRowBuilder().addComponents(
-          new TextInputBuilder()
-            .setCustomId('salary')
-            .setLabel('Salary Per Year')
-            .setPlaceholder('e.g., $18M')
+            .setPlaceholder('e.g., LeBron James')
             .setStyle(TextInputStyle.Short)
             .setRequired(true),
         ),
@@ -98,169 +228,254 @@ export async function execute(interaction) {
     await interaction.showModal(modal);
     return;
   }
-  // Approve/deny buttons
-  await execute_review(interaction);
+
+  if (interaction.customId.startsWith('freeagency_offer_')) {
+    const entryId = interaction.customId.replace('freeagency_offer_', '');
+    const modal = new ModalBuilder()
+      .setCustomId(`${customId_modal_offer_prefix}${entryId}`)
+      .setTitle('Submit Offer')
+      .addComponents(
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('note')
+            .setLabel('Offer details (years, salary, terms)')
+            .setPlaceholder('e.g., 3 years, $18M per year')
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(false),
+        ),
+      );
+    await interaction.showModal(modal);
+    return;
+  }
+
+  if (interaction.customId.startsWith('freeagency_staff_pick_')) {
+    await handleStaffPick(interaction);
+    return;
+  }
 }
 
-export async function execute_modal_freeagency(interaction) {
-  const team = interaction.fields.getTextInputValue('team');
+// Staff add modal submit
+export async function execute_modal_staff_add(interaction) {
   const player = interaction.fields.getTextInputValue('player');
-  const ovr = interaction.fields.getTextInputValue('ovr');
-  const years = interaction.fields.getTextInputValue('years');
-  const salary = interaction.fields.getTextInputValue('salary');
+  await interaction.deferReply({ flags: 64 });
 
-  await interaction.deferReply({ ephemeral: true });
+  // Fuzzy match to existing players for canonical name/thumbnail
+  const match = findPlayerDataAcrossRosters(player);
+  const displayName = match?.player?.name || player;
+  const thumbnail = match?.player?.imgUrl || match?.player?.imgURL || null;
+  const position = match?.player?.position || match?.player?.position_1 || match?.player?.position1 || null;
+  const ovr = match?.player?.ovr ?? null;
+  const age = match?.player?.age ?? computeSeasonAge(match?.player?.birthdate);
 
   const entry = {
     id: `${Date.now()}`,
-    team,
-    player,
+    player: displayName,
+    thumbnail,
+    position,
     ovr,
-    years,
-    salary,
-    status: 'pending',
-    submittedBy: interaction.user.id,
-    submittedAt: new Date().toISOString(),
+    age,
+    status: 'open',
+    offers: [],
   };
-
-  const entries = readStore();
+  const entries = readEntries();
   entries.push(entry);
-  writeStore(entries);
+  writeEntries(entries);
 
-  let staffTags = '';
-  try {
-    const staffMap = JSON.parse(fs.readFileSync(STAFF_MAP_PATH, 'utf8'));
-    staffTags = STAFF_ROLES.map(r => staffMap[r]).filter(Boolean).map(id => `<@&${id}>`).join(' ');
-  } catch (err) {
-    console.error('[freeagency] Failed to read staffRoleMap.main.json:', err);
-  }
-
-  const embed = new EmbedBuilder()
-    .setTitle('Free Agency Offer')
-    .setColor(0x5865f2)
-    .addFields(
-      { name: 'Team', value: team, inline: true },
-      { name: 'Player', value: player, inline: true },
-      { name: 'OVR', value: ovr, inline: true },
-      { name: 'Years', value: years, inline: true },
-      { name: 'Salary / Yr', value: salary, inline: true },
-      { name: 'Submitted By', value: `<@${interaction.user.id}>`, inline: false },
-      { name: 'Status', value: 'Pending staff review', inline: false },
-    )
-    .setFooter({ text: `Offer ID: ${entry.id}` })
-    .setTimestamp(new Date());
-
-  const approveBtn = new ButtonBuilder()
-    .setCustomId(`freeagency_approve_${entry.id}`)
-    .setLabel('Approve')
-    .setStyle(ButtonStyle.Success);
-  const denyBtn = new ButtonBuilder()
-    .setCustomId(`freeagency_deny_${entry.id}`)
-    .setLabel('Deny')
-    .setStyle(ButtonStyle.Danger);
-  const row = new ActionRowBuilder().addComponents(approveBtn, denyBtn);
-
-  await interaction.channel.send({
-    content: staffTags || 'Staff review needed',
-    embeds: [embed],
+  // Post to FA channel (same channel)
+  const offerBtn = new ButtonBuilder()
+    .setCustomId(`freeagency_offer_${entry.id}`)
+    .setLabel('Submit Offer')
+    .setStyle(ButtonStyle.Primary);
+  const row = new ActionRowBuilder().addComponents(offerBtn);
+  const faMessage = await interaction.channel.send({
+    content: `<@&${GHOST_PARADISE_ROLE_ID}> Free agent available`,
+    embeds: [buildFAEmbed(entry)],
     components: [row],
   });
 
-  await interaction.editReply({ content: 'Free agency offer submitted for staff review.' });
+  entry.faMessageId = faMessage.id;
+  entry.faChannelId = faMessage.channelId;
+  writeEntries(entries);
+
+  await interaction.editReply({ content: `Free agent posted: ${player}` });
 }
 
-export async function execute_review(interaction) {
-  const isApprove = interaction.customId.startsWith('freeagency_approve_');
-  const entryId = interaction.customId.replace('freeagency_approve_', '').replace('freeagency_deny_', '');
+// Coach offer modal submit
+export async function execute_modal_offer(interaction) {
+  const entryId = interaction.customId.replace(customId_modal_offer_prefix, '');
+  const note = interaction.fields.getTextInputValue('note') || '';
+  await interaction.deferReply({ flags: 64 });
 
-  let allowedRoleIds = [];
+  const entries = readEntries();
+  const entry = entries.find(e => e.id === entryId);
+  if (!entry || entry.status === 'signed') {
+    await interaction.editReply({ content: 'This free agent is no longer accepting offers.' });
+    return;
+  }
+
+  const team = getTeamFromMemberRoles(interaction.member);
+  if (!team) {
+    await interaction.editReply({ content: 'Could not detect your team from roles. Contact staff.' });
+    return;
+  }
+
+  // upsert offer by team
+  entry.offers = entry.offers || [];
+  const existingIdx = entry.offers.findIndex(o => o.team === team);
+  const offer = {
+    team,
+    coachId: interaction.user.id,
+    note,
+    submittedAt: new Date().toISOString(),
+  };
+  if (existingIdx !== -1) entry.offers[existingIdx] = offer;
+  else entry.offers.push(offer);
+  writeEntries(entries);
+
+  await interaction.editReply({ content: 'Offer submitted. Staff will review.' });
+
+  await sendOrUpdateStaffMessage(interaction.client, entry);
+}
+
+async function sendOrUpdateStaffMessage(client, entry) {
   try {
-    const staffMap = JSON.parse(fs.readFileSync(STAFF_MAP_PATH, 'utf8'));
-    allowedRoleIds = STAFF_ROLES.map(r => staffMap[r]).filter(Boolean);
-  } catch (err) {
-    console.error('[freeagency] Failed to read staffRoleMap.main.json:', err);
-  }
-  const memberRoles = interaction.member?.roles?.cache;
-  const isStaff = allowedRoleIds.length ? allowedRoleIds.some(rid => memberRoles?.has(rid)) : true;
-  if (!isStaff) {
-    await interaction.reply({ content: 'Only staff may approve or deny free agency offers.', ephemeral: true });
-    return;
-  }
+    const staffChannel = await client.channels.fetch(STAFF_OFFER_CHANNEL_ID).catch(() => null);
+    if (!staffChannel || !staffChannel.isTextBased()) return;
 
-  const entries = readStore();
-  const idx = entries.findIndex(e => e.id === entryId);
-  if (idx === -1) {
-    await interaction.reply({ content: 'Offer not found or already processed.', ephemeral: true });
-    return;
-  }
-  entries[idx].status = isApprove ? 'approved' : 'denied';
-  entries[idx].reviewedBy = interaction.user.id;
-  entries[idx].reviewedAt = new Date().toISOString();
-  writeStore(entries);
+    const buttons = (entry.offers || []).map(o =>
+      new ButtonBuilder()
+        .setCustomId(`freeagency_staff_pick_${entry.id}_${o.team.replace(/ /g, '_')}`)
+        .setLabel(o.team)
+        .setStyle(ButtonStyle.Success)
+    );
+    const rows = buttons.length ? chunkButtons(buttons) : [];
+    const embed = buildStaffEmbed(entry);
 
-  const message = interaction.message;
-  const embed = message.embeds?.[0];
-  if (embed) {
-    const baseFields = Array.isArray(embed.fields) ? embed.fields : [];
-    const updated = EmbedBuilder.from(embed)
-      .setColor(isApprove ? 0x57f287 : 0xed4245)
-      .setFields(
-        ...baseFields.filter(f => f.name !== 'Status' && f.name !== 'Reviewed By'),
-        { name: 'Status', value: isApprove ? '✅ Approved' : '❌ Denied', inline: false },
-        { name: 'Reviewed By', value: `<@${interaction.user.id}>`, inline: false },
-      );
-    await interaction.update({ embeds: [updated], components: [] });
-  } else {
-    await interaction.update({ content: isApprove ? 'Approved.' : 'Denied.', components: [] });
-  }
-
-  // Apply roster changes on approval
-  if (isApprove) {
-    try {
-      const entry = entries[idx];
-      const rosterData = readRoster(entry.team);
-      if (!rosterData) {
-        await interaction.followUp({ content: `Approved, but roster file not found for ${entry.team}.`, flags: 64 });
-      } else {
-        const { rosterPath, roster } = rosterData;
-        const contractYears = parseInt(entry.years, 10) || entry.years;
-        const salaryPerYear = entry.salary;
-        upsertPlayer(roster, entry.player, {
-          ovr: entry.ovr,
-          contractYears,
-          salaryPerYear,
-          lastSigned: 'free agency',
-          lastUpdatedBy: interaction.user.id,
-          lastUpdatedAt: new Date().toISOString(),
-        });
-        removePlayerFromOtherRosters(entry.player, rosterPath);
-        saveRoster(rosterPath, roster);
-        await interaction.followUp({ content: `Roster updated for ${entry.team}: ${entry.player} signed.`, flags: 64 });
+    if (entry.staffMessageId) {
+      try {
+        const msg = await staffChannel.messages.fetch(entry.staffMessageId);
+        await msg.edit({ embeds: [embed], components: rows });
+        return;
+      } catch {
+        // fallthrough to send new
       }
-      const log = readLog();
-      log.push({
-        id: entry.id,
-        team: entry.team,
-        player: entry.player,
-        ovr: entry.ovr,
-        years: entry.years,
-        salary: entry.salary,
-        reviewer: interaction.user.id,
-        timestamp: new Date().toISOString(),
-        action: 'approved',
-      });
-      writeLog(log);
-    } catch (err) {
-      console.error('[freeagency] Failed to update roster/log:', err);
-      try { await interaction.followUp({ content: 'Approved, but roster/log update failed. Check logs.', flags: 64 }); } catch {}
     }
+    const msg = await staffChannel.send({
+      content: getStaffRoleMentions() || 'Staff review needed',
+      embeds: [embed],
+      components: rows,
+    });
+    entry.staffMessageId = msg.id;
+    const entries = readEntries();
+    const idx = entries.findIndex(e => e.id === entry.id);
+    if (idx !== -1) {
+      entries[idx] = entry;
+      writeEntries(entries);
+    }
+  } catch (err) {
+    console.error('[freeagency] Failed to send/update staff message:', err);
+  }
+}
+
+async function handleStaffPick(interaction) {
+  const parts = interaction.customId.split('_');
+  const entryId = parts[3];
+  const teamEncoded = parts.slice(4).join('_');
+  const team = teamEncoded.replace(/_/g, ' ');
+  await interaction.deferReply({ flags: 64 });
+
+  const entries = readEntries();
+  const entry = entries.find(e => e.id === entryId);
+  if (!entry) {
+    await interaction.editReply({ content: 'Free agent entry not found.' });
+    return;
+  }
+  if (entry.status === 'signed') {
+    await interaction.editReply({ content: `Already signed by ${entry.signedTeam}.` });
+    return;
+  }
+  const offer = (entry.offers || []).find(o => o.team === team);
+  if (!offer) {
+    await interaction.editReply({ content: 'Offer not found for that team.' });
+    return;
+  }
+
+  // Move player to team
+  const rosterData = readRoster(team);
+  if (!rosterData) {
+    await interaction.editReply({ content: `Roster not found for ${team}.` });
+    return;
+  }
+  const { rosterPath, roster } = rosterData;
+  const found = findPlayerDataAcrossRosters(entry.player);
+  const payload = {
+    ...(found?.player || {}),
+    name: found?.player?.name || entry.player,
+    lastSigned: 'free agency',
+    lastUpdatedBy: interaction.user.id,
+    lastUpdatedAt: new Date().toISOString(),
+  };
+  upsertPlayer(roster, payload.name, payload);
+  removePlayerFromOtherRostersFuzzy(payload.name, rosterPath);
+  saveRoster(rosterPath, roster);
+
+  entry.status = 'signed';
+  entry.signedTeam = team;
+  writeEntries(entries);
+
+  await interaction.editReply({ content: `Signed ${entry.player} to ${team}.` });
+
+  // Update staff message
+  await sendOrUpdateStaffMessage(interaction.client, entry);
+
+  // Update FA message to show signed and disable button
+  try {
+    if (entry.faChannelId && entry.faMessageId) {
+      const faChannel = await interaction.client.channels.fetch(entry.faChannelId).catch(() => null);
+      if (faChannel && faChannel.isTextBased()) {
+        const msg = await faChannel.messages.fetch(entry.faMessageId).catch(() => null);
+        if (msg) {
+          const embed = buildFAEmbed(entry, `Signed by ${team}`);
+          await msg.edit({
+            embeds: [embed],
+            components: [],
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[freeagency] Failed to update FA message:', err);
+  }
+
+  // Announce signing in announce channel tagging coach role
+  try {
+    const coachMap = readCoachRoleMap();
+    const roleId = coachMap[team];
+    const announceChannel = await interaction.client.channels.fetch(ANNOUNCE_CHANNEL_ID).catch(() => null);
+    if (announceChannel && announceChannel.isTextBased()) {
+      const noteText = offer.note ? `Offer: ${offer.note}` : '';
+      const embed = new EmbedBuilder()
+        .setTitle(`Free Agency Signing: ${entry.player}`)
+        .setColor(0x57f287)
+        .addFields(
+          { name: 'Team', value: team, inline: true },
+          { name: 'Position', value: entry.position || '-', inline: true },
+          { name: 'OVR', value: entry.ovr != null ? String(entry.ovr) : '-', inline: true },
+          { name: 'Age', value: entry.age != null ? String(entry.age) : '-', inline: true },
+        )
+        .setFooter({ text: `FA ID: ${entry.id}` });
+      if (entry.thumbnail) embed.setThumbnail(entry.thumbnail);
+      await announceChannel.send({
+        content: `${roleId ? `<@&${roleId}>` : ''} <@&${GHOST_PARADISE_ROLE_ID}> ${entry.player} signed with ${team} via free agency. ${noteText}`.trim(),
+        embeds: [embed],
+      });
+    }
+  } catch (err) {
+    console.error('[freeagency] Failed to announce signing:', err);
   }
 }
 
 export default {
   customId,
   execute,
-  customId_modal_freeagency,
-  execute_modal_freeagency,
-  execute_review,
 };

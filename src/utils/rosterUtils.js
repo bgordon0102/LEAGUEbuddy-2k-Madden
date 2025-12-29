@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { TEAM_ALIASES } from './config.js';
 
 const ROSTER_DIR = path.join(process.cwd(), 'data', 'teams_rosters');
 
@@ -12,29 +13,19 @@ export function normalizeName(str = '') {
 }
 
 export function readRoster(teamName) {
+  // If we know the canonical file from config, use it directly
+  const canonicalFile = TEAM_ALIASES[normalizeName(teamName)] || TEAM_ALIASES[teamName?.toLowerCase?.()] || null;
+  const fromConfigFile = canonicalFile || null;
+
   const fileName = teamToFile(teamName);
   const rosterPath = path.join(ROSTER_DIR, fileName);
-  if (!fs.existsSync(rosterPath)) {
+  const configPath = fromConfigFile ? path.join(ROSTER_DIR, fromConfigFile) : null;
+  const primaryPath = configPath && fs.existsSync(configPath) ? configPath : rosterPath;
+
+  if (!fs.existsSync(primaryPath)) {
     // Try fuzzy/alias mapping for common abbreviations
-    const aliasMap = {
-      nuggets: 'denver_nuggets.json',
-      den: 'denver_nuggets.json',
-      denver: 'denver_nuggets.json',
-      lakers: 'los_angeles_lakers.json',
-      lal: 'los_angeles_lakers.json',
-      clippers: 'los_angeles_clippers.json',
-      lac: 'los_angeles_clippers.json',
-      mavs: 'dallas_mavericks.json',
-      dallas: 'dallas_mavericks.json',
-      knicks: 'new_york_knicks.json',
-      nyk: 'new_york_knicks.json',
-      nets: 'brooklyn_nets.json',
-      bkn: 'brooklyn_nets.json',
-      spurs: 'san_antonio_spurs.json',
-      sas: 'san_antonio_spurs.json',
-    };
     const aliasKey = normalizeName(teamName).replace(/_/g, '');
-    const aliasFile = aliasMap[aliasKey];
+    const aliasFile = TEAM_ALIASES[aliasKey];
     if (aliasFile) {
       const aliasPath = path.join(ROSTER_DIR, aliasFile);
       if (fs.existsSync(aliasPath)) {
@@ -51,11 +42,32 @@ export function readRoster(teamName) {
         }
       }
     }
+    // Fallback: scan roster files for best match by normalized name
+    try {
+      const files = fs.readdirSync(ROSTER_DIR).filter(f => f.endsWith('.json'));
+      const normalizedKey = normalizeName(teamName);
+      for (const file of files) {
+        const base = file.replace('.json', '');
+        const normBase = normalizeName(base);
+        if (normBase === normalizedKey || normBase.includes(normalizedKey) || normalizedKey.includes(normBase)) {
+          const altPath = path.join(ROSTER_DIR, file);
+          const data = JSON.parse(fs.readFileSync(altPath, 'utf8'));
+          const roster = Array.isArray(data)
+            ? { players: data, picks: [] }
+            : { players: data.players || [], picks: data.picks || [] };
+          if (!Array.isArray(roster.players)) roster.players = [];
+          if (!Array.isArray(roster.picks)) roster.picks = [];
+          return { rosterPath: altPath, roster };
+        }
+      }
+    } catch {
+      return null;
+    }
     return null;
   }
   let data;
   try {
-    data = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
+    data = JSON.parse(fs.readFileSync(primaryPath, 'utf8'));
   } catch {
     return null;
   }
@@ -64,7 +76,7 @@ export function readRoster(teamName) {
     : { players: data.players || [], picks: data.picks || [] };
   if (!Array.isArray(roster.players)) roster.players = [];
   if (!Array.isArray(roster.picks)) roster.picks = [];
-  return { rosterPath, roster };
+  return { rosterPath: primaryPath, roster };
 }
 
 export function saveRoster(rosterPath, roster) {
@@ -98,6 +110,35 @@ export function removePlayerFromOtherRosters(playerName, targetPath) {
       : { players: data.players || [], picks: data.picks || [] };
     const before = roster.players.length;
     roster.players = roster.players.filter(p => normalizeName(p.name) !== norm);
+    if (roster.players.length !== before) {
+      saveRoster(full, roster);
+      removed.push(full);
+    }
+  }
+  return removed;
+}
+
+export function removePlayerFromOtherRostersFuzzy(playerName, targetPath) {
+  const removed = [];
+  const norm = normalizeName(playerName);
+  const files = fs.readdirSync(ROSTER_DIR).filter(f => f.endsWith('.json'));
+  for (const file of files) {
+    const full = path.join(ROSTER_DIR, file);
+    if (path.resolve(full) === path.resolve(targetPath)) continue;
+    let data;
+    try {
+      data = JSON.parse(fs.readFileSync(full, 'utf8'));
+    } catch {
+      continue;
+    }
+    const roster = Array.isArray(data)
+      ? { players: data, picks: [] }
+      : { players: data.players || [], picks: data.picks || [] };
+    const before = roster.players.length;
+    roster.players = roster.players.filter(p => {
+      const n = normalizeName(p.name);
+      return !(n === norm || n.includes(norm) || norm.includes(n));
+    });
     if (roster.players.length !== before) {
       saveRoster(full, roster);
       removed.push(full);

@@ -158,3 +158,5 @@ export async function autocomplete(interaction) {
         console.error('Autocomplete error in /assignrole:', err?.message || err);
     }
 }
+
+export default { data, execute, autocomplete };

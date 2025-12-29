@@ -2,10 +2,20 @@
 import { ModalBuilder, ActionRowBuilder, TextInputBuilder, TextInputStyle, StringSelectMenuBuilder } from "discord.js";
 import fs from "fs";
 import path from "path";
+import { canProgression, getSeasonState } from "../utils/seasonUtils.js";
 
 export const customId = "submit_player_progression";
 
 export async function execute(interaction) {
+    if (!canProgression()) {
+        const state = getSeasonState();
+        const cutoffWeek = (state.playoffStart ?? 30) - 1;
+        await interaction.reply({
+            content: `Progression is only available during the regular season (weeks 1-${cutoffWeek}). Current phase: ${state.phase}.`,
+            ephemeral: true
+        });
+        return;
+    }
     // Auto-detect coach's team by role
     const coachRoleMap = JSON.parse(fs.readFileSync("data/coachRoleMap.json", "utf8"));
     const member = interaction.member;
@@ -29,8 +39,12 @@ export async function execute(interaction) {
     }
     const roster = JSON.parse(fs.readFileSync(rosterPath, "utf8"));
     const players = Array.isArray(roster) ? roster : roster.players || [];
-    // Build select menu options for players
-    const playerOptions = players.map(p => ({ label: p.name, value: p.name })).slice(0, 25);
+    // Sort by OVR desc, then name for stable, up to 25
+    const playerOptions = players
+        .slice()
+        .sort((a, b) => (Number(b.ovr) || 0) - (Number(a.ovr) || 0) || (a.name || '').localeCompare(b.name || ''))
+        .map(p => ({ label: p.name, value: p.name }))
+        .slice(0, 25);
     const skillSets = [
         { label: 'Driving', value: 'Driving', description: 'Layup, Dunk, Speed with Ball' },
         { label: 'Shooting', value: 'Shooting', description: 'Mid, 3pt, Free Throw' },

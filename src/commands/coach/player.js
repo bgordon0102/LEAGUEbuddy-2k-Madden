@@ -21,8 +21,15 @@ function loadAllPlayers() {
     let players = [];
     for (const file of files) {
         try {
-            const arr = JSON.parse(fs.readFileSync(path.join(rostersDir, file), "utf8"));
-            if (Array.isArray(arr)) players.push(...arr);
+            const raw = JSON.parse(fs.readFileSync(path.join(rostersDir, file), "utf8"));
+            const teamNameRaw = file.replace('.json', '').replace(/_/g, ' ');
+            const teamName = teamNameRaw.split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+            if (Array.isArray(raw)) {
+                players.push(...raw.map(p => ({ ...p, team: p.team || teamName })));
+            } else if (raw && typeof raw === 'object') {
+                const arr = Array.isArray(raw.players) ? raw.players : [];
+                players.push(...arr.map(p => ({ ...p, team: p.team || teamName })));
+            }
         } catch { }
     }
     return players;
@@ -61,8 +68,8 @@ async function execute(interaction) {
             await interaction.editReply({ content: `Player not found: ${playerName}` });
             return;
         }
-        // Calculate player age as of Oct 20 of current season year
-        let ageStr = "-";
+        // Calculate player age as of Oct 20 of current season year; fallback to stored age field
+        let ageStr = player.age != null ? String(player.age) : "-";
         try {
             const seasonPath = path.join(process.cwd(), "data/season.json");
             let seasonNo = 1;
@@ -88,21 +95,23 @@ async function execute(interaction) {
             ageStr = "-";
         }
         // Build embed with all info
-        const embed = new EmbedBuilder()
-            .setTitle(player.name)
-            .setThumbnail(player.imgUrl || null)
-            .addFields(
-                { name: "Position", value: player.position || "-", inline: true },
-                { name: "Overall", value: player.ovr ? String(player.ovr) : "-", inline: true },
-                { name: "Height", value: player.height || "-", inline: true },
-                { name: "Weight", value: player.weight || "-", inline: true },
-                { name: "Wingspan", value: player.wingspan || "-", inline: true },
-                { name: "Archetype", value: player.archetype || "-", inline: true },
-                { name: "Age", value: ageStr, inline: true },
-                { name: "Salary", value: player.salary || "-", inline: true },
-                { name: "Prior to NBA", value: player.prior_to_nba || "-", inline: true },
-                { name: "Nationality", value: player.nationality || "-", inline: true }
-            );
+        const pos = player.position || player.position_1 || player.position1 || "-";
+        const thumb = player.imgUrl || player.imgURL;
+        const embed = new EmbedBuilder().setTitle(String(player.name));
+        if (thumb) embed.setThumbnail(String(thumb));
+        embed.addFields(
+            { name: "Position", value: String(pos || "-"), inline: true },
+            { name: "Overall", value: player.ovr != null ? String(player.ovr) : "-", inline: true },
+            { name: "Team", value: player.team ? String(player.team) : "-", inline: true },
+            { name: "Height", value: player.height != null ? String(player.height) : "-", inline: true },
+            { name: "Weight", value: player.weight != null ? String(player.weight) : "-", inline: true },
+            { name: "Wingspan", value: player.wingspan != null ? String(player.wingspan) : "-", inline: true },
+            { name: "Archetype", value: player.archetype != null ? String(player.archetype) : "-", inline: true },
+            { name: "Age", value: ageStr, inline: true },
+            { name: "Salary", value: player.salary != null ? String(player.salary) : "-", inline: true },
+            { name: "Prior to NBA", value: player.prior_to_nba != null ? String(player.prior_to_nba) : "-", inline: true },
+            { name: "Nationality", value: player.nationality != null ? String(player.nationality) : "-", inline: true }
+        );
         await interaction.editReply({ embeds: [embed] });
     } catch (err) {
         console.error('[player execute] Error:', err);

@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
+import { getSeasonState } from '../../utils/seasonUtils.js';
 
 export const data = new SlashCommandBuilder()
     .setName('scout')
@@ -20,19 +21,30 @@ export async function execute(interaction) {
         return;
     }
     try {
-        // Load current week
-        const seasonPath = path.join(process.cwd(), 'data/season.json');
-        const seasonData = JSON.parse(fs.readFileSync(seasonPath, 'utf8'));
-        const currentWeek = seasonData.currentWeek ?? 0;
-        if (currentWeek < 1) {
+        const seasonState = getSeasonState();
+        if (seasonState.scoutingClosed) {
+            await interaction.editReply({ content: 'Scouting is closed after the draft merge.' });
+            return;
+        }
+        if (seasonState.phase === 'playoffs') {
+            await interaction.editReply({ content: 'Scouting is locked during playoffs.' });
+            return;
+        }
+        const currentWeek = seasonState.currentWeek ?? 0;
+        if (seasonState.phase === 'regular' && currentWeek < 1) {
             const msg = 'Big board and scouting features unlock in Week 1.';
-            if (deferred) await interaction.editReply({ content: msg });
-            else await interaction.reply({ content: msg, ephemeral: true });
+            await interaction.editReply({ content: msg });
             return;
         }
 
-        // Use only the single big board file for all weeks (flat structure)
-        const boardFilePath = path.join(process.cwd(), 'draft classes', `2k26_CUS01 - Big Board.json`);
+        // Resolve the current season's big board file
+        const seasonNo = seasonState.seasonNo || 1;
+        const classString = `CUS${seasonNo.toString().padStart(2, '0')}`;
+        const boardDir = path.join(process.cwd(), 'bot', 'draft classes', 'big boards');
+        const boardFile = fs.existsSync(boardDir)
+            ? fs.readdirSync(boardDir).find(f => f.includes(classString) && f.includes('Big Board.json'))
+            : null;
+        const boardFilePath = boardFile ? path.join(boardDir, boardFile) : null;
         if (!fs.existsSync(boardFilePath)) {
             if (deferred) await interaction.editReply({ content: 'Big board file not found.' });
             else await interaction.reply({ content: 'Big board file not found.', ephemeral: true });
@@ -48,17 +60,18 @@ export async function execute(interaction) {
             scoutData[userId] = { playersScouted: {}, weeklyPoints: {} };
         }
         const userData = scoutData[userId];
-        if (!userData.weeklyPoints[`week_${currentWeek}`]) {
-            userData.weeklyPoints[`week_${currentWeek}`] = 40;
+        const pointsKey = seasonState.phase === 'offseason' ? 'offseason' : `week_${currentWeek}`;
+        const defaultPoints = seasonState.phase === 'offseason' ? 100 : 40;
+        if (!userData.weeklyPoints[pointsKey]) {
+            userData.weeklyPoints[pointsKey] = defaultPoints;
         }
-        if (userData.weeklyPoints[`week_${currentWeek}`] <= 0) {
-            if (deferred) await interaction.editReply({ content: 'You have no scouting points left this week.' });
+        if (userData.weeklyPoints[pointsKey] <= 0) {
+            await interaction.editReply({ content: 'You have no scouting points left.' });
             return;
         }
 
-        // Create select menus grouped by 15, just like prospectboard
-        // Always use 2 select menus for consistency (or adjust as needed)
-        let numMenus = 4;
+        // Create select menus grouped by 15
+        const numMenus = Math.ceil(allPlayers.length / 15);
 
         const components = [];
         for (let i = 0; i < numMenus; i++) {
@@ -85,7 +98,7 @@ export async function execute(interaction) {
             .setTitle('Big Board')
             .setColor(0x1e90ff)
             .setDescription(allPlayers.map((p, idx) => `${idx + 1}: ${p.position_1} ${p.name} - ${p.team}`).join('\n'))
-            .setFooter({ text: `You have ${userData.weeklyPoints[`week_${currentWeek}`]} scouting points left this week.` })
+            .setFooter({ text: `You have ${userData.weeklyPoints[pointsKey]} scouting points left this ${seasonState.phase === 'offseason' ? 'offseason' : 'week'}.` })
             .setThumbnail('https://cdn.discordapp.com/icons/1153432333259530240/leaguebuddy_logo.png');
 
         if (deferred) await interaction.editReply({ embeds: [embed], components });
@@ -110,17 +123,30 @@ export async function handleScoutSelect(interaction, menuIndex) {
         return;
     }
     const userId = interaction.user.id;
-    const seasonPath = path.join(process.cwd(), 'data/season.json');
-    const seasonData = JSON.parse(fs.readFileSync(seasonPath, 'utf8'));
-    const currentWeek = seasonData.currentWeek ?? 0;
-    if (currentWeek < 1) {
+    const seasonState = getSeasonState();
+    if (seasonState.scoutingClosed) {
+        await interaction.editReply({ content: 'Scouting is closed after the draft merge.' });
+        return;
+    }
+    if (seasonState.phase === 'playoffs') {
+        await interaction.editReply({ content: 'Scouting is locked during playoffs.' });
+        return;
+    }
+    const currentWeek = seasonState.currentWeek ?? 0;
+    if (seasonState.phase === 'regular' && currentWeek < 1) {
         await interaction.editReply({ content: 'Scouting features unlock in Week 1. Only the recruit board is available during preseason.' });
         return;
     }
-    // Always use the single big board file (flat structure)
-    const boardFilePath = path.join(process.cwd(), 'draft classes', `2k26_CUS01 - Big Board.json`);
-    if (!fs.existsSync(boardFilePath)) {
-        await interaction.editReply({ content: `Board file not found at resolved path: ${boardFilePath}` });
+    // Resolve the current season's big board file
+    const seasonNo = seasonState.seasonNo || 1;
+    const classString = `CUS${seasonNo.toString().padStart(2, '0')}`;
+    const boardDir = path.join(process.cwd(), 'bot', 'draft classes', 'big boards');
+    const boardFile = fs.existsSync(boardDir)
+        ? fs.readdirSync(boardDir).find(f => f.includes(classString) && f.includes('Big Board.json'))
+        : null;
+    const boardFilePath = boardFile ? path.join(boardDir, boardFile) : null;
+    if (!boardFilePath || !fs.existsSync(boardFilePath)) {
+        await interaction.editReply({ content: `Board file not found for season ${seasonNo}.` });
         return;
     }
     const bigBoardData = JSON.parse(fs.readFileSync(boardFilePath, 'utf8'));
@@ -159,10 +185,12 @@ export async function handleScoutSelect(interaction, menuIndex) {
     }
     const userData = scoutData[userId];
     // Only set to 40 if not already set for this week
-    if (userData.weeklyPoints[`week_${currentWeek}`] === undefined) {
-        userData.weeklyPoints[`week_${currentWeek}`] = 40;
+    const pointsKey = seasonState.phase === 'offseason' ? 'offseason' : `week_${currentWeek}`;
+    const defaultPoints = seasonState.phase === 'offseason' ? 100 : 40;
+    if (userData.weeklyPoints[pointsKey] === undefined) {
+        userData.weeklyPoints[pointsKey] = defaultPoints;
     }
-    let pointsLeft = userData.weeklyPoints[`week_${currentWeek}`];
+    let pointsLeft = userData.weeklyPoints[pointsKey];
     if (pointsLeft <= 0) {
         await safeReplyOrEdit({ content: 'You have no scouting points left this week.', flags: 64 });
         return;
@@ -182,7 +210,7 @@ export async function handleScoutSelect(interaction, menuIndex) {
         pointsUsed = 10;
     }
     userData.playersScouted[playerName] = unlocked;
-    userData.weeklyPoints[`week_${currentWeek}`] = pointsLeft;
+    userData.weeklyPoints[pointsKey] = pointsLeft;
     fs.writeFileSync(scoutPath, JSON.stringify(scoutData, null, 2));
     // Always use editReply after deferReply
     // Build small player card showing all unlocked info, or a message if none

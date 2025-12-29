@@ -1,7 +1,7 @@
 // ...existing code...
 
 
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,6 +17,25 @@ const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
 const coachRoleMapPath = path.join(__dirname, '../../../data/coachRoleMap.json');
 const teamsRostersPath = path.join(__dirname, '../../../data/teams_rosters');
 const tradeBlockPath = path.join(__dirname, '../../../data/tradeblock.json');
+const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
+
+function computeSeasonAge(birthdate) {
+    if (!birthdate) return '';
+    let seasonNo = 1;
+    try {
+        const seasonData = JSON.parse(fs.readFileSync(SEASON_PATH, 'utf8'));
+        if (seasonData.seasonNo) seasonNo = Number(seasonData.seasonNo);
+    } catch { /* ignore */ }
+    const seasonYear = 2024 + seasonNo; // season 1 => 2025 start
+    const refDate = new Date(`${seasonYear}-10-20`);
+    const birth = new Date(birthdate);
+    if (Number.isNaN(birth.getTime())) return '';
+    let age = refDate.getFullYear() - birth.getFullYear();
+    if (refDate.getMonth() < birth.getMonth() || (refDate.getMonth() === birth.getMonth() && refDate.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age;
+}
 
 function getCoachTeamFromRoles(interaction) {
     // Find a role ending in 'Coach' and map to team
@@ -246,26 +265,37 @@ export default {
             // Find player info from roster file
             const teamFile = path.join(teamsRostersPath, `${team}.json`);
             let position = '';
+            let ovr = '';
+            let age = '';
             let thumbnailUrl = '';
             if (fs.existsSync(teamFile)) {
                 const roster = JSON.parse(fs.readFileSync(teamFile));
                 const playerObj = roster.players?.find(p => p.name === player);
                 if (playerObj) {
                     position = playerObj.position || '';
-                    thumbnailUrl = playerObj.imgUrl || `https://cdn.nba2k.com/players/${player.replace(/ /g, '_')}.png`;
+                    ovr = playerObj.ovr || '';
+                    age = playerObj.age || computeSeasonAge(playerObj.birthdate);
+                    // support both imgUrl and imgURL casing
+                    thumbnailUrl = playerObj.imgUrl || playerObj.imgURL || `https://cdn.nba2k.com/players/${player.replace(/ /g, '_')}.png`;
                 }
             }
             const embed = {
                 title: `${player} added to the ${team.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} trade block!`,
-                description: `<@&${GHOST_PARADISE_ROLE_ID}>\nPosition: ${position}`,
+                description: `<@&${GHOST_PARADISE_ROLE_ID}>\nPosition: ${position || 'N/A'}${ovr ? `\nOVR: ${ovr}` : ''}${age ? `\nAge: ${age}` : ''}`,
                 color: 0x00AE86,
                 thumbnail: thumbnailUrl ? { url: thumbnailUrl } : undefined
             };
+            const tradeButtonRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`trade_for::${encodeURIComponent(team)}::${encodeURIComponent(player)}`)
+                    .setLabel('Trade For')
+                    .setStyle(ButtonStyle.Primary)
+            );
             let sentMsg;
             if (channel) {
-                sentMsg = await channel.send({ embeds: [embed] });
+                sentMsg = await channel.send({ embeds: [embed], components: [tradeButtonRow] });
             } else {
-                sentMsg = await interaction.channel.send({ embeds: [embed] });
+                sentMsg = await interaction.channel.send({ embeds: [embed], components: [tradeButtonRow] });
             }
             // Store message ID for later removal
             tradeBlockMessages[team] = tradeBlockMessages[team] || {};

@@ -24,22 +24,12 @@ client.once('ready', async () => {
       .setTitle('Re-Signing Window')
       .setDescription(
         [
-          'This is where you can post official re-signings of your players.',
+          'Official re-signings for your own players only. Use the button to submit; do not post offers manually.',
+          'Opens after NBA Finals and lasts 48 hours.',
+          'Include Player – OVR – Terms (years/salary). Example: Julius Randle – 86 OVR – 3 years, $18M per year.',
+          'Staff will approve/deny; unsigned after 48 hours become free agents.',
           '',
-          'Re-Signing Window',
-          'Opens after NBA Finals, lasts 48 hours',
-          '',
-          'Re-sign your own players during priority window before unrestricted signings',
-          '',
-          'Submit your offers here with this format:',
-          'Player Name – OVR – Years – Salary Per Year',
-          '',
-          'Example:',
-          'Julius Randle – 86 OVR – 3 Years – $18M per year',
-          '',
-          'Commissioners will review and confirm offers',
-          '',
-          'Unsigned players after 48 hours enter free agency',
+          'Click the button below to submit your re-signing offer.',
         ].join('\n'),
       )
       .setColor(0x1e90ff);

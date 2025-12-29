@@ -1,0 +1,47 @@
+{
+  "players": [
+    {
+      "name": "Taji Anikulapo-Kuti",
+      "pick": 9,
+      "team": "New Orelans Pelicans",
+      "rank": 6,
+      "position_1": "SF",
+      "position_2": "PF",
+      "height": "6'6\"",
+      "weight": 220,
+      "archetype": "Physical Ball Hawk",
+      "age": 20,
+      "yearsInNBA": 0,
+      "wingspan": "7'3\"",
+      "imgURL": "https://i.postimg.cc/q7vRtTh2/Taji-Anikulapo-Kuti-png.png",
+      "ovr": 74,
+      "prior_to_nba": "Kentucky",
+      "nationality": "Nigeria",
+      "lastUpdatedBy": "merge-draft",
+      "lastUpdatedAt": "2025-12-29T15:40:33.816Z",
+      "position": "SF / PF"
+    },
+    {
+      "name": "Kevin Tyson",
+      "pick": 41,
+      "team": "New Orelans Pelicans",
+      "rank": 46,
+      "position_1": "SF",
+      "position_2": "SG",
+      "height": "6'7\"",
+      "weight": 187,
+      "archetype": "Athletic Blow-By Ace",
+      "age": 21,
+      "yearsInNBA": 0,
+      "wingspan": "6'11\"",
+      "imgURL": "https://i.postimg.cc/hPyKM8jQ/Kevin-Tyson.png",
+      "ovr": 70,
+      "prior_to_nba": "Missouri",
+      "nationality": "United States",
+      "lastUpdatedBy": "merge-draft",
+      "lastUpdatedAt": "2025-12-29T15:40:33.845Z",
+      "position": "SF / SG"
+    }
+  ],
+  "picks": []
+}

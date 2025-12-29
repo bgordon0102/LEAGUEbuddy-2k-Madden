@@ -1,0 +1,88 @@
+{
+  "1455212960048873511": {
+    "team1": "Chicago Bulls",
+    "team2": "Cleveland Cavaliers",
+    "round": "Play In Round 1",
+    "games": 1,
+    "winsNeeded": 1,
+    "scoreA": 0,
+    "scoreB": 1,
+    "decided": [
+      1
+    ]
+  },
+  "1455213189225644212": {
+    "team1": "Charlotte Hornets",
+    "team2": "Detroit Pistons",
+    "round": "First Round",
+    "games": 3,
+    "winsNeeded": 2,
+    "scoreA": 2,
+    "scoreB": 1,
+    "decided": [
+      1,
+      2,
+      3
+    ]
+  },
+  "1455213706232463461": {
+    "team1": "Brooklyn Nets",
+    "team2": "Cleveland Cavaliers",
+    "round": "Conference Semifinals",
+    "games": 5,
+    "winsNeeded": 3,
+    "scoreA": 1,
+    "scoreB": 3,
+    "decided": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "1455215328320688129": {
+    "team1": "Golden State Warriors",
+    "team2": "Cleveland Cavaliers",
+    "round": "NBA Finals",
+    "games": 7,
+    "winsNeeded": 4,
+    "scoreA": 0,
+    "scoreB": 4,
+    "decided": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "1455216087565078559": {
+    "team1": "Oklahoma City Thunder",
+    "team2": "Cleveland Cavaliers",
+    "round": "NBA Finals",
+    "games": 7,
+    "winsNeeded": 4,
+    "scoreA": 0,
+    "scoreB": 4,
+    "decided": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "1455217445898944635": {
+    "team1": "Oklahoma City Thunder",
+    "team2": "Cleveland Cavaliers",
+    "round": "NBA Finals",
+    "games": 7,
+    "winsNeeded": 4,
+    "scoreA": 0,
+    "scoreB": 4,
+    "decided": [
+      1,
+      2,
+      3,
+      4
+    ]
+  }
+}

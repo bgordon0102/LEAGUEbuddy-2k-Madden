@@ -111,11 +111,12 @@ export async function execute(interaction) {
     const approveCount = votesArr.filter(v => v === 'approve').length;
     const denyCount = votesArr.filter(v => v === 'deny').length;
     let finalized = false;
-    // Three-vote threshold
-    if (approveCount >= 3) {
+    // Threshold (testing: 1 vote to finalize; display text still references 3)
+    const THRESHOLD = 1;
+    if (approveCount >= THRESHOLD) {
         entry.trade.status = 'approved';
         finalized = true;
-    } else if (denyCount >= 3) {
+    } else if (denyCount >= THRESHOLD) {
         entry.trade.status = 'denied';
         finalized = true;
     }

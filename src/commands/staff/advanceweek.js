@@ -10,12 +10,21 @@ export const data = new SlashCommandBuilder()
         option.setName('week')
             .setDescription('The week number to advance to (optional)')
             .setRequired(false))
+    .addBooleanOption(option =>
+        option.setName('startplayoffs')
+            .setDescription('Jump to playoffs phase now')
+            .setRequired(false))
+    .addBooleanOption(option =>
+        option.setName('startoffseason')
+            .setDescription('Jump to offseason now')
+            .setRequired(false))
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 const TOTAL_WEEKS = 29;
 // Updated dedicated channel for weekly game threads
 const DEDICATED_CHANNEL_ID = '1428417230000885830';
-
+// Channel for global advance announcements
+const ANNOUNCE_CHANNEL_ID = '1425555647167987792';
 async function sendInitialWelcome(thread) {
     // Extract team names from thread name
     const threadName = thread.name || '';
@@ -70,17 +79,17 @@ async function sendInitialWelcome(thread) {
     if (coachRoleMap[teamA]) mentions.push(`<@&${coachRoleMap[teamA]}>`);
     if (coachRoleMap[teamB]) mentions.push(`<@&${coachRoleMap[teamB]}>`);
     const coachMentions = mentions.join(' & ') || `${teamA} Coach & ${teamB} Coach`;
-    const welcomeMsg = `Welcome ${coachMentions}!
-One coach please set the game info to start your game.`;
-    // Create Set Game Info button
-    const setGameInfoButton = new ButtonBuilder()
-        .setCustomId('set_game_info')
-        .setLabel('Set Game Info')
-        .setStyle(ButtonStyle.Primary);
-    const row = new ActionRowBuilder().addComponents(setGameInfoButton);
+    const deadline = Math.floor((Date.now() + 24 * 60 * 60 * 1000) / 1000); // UNIX seconds
+    const welcomeMsg = `Welcome ${coachMentions}!\nUse this thread to coordinate your matchup. Share availability and confirm tip-off here.\n\nWhen your game is completed, the winning coach should press **Mark Game Complete** below (no score needed) to notify staff.\n\nDeadline: <t:${deadline}:F> (<t:${deadline}:R>)`;
     // Debug logging
     console.log(`[sendInitialWelcome] Attempting to send welcome message to thread: ${threadName}`);
     try {
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`game_complete_${thread.id}`)
+                .setLabel('Mark Game Complete')
+                .setStyle(ButtonStyle.Success)
+        );
         const sentMsg = await thread.send({ content: welcomeMsg, components: [row] });
         console.log(`[sendInitialWelcome] Message sent to thread: ${threadName}, messageId: ${sentMsg.id}`);
         await sentMsg.pin();
@@ -95,6 +104,32 @@ export async function execute(interaction) {
     const dataManager = new DataManager();
     let season = dataManager.readData('season') || { currentWeek: 1, seasonNo: 1 };
     let weekNum = interaction.options.getInteger('week');
+    const startPlayoffs = interaction.options.getBoolean('startplayoffs') === true;
+    const startOffseason = interaction.options.getBoolean('startoffseason') === true;
+
+    if (startPlayoffs) {
+        season.phase = 'playoffs';
+        const playoffStart = season.playoffStartWeek ?? TOTAL_WEEKS + 1;
+        season.currentWeek = playoffStart;
+        const writeSuccess = dataManager.writeData('season', season);
+        if (writeSuccess) {
+            await interaction.editReply({ content: `Season moved to playoffs. currentWeek set to ${season.currentWeek}. Progression is now locked until next season.` });
+        } else {
+            await interaction.editReply({ content: 'Failed to update season data for playoffs.' });
+        }
+        return;
+    }
+    if (startOffseason) {
+        season.phase = 'offseason';
+        season.currentWeek = 0;
+        const writeSuccess = dataManager.writeData('season', season);
+        if (writeSuccess) {
+            await interaction.editReply({ content: 'Season moved to offseason. Progression and trades are locked until the new season starts.' });
+        } else {
+            await interaction.editReply({ content: 'Failed to update season data for offseason.' });
+        }
+        return;
+    }
     if (!weekNum) weekNum = (season.currentWeek || 1) + 1;
     if (weekNum < 1 || weekNum > TOTAL_WEEKS) {
         await interaction.editReply({ content: `Invalid week number. Must be between 1 and ${TOTAL_WEEKS}.` });
@@ -149,18 +184,19 @@ export async function execute(interaction) {
     } else {
         console.error(`[advanceweek] FAILED to write currentWeek=${weekNum} to season.json`);
     }
-    // After advancing week, update standings
-    // Run standingsManager.cjs as a child process to update standings (ESM compatible)
-    const child_process = await import('child_process');
-    child_process.exec('node scripts/standingsManager.cjs', (error, stdout, stderr) => {
-        if (error) {
-            console.error('[advanceweek] Failed to update standings:', error);
-            interaction.editReply({ content: `Week advanced! Current week is now ${season.currentWeek}. Created ${createdThreads.length}/${matchups.length} threads in the dedicated channel. (Standings update failed)` });
-            return;
+    // Send global announcement with countdown to next advance
+    try {
+        const announceChannel = await guild.channels.fetch(ANNOUNCE_CHANNEL_ID);
+        if (announceChannel) {
+            const deadline = Math.floor((Date.now() + 24 * 60 * 60 * 1000) / 1000);
+            await announceChannel.send({
+                content: `<@&1428119680572325929> Week ${weekNum} threads created. Deadline to play/tag staff: <t:${deadline}:F> (<t:${deadline}:R>).`
+            });
         }
-        console.log('[advanceweek] Standings update output:', stdout);
-        interaction.editReply({ content: `Week advanced! Current week is now ${season.currentWeek}. Created ${createdThreads.length}/${matchups.length} threads in the dedicated channel. Standings updated.` });
-    });
+    } catch (err) {
+        console.error('[advanceweek] Failed to send announcement:', err);
+    }
+    await interaction.editReply({ content: `Week advanced! Current week is now ${season.currentWeek}. Created ${createdThreads.length}/${matchups.length} threads in the dedicated channel.` });
 }
 
 export default { data, execute };

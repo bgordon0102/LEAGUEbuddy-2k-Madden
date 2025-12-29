@@ -88,7 +88,11 @@ function clearDataFiles() {
         { file: 'prospectBoards.json', data: {} },
         { file: 'regressionEmbeds.json', data: {} },
         { file: 'regression.json', data: {} },
+        { file: 'freeagency.json', data: [] },
+        { file: 'freeagency_entries.json', data: [] },
+        { file: 'freeagency_offers.json', data: [] },
         { file: 'freeagency_log.json', data: [] },
+        { file: 'resignings.json', data: [] },
         { file: 'resigning_log.json', data: [] },
         { file: 'recruiting.json', data: [] },
     ];
@@ -106,10 +110,12 @@ function clearDataFiles() {
 // NOTE: This function should NEVER respond to any Discord interaction object.
 // NEVER modify or overwrite coachRoleMap.json or any trade-related state in this function.
 // Only read coachRoleMap.json to snapshot for the new season. The trade system relies on the persistent file.
-export async function resetSeasonData(seasonno, guild, caller = 'unknown') {
-    // Restore all rosters and picks from master before reset
-    restoreAllRostersFromMaster();
-    restoreTeamPicksFromMaster();
+export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCurrentRosters = false) {
+    // Restore all rosters and picks from master before reset unless using current as baseline
+    if (!useCurrentRosters) {
+        restoreAllRostersFromMaster();
+        restoreTeamPicksFromMaster();
+    }
     // Clear gameInfo.json for new season
     try {
         fs.writeFileSync(path.join(DATA_DIR, 'gameInfo.json'), '{}');
@@ -227,7 +233,11 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown') {
     const seasonData = {
         currentWeek: 0,
         seasonNo: seasonno,
-        coachRoleMap: coachRoleMap
+        coachRoleMap: coachRoleMap,
+        phase: 'regular',
+        tradeCutoffWeek: 15,
+        playoffStartWeek: 30, // playoffs after 29 games
+        scoutingClosed: false,
     };
     if (!seasonData || typeof seasonData !== 'object' || Object.keys(seasonData).length === 0) {
         console.error('[resetSeasonData] seasonData is invalid, not writing to season.json');
@@ -284,12 +294,8 @@ function generateWeekBasedSchedule(teams, gameno) {
 
 // Discord command builder and execute function
 export const data = new SlashCommandBuilder()
-    .setName('startseason')
-    .setDescription('Start a new NBA 2K season. If data exists, you will be prompted to confirm reset.')
-    .addIntegerOption(option =>
-        option.setName('seasonno')
-            .setDescription('Season number')
-            .setRequired(true))
+    .setName('startleague')
+    .setDescription('Start a brand-new league at Season 1 (confirmation required).')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 import { DataManager } from '../../utils/dataManager.js';
@@ -310,7 +316,7 @@ export async function execute(interaction) {
         return;
     }
     // Always show confirmation button before resetting season
-    const seasonno = interaction.options.getInteger('seasonno');
+    const seasonno = 1;
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(`startseason_confirm_${seasonno}`)

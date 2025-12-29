@@ -78,7 +78,10 @@ export async function execute(interaction) {
 
     // Tag staff roles
     const staffMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/staffRoleMap.main.json'), 'utf8'));
-    const staffTags = [`<@&${staffMap['Schedule Tracker']}>`, `<@&${staffMap['Paradise Commish']}>`].join(' ');
+    const staffTags = [staffMap['Paradise Commish'], staffMap['Paradise Co-Commish']]
+        .filter(Boolean)
+        .map(id => `<@&${id}>`)
+        .join(' ');
 
     // Post to progression channel (ensure correct channel ID is used)
     // Replace PROGRESSION_CHANNEL_ID with the actual progression channel ID string if needed

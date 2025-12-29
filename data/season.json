@@ -32,5 +32,9 @@
     "Toronto Raptors": "1428100754585026767",
     "Utah Jazz": "1428100759936831639",
     "Washington Wizards": "1428100764877848787"
-  }
+  },
+  "phase": "offseason",
+  "tradeCutoffWeek": 15,
+  "playoffStartWeek": 30,
+  "scoutingClosed": false
 }

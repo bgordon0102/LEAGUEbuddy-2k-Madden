@@ -20,10 +20,11 @@ export async function execute(interaction) {
         }
         // Defer immediately to avoid Discord interaction timeout
         await interaction.deferUpdate();
-        let seasonno = null;
+        let seasonno = 1;
         if (interaction.customId && interaction.customId.startsWith('startseason_confirm_')) {
             const parts = interaction.customId.split('_');
-            seasonno = parseInt(parts[2], 10);
+            const parsed = parseInt(parts[2], 10);
+            if (!Number.isNaN(parsed)) seasonno = parsed;
         }
         let success = false;
         let errorMsg = '';

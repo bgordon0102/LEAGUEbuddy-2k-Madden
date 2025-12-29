@@ -5,6 +5,16 @@ import { EmbedBuilder } from 'discord.js';
 
 const REGRESSION_CHANNEL_ID = '1455069209523650590';
 const REGRESSION_LOG_PATH = path.join(process.cwd(), 'data', 'regression.json');
+const REGRESSION_SKILLS = [
+    'driving',
+    'shooting',
+    'post scoring',
+    'playmaking',
+    'interior defense',
+    'perimeter defense',
+    'rebounding',
+    'iq',
+];
 
 function readRegressionLog() {
     try {
@@ -20,6 +30,10 @@ function writeRegressionLog(log) {
     } catch (err) {
         console.error('[regression] Failed to write regression log:', err);
     }
+}
+
+function normalizeSkill(str = '') {
+    return str.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 
@@ -124,29 +138,62 @@ export async function handleOvrModal(interaction) {
     try {
         const teamEntry = regressionLog[teamName] || {};
         const playerEntry = teamEntry[playerName] || { count: 0, logs: [], regressionMessageId: null };
-        playerEntry.count = (playerEntry.count || 0) + 1;
         // Extract extra details from embed if available
-        const skillField = embed.fields?.find(f => f.name.toLowerCase().includes('skill'))?.value || '';
+        const skillFieldRaw = embed.fields?.find(f => f.name.toLowerCase().includes('skill'))?.value || '';
+        const tokens = skillFieldRaw
+            .split(/[,/&+]| and /i)
+            .map(s => s.trim())
+            .filter(Boolean)
+            .map(normalizeSkill);
+        const matched = tokens
+            .map(t => REGRESSION_SKILLS.find(s => normalizeSkill(s) === t))
+            .filter(Boolean);
+        const regIncrement = matched.length > 0 ? matched.length : 0;
+        playerEntry.count = (playerEntry.count || 0) + regIncrement;
+        const skillField = matched.length > 1 ? matched.join(', ') : (skillFieldRaw || 'N/A');
         const attrField = embed.fields?.find(f => f.name.toLowerCase().includes('attribute'))?.value || '';
         playerEntry.logs = playerEntry.logs || [];
         playerEntry.logs.push({
             date: new Date().toISOString(),
             reviewer: interaction.user.id,
             skillSet: skillField,
+            skillSets: matched,
             attributes: attrField,
             newOvr: newOvr || null,
+            regIncrement,
             messageId: message.id,
         });
         teamEntry[playerName] = playerEntry;
         regressionLog[teamName] = teamEntry;
         // Build embed once
+        // Tag coach role for transparency
+        let coachRoleTag = '';
+        try {
+            const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'coachRoleMap.json'), 'utf8'));
+            const roleId = coachMap[teamName];
+            if (roleId) coachRoleTag = `<@&${roleId}>`;
+        } catch {
+            coachRoleTag = '';
+        }
+
+        // Aggregate all skill sets to show cumulative regression sources
+        const allSkillSets = Array.from(
+            new Set(
+                (playerEntry.logs || [])
+                    .flatMap(log => Array.isArray(log.skillSets) ? log.skillSets : (log.skillSet ? [log.skillSet] : []))
+                    .map(s => (s || '').toString().trim())
+                    .filter(Boolean)
+            )
+        );
+
         const regEmbed = new EmbedBuilder()
             .setTitle(`Regression Track • ${teamName}`)
             .setColor(0xED4245)
             .addFields(
-                { name: 'Player', value: playerName, inline: true },
-                { name: 'Regressions', value: `-${playerEntry.count} OVR (1 per upgrade)`, inline: true },
-                { name: 'Skill Set', value: skillField || 'N/A', inline: false },
+                { name: 'Player', value: `${playerName}${coachRoleTag ? ` (${coachRoleTag})` : ''}`, inline: true },
+                { name: 'Regressions', value: `-${playerEntry.count} OVR (this approval: -${regIncrement}${matched.length > 1 ? ` across ${matched.length} skill sets` : ''})`, inline: true },
+                { name: 'Skill Set (this approval)', value: skillField || 'N/A', inline: false },
+                { name: 'All Skill Sets (cumulative)', value: allSkillSets.length ? allSkillSets.join(', ') : 'N/A', inline: false },
                 { name: 'Attribute Upgrades', value: attrField || 'N/A', inline: false },
                 { name: 'Reviewed By', value: `<@${interaction.user.id}>`, inline: false },
             )
@@ -161,6 +208,7 @@ export async function handleOvrModal(interaction) {
                     sentMsg = await existingMsg.edit({ embeds: [regEmbed] });
                 } catch (err) {
                     console.error('[regression] Failed to edit existing regression message, will create new:', err);
+                    playerEntry.regressionMessageId = null;
                 }
             }
             if (!sentMsg) {

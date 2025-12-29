@@ -38,13 +38,7 @@ for (const file of interactionFiles) {
   }
 }
 
-// Listen for image uploads in threads and run OCR only if thread is pending
-import { markThreadPendingScore } from './src/interactions/submit_score.js';
-client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-  // Only process if thread is marked as waiting for score
-  await handleImageOCR(message);
-});
+// OCR and image handling removed for simplified score flow
 
 // Handle interactions (commands and autocomplete)
 client.on('interactionCreate', async interaction => {
@@ -218,4 +212,3 @@ async function handleImageOCR(message) {
     process.exit(1);
   }
 })();
-

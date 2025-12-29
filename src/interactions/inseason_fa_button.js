@@ -1,0 +1,343 @@
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  EmbedBuilder,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  StringSelectMenuBuilder,
+} from 'discord.js';
+import fs from 'fs';
+import path from 'path';
+import { readRoster, saveRoster, upsertPlayer, removePlayerFromOtherRostersFuzzy, normalizeName } from '../utils/rosterUtils.js';
+import { getSeasonState } from '../utils/seasonUtils.js';
+
+const FA_CHANNEL_ID = '1455148525179502602';
+const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
+const ANNOUNCE_CHANNEL_ID = '1455152984089694218'; // offseason announcements channel
+const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json');
+const STAFF_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
+const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
+const STAFF_REVIEW_CHANNEL_ID = '1455151770383814666';
+const PENDING_FILE = path.join(process.cwd(), 'data', 'inseason_fa_pending.json');
+
+function readCoachRoleMap() {
+  try {
+    return JSON.parse(fs.readFileSync(COACH_ROLE_MAP_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function readStaffRoles() {
+  try {
+    return JSON.parse(fs.readFileSync(STAFF_ROLE_MAP_PATH, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function getStaffMention() {
+  const map = readStaffRoles();
+  const ALLOWED = ['Paradise Commish', 'Paradise Co-Commish'];
+  const ids = Array.from(
+    new Set(
+      Object.entries(map || {})
+        .filter(([name]) => ALLOWED.includes(name))
+        .map(([, id]) => id)
+        .filter(Boolean)
+    )
+  );
+  return ids.length ? ids.map(id => `<@&${id}>`).join(' ') : '';
+}
+
+function readPending() {
+  try {
+    return JSON.parse(fs.readFileSync(PENDING_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function writePending(data) {
+  try {
+    fs.writeFileSync(PENDING_FILE, JSON.stringify(data ?? {}, null, 2));
+  } catch (err) {
+    console.error('[inseason_fa] Failed to write pending approvals:', err);
+  }
+}
+
+function getTeamFromMemberRoles(member) {
+  const map = readCoachRoleMap(); // Team -> roleId
+  if (!member?.roles?.cache) return null;
+  const roleToTeam = Object.entries(map).reduce((acc, [team, roleId]) => {
+    if (roleId) acc[roleId] = team;
+    return acc;
+  }, {});
+  for (const [roleId] of member.roles.cache) {
+    if (roleToTeam[roleId]) return roleToTeam[roleId];
+  }
+  return null;
+}
+
+function computeSeasonAge(birthdate) {
+  if (!birthdate) return null;
+  let seasonNo = 1;
+  try {
+    const seasonData = JSON.parse(fs.readFileSync(SEASON_PATH, 'utf8'));
+    if (seasonData.seasonNo) seasonNo = Number(seasonData.seasonNo);
+  } catch {
+    // ignore
+  }
+  const seasonYear = 2024 + seasonNo; // season 1 = 2025
+  const refDate = new Date(`${seasonYear}-10-20`);
+  const birth = new Date(birthdate);
+  if (Number.isNaN(birth.getTime())) return null;
+  let age = refDate.getFullYear() - birth.getFullYear();
+  if (refDate.getMonth() < birth.getMonth() || (refDate.getMonth() === birth.getMonth() && refDate.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+function loadFreeAgents() {
+  const fa = readRoster('free agency');
+  const players = fa?.roster?.players || [];
+  return players.map(p => ({
+    name: p.name,
+    position: p.position || p.position_1 || '',
+    ovr: p.ovr ?? '',
+    age: p.age ?? computeSeasonAge(p.birthdate),
+    img: p.imgUrl || p.imgURL || null,
+  }));
+}
+
+export const customId = /^inseason_fa_(button|select|modal_.+|approve_.+|deny_.+)_?.*/;
+
+export async function execute(interaction) {
+  const state = getSeasonState();
+  if (state.phase === 'offseason' || state.phase === 'playoffs') {
+    await interaction.reply({ content: 'In-season free agency is locked during playoffs/offseason.', ephemeral: true });
+    return;
+  }
+  if (interaction.isModalSubmit() && interaction.customId.startsWith('inseason_fa_modal_')) {
+    await handleModalSubmit(interaction);
+    return;
+  }
+  if (interaction.isButton() && interaction.customId.startsWith('inseason_fa_approve_')) {
+    await handleApproval(interaction, true);
+    return;
+  }
+  if (interaction.isButton() && interaction.customId.startsWith('inseason_fa_deny_')) {
+    await handleApproval(interaction, false);
+    return;
+  }
+
+  if (interaction.customId === 'inseason_fa_button') {
+    const faPlayers = loadFreeAgents();
+    if (!faPlayers.length) {
+      await interaction.reply({ content: 'No free agents available.', ephemeral: true });
+      return;
+    }
+    // Top 25 by OVR (desc), fallback 0
+    const options = faPlayers
+      .sort((a, b) => (parseFloat(b.ovr) || 0) - (parseFloat(a.ovr) || 0) || a.name.localeCompare(b.name))
+      .slice(0, 25)
+      .map(p => ({
+        label: `${p.name}${p.position ? ` (${p.position})` : ''}${p.ovr ? ` OVR ${p.ovr}` : ''}`,
+        value: normalizeName(p.name),
+      }));
+    const menu = new StringSelectMenuBuilder()
+      .setCustomId('inseason_fa_select')
+      .setPlaceholder('Select a free agent')
+      .addOptions(options);
+    const row = new ActionRowBuilder().addComponents(menu);
+    await interaction.reply({
+      content: 'Select a free agent to sign. (List limited to first 25; contact staff if missing.)',
+      components: [row],
+      ephemeral: true,
+    });
+    return;
+  }
+
+  if (interaction.customId === 'inseason_fa_select') {
+    const selected = interaction.values[0];
+    const faPlayers = loadFreeAgents();
+    const player = faPlayers.find(p => normalizeName(p.name) === selected);
+    if (!player) {
+      await interaction.reply({ content: 'Free agent not found. Please retry.', ephemeral: true });
+      return;
+    }
+    const team = getTeamFromMemberRoles(interaction.member);
+    if (!team) {
+      await interaction.reply({ content: 'Could not detect your team from roles. Contact staff.', ephemeral: true });
+      return;
+    }
+    // Launch modal to collect contract details
+    const encoded = Buffer.from(player.name, 'utf8').toString('base64');
+    const modal = new ModalBuilder()
+      .setCustomId(`inseason_fa_modal_${encoded}`)
+      .setTitle(`Sign ${player.name}`)
+      .addComponents(
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('years')
+            .setLabel('Years')
+            .setPlaceholder('e.g., 2')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false),
+        ),
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('salary')
+            .setLabel('Avg Salary (per yr)')
+            .setPlaceholder('e.g., $10M')
+            .setStyle(TextInputStyle.Short)
+            .setRequired(false),
+        ),
+      );
+    await interaction.showModal(modal);
+  }
+}
+
+async function handleModalSubmit(interaction) {
+  const encoded = interaction.customId.replace('inseason_fa_modal_', '');
+  const playerName = Buffer.from(encoded, 'base64').toString('utf8');
+  const team = getTeamFromMemberRoles(interaction.member);
+  if (!team) {
+    await interaction.reply({ content: 'Could not detect your team from roles. Contact staff.', ephemeral: true });
+    return;
+  }
+  const faPlayers = loadFreeAgents();
+  const player = faPlayers.find(p => normalizeName(p.name) === normalizeName(playerName));
+  if (!player) {
+    await interaction.reply({ content: 'Free agent not found. Please retry.', ephemeral: true });
+    return;
+  }
+
+  const years = interaction.fields.getTextInputValue('years') || '';
+  const salary = interaction.fields.getTextInputValue('salary') || '';
+  const requestId = `${Date.now()}`;
+  const pending = readPending();
+  pending[requestId] = {
+    id: requestId,
+    player,
+    team,
+    years,
+    salary,
+    coachId: interaction.user.id,
+    createdAt: new Date().toISOString(),
+  };
+  writePending(pending);
+
+  // Send to staff review channel
+  try {
+    const reviewChannel = await interaction.client.channels.fetch(STAFF_REVIEW_CHANNEL_ID).catch(() => null);
+    if (reviewChannel && reviewChannel.isTextBased()) {
+      const coachMap = readCoachRoleMap();
+      const roleId = coachMap[team];
+      const embed = new EmbedBuilder()
+        .setTitle(`In-Season FA Request: ${player.name}`)
+        .setColor(0xFEE75C)
+        .addFields(
+          { name: 'Team', value: team, inline: true },
+          { name: 'Coach', value: roleId ? `<@&${roleId}>` : `<@${interaction.user.id}>`, inline: true },
+          { name: 'Position', value: player.position || '—', inline: true },
+          { name: 'OVR', value: player.ovr ? String(player.ovr) : '—', inline: true },
+          { name: 'Age', value: player.age ? String(player.age) : '—', inline: true },
+          { name: 'Terms', value: `${years || '—'} years${salary ? ` | ${salary}` : ''}`, inline: false },
+        )
+        .setFooter({ text: `Request ID: ${requestId}` })
+        .setTimestamp(new Date());
+      if (player.img) embed.setThumbnail(player.img);
+      const buttons = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId(`inseason_fa_approve_${requestId}`).setLabel('Approve').setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId(`inseason_fa_deny_${requestId}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
+      );
+      await reviewChannel.send({ content: getStaffMention(), embeds: [embed], components: [buttons] });
+    }
+  } catch (err) {
+    console.error('[inseason_fa] Failed to send staff review:', err);
+  }
+
+  await interaction.reply({ content: `Submitted to staff for approval (ID: ${requestId}).`, ephemeral: true });
+}
+
+async function handleApproval(interaction, approve) {
+  const id = interaction.customId.replace(approve ? 'inseason_fa_approve_' : 'inseason_fa_deny_', '');
+  const pending = readPending();
+  const entry = pending[id];
+  if (!entry) {
+    await interaction.reply({ content: 'Request not found or already processed.', ephemeral: true });
+    return;
+  }
+  // disable buttons
+  try {
+    const disabledRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`noop_${id}`).setLabel('Approve').setStyle(ButtonStyle.Success).setDisabled(true),
+      new ButtonBuilder().setCustomId(`noop2_${id}`).setLabel('Deny').setStyle(ButtonStyle.Danger).setDisabled(true)
+    );
+    await interaction.message.edit({ components: [disabledRow] });
+  } catch {}
+
+  if (!approve) {
+    delete pending[id];
+    writePending(pending);
+    await interaction.reply({ content: `Denied in-season FA request for ${entry.player.name}.`, ephemeral: true });
+    return;
+  }
+
+  const rosterData = readRoster(entry.team);
+  if (!rosterData) {
+    await interaction.reply({ content: `Roster not found for ${entry.team}.`, ephemeral: true });
+    return;
+  }
+  const { rosterPath, roster } = rosterData;
+  upsertPlayer(roster, entry.player.name, {
+    ...entry.player,
+    contractYears: entry.years || undefined,
+    salaryPerYear: entry.salary || undefined,
+    lastSigned: 'in-season free agency',
+    lastUpdatedBy: interaction.user.id,
+    lastUpdatedAt: new Date().toISOString(),
+  });
+  removePlayerFromOtherRostersFuzzy(entry.player.name, rosterPath);
+  saveRoster(rosterPath, roster);
+
+  // Announce (same channel as offseason announcements)
+  try {
+    const announceChannel = await interaction.client.channels.fetch(ANNOUNCE_CHANNEL_ID).catch(() => null);
+    if (announceChannel && announceChannel.isTextBased()) {
+      const coachMap = readCoachRoleMap();
+      const roleId = coachMap[entry.team];
+      const embed = new EmbedBuilder()
+        .setTitle(`In-Season Signing: ${entry.player.name}`)
+        .setColor(0x57f287)
+        .addFields(
+          { name: 'Team', value: entry.team, inline: true },
+          { name: 'Position', value: entry.player.position || '—', inline: true },
+          { name: 'OVR', value: entry.player.ovr ? String(entry.player.ovr) : '—', inline: true },
+          { name: 'Age', value: entry.player.age ? String(entry.player.age) : '—', inline: true },
+          { name: 'Terms', value: `${entry.years || '—'} years${entry.salary ? ` | ${entry.salary}` : ''}`, inline: false },
+        )
+        .setTimestamp(new Date());
+      if (entry.player.img) embed.setThumbnail(entry.player.img);
+      await announceChannel.send({
+        content: `${roleId ? `<@&${roleId}>` : ''} <@&${GHOST_PARADISE_ROLE_ID}> ${entry.player.name} signed with ${entry.team}.`,
+        embeds: [embed],
+      });
+    }
+  } catch (err) {
+    console.error('[inseason_fa] Failed to announce:', err);
+  }
+
+  delete pending[id];
+  writePending(pending);
+  await interaction.reply({ content: `Approved and signed ${entry.player.name} to ${entry.team}.`, ephemeral: true });
+}
+
+export default {
+  customId,
+  execute,
+};

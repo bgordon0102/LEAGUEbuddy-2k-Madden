@@ -24,38 +24,25 @@ client.once('ready', async () => {
       .setTitle('Free Agency System (Tier-Based)')
       .setDescription(
         [
-          'This is where you submit your free agency offers.',
+          'Staff: use the button to add free agents as offer cards. Coaches: click the Submit Offer button on each player card (no manual posts).',
+          'Include: Player – OVR – Years – Salary per year. Example: Julius Randle – 86 OVR – 3 Years – $18M per year.',
+          'During the first 48 hours: no signing players from other league teams, and no signings until all 80+ OVR free agents are signed.',
+          'Re-sign your own players during the priority window before unrestricted signings.',
+          'Tier limits per offseason:',
+          '• Tier 1: 1 × 80–84 OVR FA',
+          '• Tier 2: 1 × 85+ & 1 × 80–84 OVR FA',
+          '• Tier 3: 1 × 85+ & 2 × 80–84 OVR FAs',
+          '• Tier 4: 2 × 85+ & 2 × 80–84 OVR FAs',
+          '• Tier 5: 2 × 85+ & 3 × 80–84 OVR FAs',
           '',
-          'Free Agency System (Tier-Based)',
-          '',
-          'All signings must be posted here with player name, overall rating (OVR), contract length, and salary.',
-          '',
-          'No signing players from other league teams during the first 48 hours',
-          'No signing players until all 80+ overall free agents have been signed',
-          '',
-          'Re-sign your own players during priority window before unrestricted signings',
-          '',
-          'Signing limits by Tier:',
-          '• Tier 1: 1 × 80–84 overall free agent per offseason',
-          '• Tier 2: 1 × 85+ & 1 × 80–84 overall free agent',
-          '• Tier 3: 1 × 85+ & 2 × 80–84 overall free agents',
-          '• Tier 4: 2 × 85+ & 2 × 80–84 overall free agents',
-          '• Tier 5: 2 × 85+ & 3 × 80–84 overall free agents',
-          '',
-          'Submit your offers here with this format:',
-          'Player Name – OVR – Years – Salary Per Year',
-          '',
-          'Example:',
-          'Julius Randle – 86 OVR – 3 Years – $18M per year',
-          '',
-          'Commissioners will enforce rules and investigate tanking or collusion',
+          'Tap the button to submit your offer; staff will review and finalize.',
         ].join('\n'),
       )
       .setColor(0x5865f2);
 
     const button = new ButtonBuilder()
-      .setCustomId('freeagency_submit_button')
-      .setLabel('Submit Free Agency Offer')
+      .setCustomId('freeagency_staff_add_button')
+      .setLabel('Staff: Add Free Agent')
       .setStyle(ButtonStyle.Primary);
 
     const message = await channel.send({
