@@ -132,7 +132,7 @@ export async function execute(interaction) {
   const isRegularOpen = seasonState.phase === 'regular' && seasonState.currentWeek <= cutoff;
   const isOffseasonOpen = seasonState.phase === 'offseason';
   if (!(isRegularOpen || isOffseasonOpen)) {
-    await interaction.reply({ content: `Re-signing is closed after week ${cutoff} and during playoffs. Open in offseason and regular season weeks 1-${cutoff}.`, ephemeral: true });
+    await interaction.reply({ content: `Re-signing is open Weeks 1-${cutoff} and in the offseason. Locked Weeks 16-29 and during playoffs. Current week: ${seasonState.currentWeek}, phase: ${seasonState.phase}.`, ephemeral: true });
     return;
   }
   if (interaction.customId.startsWith('resigning_submit_button')) {

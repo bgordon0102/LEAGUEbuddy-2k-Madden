@@ -27,7 +27,7 @@ export async function execute(interaction) {
             return;
         }
         if (seasonState.phase === 'playoffs') {
-            await interaction.editReply({ content: 'Scouting is locked during playoffs.' });
+            await interaction.editReply({ content: 'Scouting is available Weeks 1-29 and during the offseason until draft merge. It is locked during playoffs.' });
             return;
         }
         const currentWeek = seasonState.currentWeek ?? 0;
@@ -129,7 +129,7 @@ export async function handleScoutSelect(interaction, menuIndex) {
         return;
     }
     if (seasonState.phase === 'playoffs') {
-        await interaction.editReply({ content: 'Scouting is locked during playoffs.' });
+        await interaction.editReply({ content: 'Scouting is available Weeks 1-29 and during the offseason until draft merge. It is locked during playoffs.' });
         return;
     }
     const currentWeek = seasonState.currentWeek ?? 0;

@@ -2,59 +2,9 @@
   "seasonNo": 1,
   "teams": [
     {
-      "id": 9,
-      "name": "Detroit Pistons",
-      "abbreviation": "DET"
-    },
-    {
-      "id": 26,
-      "name": "Sacramento Kings",
-      "abbreviation": "SAC"
-    },
-    {
-      "id": 15,
-      "name": "Memphis Grizzlies",
-      "abbreviation": "MEM"
-    },
-    {
-      "id": 22,
-      "name": "Orlando Magic",
-      "abbreviation": "ORL"
-    },
-    {
-      "id": 6,
-      "name": "Cleveland Cavaliers",
-      "abbreviation": "CLE"
-    },
-    {
-      "id": 16,
-      "name": "Miami Heat",
-      "abbreviation": "MIA"
-    },
-    {
-      "id": 10,
-      "name": "Golden State Warriors",
-      "abbreviation": "GSW"
-    },
-    {
-      "id": 30,
-      "name": "Washington Wizards",
-      "abbreviation": "WAS"
-    },
-    {
-      "id": 11,
-      "name": "Houston Rockets",
-      "abbreviation": "HOU"
-    },
-    {
-      "id": 20,
-      "name": "New York Knicks",
-      "abbreviation": "NYK"
-    },
-    {
-      "id": 27,
-      "name": "San Antonio Spurs",
-      "abbreviation": "SAS"
+      "id": 17,
+      "name": "Milwaukee Bucks",
+      "abbreviation": "MIL"
     },
     {
       "id": 14,
@@ -62,29 +12,9 @@
       "abbreviation": "LAL"
     },
     {
-      "id": 29,
-      "name": "Utah Jazz",
-      "abbreviation": "UTA"
-    },
-    {
-      "id": 17,
-      "name": "Milwaukee Bucks",
-      "abbreviation": "MIL"
-    },
-    {
-      "id": 12,
-      "name": "Indiana Pacers",
-      "abbreviation": "IND"
-    },
-    {
-      "id": 4,
-      "name": "Charlotte Hornets",
-      "abbreviation": "CHA"
-    },
-    {
-      "id": 8,
-      "name": "Denver Nuggets",
-      "abbreviation": "DEN"
+      "id": 23,
+      "name": "Philadelphia 76ers",
+      "abbreviation": "PHI"
     },
     {
       "id": 24,
@@ -92,34 +22,19 @@
       "abbreviation": "PHX"
     },
     {
-      "id": 18,
-      "name": "Minnesota Timberwolves",
-      "abbreviation": "MIN"
+      "id": 9,
+      "name": "Detroit Pistons",
+      "abbreviation": "DET"
     },
     {
-      "id": 1,
-      "name": "Atlanta Hawks",
-      "abbreviation": "ATL"
+      "id": 30,
+      "name": "Washington Wizards",
+      "abbreviation": "WAS"
     },
     {
-      "id": 23,
-      "name": "Philadelphia 76ers",
-      "abbreviation": "PHI"
-    },
-    {
-      "id": 25,
-      "name": "Portland Trail Blazers",
-      "abbreviation": "POR"
-    },
-    {
-      "id": 28,
-      "name": "Toronto Raptors",
-      "abbreviation": "TOR"
-    },
-    {
-      "id": 2,
-      "name": "Boston Celtics",
-      "abbreviation": "BOS"
+      "id": 8,
+      "name": "Denver Nuggets",
+      "abbreviation": "DEN"
     },
     {
       "id": 3,
@@ -127,9 +42,44 @@
       "abbreviation": "BKN"
     },
     {
-      "id": 21,
-      "name": "Oklahoma City Thunder",
-      "abbreviation": "OKC"
+      "id": 25,
+      "name": "Portland Trail Blazers",
+      "abbreviation": "POR"
+    },
+    {
+      "id": 26,
+      "name": "Sacramento Kings",
+      "abbreviation": "SAC"
+    },
+    {
+      "id": 27,
+      "name": "San Antonio Spurs",
+      "abbreviation": "SAS"
+    },
+    {
+      "id": 29,
+      "name": "Utah Jazz",
+      "abbreviation": "UTA"
+    },
+    {
+      "id": 13,
+      "name": "LA Clippers",
+      "abbreviation": "LAC"
+    },
+    {
+      "id": 28,
+      "name": "Toronto Raptors",
+      "abbreviation": "TOR"
+    },
+    {
+      "id": 20,
+      "name": "New York Knicks",
+      "abbreviation": "NYK"
+    },
+    {
+      "id": 16,
+      "name": "Miami Heat",
+      "abbreviation": "MIA"
     },
     {
       "id": 7,
@@ -137,9 +87,19 @@
       "abbreviation": "DAL"
     },
     {
-      "id": 19,
-      "name": "New Orleans Pelicans",
-      "abbreviation": "NOP"
+      "id": 11,
+      "name": "Houston Rockets",
+      "abbreviation": "HOU"
+    },
+    {
+      "id": 10,
+      "name": "Golden State Warriors",
+      "abbreviation": "GSW"
+    },
+    {
+      "id": 12,
+      "name": "Indiana Pacers",
+      "abbreviation": "IND"
     },
     {
       "id": 5,
@@ -147,9 +107,49 @@
       "abbreviation": "CHI"
     },
     {
-      "id": 13,
-      "name": "LA Clippers",
-      "abbreviation": "LAC"
+      "id": 4,
+      "name": "Charlotte Hornets",
+      "abbreviation": "CHA"
+    },
+    {
+      "id": 19,
+      "name": "New Orleans Pelicans",
+      "abbreviation": "NOP"
+    },
+    {
+      "id": 22,
+      "name": "Orlando Magic",
+      "abbreviation": "ORL"
+    },
+    {
+      "id": 15,
+      "name": "Memphis Grizzlies",
+      "abbreviation": "MEM"
+    },
+    {
+      "id": 1,
+      "name": "Atlanta Hawks",
+      "abbreviation": "ATL"
+    },
+    {
+      "id": 21,
+      "name": "Oklahoma City Thunder",
+      "abbreviation": "OKC"
+    },
+    {
+      "id": 6,
+      "name": "Cleveland Cavaliers",
+      "abbreviation": "CLE"
+    },
+    {
+      "id": 18,
+      "name": "Minnesota Timberwolves",
+      "abbreviation": "MIN"
+    },
+    {
+      "id": 2,
+      "name": "Boston Celtics",
+      "abbreviation": "BOS"
     }
   ]
 }

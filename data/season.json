@@ -33,8 +33,9 @@
     "Utah Jazz": "1428100759936831639",
     "Washington Wizards": "1428100764877848787"
   },
-  "phase": "offseason",
+  "phase": "regular",
   "tradeCutoffWeek": 15,
   "playoffStartWeek": 30,
+  "offseasonStartWeek": 31,
   "scoutingClosed": false
 }

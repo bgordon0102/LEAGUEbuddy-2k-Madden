@@ -118,7 +118,7 @@ export const customId = /^inseason_fa_(button|select|modal_.+|approve_.+|deny_.+
 export async function execute(interaction) {
   const state = getSeasonState();
   if (state.phase === 'offseason' || state.phase === 'playoffs') {
-    await interaction.reply({ content: 'In-season free agency is locked during playoffs/offseason.', ephemeral: true });
+    await interaction.reply({ content: 'In-season free agency is available Weeks 1-29. It is locked during playoffs and the offseason.', ephemeral: true });
     return;
   }
   if (interaction.isModalSubmit() && interaction.customId.startsWith('inseason_fa_modal_')) {

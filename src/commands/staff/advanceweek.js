@@ -113,7 +113,7 @@ export async function execute(interaction) {
         season.currentWeek = playoffStart;
         const writeSuccess = dataManager.writeData('season', season);
         if (writeSuccess) {
-            await interaction.editReply({ content: `Season moved to playoffs. currentWeek set to ${season.currentWeek}. Progression is now locked until next season.` });
+            await interaction.editReply({ content: `Season moved to playoffs (currentWeek ${season.currentWeek}). Progression and scouting are locked; trades and re-signing remain locked until offseason.` });
         } else {
             await interaction.editReply({ content: 'Failed to update season data for playoffs.' });
         }
@@ -121,10 +121,11 @@ export async function execute(interaction) {
     }
     if (startOffseason) {
         season.phase = 'offseason';
-        season.currentWeek = 0;
+        // Set to the configured offseason start week (default 31) so week-based gating works
+        season.currentWeek = season.offseasonStartWeek || 31;
         const writeSuccess = dataManager.writeData('season', season);
         if (writeSuccess) {
-            await interaction.editReply({ content: 'Season moved to offseason. Progression and trades are locked until the new season starts.' });
+            await interaction.editReply({ content: 'Season moved to offseason. Trades and re-signing are open; progression and scouting are locked until the new season starts or draft merge completes.' });
         } else {
             await interaction.editReply({ content: 'Failed to update season data for offseason.' });
         }

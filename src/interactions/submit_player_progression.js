@@ -9,9 +9,9 @@ export const customId = "submit_player_progression";
 export async function execute(interaction) {
     if (!canProgression()) {
         const state = getSeasonState();
-        const cutoffWeek = (state.playoffStart ?? 30) - 1;
+        const cutoffWeek = 29;
         await interaction.reply({
-            content: `Progression is only available during the regular season (weeks 1-${cutoffWeek}). Current phase: ${state.phase}.`,
+            content: `Progression is available Weeks 1-29. Locked during playoffs and offseason. Current week: ${state.currentWeek}, phase: ${state.phase}.`,
             ephemeral: true
         });
         return;

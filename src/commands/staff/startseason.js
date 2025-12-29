@@ -237,6 +237,7 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
         phase: 'regular',
         tradeCutoffWeek: 15,
         playoffStartWeek: 30, // playoffs after 29 games
+        offseasonStartWeek: 31, // offseason begins after playoffs conclude
         scoutingClosed: false,
     };
     if (!seasonData || typeof seasonData !== 'object' || Object.keys(seasonData).length === 0) {

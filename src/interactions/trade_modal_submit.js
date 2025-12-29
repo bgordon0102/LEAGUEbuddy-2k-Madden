@@ -67,7 +67,7 @@ export async function execute(interaction) {
     let responded = false;
     if (!canTrade()) {
         const state = getSeasonState();
-        await interaction.reply({ content: `Trades are only available during the regular season through week ${state.tradeCutoff ?? 15}. Current phase: ${state.phase}.`, flags: 64 });
+        await interaction.reply({ content: `Trades are open Weeks 1-15 and in the offseason. Locked Weeks 16-29 and during playoffs. Current week: ${state.currentWeek}, phase: ${state.phase}.`, flags: 64 });
         return;
     }
     // Defer reply immediately to avoid interaction expiry
