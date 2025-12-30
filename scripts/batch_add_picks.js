@@ -21,6 +21,11 @@ const simplePicks = [
 
 fs.readdirSync(rostersDir).forEach(file => {
     if (file.endsWith('.json')) {
+        // Skip Free Agency file
+        if (file.toLowerCase().includes('free_agency')) {
+            console.log(`Skipped ${file}`);
+            return;
+        }
         const filePath = path.join(rostersDir, file);
         const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
         let newData;
