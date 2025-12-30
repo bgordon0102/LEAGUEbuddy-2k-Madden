@@ -31,91 +31,106 @@ async function scrapeTeamPage(url) {
     console.log(`  Found ${rosterLinks.length} player links.`);
     // Scrape full player info for each player
     const players = [];
+    // User-agent pool for randomization
+    const userAgents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
+    ];
+    function randomUserAgent() {
+        return userAgents[Math.floor(Math.random() * userAgents.length)];
+    }
+    function randomViewport() {
+        const viewports = [
+            { width: 1280, height: 800 },
+            { width: 1440, height: 900 },
+            { width: 1920, height: 1080 },
+            { width: 1536, height: 864 },
+        ];
+        return viewports[Math.floor(Math.random() * viewports.length)];
+    }
+
     for (let i = 0; i < rosterLinks.length; i++) {
         const player = rosterLinks[i];
         let success = false;
         let lastError = null;
         for (let attempt = 1; attempt <= 3 && !success; attempt++) {
+            let playerPage = null;
             try {
                 process.stdout.write(`${i + 1}/${rosterLinks.length} ${player.name}\n`);
-                const playerPage = await browser.newPage();
-                await playerPage.goto(player.url, { waitUntil: 'networkidle2', timeout: 60000 });
-                const info = await playerPage.evaluate(() => {
-                    // Helper to get text content from <p> by label
-                    const getTextFromP = (label) => {
-                        const ps = Array.from(document.querySelectorAll('p'));
-                        const p = ps.find(p => p.textContent.includes(label));
-                        if (!p) return '';
-                        return p.textContent.replace(label, '').trim();
+                playerPage = await browser.newPage();
+                await playerPage.setUserAgent(randomUserAgent());
+                await playerPage.setViewport(randomViewport());
+                await new Promise(res => setTimeout(res, 2000 + Math.random() * 2000));
+                await playerPage.goto(player.url, { waitUntil: 'networkidle2', timeout: 120000 });
+                await new Promise(res => setTimeout(res, 2000 + Math.random() * 2000));
+                try {
+                    await playerPage.waitForSelector('h1.header-title.pt-2.mb-0', { timeout: 10000 });
+                } catch {
+                    try { await playerPage.waitForSelector('h1.header-title', { timeout: 5000 }); } catch {}
+                }
+                const info = await playerPage.evaluate((playerName) => {
+                    const summary = document.body.innerText || '';
+                    const getField = (label) => {
+                        const match = summary.match(new RegExp(label + ':\\s*([^\\n]+)', 'i'));
+                        return match ? match[1].trim() : '';
                     };
-                    // Helper to get archetype
-                    const getArchetype = () => {
-                        const p = Array.from(document.querySelectorAll('p.mb-1.my-lg-0')).find(p => p.textContent.includes('Archetype:'));
-                        if (!p) return '';
-                        const span = p.querySelector('span.text-light');
-                        return span ? span.textContent.trim() : p.textContent.replace('Archetype:', '').trim();
-                    };
-                    // Helper to get nationality (as string)
-                    const getNationality = () => {
-                        const ps = Array.from(document.querySelectorAll('p'));
-                        const p = ps.find(p => p.textContent.includes('Nationality:'));
-                        if (!p) return '';
-                        const a = p.querySelector('a.text-light');
-                        return a ? a.textContent.trim() : p.textContent.replace('Nationality:', '').trim();
-                    };
-                    // Helper to get position (as string)
-                    const getPosition = () => {
-                        const ps = Array.from(document.querySelectorAll('p'));
-                        const p = ps.find(p => p.textContent.includes('Position:'));
-                        if (!p) return '';
-                        const a = Array.from(p.querySelectorAll('a.text-light')).map(a => a.textContent.trim());
-                        return a.length ? a.join(' / ') : p.textContent.replace('Position:', '').trim();
-                    };
-                    // Helper to get image URL
-                    const getImg = () => {
-                        const img = document.querySelector('img.profile-photo');
-                        return img ? img.src : '';
-                    };
-                    return {
-                        name: document.querySelector('h1.header-title.pt-2.mb-0')?.textContent.trim() || '',
-                        position: getPosition(),
-                        height: getTextFromP('Height:'),
-                        weight: getTextFromP('Weight:'),
-                        archetype: getArchetype(),
-                        birthdate: getTextFromP('Birthdate:'),
-                        yearsInNBA: getTextFromP('Year(s) in the NBA:'),
-                        wingspan: getTextFromP('Wingspan:'),
-                        imgUrl: getImg(),
-                        ovr: document.querySelector('span.attribute-box-player')?.textContent.trim() || '',
-                        prior_to_nba: getTextFromP('Prior to  NBA:'),
-                        nationality: getNationality()
-                    };
-                });
-                // Log missing fields
-                Object.entries(info).forEach(([key, value]) => {
-                    if (!value) {
-                        console.log(`  [MISSING] ${key} is missing for ${player.name}`);
+                    let imgUrl = '';
+                    const img = document.querySelector('img.profile-photo, img[src*="2K-Photo"], img[src*="2K-Rating"]');
+                    if (img) imgUrl = img.src;
+                    if (!imgUrl) {
+                        const imgs = Array.from(document.querySelectorAll('img'));
+                        const foundImg = imgs.find(im => im.src && im.src.toLowerCase().includes(playerName.toLowerCase().replace(/\\s/g, '-')));
+                        if (foundImg) imgUrl = foundImg.src;
                     }
-                });
+                    return {
+                        name: (document.querySelector('h1.header-title')?.textContent || playerName || '').trim(),
+                        position: getField('Position') || '',
+                        height: getField('Height') || '',
+                        weight: getField('Weight') || '',
+                        archetype: getField('Archetype') || '',
+                        birthdate: getField('Birthdate') || '',
+                        yearsInNBA: getField('Year(s) in the NBA') || '',
+                        wingspan: getField('Wingspan') || '',
+                        imgUrl: imgUrl || '',
+                        ovr: getField('OVERALL') || '',
+                        prior_to_nba: getField('Prior to NBA') || '',
+                        nationality: getField('Nationality') || ''
+                    };
+                }, player.name);
+                if (info && typeof info === 'object') {
+                    Object.entries(info).forEach(([key, value]) => {
+                        if (!value) console.log(`  [MISSING] ${key} is missing for ${player.name}`);
+                    });
+                } else {
+                    console.log(`  [ERROR] No info object returned for ${player.name}`);
+                }
                 players.push(info);
-                await playerPage.close();
                 success = true;
             } catch (e) {
                 lastError = e;
                 if (attempt < 3) {
                     console.log(`  Retry ${attempt} for ${player.name}...`);
+                    await new Promise(res => setTimeout(res, 4000 + Math.random() * 2000));
                 } else {
                     console.log(`  Error scraping player: ${player.name}`);
                     console.log(`    Player URL: ${player.url}`);
                     console.log(`    Error: ${e && e.message ? e.message : e}`);
                 }
+            } finally {
+                if (playerPage) { try { await playerPage.close(); } catch {} }
             }
+        }
+        if (!success && lastError) {
+            console.log(`  Failed to scrape ${player.name} after 3 attempts. Last error: ${lastError.message || lastError}`);
         }
     }
     await browser.close();
     return { players };
 }
 
+// Main function to handle team argument and output
 async function main() {
     if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR);
     const teamLinks = JSON.parse(fs.readFileSync(TEAM_LINKS_FILE, 'utf8'));
