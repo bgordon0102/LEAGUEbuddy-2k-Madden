@@ -3,6 +3,7 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import fs from 'fs';
+import path from 'path';
 
 const TEAM_LINKS_FILE = './data/teamLinks.json';
 const OUTPUT_DIR = './data/teams_rosters';
@@ -14,7 +15,19 @@ console.log("Script started");
 async function scrapeTeamPage(url) {
     console.log("Reached scrapeTeamPage");
     const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
+    let page = await browser.newPage();
+    // Load cookies if available (for Cloudflare bypass)
+    let cookies = null;
+    const cookiesPath = path.resolve('./cookies.json');
+    if (fs.existsSync(cookiesPath)) {
+        try {
+            cookies = JSON.parse(fs.readFileSync(cookiesPath, 'utf8'));
+            await page.setCookie(...cookies);
+            console.log('[DEBUG] Loaded cookies from cookies.json');
+        } catch (e) {
+            console.log('[DEBUG] Failed to load cookies:', e.message);
+        }
+    }
     console.log('[DEBUG] Navigating to team page:', url);
     try {
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
@@ -83,11 +96,22 @@ async function scrapeTeamPage(url) {
                     'sec-ch-ua-platform': '"macOS"',
                     'upgrade-insecure-requests': '1',
                 });
-                await new Promise(res => setTimeout(res, 2000 + Math.random() * 3000));
+                // Set cookies before each player if available
+                if (cookies) {
+                    try {
+                        await page.setCookie(...cookies);
+                    } catch (e) {
+                        console.log('[DEBUG] Failed to set cookies for player:', player.name, e.message);
+                    }
+                }
+                // Increase delay before scraping each player (was 4-12s, now 10-20s)
+                await new Promise(res => setTimeout(res, 10000 + Math.random() * 10000));
                 const response = await page.goto(player.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-                if (response && response.status() === 403) {
-                    lastError = new Error('403 Forbidden');
-                    await new Promise(res => setTimeout(res, 4000 + Math.random() * 4000));
+                // Check for 403 or robot challenge
+                const bodyText = await page.evaluate(() => document.body.innerText);
+                if ((response && response.status() === 403) || /robot challenge|forbidden|cloudflare/i.test(bodyText)) {
+                    lastError = new Error('403 or Robot Challenge');
+                    await new Promise(res => setTimeout(res, 6000 + Math.random() * 6000));
                     continue;
                 }
                 let hasHeader = false;
@@ -195,16 +219,36 @@ async function scrapeTeamPage(url) {
                     if (!value) console.log(`  [MISSING] ${key} is missing for ${player.name}`);
                 });
                 players.push(info);
-                await new Promise(res => setTimeout(res, 1000 + Math.random() * 2000));
+                // Increase delay after successful scrape (was 2-5s, now 8-15s)
+                await new Promise(res => setTimeout(res, 8000 + Math.random() * 7000));
                 break; // Success, exit retry loop
             } catch (e) {
                 lastError = e;
-                if (attempt < 3) {
-                    await new Promise(res => setTimeout(res, 4000 + Math.random() * 4000));
+                if (e.message && e.message.includes('Execution context was destroyed')) {
+                    console.log(`  [RETRY] Execution context destroyed for ${player.name}, closing and reopening page...`);
+                    try { await page.close(); } catch (err) { }
+                    page = await browser.newPage();
+                    // Re-apply cookies if available
+                    if (cookies) {
+                        try {
+                            await page.setCookie(...cookies);
+                        } catch (err) {
+                            console.log('[DEBUG] Failed to re-set cookies after reopening page:', player.name, err.message);
+                        }
+                    }
+                    // Wait extra before retrying
+                    await new Promise(res => setTimeout(res, 20000 + Math.random() * 20000));
+                } else if (attempt < 3) {
+                    // Increase delay before retry (was 6-12s, now 15-30s)
+                    await new Promise(res => setTimeout(res, 15000 + Math.random() * 15000));
                 } else {
                     console.log(`  [ERROR] Failed to scrape ${player.name} after 3 attempts: ${lastError.message}`);
                 }
             }
+        }
+        // Only add player if info was successfully scraped
+        if (info && info.name && info.name !== '403 - Forbidden' && !/robot challenge/i.test(info.name)) {
+            // ...existing code...
         }
     }
     // ...any remaining code for scrapeTeamPage...
