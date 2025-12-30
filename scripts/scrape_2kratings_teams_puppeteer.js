@@ -106,19 +106,22 @@ async function scrapeTeamPage(url, { label = 'team' } = {}) {
     if (!rosterLinks.length) {
         console.log(`  [WARN] No player links found on ${label} page: ${url}`);
     } else {
-        // Deduplicate by name and cap to 20 to stay within current roster size
+        // Deduplicate by name and cap to 20 for teams, 50 for free agency
         const seen = new Set();
         const uniqueLinks = [];
+        // Detect if this is the free agency page
+        const isFreeAgency = /free[-_ ]?agency/i.test(label) || /free[-_ ]?agency/i.test(url);
+        const maxLinks = isFreeAgency ? 50 : 20;
         for (const link of rosterLinks) {
             const key = link.name.toLowerCase();
             if (seen.has(key)) continue;
             seen.add(key);
             uniqueLinks.push(link);
-            if (uniqueLinks.length >= 20) break;
+            if (uniqueLinks.length >= maxLinks) break;
         }
         rosterLinks.length = 0;
         rosterLinks.push(...uniqueLinks);
-        console.log(`  Found ${rosterLinks.length} player links on ${label} page (deduped & capped).`);
+        console.log(`  Found ${rosterLinks.length} player links on ${label} page (deduped & capped at ${maxLinks}).`);
     }
     // Scrape full player info for each player
     const players = [];
@@ -255,19 +258,28 @@ async function scrapeTeamPage(url, { label = 'team' } = {}) {
 
                     // --- Fallback extraction from visible text if any field is missing ---
                     const pageText = document.body.innerText;
-                    const fallback = (regex) => {
-                        const m = pageText.match(regex);
+                    const fallback = (regex, flags = 'i') => {
+                        const m = pageText.match(new RegExp(regex, flags));
                         return m ? m[1].trim() : '';
                     };
-                    if (!position) position = fallback(/Position:\s*([A-Z\-/ ]+)/i);
-                    if (!height) height = fallback(/Height:\s*([0-9'"\s]+)/i);
-                    if (!weight) weight = fallback(/Weight:\s*([0-9]+\s*lbs?)/i);
-                    if (!wingspan) wingspan = fallback(/Wingspan:\s*([0-9'"\s]+)/i);
-                    if (!birthdate) birthdate = fallback(/Birthdate:\s*([A-Za-z0-9, ]+)/i);
-                    if (!yearsInNBA) yearsInNBA = fallback(/Year\(s\) in the NBA:\s*([0-9]+)/i);
-                    if (!prior_to_nba) prior_to_nba = fallback(/Prior to\s*NBA:\s*([A-Za-z0-9 .'-]+)/i);
-                    if (!nationality) nationality = fallback(/Nationality:\s*([A-Za-z /]+)/i);
-                    if (!ovr) ovr = fallback(/Overall:?\s*(\d{2,3})/i) || fallback(/NBA 2K\d+ Rating is\s*(\d{2,3})/i);
+                    // Try more flexible patterns and alternatives
+                    if (!position) position = fallback('Position:?\s*([A-Za-z\-/ ]{2,30})');
+                    if (!position) position = fallback('Pos:?\s*([A-Za-z\-/ ]{2,30})');
+                    if (!height) height = fallback('Height:?\s*([0-9\'"\s]+)');
+                    if (!weight) weight = fallback('Weight:?\s*([0-9]+\s*lbs?)');
+                    if (!wingspan) wingspan = fallback('Wingspan:?\s*([0-9\'"\s]+)');
+                    if (!birthdate) birthdate = fallback('Birthdate:?\s*([A-Za-z0-9, ]+)');
+                    if (!yearsInNBA) yearsInNBA = fallback('Year\(s\) in the NBA:?\s*([0-9]+)');
+                    if (!yearsInNBA) yearsInNBA = fallback('NBA Experience:?\s*([0-9]+)');
+                    if (!prior_to_nba) prior_to_nba = fallback('Prior to\s*NBA:?\s*([A-Za-z0-9 .\'-]+)');
+                    if (!nationality) nationality = fallback('Nationality:?\s*([A-Za-z /]+)');
+                    if (!ovr) ovr = fallback('Overall:?\s*(\d{2,3})') || fallback('NBA 2K\d+ Rating is\s*(\d{2,3})') || fallback('OVR:?\s*(\d{2,3})');
+
+                    // If all fields are missing, log the raw text for debugging
+                    if (!position && !height && !weight && !wingspan && !birthdate && !yearsInNBA && !prior_to_nba && !nationality && !ovr) {
+                        // eslint-disable-next-line no-console
+                        console.log('[DEBUG][RAW TEXT]', playerName, pageText.slice(0, 1000));
+                    }
 
                     return {
                         name: name || playerName,
@@ -354,8 +366,10 @@ async function main() {
         console.error(`[ERROR] Team not found: ${arg}`);
         return;
     }
+    const isFreeAgency = /free[-_ ]?agency/i.test(team.name) || /free[-_ ]?agency/i.test(team.url);
+    const label = isFreeAgency ? 'free agency' : 'team';
     console.log(`[DEBUG] Scraping team: ${team.name} (${team.url})`);
-    const details = await scrapeTeamPage(team.url);
+    const details = await scrapeTeamPage(team.url, { label });
     const outPath = `${OUTPUT_DIR}/${team.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
     fs.writeFileSync(outPath, JSON.stringify(details, null, 2));
     console.log(`[DEBUG] Saved: ${outPath}`);
