@@ -68,87 +68,143 @@ async function scrapeTeamPage(url) {
 
     for (let i = 0; i < rosterLinks.length; i++) {
         const player = rosterLinks[i];
-        let playerPage = null;
-        try {
-            process.stdout.write(`${i + 1}/${rosterLinks.length} ${player.name}\n`);
-            playerPage = await browser.newPage();
-            await playerPage.setUserAgent(randomUserAgent());
-            await playerPage.setViewport(randomViewport());
-            await new Promise(res => setTimeout(res, 1000 + Math.random() * 1000));
-            await playerPage.goto(player.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-            await playerPage.waitForSelector('h1.header-title', { timeout: 10000 });
-            // Extract player info
-            const info = await playerPage.evaluate((playerName) => {
-                const getText = (selector) => document.querySelector(selector)?.textContent?.trim() || '';
-                const summary = document.body.innerText || '';
-                const getField = (label) => {
-                    const match = summary.match(new RegExp(label + ':\\s*([^\\n]+)', 'i'));
-                    return match ? match[1].trim() : '';
-                };
-                let imgUrl = '';
-                const img = document.querySelector('img.profile-photo, img[src*="2K-Photo"], img[src*="2K-Rating"]');
-                if (img) imgUrl = img.src;
-                if (!imgUrl) {
-                    const imgs = Array.from(document.querySelectorAll('img'));
-                    const foundImg = imgs.find(im => im.src && im.src.toLowerCase().includes(playerName.toLowerCase().replace(/\s/g, '-')));
-                    if (foundImg) imgUrl = foundImg.src;
+        let info = null;
+        let lastError = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+                process.stdout.write(`${i + 1}/${rosterLinks.length} ${player.name}${attempt > 1 ? ` (try ${attempt})` : ''}\n`);
+                await page.setUserAgent(randomUserAgent());
+                await page.setViewport(randomViewport());
+                await page.setExtraHTTPHeaders({
+                    'accept-language': 'en-US,en;q=0.9',
+                    'referer': 'https://www.2kratings.com/',
+                    'sec-ch-ua': '"Chromium";v="120", "Not:A-Brand";v="99"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"macOS"',
+                    'upgrade-insecure-requests': '1',
+                });
+                await new Promise(res => setTimeout(res, 2000 + Math.random() * 3000));
+                const response = await page.goto(player.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+                if (response && response.status() === 403) {
+                    lastError = new Error('403 Forbidden');
+                    await new Promise(res => setTimeout(res, 4000 + Math.random() * 4000));
+                    continue;
                 }
-                // Primary extraction for OVR and years in NBA
-                let ovr = '';
-                const ovrSpan = document.querySelector('span.attribute-box-player') || document.querySelector('span.attribute-box-player.ruby') || document.querySelector('span.attribute-box-player.sapphire') || document.querySelector('span.attribute-box-player.amethyst') || document.querySelector('span.attribute-box-player.gold') || document.querySelector('span.attribute-box-player.silver') || document.querySelector('span.attribute-box-player.bronze');
-                if (ovrSpan) ovr = ovrSpan.textContent.trim();
-                let yearsInNBA = '';
-                const yearP = Array.from(document.querySelectorAll('p.text-light.mb-1.my-lg-0')).find(p => /Year\(s\) in the NBA:/i.test(p.textContent));
-                if (yearP) {
-                    const match = yearP.textContent.match(/Year\(s\) in the NBA:\s*(\d+)/i);
-                    if (match) yearsInNBA = match[1];
+                let hasHeader = false;
+                try {
+                    await page.waitForSelector('h1.header-title', { timeout: 5000 });
+                    hasHeader = true;
+                } catch (e) {
+                    // No header, fallback to summary extraction
                 }
-                // Fallback: parse summary line for OVR and years if missing
-                if (!ovr || !yearsInNBA) {
-                    const lines = summary.split('\n').map(l => l.trim()).filter(Boolean);
-                    const namePattern = playerName.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
-                    const playerLine = lines.find(l => new RegExp(namePattern, 'i').test(l) && /\d/.test(l));
-                    if (playerLine) {
-                        let cols = playerLine.split('|').map(s => s.trim()).filter(Boolean);
-                        if (cols.length < 3) {
-                            cols = playerLine.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
-                        }
-                        let archetypeIdx = cols.findIndex(c => c.toLowerCase().includes('playmaking') || c.toLowerCase().includes('slasher') || c.toLowerCase().includes('scorer') || c.toLowerCase().includes('dimer') || c.toLowerCase().includes('sharpshooter') || c.toLowerCase().includes('bully') || c.toLowerCase().includes('riser') || c.toLowerCase().includes('maestro') || c.toLowerCase().includes('cleaner') || c.toLowerCase().includes('rocker') || c.toLowerCase().includes('sniper'));
-                        if (archetypeIdx !== -1 && cols[archetypeIdx + 1]) {
-                            let nums = cols[archetypeIdx + 1].match(/\d+/g) || [];
-                            if (nums.length >= 2) {
-                                if (!ovr) ovr = nums[0];
-                                if (!yearsInNBA) yearsInNBA = nums[1];
-                            } else if (nums.length === 1) {
-                                if (!ovr) ovr = nums[0];
+                info = await page.evaluate((playerName) => {
+                    // Try to get name from h1.header-title, else fallback to summary text
+                    let name = '';
+                    if (document.querySelector('h1.header-title')) {
+                        name = document.querySelector('h1.header-title').textContent.trim();
+                    } else if (document.title && document.title.length < 50) {
+                        name = document.title.replace(/\s*-\s*NBA 2K\d+ Rating.*$/, '').trim();
+                    } else {
+                        // Fallback: look for the first # heading or the first line with OVERALL
+                        const summary = document.body.innerText || '';
+                        const lines = summary.split('\n').map(l => l.trim()).filter(Boolean);
+                        // Try to find a line that matches the player name and has OVERALL or NBA
+                        const namePattern = playerName.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+                        let playerLine = lines.find(l => new RegExp(namePattern, 'i').test(l) && (/OVERALL|Year\(s\) in the NBA:|NBA 2K\d+/i.test(l)));
+                        if (!playerLine) playerLine = lines.find(l => l.startsWith('# '));
+                        if (playerLine) name = playerLine.replace(/^#+\s*/, '').split('OVERALL')[0].split('Year(s)')[0].trim();
+                    }
+                    // Use summary text for fallback extraction
+                    const summary = document.body.innerText || '';
+                    // Helper to extract a field by label, allowing for multiple variants and multi-line values
+                    const getField = (label, altLabels = []) => {
+                        let match = summary.match(new RegExp(label + ':\\s*([^\\n]+)', 'i'));
+                        if (!match && altLabels.length) {
+                            for (const alt of altLabels) {
+                                match = summary.match(new RegExp(alt + ':\\s*([^\\n]+)', 'i'));
+                                if (match) break;
                             }
                         }
+                        return match ? match[1].trim() : '';
+                    };
+                    let imgUrl = '';
+                    const img = document.querySelector('img.profile-photo, img[src*="2K-Photo"], img[src*="2K-Rating"]');
+                    if (img) imgUrl = img.src;
+                    if (!imgUrl) {
+                        const imgs = Array.from(document.querySelectorAll('img'));
+                        const foundImg = imgs.find(im => im.src && im.src.toLowerCase().includes(playerName.toLowerCase().replace(/\s/g, '-')));
+                        if (foundImg) imgUrl = foundImg.src;
                     }
+                    // OVR: try span, else fallback to text before OVERALL or 'NBA 2K26 Rating is' or 'NBA 2K26 | 79 |'
+                    let ovr = '';
+                    const ovrSpan = document.querySelector('span.attribute-box-player') || document.querySelector('span.attribute-box-player.ruby') || document.querySelector('span.attribute-box-player.sapphire') || document.querySelector('span.attribute-box-player.amethyst') || document.querySelector('span.attribute-box-player.gold') || document.querySelector('span.attribute-box-player.silver') || document.querySelector('span.attribute-box-player.bronze');
+                    if (ovrSpan) ovr = ovrSpan.textContent.trim();
+                    if (!ovr) {
+                        let ovrMatch = summary.match(/(\d{2,3})\s*OVERALL/i);
+                        if (!ovrMatch) ovrMatch = summary.match(/NBA 2K26 Rating is\s*(\d{2,3})/i);
+                        if (!ovrMatch) ovrMatch = summary.match(/NBA 2K\d+\s*\|\s*(\d{2,3})\s*\|/i);
+                        if (!ovrMatch) ovrMatch = summary.match(/\n(\d{2,3})\s*OVERALL/i);
+                        if (ovrMatch) ovr = ovrMatch[1];
+                    }
+                    // Years in NBA: try p, else fallback to text
+                    let yearsInNBA = '';
+                    const yearP = Array.from(document.querySelectorAll('p.text-light.mb-1.my-lg-0')).find(p => /Year\(s\) in the NBA:/i.test(p.textContent));
+                    if (yearP) {
+                        const match = yearP.textContent.match(/Year\(s\) in the NBA:\s*(\d+)/i);
+                        if (match) yearsInNBA = match[1];
+                    }
+                    if (!yearsInNBA) {
+                        let yearsMatch = summary.match(/Year\(s\) in the NBA:\s*(\d+)/i);
+                        if (!yearsMatch) yearsMatch = summary.match(/NBA\s*:\s*(\d+)\s*years/i);
+                        if (!yearsMatch) yearsMatch = summary.match(/Year\(s\) in the NBA\s*\n(\d+)/i);
+                        if (yearsMatch) yearsInNBA = yearsMatch[1];
+                    }
+                    // Fallback for other fields from summary, allow for label variants
+                    const fallbackField = (label, altLabels = []) => getField(label, altLabels);
+                    // Nationality: handle multiple countries
+                    let nationality = fallbackField('Nationality');
+                    if (!nationality) {
+                        // Try to extract from summary block with country flags
+                        const natMatch = summary.match(/Nationality:\s*([\w\s\/]+)(?=\n|$)/i);
+                        if (natMatch) nationality = natMatch[1].trim();
+                    }
+                    // Archetype: allow for 'Build' or 'Archetype'
+                    let archetype = fallbackField('Archetype', ['Build']);
+                    if (!archetype) {
+                        // Try to extract from summary block
+                        const archMatch = summary.match(/Archetype:\s*([^\n]+)/i);
+                        if (archMatch) archetype = archMatch[1].trim();
+                    }
+                    return {
+                        name: name || playerName,
+                        position: fallbackField('Position'),
+                        height: fallbackField('Height'),
+                        weight: fallbackField('Weight'),
+                        archetype,
+                        birthdate: fallbackField('Birthdate'),
+                        yearsInNBA,
+                        wingspan: fallbackField('Wingspan'),
+                        imgUrl,
+                        ovr,
+                        prior_to_nba: fallbackField('Prior to NBA'),
+                        nationality
+                    };
+                }, player.name);
+                // Log missing fields
+                Object.entries(info).forEach(([key, value]) => {
+                    if (!value) console.log(`  [MISSING] ${key} is missing for ${player.name}`);
+                });
+                players.push(info);
+                await new Promise(res => setTimeout(res, 1000 + Math.random() * 2000));
+                break; // Success, exit retry loop
+            } catch (e) {
+                lastError = e;
+                if (attempt < 3) {
+                    await new Promise(res => setTimeout(res, 4000 + Math.random() * 4000));
+                } else {
+                    console.log(`  [ERROR] Failed to scrape ${player.name} after 3 attempts: ${lastError.message}`);
                 }
-                return {
-                    name: getText('h1.header-title') || playerName,
-                    position: getField('Position'),
-                    height: getField('Height'),
-                    weight: getField('Weight'),
-                    archetype: getField('Archetype'),
-                    birthdate: getField('Birthdate'),
-                    yearsInNBA,
-                    wingspan: getField('Wingspan'),
-                    imgUrl,
-                    ovr,
-                    prior_to_nba: getField('Prior to NBA'),
-                    nationality: getField('Nationality')
-                };
-            }, player.name);
-            // Log missing fields
-            Object.entries(info).forEach(([key, value]) => {
-                if (!value) console.log(`  [MISSING] ${key} is missing for ${player.name}`);
-            });
-            players.push(info);
-        } catch (e) {
-            console.log(`  [ERROR] Failed to scrape ${player.name}: ${e.message}`);
-        } finally {
-            if (playerPage) { try { await playerPage.close(); } catch { } }
+            }
         }
     }
     // ...any remaining code for scrapeTeamPage...
