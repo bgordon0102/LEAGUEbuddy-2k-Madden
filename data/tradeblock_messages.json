@@ -14,19 +14,20 @@
     "LeBron James": "1457452064421707796",
     "Marcus Smart": "1457460714435248189"
   },
-  "Toronto_Raptors": {
-    "R.J. Barrett": "1457462519105851538"
-  },
   "Utah_Jazz": {
     "Lauri Markkanen": "1457531744960905381",
     "Taylor Hendricks": "1457531868617379863"
   },
   "Cleveland_Cavaliers": {
-    "Jarrett Allen": "1457536517529534576"
+    "Jarrett Allen": "1457536517529534576",
+    "Darius Garland": "1457568533452947640"
   },
   "Minnesota_Timberwolves": {
     "Rudy Gobert": "1457538856688681186",
     "Donte DiVincenzo": "1457539131373518868",
     "Bones Hyland": "1457539311665942743"
+  },
+  "Toronto_Raptors": {
+    "Ben Simmons": "1457600609606701248"
   }
 }

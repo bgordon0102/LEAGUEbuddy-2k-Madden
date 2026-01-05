@@ -26,7 +26,15 @@
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/Evan-Mobley-2K-Rating.png",
       "ovr": "88",
       "prior_to_nba": "USC",
-      "nationality": "United States"
+      "nationality": "United States",
+      "progression": [
+        {
+          "skillSet": "Shooting",
+          "attributeUpgrades": "+3 3pt",
+          "date": "2026-01-05T02:29:41.453Z",
+          "submittedBy": "1076243288056664234"
+        }
+      ]
     },
     {
       "name": "Jarrett Allen",

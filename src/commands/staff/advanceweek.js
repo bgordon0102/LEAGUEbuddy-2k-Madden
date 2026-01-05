@@ -82,15 +82,15 @@ async function sendInitialWelcome(thread) {
     if (coachRoleMap[teamB]) mentions.push(`<@&${coachRoleMap[teamB]}>`);
     const coachMentions = mentions.join(' & ') || `${teamA} Coach & ${teamB} Coach`;
     const deadline = Math.floor((Date.now() + 24 * 60 * 60 * 1000) / 1000); // UNIX seconds
-    const welcomeMsg = `Welcome ${coachMentions}!\nUse this thread to coordinate your matchup. Share availability and confirm tip-off here.\n\nWhen your game is completed, the winning coach should press **Mark Game Complete** below (no score needed) to notify staff.\n\nDeadline: <t:${deadline}:F> (<t:${deadline}:R>)`;
+    const welcomeMsg = `Welcome ${coachMentions}!\nUse this thread to coordinate your matchup. Share availability and confirm tip-off here.\n\nSet the in-game date using the button below so staff can sim if needed.\n\n**In-game date:** _not set (tap Set Game Info)_\n\nDeadline: <t:${deadline}:F> (<t:${deadline}:R>)`;
     // Debug logging
     console.log(`[sendInitialWelcome] Attempting to send welcome message to thread: ${threadName}`);
     try {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setCustomId(`game_complete_${thread.id}`)
-                .setLabel('Mark Game Complete')
-                .setStyle(ButtonStyle.Success)
+                .setCustomId(`set_game_info_${thread.id}`)
+                .setLabel('Set Game Info')
+                .setStyle(ButtonStyle.Primary)
         );
         const sentMsg = await thread.send({ content: welcomeMsg, components: [row] });
         console.log(`[sendInitialWelcome] Message sent to thread: ${threadName}, messageId: ${sentMsg.id}`);

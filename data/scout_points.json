@@ -58,5 +58,24 @@
     "weeklyPoints": {
       "week_1": 0
     }
+  },
+  "737825554895732756": {
+    "playersScouted": {
+      "Adam Riley": [
+        "build"
+      ],
+      "Darius Hall": [
+        "build"
+      ],
+      "Mahlik Joseph": [
+        "build"
+      ],
+      "Jack Rice": [
+        "build"
+      ]
+    },
+    "weeklyPoints": {
+      "week_1": 0
+    }
   }
 }

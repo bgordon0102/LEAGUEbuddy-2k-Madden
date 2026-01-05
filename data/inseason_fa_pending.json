@@ -158,5 +158,37 @@
     "salary": "5.5 million per",
     "coachId": "1195843329477328978",
     "createdAt": "2026-01-04T21:03:19.685Z"
+  },
+  "1767591381135": {
+    "id": "1767591381135",
+    "player": {
+      "name": "Richaun Holmes",
+      "position": "C",
+      "ovr": "73",
+      "age": 32,
+      "img": "https://www.2kratings.com/wp-content/uploads/Richaun-Holmes-2K-Rating.png",
+      "thumbnail": "https://www.2kratings.com/wp-content/uploads/Richaun-Holmes-2K-Rating.png"
+    },
+    "team": "San Antonio Spurs",
+    "years": "2yr",
+    "salary": "1.9M",
+    "coachId": "1442183083695542272",
+    "createdAt": "2026-01-05T05:36:21.135Z"
+  },
+  "1767591465247": {
+    "id": "1767591465247",
+    "player": {
+      "name": "Cam Reddish",
+      "position": "SF / SG",
+      "ovr": "72",
+      "age": 26,
+      "img": "https://www.2kratings.com/wp-content/uploads/Cam-Reddish-2K-Rating.png",
+      "thumbnail": "https://www.2kratings.com/wp-content/uploads/Cam-Reddish-2K-Rating.png"
+    },
+    "team": "San Antonio Spurs",
+    "years": "2yr",
+    "salary": "1.9M",
+    "coachId": "1442183083695542272",
+    "createdAt": "2026-01-05T05:37:45.247Z"
   }
 }

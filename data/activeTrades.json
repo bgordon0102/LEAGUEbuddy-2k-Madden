@@ -1,4 +1,47 @@
 {
+  "1767587091234": {
+    "tradeId": "1767587091234",
+    "proposerId": "1443035513320636617",
+    "coachBId": "1428100759936831639",
+    "yourTeam": "Toronto Raptors",
+    "otherTeam": "Utah Jazz",
+    "assetsSent": "Immanuel Quickley \nColin Murray-Boyles\n2nd round picks",
+    "assetsReceived": "Lauri Markkanen",
+    "notes": "",
+    "submittedAt": 1767587091235,
+    "guildId": "1255691165265821747",
+    "expiresAt": 1767673491235,
+    "status": "pending"
+  },
+  "1767587150026": {
+    "tradeId": "1767587150026",
+    "proposerId": "1443035513320636617",
+    "coachBId": "1428100633898127532",
+    "yourTeam": "Toronto Raptors",
+    "otherTeam": "Cleveland Cavaliers",
+    "assetsSent": "Immanuel Quickley \nJamal Shead\n2nd round picks",
+    "assetsReceived": "Darius Garland",
+    "notes": "",
+    "submittedAt": 1767587150026,
+    "guildId": "1255691165265821747",
+    "expiresAt": 1767673550026,
+    "status": "denied"
+  },
+  "1767588933399": {
+    "tradeId": "1767588933399",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1428100680018559076",
+    "yourTeam": "Oklahoma City Thunder",
+    "otherTeam": "Los Angeles Lakers",
+    "assetsSent": "Jaylin Williams",
+    "assetsReceived": "Jarred Vanderbilt",
+    "notes": "",
+    "submittedAt": 1767588933399,
+    "guildId": "1255691165265821747",
+    "expiresAt": 1767675333399,
+    "status": "committee",
+    "postedToCommittee": true
+  },
   "1767552457531": {
     "tradeId": "1767552457531",
     "proposerId": "1443035513320636617",
@@ -123,8 +166,10 @@
     "submittedAt": 1767554638408,
     "guildId": "1255691165265821747",
     "expiresAt": 1767641038408,
-    "status": "committee",
-    "postedToCommittee": true
+    "status": "approved",
+    "postedToCommittee": true,
+    "finalized": true,
+    "committeeOverride": "manually approved post-threshold"
   },
   "1767575996651": {
     "tradeId": "1767575996651",
@@ -138,6 +183,20 @@
     "submittedAt": 1767575996651,
     "guildId": "1255691165265821747",
     "expiresAt": 1767662396651,
+    "status": "pending"
+  },
+  "1767592415952": {
+    "tradeId": "1767592415952",
+    "proposerId": "1443035513320636617",
+    "coachBId": "1428100728194470012",
+    "yourTeam": "Toronto Raptors",
+    "otherTeam": "Philadelphia 76ers",
+    "assetsSent": "Garrett Temple\n2030 2nd round pick",
+    "assetsReceived": "Kyle Lowry",
+    "notes": "Make the raps legend retire as a raptor please 🙏 😢",
+    "submittedAt": 1767592415952,
+    "guildId": "1255691165265821747",
+    "expiresAt": 1767678815952,
     "status": "pending"
   }
 }
