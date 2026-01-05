@@ -1,1 +1,62 @@
-{}
+{
+  "1076243288056664234": {
+    "playersScouted": {
+      "Jack Rice": [
+        "build"
+      ],
+      "Saúl Segura": [
+        "build"
+      ]
+    },
+    "weeklyPoints": {
+      "week_1": 20
+    }
+  },
+  "1443035513320636617": {
+    "playersScouted": {
+      "Saúl Segura": [
+        "build",
+        "draft_score"
+      ],
+      "Darius Hall": [
+        "build"
+      ],
+      "Sincere Johnston": [
+        "build"
+      ]
+    },
+    "weeklyPoints": {
+      "week_1": 0
+    }
+  },
+  "670446898695503897": {
+    "playersScouted": {
+      "Adam Riley": [
+        "build",
+        "draft_score"
+      ],
+      "Ismaël Aït Salah": [
+        "build",
+        "draft_score"
+      ]
+    },
+    "weeklyPoints": {
+      "week_1": 0
+    }
+  },
+  "729435455350636654": {
+    "playersScouted": {
+      "Kason Smith": [
+        "build",
+        "draft_score"
+      ],
+      "Xavion Booker": [
+        "build",
+        "draft_score"
+      ]
+    },
+    "weeklyPoints": {
+      "week_1": 0
+    }
+  }
+}

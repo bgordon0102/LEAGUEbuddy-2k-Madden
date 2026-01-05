@@ -53,6 +53,8 @@ client.on('interactionCreate', async interaction => {
       await interaction.reply({ content: 'Command not found.', ephemeral: true });
       return;
     }
+    // Lightweight command audit log
+    console.log(`[CMD] ${interaction.user.tag} used /${interaction.commandName}`);
     try {
       await command.execute(interaction);
     } catch (error) {

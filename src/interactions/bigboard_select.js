@@ -1,4 +1,5 @@
-export const customId = "bigboard_select_1";
+// Handle all big board select menus (paged by 15)
+export const customId = /^bigboard_select_/;
 import fs from "fs";
 import path from "path";
 import { EmbedBuilder } from "discord.js";
@@ -7,21 +8,20 @@ const bigBoardsFile = path.join(process.cwd(), "data/prospectBoards.json");
 
 export async function execute(interaction) {
     await interaction.deferReply({ flags: 64 });
-    // Aggregate all players from every Big Board JSON file in draft classes
-    const draftClassesDir = path.join(process.cwd(), 'draft classes');
-    const boardFiles = fs.readdirSync(draftClassesDir)
-        .filter(f => f.endsWith('Big Board.json'));
+    // Aggregate all players from every Big Board JSON file
+    const draftClassesDir = path.join(process.cwd(), 'bot', 'draft classes', 'big boards');
+    const boardFiles = fs.existsSync(draftClassesDir)
+        ? fs.readdirSync(draftClassesDir).filter(f => f.endsWith('Big Board.json'))
+        : [];
     let allPlayers = [];
     for (const file of boardFiles) {
         const filePath = path.join(draftClassesDir, file);
-        if (fs.existsSync(filePath)) {
-            try {
-                const boardData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-                const players = Object.values(boardData).filter(player => player && player.name && player.position_1);
-                allPlayers = allPlayers.concat(players);
-            } catch (err) {
-                console.error(`Error reading big board file ${filePath}:`, err);
-            }
+        try {
+            const boardData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+            const players = Object.values(boardData).filter(player => player && player.name && (player.position_1 || player.position));
+            allPlayers = allPlayers.concat(players);
+        } catch (err) {
+            console.error(`Error reading big board file ${filePath}:`, err);
         }
     }
 
@@ -57,8 +57,8 @@ export async function execute(interaction) {
     const unlocked = userData.playersScouted[selected.name] || [];
 
     const embed = new EmbedBuilder()
-        .setTitle(`${selected.position_1} - ${selected.name}`)
-        .setThumbnail(selected.image ? selected.image : null)
+        .setTitle(`${selected.position_1 || selected.position || ''} - ${selected.name}`)
+        .setThumbnail(selected.image || selected.imgUrl || selected.imgURL || null)
         .addFields(
             { name: "Team", value: selected.team || "N/A", inline: true },
             { name: "Class", value: selected.class || "N/A", inline: true },

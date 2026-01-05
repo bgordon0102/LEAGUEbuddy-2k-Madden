@@ -125,7 +125,7 @@ export async function execute(interaction) {
   }
 
   try {
-    await interaction.reply({ content: 'Thanks! Staff have been notified that this game is complete.', ephemeral: true });
+    await interaction.reply({ content: 'Game marked complete and announced to staff.', ephemeral: false });
   } catch (err) {
     console.error('[game_complete_button] Failed to reply to button interaction:', err);
   }

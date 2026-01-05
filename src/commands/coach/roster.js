@@ -1,5 +1,5 @@
 // commands/roster.js
-import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import fs from "fs";
 import path from "path";
 
@@ -66,6 +66,29 @@ async function execute(interaction) {
             await interaction.editReply({ content: `No roster found for ${team}.` });
             return;
         }
+        // Determine if the viewer is the coach of this team (for waive button visibility)
+        let canWaive = false;
+        try {
+            const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/coachRoleMap.json'), 'utf8'));
+            const staffMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/staffRoleMap.main.json'), 'utf8'));
+            const teamRoleId = coachMap[team];
+            const isCoach = teamRoleId && interaction.member?.roles?.cache?.has(teamRoleId);
+            const isStaff = interaction.member?.roles?.cache?.some(r =>
+                Object.entries(staffMap || {})
+                    .filter(([name]) => name === 'Paradise Commish' || name === 'Paradise Co-Commish')
+                    .map(([, id]) => id)
+                    .includes(r.id)
+            );
+            if (isCoach || isStaff) {
+                canWaive = true;
+            }
+            // Optional: allow direct user ID match if map stores user IDs
+            if (!canWaive && teamRoleId === interaction.user.id) {
+                canWaive = true;
+            }
+        } catch {
+            // ignore
+        }
         const roster = JSON.parse(fs.readFileSync(rosterPath, "utf8"));
         // Handle new roster format: object with players and picks
         let playersArr = Array.isArray(roster) ? roster : roster.players || [];
@@ -76,17 +99,9 @@ async function execute(interaction) {
         // Sort roster by OVR descending
         const sortedRoster = [...playersArr].sort((a, b) => (b.ovr ?? 0) - (a.ovr ?? 0));
         // Format roster for embed and build action rows for each player
-        const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = await import('discord.js');
         const lines = [];
-        const actionRows = [];
         for (const player of sortedRoster) {
             lines.push(`**${player.name}** | ${player.position} | OVR: ${player.ovr}`);
-            // No action buttons shown
-        }
-        // Discord only allows 5 action rows per message, batch if needed
-        const batchedRows = [];
-        for (let i = 0; i < actionRows.length; i += 5) {
-            batchedRows.push(actionRows.slice(i, i + 5));
         }
 
         // Load draft picks for this team from roster file
@@ -130,11 +145,16 @@ async function execute(interaction) {
         // Debug: show sorted roster and picks in console
         console.log('[ROSTER DEBUG] Sorted roster:', sortedRoster.map(p => `${p.name} (${p.ovr})`).join(', '));
         console.log('[ROSTER DEBUG] Picks:', pickLines);
-        await interaction.editReply({ embeds: [embed], components: batchedRows[0] || [] });
-        // If more than 5 rows, send additional follow-up messages with only buttons
-        for (let i = 1; i < batchedRows.length; i++) {
-            await interaction.followUp({ components: batchedRows[i], ephemeral: true });
+        const components = [];
+        if (canWaive) {
+            const waiveBtn = new ButtonBuilder()
+                .setCustomId(`waive_player_open_modal::${team}`)
+                .setLabel('Waive a player')
+                .setStyle(ButtonStyle.Danger);
+            components.push(new ActionRowBuilder().addComponents(waiveBtn));
         }
+
+        await interaction.editReply({ embeds: [embed], components });
     } catch (err) {
         console.error('Error in roster:', err);
         if (responded) {

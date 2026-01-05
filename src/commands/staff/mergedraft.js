@@ -100,9 +100,10 @@ function derivePosition(player) {
   if (player.position) return player.position;
   const p1 = player.position_1 || player.position1;
   const p2 = player.position_2 || player.position2;
-  if (p1 && p2) return `${p1} / ${p2}`;
+  const cleanP2 = p2 && !/^n\/a$/i.test(p2) ? p2 : null;
+  if (p1 && cleanP2) return `${p1} / ${cleanP2}`;
   if (p1) return p1;
-  if (p2) return p2;
+  if (cleanP2) return cleanP2;
   return '';
 }
 

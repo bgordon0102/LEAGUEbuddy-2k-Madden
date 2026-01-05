@@ -1,0 +1,125 @@
+[
+  {
+    "name": "__eoi",
+    "value": "ID=ca60ca0b96ab6bf1:T=1759605226:RT=1767072481:S=AA-AfjbHbbKCJaxOJvnnB1w-josQ",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1770180826,
+    "httpOnly": false,
+    "secure": true
+  },
+  {
+    "name": "__gads",
+    "value": "ID=af1febcbd558931b:T=1756678148:RT=1767072481:S=ALNI_MajvuJtLvp5qR0DItowRJwcXmGC1Q",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1780073348,
+    "httpOnly": false,
+    "secure": true
+  },
+  {
+    "name": "__gpi",
+    "value": "UID=00001277d912034d:T=1756678148:RT=1767072481:S=ALNI_MafZGw5LF__Bp1QZ1hHVo0qamvzXw",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1780073348,
+    "httpOnly": false,
+    "secure": true
+  },
+  {
+    "name": "__qca",
+    "value": "P1-27d732b4-67a8-4979-bc06-ca668ae9aba5",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1799331475,
+    "httpOnly": false,
+    "secure": true
+  },
+  {
+    "name": "_au_1d",
+    "value": "AU1D-0100-001693997470-CIUOEDUA-JQJT",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1771689032,
+    "httpOnly": false,
+    "secure": true
+  },
+  {
+    "name": "_cc_id",
+    "value": "c2c0b1e2d219ddf3a5a6d26e380ee870",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1780110194,
+    "httpOnly": false,
+    "secure": false
+  },
+  {
+    "name": "_ga",
+    "value": "GA1.1.620532023.1721673691",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1799440022,
+    "httpOnly": false,
+    "secure": false
+  },
+  {
+    "name": "_ga_3T5BDY5K12",
+    "value": "GS2.1.s1767072173$o114$g1$t1767072422$j54$l0$h0",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1799440022,
+    "httpOnly": false,
+    "secure": false
+  },
+  {
+    "name": "_ga_FVWZ0RM4DH",
+    "value": "GS1.1.1742850639.26.0.1742850639.60.0.0",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1772197839,
+    "httpOnly": false,
+    "secure": false
+  },
+  {
+    "name": "_lc2_fpi",
+    "value": "e82402882df6--01hhtkdg7jk2f81tds2h39xbfx",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "httpOnly": false,
+    "secure": false
+  },
+  {
+    "name": "_lc2_fpi_meta",
+    "value": "%7B%22w%22%3A1702773571826%7D",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "httpOnly": false,
+    "secure": false
+  },
+  {
+    "name": "_li_dcdm_c",
+    "value": ".2kratings.com",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "httpOnly": false,
+    "secure": false
+  },
+  {
+    "name": "33acrossIdTp",
+    "value": "2Zb1N8EQeBXkd7absiHsQkKW4KpXvIU49DGOipBap9A%3D",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1788036834,
+    "httpOnly": false,
+    "secure": false
+  },
+  {
+    "name": "usnatUUID",
+    "value": "20e001bf-cb84-4c5f-be50-14f4bb49b9e5",
+    "domain": ".2kratings.com",
+    "path": "/",
+    "expires": 1767886583,
+    "httpOnly": false,
+    "secure": true
+  }
+]

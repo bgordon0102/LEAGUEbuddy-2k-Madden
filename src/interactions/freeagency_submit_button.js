@@ -14,7 +14,7 @@ import { readRoster, saveRoster, upsertPlayer, removePlayerFromOtherRostersFuzzy
 const STORE_PATH = path.join(process.cwd(), 'data', 'freeagency_entries.json');
 const STAFF_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
 const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json');
-const STAFF_ROLES = ['Paradise Commish', 'Schedule Tracker'];
+const STAFF_ROLES = ['Paradise Commish', 'Paradise Co-Commish', 'Schedule Tracker'];
 const STAFF_OFFER_CHANNEL_ID = process.env.FREE_AGENCY_STAFF_CHANNEL_ID || '1455151770383814666';
 const ANNOUNCE_CHANNEL_ID = process.env.FREE_AGENCY_ANNOUNCE_CHANNEL_ID || '1455152984089694218';
 const GHOST_PARADISE_ROLE_ID = '1428119680572325929';

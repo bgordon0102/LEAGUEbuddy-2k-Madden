@@ -26,8 +26,9 @@ async function execute(interaction) {
       let totalDeleted = 0;
       while (true) {
         const fetched = await channel.messages.fetch({ limit: 100 });
-        if (!fetched.size) break;
-        const deleted = await channel.bulkDelete(fetched, true).catch(err => console.error(err));
+        const toDelete = fetched.filter(m => !m.pinned);
+        if (!toDelete.size) break;
+        const deleted = await channel.bulkDelete(toDelete, true).catch(err => console.error(err));
         const deletedCount = deleted?.size || 0;
         totalDeleted += deletedCount;
         console.log(`[DEBUG] Deleted ${totalDeleted} messages so far...`);
@@ -45,10 +46,17 @@ async function execute(interaction) {
         await interaction.editReply({ content: 'Please provide a valid number of messages to delete.' });
         return;
       }
-      const deleteAmount = Math.min(amount, 100); // Discord bulkDelete limit
-      const deleted = await channel.bulkDelete(deleteAmount, true);
-      console.log(`[DEBUG] Deleted ${deleted?.size || deleteAmount} messages.`);
-      await interaction.editReply({ content: `Deleted ${deleted?.size || deleteAmount} messages.` });
+      const fetchAmount = Math.min(amount + 10, 100); // fetch a few extra to account for pinned skips
+      const fetched = await channel.messages.fetch({ limit: fetchAmount });
+      const unpinned = fetched.filter(m => !m.pinned);
+      const toDelete = unpinned.first(amount);
+      if (!toDelete || toDelete.length === 0) {
+        await interaction.editReply({ content: 'No messages available to delete (pins are preserved).' });
+        return;
+      }
+      const deleted = await channel.bulkDelete(toDelete, true);
+      console.log(`[DEBUG] Deleted ${deleted?.size || toDelete.length} messages (unpinned only).`);
+      await interaction.editReply({ content: `Deleted ${deleted?.size || toDelete.length} unpinned messages. Pinned messages are preserved.` });
     }
   } catch (err) {
     console.error('Error deleting messages:', err);

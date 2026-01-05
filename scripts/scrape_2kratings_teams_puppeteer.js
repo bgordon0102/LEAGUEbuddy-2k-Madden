@@ -245,13 +245,19 @@ async function scrapeTeamPage(url, { label = 'team' } = {}) {
                     let nationality = getByLabel('nationality:').replace(/^nationality:\s*/i, '');
 
                     let imgUrl = '';
-                    const img = document.querySelector('img.profile-photo, img[src*="2K-Photo"], img[src*="2K-Rating"]');
-                    if (img) imgUrl = img.src;
+                    const ogImg = document.querySelector('meta[property="og:image"]');
+                    if (ogImg && ogImg.content) imgUrl = ogImg.content;
+                    if (!imgUrl) {
+                        const img = document.querySelector('img.profile-photo, img[src*="2K-Photo"], img[src*="2K-Rating"]');
+                        if (img) imgUrl = img.src;
+                    }
                     if (!imgUrl) {
                         const imgs = Array.from(document.querySelectorAll('img'));
                         const foundImg = imgs.find(im => im.src && im.src.toLowerCase().includes(playerName.toLowerCase().replace(/\s/g, '-')));
                         if (foundImg) imgUrl = foundImg.src;
                     }
+                    // Avoid generic site logo
+                    if (/NBA-2K-Ratings-Logo\\.svg/i.test(imgUrl)) imgUrl = '';
                     let ovr = '';
                     const ovrSpan = document.querySelector('span.attribute-box-player') || document.querySelector('span.attribute-box-player.ruby') || document.querySelector('span.attribute-box-player.sapphire') || document.querySelector('span.attribute-box-player.amethyst') || document.querySelector('span.attribute-box-player.gold') || document.querySelector('span.attribute-box-player.silver') || document.querySelector('span.attribute-box-player.bronze');
                     if (ovrSpan) ovr = textContent(ovrSpan);

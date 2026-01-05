@@ -108,7 +108,6 @@ async function execute(interaction) {
             { name: "Wingspan", value: player.wingspan != null ? String(player.wingspan) : "-", inline: true },
             { name: "Archetype", value: player.archetype != null ? String(player.archetype) : "-", inline: true },
             { name: "Age", value: ageStr, inline: true },
-            { name: "Salary", value: player.salary != null ? String(player.salary) : "-", inline: true },
             { name: "Prior to NBA", value: player.prior_to_nba != null ? String(player.prior_to_nba) : "-", inline: true },
             { name: "Nationality", value: player.nationality != null ? String(player.nationality) : "-", inline: true }
         );

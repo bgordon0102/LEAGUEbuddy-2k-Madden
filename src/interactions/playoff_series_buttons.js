@@ -79,7 +79,7 @@ export async function execute(interaction) {
   }
 
   saveSeriesState(state);
-  await interaction.reply({ content: `Recorded Game ${gameIndex}: ${teamKey === 'a' ? series.team1 : series.team2} wins. Series score ${scoreLine}${seriesComplete ? ' (Series complete)' : ''}.`, ephemeral: true });
+  await interaction.reply({ content: `Recorded Game ${gameIndex}: ${teamKey === 'a' ? series.team1 : series.team2} wins. Series score ${scoreLine}${seriesComplete ? ' (Series complete)' : ''}.`, ephemeral: false });
 }
 
 export default { customId, execute };

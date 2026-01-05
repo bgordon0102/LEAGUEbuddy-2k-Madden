@@ -1,20 +1,14 @@
 [
   {
-    "id": 17,
-    "name": "Milwaukee Bucks",
-    "abbreviation": "MIL",
+    "id": 11,
+    "name": "Houston Rockets",
+    "abbreviation": "HOU",
     "coach": null
   },
   {
-    "id": 14,
-    "name": "Los Angeles Lakers",
-    "abbreviation": "LAL",
-    "coach": null
-  },
-  {
-    "id": 23,
-    "name": "Philadelphia 76ers",
-    "abbreviation": "PHI",
+    "id": 1,
+    "name": "Atlanta Hawks",
+    "abbreviation": "ATL",
     "coach": null
   },
   {
@@ -24,9 +18,39 @@
     "coach": null
   },
   {
+    "id": 12,
+    "name": "Indiana Pacers",
+    "abbreviation": "IND",
+    "coach": null
+  },
+  {
+    "id": 18,
+    "name": "Minnesota Timberwolves",
+    "abbreviation": "MIN",
+    "coach": null
+  },
+  {
+    "id": 6,
+    "name": "Cleveland Cavaliers",
+    "abbreviation": "CLE",
+    "coach": null
+  },
+  {
     "id": 9,
     "name": "Detroit Pistons",
     "abbreviation": "DET",
+    "coach": null
+  },
+  {
+    "id": 29,
+    "name": "Utah Jazz",
+    "abbreviation": "UTA",
+    "coach": null
+  },
+  {
+    "id": 2,
+    "name": "Boston Celtics",
+    "abbreviation": "BOS",
     "coach": null
   },
   {
@@ -42,15 +66,9 @@
     "coach": null
   },
   {
-    "id": 3,
-    "name": "Brooklyn Nets",
-    "abbreviation": "BKN",
-    "coach": null
-  },
-  {
-    "id": 25,
-    "name": "Portland Trail Blazers",
-    "abbreviation": "POR",
+    "id": 16,
+    "name": "Miami Heat",
+    "abbreviation": "MIA",
     "coach": null
   },
   {
@@ -60,51 +78,9 @@
     "coach": null
   },
   {
-    "id": 27,
-    "name": "San Antonio Spurs",
-    "abbreviation": "SAS",
-    "coach": null
-  },
-  {
-    "id": 29,
-    "name": "Utah Jazz",
-    "abbreviation": "UTA",
-    "coach": null
-  },
-  {
-    "id": 13,
-    "name": "LA Clippers",
-    "abbreviation": "LAC",
-    "coach": null
-  },
-  {
-    "id": 28,
-    "name": "Toronto Raptors",
-    "abbreviation": "TOR",
-    "coach": null
-  },
-  {
-    "id": 20,
-    "name": "New York Knicks",
-    "abbreviation": "NYK",
-    "coach": null
-  },
-  {
-    "id": 16,
-    "name": "Miami Heat",
-    "abbreviation": "MIA",
-    "coach": null
-  },
-  {
-    "id": 7,
-    "name": "Dallas Mavericks",
-    "abbreviation": "DAL",
-    "coach": null
-  },
-  {
-    "id": 11,
-    "name": "Houston Rockets",
-    "abbreviation": "HOU",
+    "id": 23,
+    "name": "Philadelphia 76ers",
+    "abbreviation": "PHI",
     "coach": null
   },
   {
@@ -114,33 +90,21 @@
     "coach": null
   },
   {
-    "id": 12,
-    "name": "Indiana Pacers",
-    "abbreviation": "IND",
+    "id": 25,
+    "name": "Portland Trail Blazers",
+    "abbreviation": "POR",
     "coach": null
   },
   {
-    "id": 5,
-    "name": "Chicago Bulls",
-    "abbreviation": "CHI",
+    "id": 28,
+    "name": "Toronto Raptors",
+    "abbreviation": "TOR",
     "coach": null
   },
   {
-    "id": 4,
-    "name": "Charlotte Hornets",
-    "abbreviation": "CHA",
-    "coach": null
-  },
-  {
-    "id": 19,
-    "name": "New Orleans Pelicans",
-    "abbreviation": "NOP",
-    "coach": null
-  },
-  {
-    "id": 22,
-    "name": "Orlando Magic",
-    "abbreviation": "ORL",
+    "id": 3,
+    "name": "Brooklyn Nets",
+    "abbreviation": "BKN",
     "coach": null
   },
   {
@@ -150,9 +114,9 @@
     "coach": null
   },
   {
-    "id": 1,
-    "name": "Atlanta Hawks",
-    "abbreviation": "ATL",
+    "id": 13,
+    "name": "LA Clippers",
+    "abbreviation": "LAC",
     "coach": null
   },
   {
@@ -162,21 +126,57 @@
     "coach": null
   },
   {
-    "id": 6,
-    "name": "Cleveland Cavaliers",
-    "abbreviation": "CLE",
+    "id": 27,
+    "name": "San Antonio Spurs",
+    "abbreviation": "SAS",
     "coach": null
   },
   {
-    "id": 18,
-    "name": "Minnesota Timberwolves",
-    "abbreviation": "MIN",
+    "id": 22,
+    "name": "Orlando Magic",
+    "abbreviation": "ORL",
     "coach": null
   },
   {
-    "id": 2,
-    "name": "Boston Celtics",
-    "abbreviation": "BOS",
+    "id": 19,
+    "name": "New Orleans Pelicans",
+    "abbreviation": "NOP",
+    "coach": null
+  },
+  {
+    "id": 5,
+    "name": "Chicago Bulls",
+    "abbreviation": "CHI",
+    "coach": null
+  },
+  {
+    "id": 20,
+    "name": "New York Knicks",
+    "abbreviation": "NYK",
+    "coach": null
+  },
+  {
+    "id": 7,
+    "name": "Dallas Mavericks",
+    "abbreviation": "DAL",
+    "coach": null
+  },
+  {
+    "id": 17,
+    "name": "Milwaukee Bucks",
+    "abbreviation": "MIL",
+    "coach": null
+  },
+  {
+    "id": 14,
+    "name": "Los Angeles Lakers",
+    "abbreviation": "LAL",
+    "coach": null
+  },
+  {
+    "id": 4,
+    "name": "Charlotte Hornets",
+    "abbreviation": "CHA",
     "coach": null
   }
 ]

@@ -9,7 +9,7 @@
       "birthdate": "May 22, 1997",
       "yearsInNBA": "8",
       "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Lauri-Markkanen-2K-Rating.png",
       "ovr": "87",
       "prior_to_nba": "Arizona",
       "nationality": "Finland"
@@ -23,7 +23,7 @@
       "birthdate": "July 26, 2001",
       "yearsInNBA": "3",
       "wingspan": "7'4\" (224cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Walker-Kessler-2K-Rating.png",
       "ovr": "83",
       "prior_to_nba": "Auburn",
       "nationality": "United States"
@@ -37,10 +37,24 @@
       "birthdate": "November 8, 2003",
       "yearsInNBA": "2",
       "wingspan": "6'5\" (196cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
-      "ovr": "83",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Keyonte-George-2K-Rating.png",
+      "ovr": "84",
       "prior_to_nba": "Baylor",
-      "nationality": "United States"
+      "nationality": "United States",
+      "progression": [
+        {
+          "skillSet": "Shooting",
+          "attributeUpgrades": "3pt +3",
+          "date": "2026-01-05T00:23:08.032Z",
+          "submittedBy": "737825554895732756"
+        },
+        {
+          "skillSet": "Shooting",
+          "attributeUpgrades": "3pt +7",
+          "date": "2026-01-05T00:30:13.127Z",
+          "submittedBy": "737825554895732756"
+        }
+      ]
     },
     {
       "name": "Ace Bailey",
@@ -51,10 +65,18 @@
       "birthdate": "August 13, 2006",
       "yearsInNBA": "0",
       "wingspan": "7'1\" (216cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Ace-Bailey-2K-Rating.png",
       "ovr": "77",
       "prior_to_nba": "Rutgers",
-      "nationality": "United States"
+      "nationality": "United States",
+      "progression": [
+        {
+          "skillSet": "Shooting",
+          "attributeUpgrades": "3pt +2",
+          "date": "2026-01-05T00:19:12.421Z",
+          "submittedBy": "737825554895732756"
+        }
+      ]
     },
     {
       "name": "Jusuf Nurkic",
@@ -65,7 +87,7 @@
       "birthdate": "August 23, 1994",
       "yearsInNBA": "11",
       "wingspan": "7'2\" (218cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Jusuf-Nurkic-2K-Rating.png",
       "ovr": "77",
       "prior_to_nba": "Bosnia and Herzegovina",
       "nationality": "Bosnia & Herzegovina"
@@ -79,7 +101,7 @@
       "birthdate": "November 7, 2003",
       "yearsInNBA": "1",
       "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Kyle-Filipowski-2K-Rating.png",
       "ovr": "77",
       "prior_to_nba": "Duke",
       "nationality": "United States"
@@ -93,7 +115,7 @@
       "birthdate": "October 8, 2004",
       "yearsInNBA": "1",
       "wingspan": "6'5\" (196cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Isaiah-Collier-2K-Rating.png",
       "ovr": "76",
       "prior_to_nba": "USC",
       "nationality": "United States"
@@ -107,7 +129,7 @@
       "birthdate": "October 30, 2003",
       "yearsInNBA": "2",
       "wingspan": "6'7\" (201cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Brice-Sensabaugh-2K-Rating.png",
       "ovr": "76",
       "prior_to_nba": "Ohio State",
       "nationality": "United States"
@@ -121,7 +143,7 @@
       "birthdate": "September 7, 1988",
       "yearsInNBA": "17",
       "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Kevin-Love-2K-Rating.png",
       "ovr": "75",
       "prior_to_nba": "UCLA",
       "nationality": "United States"
@@ -135,7 +157,7 @@
       "birthdate": "March 6, 2003",
       "yearsInNBA": "0",
       "wingspan": "6'4\" (193cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Walter-Clayton-Jr-2K-Rating.png",
       "ovr": "75",
       "prior_to_nba": "Florida",
       "nationality": "United States"
@@ -149,7 +171,7 @@
       "birthdate": "June 10, 1997",
       "yearsInNBA": "7",
       "wingspan": "6'5\" (196cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Svi-Mykhailiuk-2K-Rating.png",
       "ovr": "75",
       "prior_to_nba": "Kansas",
       "nationality": "Ukraine"
@@ -163,7 +185,7 @@
       "birthdate": "November 22, 2003",
       "yearsInNBA": "2",
       "wingspan": "7'1\" (216cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Taylor-Hendricks-2K-Rating.png",
       "ovr": "74",
       "prior_to_nba": "UCF",
       "nationality": "United States"
@@ -177,7 +199,7 @@
       "birthdate": "June 17, 1993",
       "yearsInNBA": "9",
       "wingspan": "6'10\" (208cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Georges-Niang-2K-Rating.png",
       "ovr": "74",
       "prior_to_nba": "Iowa State",
       "nationality": "United States"
@@ -191,7 +213,7 @@
       "birthdate": "September 20, 1993",
       "yearsInNBA": "11",
       "wingspan": "7'3\" (221cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Kyle-Anderson-2K-Rating.png",
       "ovr": "74",
       "prior_to_nba": "UCLA",
       "nationality": "United States  / China"
@@ -205,10 +227,18 @@
       "birthdate": "November 20, 2004",
       "yearsInNBA": "1",
       "wingspan": "7'1\" (216cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Cody-Williams-2K-Rating.png",
       "ovr": "72",
       "prior_to_nba": "Colorado",
-      "nationality": "United States"
+      "nationality": "United States",
+      "progression": [
+        {
+          "skillSet": "Perimeter Defense",
+          "attributeUpgrades": "Perimeter defense +2",
+          "date": "2026-01-05T00:21:26.990Z",
+          "submittedBy": "737825554895732756"
+        }
+      ]
     },
     {
       "name": "Oscar Tshiebwe",
@@ -219,7 +249,7 @@
       "birthdate": "November 27, 1999",
       "yearsInNBA": "2",
       "wingspan": "7'4\" (224cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Oscar-Tshiebwe-2K-Rating.png",
       "ovr": "70",
       "prior_to_nba": "Kentucky",
       "nationality": "Congo"
@@ -233,7 +263,7 @@
       "birthdate": "April 23, 2001",
       "yearsInNBA": "0",
       "wingspan": "6'9\" (206cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/John-Tonje-2K-Rating.png",
       "ovr": "69",
       "prior_to_nba": "Wisconsin",
       "nationality": "United States"
@@ -247,10 +277,23 @@
       "birthdate": "February 3, 2000",
       "yearsInNBA": "2",
       "wingspan": "6'7\" (201cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NBA-2K-Ratings-Logo.svg",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Elijah-Harkless-2K-Rating.png",
       "ovr": "67",
       "prior_to_nba": "UNLV",
       "nationality": "United States"
+    },
+    {
+      "name": "Malik Beasley",
+      "position": "SG / SF",
+      "ovr": "78",
+      "age": 28,
+      "img": "https://www.2kratings.com/wp-content/uploads/Malik-Beasley-2K-Rating.png",
+      "thumbnail": "https://www.2kratings.com/wp-content/uploads/Malik-Beasley-2K-Rating.png",
+      "contractYears": "1",
+      "salaryPerYear": "3.69",
+      "lastSigned": "in-season free agency",
+      "lastUpdatedBy": "1195843329477328978",
+      "lastUpdatedAt": "2026-01-05T00:59:21.301Z"
     }
   ],
   "picks": [

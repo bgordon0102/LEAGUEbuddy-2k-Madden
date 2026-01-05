@@ -245,7 +245,14 @@ export async function execute_modal_resigning(interaction) {
     )
     .setFooter({ text: `Offer ID: ${entry.id}` })
     .setTimestamp(new Date());
-  if (thumbnail) embed.setThumbnail(thumbnail);
+  const thumb =
+    thumbnail ||
+    found?.player?.imgUrl ||
+    found?.player?.imgURL ||
+    found?.player?.image ||
+    found?.player?.img ||
+    null;
+  if (thumb) embed.setThumbnail(thumb);
 
   const approveBtn = new ButtonBuilder()
     .setCustomId(`resigning_approve_${entry.id}`)

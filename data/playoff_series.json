@@ -84,5 +84,47 @@
       3,
       4
     ]
+  },
+  "1455742239123832842": {
+    "team1": "Atlanta Hawks",
+    "team2": "Boston Celtics",
+    "round": "Play In Round 1",
+    "games": 1,
+    "winsNeeded": 1,
+    "scoreA": 1,
+    "scoreB": 0,
+    "decided": [
+      1
+    ]
+  },
+  "1455743406021148672": {
+    "team1": "Cleveland Cavaliers",
+    "team2": "Oklahoma City Thunder",
+    "round": "NBA Finals",
+    "games": 7,
+    "winsNeeded": 4,
+    "scoreA": 4,
+    "scoreB": 3,
+    "decided": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ]
+  },
+  "1455764317419999326": {
+    "team1": "Denver Nuggets",
+    "team2": "Detroit Pistons",
+    "round": "Play In Round 1",
+    "games": 1,
+    "winsNeeded": 1,
+    "scoreA": 1,
+    "scoreB": 0,
+    "decided": [
+      1
+    ]
   }
 }

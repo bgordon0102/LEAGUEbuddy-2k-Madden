@@ -25,6 +25,8 @@ const TOTAL_WEEKS = 29;
 const DEDICATED_CHANNEL_ID = '1428417230000885830';
 // Channel for global advance announcements
 const ANNOUNCE_CHANNEL_ID = '1425555647167987792';
+const PHASE_ANNOUNCE_CHANNEL_ID = '1425555647167987792';
+const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
 async function sendInitialWelcome(thread) {
     // Extract team names from thread name
     const threadName = thread.name || '';
@@ -114,6 +116,17 @@ export async function execute(interaction) {
         const writeSuccess = dataManager.writeData('season', season);
         if (writeSuccess) {
             await interaction.editReply({ content: `Season moved to playoffs (currentWeek ${season.currentWeek}). Progression and scouting are locked; trades and re-signing remain locked until offseason.` });
+            // Announce phase change
+            try {
+                const announceChannel = await interaction.client.channels.fetch(PHASE_ANNOUNCE_CHANNEL_ID).catch(() => null);
+                if (announceChannel && announceChannel.isTextBased()) {
+                    await announceChannel.send({
+                        content: `<@&${GHOST_PARADISE_ROLE_ID}> Playoffs have begun! Progression/scouting locked; trades/re-signing stay locked until offseason.`,
+                    });
+                }
+            } catch (err) {
+                console.error('[advanceweek] Failed to send playoffs announcement:', err);
+            }
         } else {
             await interaction.editReply({ content: 'Failed to update season data for playoffs.' });
         }
@@ -126,6 +139,16 @@ export async function execute(interaction) {
         const writeSuccess = dataManager.writeData('season', season);
         if (writeSuccess) {
             await interaction.editReply({ content: 'Season moved to offseason. Trades and re-signing are open; progression and scouting are locked until the new season starts or draft merge completes.' });
+            try {
+                const announceChannel = await interaction.client.channels.fetch(PHASE_ANNOUNCE_CHANNEL_ID).catch(() => null);
+                if (announceChannel && announceChannel.isTextBased()) {
+                    await announceChannel.send({
+                        content: `<@&${GHOST_PARADISE_ROLE_ID}> Offseason has begun! Trades and re-signing are open; progression/scouting locked until the new season or after draft merge.`,
+                    });
+                }
+            } catch (err) {
+                console.error('[advanceweek] Failed to send offseason announcement:', err);
+            }
         } else {
             await interaction.editReply({ content: 'Failed to update season data for offseason.' });
         }

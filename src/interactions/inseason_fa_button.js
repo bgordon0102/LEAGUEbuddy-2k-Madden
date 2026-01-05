@@ -222,7 +222,11 @@ async function handleModalSubmit(interaction) {
   const pending = readPending();
   pending[requestId] = {
     id: requestId,
-    player,
+    player: {
+      ...player,
+      img: player.img || player.imgUrl || player.imgURL || null,
+      thumbnail: player.img || player.imgUrl || player.imgURL || null,
+    },
     team,
     years,
     salary,
@@ -237,6 +241,7 @@ async function handleModalSubmit(interaction) {
     if (reviewChannel && reviewChannel.isTextBased()) {
       const coachMap = readCoachRoleMap();
       const roleId = coachMap[team];
+      const thumb = player.img || player.imgUrl || player.imgURL || null;
       const embed = new EmbedBuilder()
         .setTitle(`In-Season FA Request: ${player.name}`)
         .setColor(0xFEE75C)
@@ -250,7 +255,7 @@ async function handleModalSubmit(interaction) {
         )
         .setFooter({ text: `Request ID: ${requestId}` })
         .setTimestamp(new Date());
-      if (player.img) embed.setThumbnail(player.img);
+      if (thumb) embed.setThumbnail(thumb);
       const buttons = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`inseason_fa_approve_${requestId}`).setLabel('Approve').setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`inseason_fa_deny_${requestId}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
@@ -311,6 +316,7 @@ async function handleApproval(interaction, approve) {
     if (announceChannel && announceChannel.isTextBased()) {
       const coachMap = readCoachRoleMap();
       const roleId = coachMap[entry.team];
+       const thumb = entry.player.img || entry.player.imgUrl || entry.player.imgURL || entry.player.thumbnail || null;
       const embed = new EmbedBuilder()
         .setTitle(`In-Season Signing: ${entry.player.name}`)
         .setColor(0x57f287)
@@ -322,7 +328,7 @@ async function handleApproval(interaction, approve) {
           { name: 'Terms', value: `${entry.years || '—'} years${entry.salary ? ` | ${entry.salary}` : ''}`, inline: false },
         )
         .setTimestamp(new Date());
-      if (entry.player.img) embed.setThumbnail(entry.player.img);
+      if (thumb) embed.setThumbnail(thumb);
       await announceChannel.send({
         content: `${roleId ? `<@&${roleId}>` : ''} <@&${GHOST_PARADISE_ROLE_ID}> ${entry.player.name} signed with ${entry.team}.`,
         embeds: [embed],

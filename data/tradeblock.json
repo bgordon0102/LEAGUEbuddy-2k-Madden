@@ -1,1 +1,32 @@
-{}
+{
+  "Oklahoma_City_Thunder": [
+    "Isaiah Hartenstein",
+    "Alex Caruso",
+    "Ajay Mitchell",
+    "Isaiah Joe",
+    "Aaron Wiggins"
+  ],
+  "San_Antonio_Spurs": [
+    "Devin Vassell",
+    "Keldon Johnson"
+  ],
+  "Los_Angeles_Lakers": [
+    "LeBron James",
+    "Marcus Smart"
+  ],
+  "Toronto_Raptors": [
+    "R.J. Barrett"
+  ],
+  "Utah_Jazz": [
+    "Lauri Markkanen",
+    "Taylor Hendricks"
+  ],
+  "Cleveland_Cavaliers": [
+    "Jarrett Allen"
+  ],
+  "Minnesota_Timberwolves": [
+    "Rudy Gobert",
+    "Donte DiVincenzo",
+    "Bones Hyland"
+  ]
+}
