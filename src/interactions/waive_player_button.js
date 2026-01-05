@@ -10,6 +10,9 @@ function sortByOvrDesc(players = []) {
   return [...players].sort((a, b) => (Number(b.ovr) || 0) - (Number(a.ovr) || 0));
 }
 
+// Simple in-process lock to avoid double waiver submissions
+const activeWaives = new Set();
+
 export async function execute(interaction) {
   if (!(interaction?.isButton?.() || interaction?.isModalSubmit?.())) return;
   const parts = interaction.customId.split('::');
@@ -19,6 +22,7 @@ export async function execute(interaction) {
   if (interaction.customId.startsWith('waive_player_open_modal')) {
     const team = parts[1];
     const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = await import('discord.js');
+    if (interaction.replied || interaction.deferred) return;
     const modal = new ModalBuilder()
       .setCustomId(`waive_player_confirm::${team}`)
       .setTitle(`Waive a player (${team})`)
@@ -32,18 +36,35 @@ export async function execute(interaction) {
             .setRequired(true)
         )
       );
-    await interaction.showModal(modal);
+    try {
+      await interaction.showModal(modal);
+    } catch (err) {
+      if (err?.code !== 10062) {
+        console.error('[waive_player] showModal failed:', err);
+      }
+    }
     return;
   }
 
   // Confirm flow from modal submit
   if (!interaction.isModalSubmit()) return;
   const team = parts[1];
+  try {
+    await interaction.deferReply({ flags: 64 });
+  } catch (err) {
+    if (err?.code === 10062) return;
+    throw err;
+  }
   // Permission check: only team coach or staff can waive
   try {
     const coachMap = JSON.parse(fs.readFileSync(COACH_ROLE_MAP_PATH, 'utf8'));
     const staffMap = JSON.parse(fs.readFileSync(STAFF_ROLE_MAP_PATH, 'utf8'));
-    const teamRoleId = coachMap[team];
+    const teamRoleId = (() => {
+      if (coachMap[team]) return coachMap[team];
+      const norm = normalizeName(team);
+      const match = Object.entries(coachMap || {}).find(([k]) => normalizeName(k) === norm);
+      return match ? match[1] : null;
+    })();
     const staffIds = Object.entries(staffMap || {})
       .filter(([name]) => name === 'Paradise Commish' || name === 'Paradise Co-Commish')
       .map(([, id]) => id)
@@ -51,54 +72,74 @@ export async function execute(interaction) {
     const isCoach = teamRoleId && interaction.member?.roles?.cache?.has(teamRoleId);
     const isStaff = interaction.member?.roles?.cache?.some(r => staffIds.includes(r.id));
     if (!isCoach && !isStaff) {
-      await interaction.reply({ content: 'You do not have permission to waive players from this team.', ephemeral: true });
+      await interaction.editReply({ content: 'You do not have permission to waive players from this team.' });
       return;
     }
   } catch (err) {
     console.error('[waive_player] Permission check failed:', err);
-    await interaction.reply({ content: 'Permission check failed. Try again.', ephemeral: true });
+    await interaction.editReply({ content: 'Permission check failed. Try again.' });
     return;
   }
 
   const playerName = interaction.fields.getTextInputValue('player').trim();
   if (!playerName) {
-    await interaction.reply({ content: 'No player provided.', ephemeral: true });
+    await interaction.editReply({ content: 'No player provided.' });
     return;
   }
+  const lockKey = `${team}::${normalizeName(playerName)}`;
+  if (activeWaives.has(lockKey)) {
+    await interaction.editReply({ content: 'A waiver for that player is already processing. Please try again in a moment.' });
+    return;
+  }
+  activeWaives.add(lockKey);
 
   // Load team roster
   const teamData = readRoster(team);
   if (!teamData) {
-    await interaction.reply({ content: `Roster not found for ${team}.`, ephemeral: true });
+    await interaction.editReply({ content: `Roster not found for ${team}.` });
     return;
   }
   const { rosterPath: teamPath, roster } = teamData;
   const norm = normalizeName(playerName);
-  const idx = roster.players.findIndex(p => {
-    const n = normalizeName(p.name);
-    return n === norm || n.includes(norm) || norm.includes(n);
-  });
-  if (idx === -1) {
-    await interaction.reply({ content: `${playerName} is not on ${team}.`, ephemeral: true });
+  const idxExact = roster.players.findIndex(p => normalizeName(p.name) === norm);
+  let foundIdx = idxExact;
+  if (foundIdx === -1) {
+    foundIdx = roster.players.findIndex(p => {
+      const n = normalizeName(p.name);
+      return n.includes(norm) || norm.includes(n);
+    });
+  }
+  if (foundIdx === -1) {
+    await interaction.editReply({ content: `${playerName} is not on ${team}.` });
+    activeWaives.delete(lockKey);
     return;
   }
-  const player = roster.players[idx];
-  roster.players.splice(idx, 1);
+  const player = roster.players[foundIdx];
+  roster.players.splice(foundIdx, 1);
   saveRoster(teamPath, roster);
 
   // Add to free agency pool
   const faData = readRoster(FREE_AGENCY_PATH) || { rosterPath: null, roster: { players: [], picks: [] } };
   if (!faData.rosterPath) {
-    await interaction.reply({ content: 'Free agency file not found.', ephemeral: true });
+    await interaction.editReply({ content: 'Free agency file not found.' });
     return;
   }
   const faPlayers = faData.roster.players || [];
   const filtered = faPlayers.filter(p => normalizeName(p.name) !== norm);
-  filtered.push(player);
+  const playerCopy = { ...player };
+  if (!playerCopy.imgUrl && playerCopy.img) playerCopy.imgUrl = playerCopy.img;
+  if (!playerCopy.imgURL && playerCopy.imgUrl) playerCopy.imgURL = playerCopy.imgUrl;
+  if (!playerCopy.thumbnail && (playerCopy.imgURL || playerCopy.imgUrl || playerCopy.img)) {
+    playerCopy.thumbnail = playerCopy.imgURL || playerCopy.imgUrl || playerCopy.img;
+  }
+  playerCopy.lastSigned = 'waived';
+  playerCopy.lastUpdatedAt = new Date().toISOString();
+  filtered.push(playerCopy);
   faData.roster.players = sortByOvrDesc(filtered);
   saveRoster(faData.rosterPath, faData.roster);
 
-  await interaction.reply({ content: `${player.name} has been waived by ${team} and added to free agency.`, ephemeral: true });
+  await interaction.editReply({ content: `${player.name} has been waived by ${team} and added to free agency.` });
+  activeWaives.delete(lockKey);
 }
 
 export default { customId, execute };

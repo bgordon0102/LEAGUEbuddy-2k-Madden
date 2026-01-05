@@ -138,7 +138,7 @@ function getEastWestTeams() {
             'Denver Nuggets',
             'Golden State Warriors',
             'Houston Rockets',
-            'LA Clippers',
+            'Los Angeles Clippers',
             'Los Angeles Lakers',
             'Memphis Grizzlies',
             'Minnesota Timberwolves',

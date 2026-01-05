@@ -170,16 +170,16 @@
     },
     {
       "name": "Bol Bol",
-      "position": "PF / C",
+      "position": "C",
       "ovr": "73",
       "age": 25,
       "img": "https://www.2kratings.com/wp-content/uploads/Bol-Bol-2K-Rating.png",
       "thumbnail": "https://www.2kratings.com/wp-content/uploads/Bol-Bol-2K-Rating.png",
       "contractYears": "4",
       "salaryPerYear": "4 million per",
-      "lastSigned": "in-season free agency",
+      "lastSigned": "transaction",
       "lastUpdatedBy": "1076243288056664234",
-      "lastUpdatedAt": "2026-01-04T22:08:06.145Z",
+      "lastUpdatedAt": "2026-01-05T21:17:56.946Z",
       "progression": [
         {
           "skillSet": "Interior Defense",
@@ -202,6 +202,19 @@
       "ovr": "76",
       "prior_to_nba": "Kentucky",
       "nationality": "United States"
+    },
+    {
+      "name": "Caleb Houstan",
+      "position": "SG / SF",
+      "ovr": "73",
+      "age": 22,
+      "img": null,
+      "thumbnail": null,
+      "contractYears": "3 years",
+      "salaryPerYear": "$4.2M",
+      "lastSigned": "in-season free agency",
+      "lastUpdatedBy": "1195843329477328978",
+      "lastUpdatedAt": "2026-01-05T22:47:49.184Z"
     }
   ],
   "picks": [

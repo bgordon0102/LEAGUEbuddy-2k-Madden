@@ -121,20 +121,6 @@
       "nationality": "United States"
     },
     {
-      "name": "Nae’Qwan Tomlin",
-      "position": "PF / C",
-      "height": "6'9\" (206cm)",
-      "weight": "210lbs (95kg)",
-      "archetype": "Disruptive Crasher",
-      "birthdate": "December 10, 2000",
-      "yearsInNBA": "1",
-      "wingspan": "7'1\" (216cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/NaeQwan-Tomlin-2K-Rating.png",
-      "ovr": "75",
-      "prior_to_nba": "Memphis",
-      "nationality": "United States"
-    },
-    {
       "name": "Dean Wade",
       "position": "PF / C",
       "height": "6'9\" (206cm)",
@@ -216,34 +202,6 @@
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/Tyrese-Proctor-2K-Rating.png",
       "ovr": "72",
       "prior_to_nba": "Duke",
-      "nationality": "Australia"
-    },
-    {
-      "name": "Chris Livingston",
-      "position": "PF / SF",
-      "height": "6'6\" (198cm)",
-      "weight": "220lbs (99kg)",
-      "archetype": "High-Flying Wing Runner",
-      "birthdate": "October 15, 2003",
-      "yearsInNBA": "2",
-      "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Chris-Livingston-2K-Rating.png",
-      "ovr": "69",
-      "prior_to_nba": "Kentucky",
-      "nationality": "United States"
-    },
-    {
-      "name": "Luke Travers",
-      "position": "SF / PF",
-      "height": "6'7\" (201cm)",
-      "weight": "207lbs (93kg)",
-      "archetype": "Iso Sniper",
-      "birthdate": "September 3, 2001",
-      "yearsInNBA": "3",
-      "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Luke-Travers-2K-Rating.png",
-      "ovr": "69",
-      "prior_to_nba": "Australia",
       "nationality": "Australia"
     }
   ],

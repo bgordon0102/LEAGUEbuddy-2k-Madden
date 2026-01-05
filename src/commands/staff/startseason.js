@@ -155,7 +155,7 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
         { id: 10, name: "Golden State Warriors", abbreviation: "GSW" },
         { id: 11, name: "Houston Rockets", abbreviation: "HOU" },
         { id: 12, name: "Indiana Pacers", abbreviation: "IND" },
-        { id: 13, name: "LA Clippers", abbreviation: "LAC" },
+        { id: 13, name: "Los Angeles Clippers", abbreviation: "LAC" },
         { id: 14, name: "Los Angeles Lakers", abbreviation: "LAL" },
         { id: 15, name: "Memphis Grizzlies", abbreviation: "MEM" },
         { id: 16, name: "Miami Heat", abbreviation: "MIA" },

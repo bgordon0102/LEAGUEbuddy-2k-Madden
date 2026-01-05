@@ -149,20 +149,6 @@
       "nationality": "United States"
     },
     {
-      "name": "Johnny Juzang",
-      "position": "SG / SF",
-      "height": "6'5\" (196cm)",
-      "weight": "209lbs (94kg)",
-      "archetype": "Crafty Sharpshooter",
-      "birthdate": "March 17, 2001",
-      "yearsInNBA": "3",
-      "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Johnny-Juzang-2K-Rating.png",
-      "ovr": "72",
-      "prior_to_nba": "UCLA",
-      "nationality": "United States"
-    },
-    {
       "name": "Rob Dillingham",
       "position": "PG / SG",
       "height": "6'3\" (191cm)",
@@ -205,32 +191,17 @@
       "nationality": "France"
     },
     {
-      "name": "Enrique Freeman",
-      "position": "PF / C",
-      "height": "6'7\" (201cm)",
-      "weight": "206lbs (93kg)",
-      "archetype": "Bouncy Dual Finisher",
-      "birthdate": "July 29, 2000",
-      "yearsInNBA": "1",
-      "wingspan": "7'2\" (218cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Enrique-Freeman-2K-Rating.png",
-      "ovr": "69",
-      "prior_to_nba": "Akron",
-      "nationality": "United States"
-    },
-    {
-      "name": "Rocco Zikarsky",
-      "position": "C",
-      "height": "7'4\" (224cm)",
-      "weight": "257lbs (116kg)",
-      "archetype": "Shot-Erasing Putback Pro",
-      "birthdate": "July 11, 2006",
-      "yearsInNBA": "0",
-      "wingspan": "7'5\" (226cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Rocco-Zikarsky-2K-Rating.png",
-      "ovr": "68",
-      "prior_to_nba": "Australia",
-      "nationality": "Australia"
+      "name": "Shake Milton",
+      "position": "PG / SG",
+      "ovr": "74",
+      "age": 29,
+      "img": "https://www.2kratings.com/wp-content/uploads/Shake-Milton-2K-Rating.png",
+      "thumbnail": "https://www.2kratings.com/wp-content/uploads/Shake-Milton-2K-Rating.png",
+      "contractYears": "1",
+      "salaryPerYear": "3.09M",
+      "lastSigned": "in-season free agency",
+      "lastUpdatedBy": "1195843329477328978",
+      "lastUpdatedAt": "2026-01-05T20:03:31.949Z"
     }
   ],
   "picks": [

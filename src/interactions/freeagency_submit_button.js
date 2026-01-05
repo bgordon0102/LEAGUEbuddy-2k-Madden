@@ -17,6 +17,7 @@ const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json'
 const STAFF_ROLES = ['Paradise Commish', 'Paradise Co-Commish', 'Schedule Tracker'];
 const STAFF_OFFER_CHANNEL_ID = process.env.FREE_AGENCY_STAFF_CHANNEL_ID || '1455151770383814666';
 const ANNOUNCE_CHANNEL_ID = process.env.FREE_AGENCY_ANNOUNCE_CHANNEL_ID || '1455152984089694218';
+const OFFER_ALERT_CHANNEL_ID = process.env.FREE_AGENCY_OFFER_ALERT_CHANNEL_ID || '1425555647167987792';
 const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
 const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
 
@@ -334,6 +335,7 @@ export async function execute_modal_offer(interaction) {
 
   await interaction.editReply({ content: 'Offer submitted. Staff will review.' });
 
+  await sendOfferAlert(interaction.client, entry, team, note);
   await sendOrUpdateStaffMessage(interaction.client, entry);
 }
 
@@ -377,6 +379,41 @@ async function sendOrUpdateStaffMessage(client, entry) {
   }
 }
 
+async function sendOfferAlert(client, entry, team, note) {
+  try {
+    if (entry.alertSent) return;
+    const channel = await client.channels.fetch(OFFER_ALERT_CHANNEL_ID).catch(() => null);
+    if (!channel || !channel.isTextBased()) return;
+    const expireTs = Math.floor((Date.now() + 60 * 60 * 1000) / 1000);
+    const embed = new EmbedBuilder()
+      .setTitle(`New FA Offer: ${entry.player}`)
+      .setColor(0xf1c40f)
+      .setDescription(`Offer placed by ${team}. You have an hour to send in an offer before they sign.`)
+      .addFields(
+        { name: 'Position', value: entry.position || '-', inline: true },
+        { name: 'OVR', value: entry.ovr != null ? String(entry.ovr) : '-', inline: true },
+        { name: 'Timer', value: `<t:${expireTs}:R>`, inline: true },
+      );
+    if (note) {
+      embed.addFields({ name: 'Offer Details', value: note.slice(0, 1024) });
+    }
+    if (entry.thumbnail) embed.setThumbnail(entry.thumbnail);
+    await channel.send({
+      content: `<@&${GHOST_PARADISE_ROLE_ID}> New offer for ${entry.player}.`,
+      embeds: [embed],
+    });
+    // persist alertSent
+    const entries = readEntries();
+    const idx = entries.findIndex(e => e.id === entry.id);
+    if (idx !== -1) {
+      entries[idx].alertSent = true;
+      writeEntries(entries);
+    }
+  } catch (err) {
+    console.error('[freeagency] Failed to send offer alert:', err);
+  }
+}
+
 async function handleStaffPick(interaction) {
   const parts = interaction.customId.split('_');
   const entryId = parts[3];
@@ -394,6 +431,21 @@ async function handleStaffPick(interaction) {
     await interaction.editReply({ content: `Already signed by ${entry.signedTeam}.` });
     return;
   }
+
+  // Disable buttons to prevent double-processing
+  try {
+    const disabledRows = interaction.message.components?.map(row => {
+      const newRow = ActionRowBuilder.from(row);
+      newRow.components = newRow.components.map(btn => ButtonBuilder.from(btn).setDisabled(true));
+      return newRow;
+    });
+    if (disabledRows?.length) {
+      await interaction.message.edit({ components: disabledRows });
+    }
+  } catch {
+    // non-fatal
+  }
+
   const offer = (entry.offers || []).find(o => o.team === team);
   if (!offer) {
     await interaction.editReply({ content: 'Offer not found for that team.' });

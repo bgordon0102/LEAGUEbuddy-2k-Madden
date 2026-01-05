@@ -53,14 +53,22 @@ async function autocomplete(interaction) {
             .slice(0, 25);
         await interaction.respond(options);
     } catch (err) {
+        if (err?.code === 10062 || err?.code === 40060) return;
         console.error('[player autocomplete] Error:', err);
-        try { await interaction.respond([{ name: 'No players found', value: 'none' }]); } catch { }
+        try { await interaction.respond([{ name: 'No players found', value: 'none' }]); } catch (e) {
+            if (e?.code !== 10062 && e?.code !== 40060) console.error('[player autocomplete] respond failed:', e);
+        }
     }
 }
 
 async function execute(interaction) {
     try {
-        await interaction.deferReply({ ephemeral: true });
+        try {
+            await interaction.deferReply({ ephemeral: true });
+        } catch (err) {
+            if (err?.code === 10062) return;
+            throw err;
+        }
         const playerName = interaction.options.getString("name");
         const allPlayers = loadAllPlayers();
         const player = allPlayers.find(p => p.name && p.name.toLowerCase() === playerName.toLowerCase());
@@ -96,7 +104,7 @@ async function execute(interaction) {
         }
         // Build embed with all info
         const pos = player.position || player.position_1 || player.position1 || "-";
-        const thumb = player.imgUrl || player.imgURL;
+        const thumb = player.imgUrl || player.imgURL || player.img || player.thumbnail;
         const embed = new EmbedBuilder().setTitle(String(player.name));
         if (thumb) embed.setThumbnail(String(thumb));
         embed.addFields(
@@ -114,7 +122,11 @@ async function execute(interaction) {
         await interaction.editReply({ embeds: [embed] });
     } catch (err) {
         console.error('[player execute] Error:', err);
-        await interaction.editReply({ content: 'Error showing player info.' });
+        try {
+            await interaction.editReply({ content: 'Error showing player info.' });
+        } catch (e) {
+            if (e?.code !== 10062) console.error('[player execute] fallback failed:', e);
+        }
     }
 }
 

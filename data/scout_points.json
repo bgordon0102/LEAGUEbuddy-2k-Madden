@@ -77,5 +77,33 @@
     "weeklyPoints": {
       "week_1": 0
     }
+  },
+  "1195843329477328978": {
+    "playersScouted": {
+      "Taji Anikulapo-Kuti": [
+        "build",
+        "draft_score"
+      ],
+      "Abdoulaye Saint-Laurent": [
+        "build",
+        "draft_score"
+      ]
+    },
+    "weeklyPoints": {
+      "week_1": 0
+    }
+  },
+  "1442183083695542272": {
+    "playersScouted": {
+      "Abdoulaye Saint-Laurent": [
+        "build",
+        "draft_score",
+        "overall",
+        "potential"
+      ]
+    },
+    "weeklyPoints": {
+      "week_1": 0
+    }
   }
 }

@@ -163,20 +163,6 @@
       "nationality": "United States"
     },
     {
-      "name": "A.J. Lawson",
-      "position": "SF / SG",
-      "height": "6'6\" (198cm)",
-      "weight": "179lbs (81kg)",
-      "archetype": "Crafty 3PT-Sniping Dimer",
-      "birthdate": "July 15, 2000",
-      "yearsInNBA": "4",
-      "wingspan": "6'7\" (201cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/AJ-Lawson-2K-Rating.png",
-      "ovr": "73",
-      "prior_to_nba": "South Carolina",
-      "nationality": "Canada"
-    },
-    {
       "name": "Ochai Agbaji",
       "position": "PF / SF",
       "height": "6'5\" (196cm)",
@@ -191,44 +177,30 @@
       "nationality": "United States"
     },
     {
-      "name": "Garrett Temple",
-      "position": "SG / SF",
-      "height": "6'5\" (196cm)",
-      "weight": "195lbs (88kg)",
-      "archetype": "2-Way Combo Guard",
-      "birthdate": "May 8, 1986",
-      "yearsInNBA": "16",
-      "wingspan": "6'9\" (206cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Garrett-Temple-2K-Rating.png",
-      "ovr": "70",
-      "prior_to_nba": "LSU",
-      "nationality": "United States"
-    },
-    {
       "name": "Ben Simmons",
-      "position": "PG / C",
+      "position": "PG",
       "ovr": "77",
       "age": 29,
       "img": "https://www.2kratings.com/wp-content/uploads/Ben-Simmons-2K-Rating.png",
       "thumbnail": "https://www.2kratings.com/wp-content/uploads/Ben-Simmons-2K-Rating.png",
       "contractYears": "3",
       "salaryPerYear": "$4.5 million",
-      "lastSigned": "in-season free agency",
-      "lastUpdatedBy": "1195843329477328978",
-      "lastUpdatedAt": "2026-01-04T18:12:50.836Z"
+      "lastSigned": "transaction",
+      "lastUpdatedBy": "1076243288056664234",
+      "lastUpdatedAt": "2026-01-05T21:17:56.953Z"
     },
     {
       "name": "Spencer Dinwiddie",
-      "position": "PG / SG",
+      "position": "PG",
       "ovr": "76",
       "age": 32,
       "img": "https://www.2kratings.com/wp-content/uploads/Spencer-Dinwiddie-2K-Rating.png",
       "thumbnail": "https://www.2kratings.com/wp-content/uploads/Spencer-Dinwiddie-2K-Rating.png",
       "contractYears": "2",
       "salaryPerYear": "$2.3M",
-      "lastSigned": "in-season free agency",
-      "lastUpdatedBy": "1195843329477328978",
-      "lastUpdatedAt": "2026-01-04T23:40:12.485Z"
+      "lastSigned": "transaction",
+      "lastUpdatedBy": "1076243288056664234",
+      "lastUpdatedAt": "2026-01-05T21:17:56.939Z"
     }
   ],
   "picks": [

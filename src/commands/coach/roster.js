@@ -2,6 +2,8 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import fs from "fs";
 import path from "path";
+import { readRoster } from "../../utils/rosterUtils.js";
+import { normalizeName } from "../../utils/rosterUtils.js";
 
 const data = new SlashCommandBuilder()
     .setName("roster")
@@ -47,8 +49,12 @@ async function autocomplete(interaction) {
         await interaction.respond(options);
         return;
     } catch (err) {
+        // Avoid noisy logs/replies on expired or already-acknowledged interactions
+        if (err?.code === 10062 || err?.code === 40060) return;
         console.error('[roster autocomplete] Fatal error:', err);
-        try { await interaction.respond([{ name: 'No teams found', value: 'none' }]); } catch { }
+        try { await interaction.respond([{ name: 'No teams found', value: 'none' }]); } catch (e) {
+            if (e?.code !== 10062 && e?.code !== 40060) console.error('[roster autocomplete] respond failed:', e);
+        }
         return;
     }
 }
@@ -56,22 +62,32 @@ async function autocomplete(interaction) {
 async function execute(interaction) {
     let responded = false;
     try {
-        await interaction.deferReply({ ephemeral: true });
+        try {
+            await interaction.deferReply({ ephemeral: true });
+        } catch (err) {
+            if (err?.code === 10062) return; // interaction expired
+            throw err;
+        }
         responded = true;
         const team = interaction.options.getString("team");
-        // Convert team name to file name
-        const fileName = team.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() + ".json";
-        const rosterPath = path.join(process.cwd(), "data/teams_rosters", fileName);
-        if (!fs.existsSync(rosterPath)) {
+        // Load roster using shared helper to honor aliases and fuzzy matches
+        const data = readRoster(team);
+        if (!data) {
             await interaction.editReply({ content: `No roster found for ${team}.` });
             return;
         }
+        const { rosterPath, roster } = data;
         // Determine if the viewer is the coach of this team (for waive button visibility)
         let canWaive = false;
         try {
             const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/coachRoleMap.json'), 'utf8'));
             const staffMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/staffRoleMap.main.json'), 'utf8'));
-            const teamRoleId = coachMap[team];
+            const teamRoleId = (() => {
+                if (coachMap[team]) return coachMap[team];
+                const norm = normalizeName(team);
+                const match = Object.entries(coachMap || {}).find(([k]) => normalizeName(k) === norm);
+                return match ? match[1] : null;
+            })();
             const isCoach = teamRoleId && interaction.member?.roles?.cache?.has(teamRoleId);
             const isStaff = interaction.member?.roles?.cache?.some(r =>
                 Object.entries(staffMap || {})
@@ -89,7 +105,6 @@ async function execute(interaction) {
         } catch {
             // ignore
         }
-        const roster = JSON.parse(fs.readFileSync(rosterPath, "utf8"));
         // Handle new roster format: object with players and picks
         let playersArr = Array.isArray(roster) ? roster : roster.players || [];
         if (!Array.isArray(playersArr) || playersArr.length === 0) {
@@ -158,9 +173,17 @@ async function execute(interaction) {
     } catch (err) {
         console.error('Error in roster:', err);
         if (responded) {
-            await interaction.editReply({ content: 'Failed to load roster.' });
+            try {
+                await interaction.editReply({ content: 'Failed to load roster.' });
+            } catch (e) {
+                if (e?.code !== 10062) throw e;
+            }
         } else {
-            await interaction.reply({ content: 'An error occurred while processing your request.', ephemeral: true });
+            try {
+                await interaction.reply({ content: 'An error occurred while processing your request.', ephemeral: true });
+            } catch (e) {
+                if (e?.code !== 10062) throw e;
+            }
         }
     }
 }

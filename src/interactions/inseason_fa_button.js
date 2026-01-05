@@ -16,6 +16,7 @@ import { getSeasonState } from '../utils/seasonUtils.js';
 const FA_CHANNEL_ID = '1455148525179502602';
 const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
 const ANNOUNCE_CHANNEL_ID = '1455152984089694218'; // offseason announcements channel
+const OFFER_ALERT_CHANNEL_ID = process.env.FREE_AGENCY_OFFER_ALERT_CHANNEL_ID || '1425555647167987792';
 const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json');
 const STAFF_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
 const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
@@ -135,9 +136,15 @@ export async function execute(interaction) {
   }
 
   if (interaction.customId === 'inseason_fa_button') {
+    try {
+      await interaction.deferReply({ flags: 64 });
+    } catch (err) {
+      if (err?.code === 10062) return;
+      throw err;
+    }
     const faPlayers = loadFreeAgents();
     if (!faPlayers.length) {
-      await interaction.reply({ content: 'No free agents available.', ephemeral: true });
+      await interaction.editReply({ content: 'No free agents available.', components: [] });
       return;
     }
     // Top 25 by OVR (desc), fallback 0
@@ -153,25 +160,29 @@ export async function execute(interaction) {
       .setPlaceholder('Select a free agent')
       .addOptions(options);
     const row = new ActionRowBuilder().addComponents(menu);
-    await interaction.reply({
+    await interaction.editReply({
       content: 'Select a free agent to sign. (List limited to first 25; contact staff if missing.)',
       components: [row],
-      ephemeral: true,
     });
     return;
   }
 
   if (interaction.customId === 'inseason_fa_select') {
+    // No defer here; showModal must be first response
     const selected = interaction.values[0];
     const faPlayers = loadFreeAgents();
     const player = faPlayers.find(p => normalizeName(p.name) === selected);
     if (!player) {
-      await interaction.reply({ content: 'Free agent not found. Please retry.', ephemeral: true });
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: 'Free agent not found. Please retry.', flags: 64 });
+      }
       return;
     }
     const team = getTeamFromMemberRoles(interaction.member);
     if (!team) {
-      await interaction.reply({ content: 'Could not detect your team from roles. Contact staff.', ephemeral: true });
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({ content: 'Could not detect your team from roles. Contact staff.', flags: 64 });
+      }
       return;
     }
     // Launch modal to collect contract details
@@ -197,29 +208,49 @@ export async function execute(interaction) {
             .setRequired(false),
         ),
       );
-    await interaction.showModal(modal);
+    try {
+      await interaction.showModal(modal);
+    } catch (err) {
+      if (err?.code !== 10062) {
+        console.error('[inseason_fa] showModal failed:', err);
+      }
+    }
   }
 }
 
 async function handleModalSubmit(interaction) {
+  try {
+    await interaction.deferReply({ flags: 64 });
+  } catch (err) {
+    if (err?.code === 10062) return;
+    throw err;
+  }
   const encoded = interaction.customId.replace('inseason_fa_modal_', '');
   const playerName = Buffer.from(encoded, 'base64').toString('utf8');
   const team = getTeamFromMemberRoles(interaction.member);
   if (!team) {
-    await interaction.reply({ content: 'Could not detect your team from roles. Contact staff.', ephemeral: true });
+    await interaction.editReply({ content: 'Could not detect your team from roles. Contact staff.' });
     return;
   }
   const faPlayers = loadFreeAgents();
   const player = faPlayers.find(p => normalizeName(p.name) === normalizeName(playerName));
   if (!player) {
-    await interaction.reply({ content: 'Free agent not found. Please retry.', ephemeral: true });
+    await interaction.editReply({ content: 'Free agent not found. Please retry.' });
     return;
   }
 
   const years = interaction.fields.getTextInputValue('years') || '';
   const salary = interaction.fields.getTextInputValue('salary') || '';
-  const requestId = `${Date.now()}`;
   const pending = readPending();
+  const exists = Object.values(pending || {}).find(entry =>
+    entry.team === team && normalizeName(entry.player?.name || entry.player) === normalizeName(player.name)
+  );
+  if (exists) {
+    await interaction.editReply({ content: 'Request already submitted and pending review.' });
+    return;
+  }
+
+  const requestId = `${Date.now()}`;
   pending[requestId] = {
     id: requestId,
     player: {
@@ -232,8 +263,12 @@ async function handleModalSubmit(interaction) {
     salary,
     coachId: interaction.user.id,
     createdAt: new Date().toISOString(),
+    alertSent: false,
+    staffMessageId: null,
   };
   writePending(pending);
+
+  await sendOfferAlert(interaction.client, pending[requestId]);
 
   // Send to staff review channel
   try {
@@ -260,13 +295,56 @@ async function handleModalSubmit(interaction) {
         new ButtonBuilder().setCustomId(`inseason_fa_approve_${requestId}`).setLabel('Approve').setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`inseason_fa_deny_${requestId}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
       );
-      await reviewChannel.send({ content: getStaffMention(), embeds: [embed], components: [buttons] });
+      const latest = readPending();
+      if (latest[requestId]?.staffMessageId) {
+        // already sent
+        return;
+      }
+      const msg = await reviewChannel.send({ content: getStaffMention(), embeds: [embed], components: [buttons] });
+      if (latest[requestId]) {
+        latest[requestId].staffMessageId = msg.id;
+        writePending(latest);
+      }
     }
   } catch (err) {
     console.error('[inseason_fa] Failed to send staff review:', err);
   }
 
-  await interaction.reply({ content: `Submitted to staff for approval (ID: ${requestId}).`, ephemeral: true });
+  await interaction.editReply({ content: `Submitted to staff for approval (ID: ${requestId}).` });
+}
+
+async function sendOfferAlert(client, entry) {
+  try {
+    const pending = readPending();
+    const stored = pending[entry.id];
+    if (stored?.alertSent) return;
+    if (stored) {
+      stored.alertSent = true;
+      writePending(pending);
+    }
+    const channel = await client.channels.fetch(OFFER_ALERT_CHANNEL_ID).catch(() => null);
+    if (!channel || !channel.isTextBased()) return;
+    const expireTs = Math.floor((Date.now() + 60 * 60 * 1000) / 1000);
+    const embed = new EmbedBuilder()
+      .setTitle(`New In-Season FA Offer: ${entry.player.name}`)
+      .setColor(0xf1c40f)
+      .setDescription('You have an hour to send in an offer before they sign.')
+      .addFields(
+        { name: 'Position', value: entry.player.position || '—', inline: true },
+        { name: 'OVR', value: entry.player.ovr ? String(entry.player.ovr) : '—', inline: true },
+        { name: 'Timer', value: `<t:${expireTs}:R>`, inline: true },
+      );
+    if (entry.player.thumbnail || entry.player.img || entry.player.imgUrl || entry.player.imgURL) {
+      const thumb = entry.player.thumbnail || entry.player.img || entry.player.imgUrl || entry.player.imgURL;
+      embed.setThumbnail(thumb);
+    }
+    await channel.send({
+      content: `<@&${GHOST_PARADISE_ROLE_ID}> ${entry.team} placed an in-season FA offer for ${entry.player.name}.`,
+      embeds: [embed],
+    });
+  } catch (err) {
+    console.error('[inseason_fa] Failed to send offer alert:', err);
+  }
 }
 
 async function handleApproval(interaction, approve) {
@@ -274,8 +352,18 @@ async function handleApproval(interaction, approve) {
   const pending = readPending();
   const entry = pending[id];
   if (!entry) {
-    await interaction.reply({ content: 'Request not found or already processed.', ephemeral: true });
+    try {
+      await interaction.reply({ content: 'Request not found or already processed.', flags: 64 });
+    } catch (err) {
+      if (err?.code !== 10062) throw err;
+    }
     return;
+  }
+  try {
+    await interaction.deferReply({ flags: 64 });
+  } catch (err) {
+    if (err?.code === 10062) return;
+    throw err;
   }
   // disable buttons
   try {
@@ -289,13 +377,13 @@ async function handleApproval(interaction, approve) {
   if (!approve) {
     delete pending[id];
     writePending(pending);
-    await interaction.reply({ content: `Denied in-season FA request for ${entry.player.name}.`, ephemeral: true });
+    await interaction.editReply({ content: `Denied in-season FA request for ${entry.player.name}.` });
     return;
   }
 
   const rosterData = readRoster(entry.team);
   if (!rosterData) {
-    await interaction.reply({ content: `Roster not found for ${entry.team}.`, ephemeral: true });
+    await interaction.editReply({ content: `Roster not found for ${entry.team}.` });
     return;
   }
   const { rosterPath, roster } = rosterData;
@@ -340,7 +428,7 @@ async function handleApproval(interaction, approve) {
 
   delete pending[id];
   writePending(pending);
-  await interaction.reply({ content: `Approved and signed ${entry.player.name} to ${entry.team}.`, ephemeral: true });
+  await interaction.editReply({ content: `Approved and signed ${entry.player.name} to ${entry.team}.` });
 }
 
 export default {

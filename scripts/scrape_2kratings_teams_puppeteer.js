@@ -353,6 +353,147 @@ async function scrapeTeamPage(url, { label = 'team' } = {}) {
 
 async function main() {
     console.log("[DEBUG] main() started");
+    const arg = process.argv[2];
+    const playerUrl = process.argv[3];
+    // If a player URL is provided, scrape that player only
+    if (playerUrl && typeof playerUrl === 'string' && playerUrl.includes('2kratings.com') && !playerUrl.includes('/teams/')) {
+        console.log(`[DEBUG] Scraping individual player: ${playerUrl}`);
+        const browser = await puppeteer.launch({ headless: true });
+        let cookies = null;
+        const cookiesPath = path.resolve('./cookies.json');
+        if (fs.existsSync(cookiesPath)) {
+            try {
+                cookies = JSON.parse(fs.readFileSync(cookiesPath, 'utf8'));
+                console.log('[DEBUG] Loaded cookies from cookies.json');
+            } catch (e) {
+                console.log('[DEBUG] Failed to load cookies:', e.message);
+            }
+        }
+        let page = await browser.newPage();
+        if (cookies) {
+            try {
+                await page.setCookie(...cookies);
+            } catch (e) {
+                console.log('[DEBUG] Failed to set cookies on player page:', e.message);
+            }
+        }
+        await page.goto(playerUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+        await page.waitForSelector('body', { timeout: 20000 });
+        await new Promise(res => setTimeout(res, 3000));
+        const info = await page.evaluate(() => {
+            const textContent = (el) => (el && el.textContent ? el.textContent.trim() : '');
+            const allP = Array.from(document.querySelectorAll('p'));
+            const getByLabel = (label) => {
+                const p = allP.find(x => x.textContent && x.textContent.trim().toLowerCase().startsWith(label));
+                return textContent(p);
+            };
+            const getSpanAfterLabel = (label) => {
+                const p = allP.find(x => x.textContent && x.textContent.trim().toLowerCase().startsWith(label));
+                if (!p) return '';
+                const span = p.querySelector('span.text-light');
+                return textContent(span) || textContent(p).replace(new RegExp('^' + label, 'i'), '').trim();
+            };
+            const name = textContent(document.querySelector('h1.header-title'));
+            let positions = [];
+            const posP = allP.find(p => /Position:/i.test(p.textContent || ''));
+            if (posP) {
+                positions = Array.from(posP.querySelectorAll('a.text-light')).map(a => textContent(a)).filter(Boolean);
+            }
+            let position = positions.join(' / ');
+            let height = getSpanAfterLabel('height:');
+            let weight = getSpanAfterLabel('weight:');
+            let wingspan = getSpanAfterLabel('wingspan:');
+            let birthdate = getByLabel('birthdate:').replace(/^birthdate:\s*/i, '');
+            let yearsInNBA = getByLabel('year(s) in the nba:').replace(/^year\(s\) in the nba:\s*/i, '');
+            let prior_to_nba = getByLabel('prior to  nba:').replace(/^prior to\s*nba:\s*/i, '') || getByLabel('prior to nba:').replace(/^prior to\s*nba:\s*/i, '');
+            let nationality = getByLabel('nationality:').replace(/^nationality:\s*/i, '');
+            let imgUrl = '';
+            const ogImg = document.querySelector('meta[property="og:image"]');
+            if (ogImg && ogImg.content) imgUrl = ogImg.content;
+            if (!imgUrl) {
+                const img = document.querySelector('img.profile-photo, img[src*="2K-Photo"], img[src*="2K-Rating"]');
+                if (img) imgUrl = img.src;
+            }
+            if (!imgUrl) {
+                const imgs = Array.from(document.querySelectorAll('img'));
+                const foundImg = imgs.find(im => im.src && im.src.toLowerCase().includes(name.toLowerCase().replace(/\s/g, '-')));
+                if (foundImg) imgUrl = foundImg.src;
+            }
+            if (/NBA-2K-Ratings-Logo\.svg/i.test(imgUrl)) imgUrl = '';
+            let ovr = '';
+            const ovrSpan = document.querySelector('span.attribute-box-player') || document.querySelector('span.attribute-box-player.ruby') || document.querySelector('span.attribute-box-player.sapphire') || document.querySelector('span.attribute-box-player.amethyst') || document.querySelector('span.attribute-box-player.gold') || document.querySelector('span.attribute-box-player.silver') || document.querySelector('span.attribute-box-player.bronze');
+            if (ovrSpan) ovr = textContent(ovrSpan);
+            // Fallback extraction from visible text if any field is missing
+            const pageText = document.body.innerText;
+            const fallback = (regex, flags = 'i') => {
+                const m = pageText.match(new RegExp(regex, flags));
+                return m ? m[1].trim() : '';
+            };
+            if (!position) position = fallback('Position:?\s*([A-Za-z\-/ ]{2,30})');
+            if (!position) position = fallback('Pos:?\s*([A-Za-z\-/ ]{2,30})');
+            if (!height) height = fallback('Height:?\s*([0-9\'\"\s]+)');
+            if (!weight) weight = fallback('Weight:?\s*([0-9]+\s*lbs?)');
+            if (!wingspan) wingspan = fallback('Wingspan:?\s*([0-9\'\"\s]+)');
+            if (!birthdate) birthdate = fallback('Birthdate:?\s*([A-Za-z0-9, ]+)');
+            if (!yearsInNBA) yearsInNBA = fallback('Year\(s\) in the NBA:?\s*([0-9]+)');
+            if (!yearsInNBA) yearsInNBA = fallback('NBA Experience:?\s*([0-9]+)');
+            if (!prior_to_nba) prior_to_nba = fallback('Prior to\s*NBA:?\s*([A-Za-z0-9 .\'-]+)');
+            if (!nationality) nationality = fallback('Nationality:?\s*([A-Za-z /]+)');
+            if (!ovr) ovr = fallback('Overall:?\s*(\d{2,3})') || fallback('NBA 2K\d+ Rating is\s*(\d{2,3})') || fallback('OVR:?\s*(\d{2,3})');
+            return {
+                name: name,
+                position,
+                height,
+                weight,
+                archetype: getSpanAfterLabel('archetype:') || getSpanAfterLabel('build:') || '',
+                birthdate,
+                yearsInNBA,
+                wingspan,
+                imgUrl,
+                ovr,
+                prior_to_nba,
+                nationality
+            };
+        });
+        await page.close();
+        await browser.close();
+        // --- Auto-add player to correct roster file ---
+        let teamName = (info.nationality && info.nationality.toLowerCase().includes('free agent')) ? 'Free_Agency' : null;
+        // Try to extract team from page if available
+        if (!teamName && info.position && info.position.toLowerCase().includes('free agent')) {
+            teamName = 'Free_Agency';
+        }
+        // If not free agent, try to get team from URL or fallback to manual entry
+        if (!teamName) {
+            // Try to extract team from the URL (e.g., /teams/{team}) or ask user to specify
+            // For now, fallback to Free_Agency if not found
+            teamName = 'Free_Agency';
+        }
+        // Normalize team file name
+        let fileName = teamName.replace(/[^a-zA-Z0-9]/g, '_') + '.json';
+        let filePath = path.join(OUTPUT_DIR, fileName);
+        let players = [];
+        if (fs.existsSync(filePath)) {
+            try {
+                const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+                players = Array.isArray(data.players) ? data.players : [];
+            } catch (e) {
+                console.log('[ERROR] Failed to load roster file:', filePath, e.message);
+            }
+        }
+        // Remove any existing player with the same name
+        players = players.filter(p => p.name.toLowerCase() !== info.name.toLowerCase());
+        // Add the new player
+        players.push(info);
+        // Sort by OVR descending
+        players.sort((a, b) => parseInt(b.ovr) - parseInt(a.ovr));
+        // Save back to file
+        fs.writeFileSync(filePath, JSON.stringify({ players }, null, 2));
+        console.log(`[INFO] Added ${info.name} to ${fileName} in OVR order.`);
+        console.log(JSON.stringify(info, null, 2));
+        return;
+    }
+    // Otherwise, run normal team scraping
     let teamLinks;
     try {
         teamLinks = JSON.parse(fs.readFileSync(TEAM_LINKS_FILE, 'utf8'));
@@ -361,7 +502,6 @@ async function main() {
         console.error('[ERROR] Failed to load teamLinks.json:', e.message);
         return;
     }
-    const arg = process.argv[2];
     if (!arg) {
         console.error('[ERROR] No team name provided. Usage: node scripts/scrape_2kratings_teams_puppeteer.js "Chicago Bulls"');
         return;

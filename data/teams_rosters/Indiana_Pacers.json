@@ -141,20 +141,6 @@
       "nationality": "United States"
     },
     {
-      "name": "Quenton Jackson",
-      "position": "PG / SG",
-      "height": "6'5\" (196cm)",
-      "weight": "173lbs (78kg)",
-      "archetype": "High-Flying 3PT Sniper",
-      "birthdate": "September 15, 1998",
-      "yearsInNBA": "3",
-      "wingspan": "6'9\" (206cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Quenton-Jackson-2K-Rating.png",
-      "ovr": "75",
-      "prior_to_nba": "Texas",
-      "nationality": "United States"
-    },
-    {
       "name": "Tony Bradley",
       "position": "C",
       "height": "6'10\" (208cm)",
@@ -197,20 +183,6 @@
       "nationality": "United States"
     },
     {
-      "name": "Ethan Thompson",
-      "position": "SG / SF",
-      "height": "6'5\" (196cm)",
-      "weight": "195lbs (88kg)",
-      "archetype": "Diming Sharpshooter",
-      "birthdate": "May 4, 1999",
-      "yearsInNBA": "4",
-      "wingspan": "6'6\" (198cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Ethan-Thompson-2K-Rating.png",
-      "ovr": "72",
-      "prior_to_nba": "Oregon State",
-      "nationality": "Puerto Rico"
-    },
-    {
       "name": "Johnny Furphy",
       "position": "SF / SG",
       "height": "6'9\" (206cm)",
@@ -236,34 +208,6 @@
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/Kam-Jones-2K-Rating.png",
       "ovr": "68",
       "prior_to_nba": "Marquette",
-      "nationality": "United States"
-    },
-    {
-      "name": "Gabe McGlothan",
-      "position": "PF",
-      "height": "6'7\" (201cm)",
-      "weight": "235lbs (106kg)",
-      "archetype": "",
-      "birthdate": "March 3, 1999",
-      "yearsInNBA": "1",
-      "wingspan": "6'10\" (208cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Gabe-McGlothan-2K-Rating.png",
-      "ovr": "68",
-      "prior_to_nba": "Grand Canyon",
-      "nationality": "United States"
-    },
-    {
-      "name": "Taelon Peter",
-      "position": "SG / SF",
-      "height": "6'4\" (193cm)",
-      "weight": "190lbs (86kg)",
-      "archetype": "3-Level Scorer",
-      "birthdate": "February 27, 2002",
-      "yearsInNBA": "0",
-      "wingspan": "6'8\" (203cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Taelon-Peter-2K-Rating.png",
-      "ovr": "67",
-      "prior_to_nba": "Liberty",
       "nationality": "United States"
     }
   ],
