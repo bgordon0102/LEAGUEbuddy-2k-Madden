@@ -33,17 +33,9 @@ export async function execute(interaction) {
         await interaction.deferReply({ ephemeral: true });
     } catch (err) {
         // Fallback: some interaction tokens can be unknown (timed out or already responded).
+        if (err?.code === 10062 || err?.code === 40060) return;
         console.error('[deletegamechannel] Error deferring reply:', err);
-        // Try to send an initial reply instead of deferring
-        try {
-            await interaction.reply({ content: 'Processing deletegamechannel...', ephemeral: true });
-            // Mark that we have replied so editReply can be used later
-            replyFailed = false;
-        } catch (replyErr) {
-            // If even reply fails, mark replyFailed so we don't attempt edits
-            console.error('[deletegamechannel] Could not send initial reply fallback:', replyErr);
-            replyFailed = true;
-        }
+        return;
     }
     try {
         const guild = interaction.guild;

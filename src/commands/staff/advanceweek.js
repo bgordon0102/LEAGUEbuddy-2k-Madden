@@ -102,7 +102,13 @@ async function sendInitialWelcome(thread) {
 }
 
 export async function execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    try {
+        await interaction.deferReply({ ephemeral: true });
+    } catch (err) {
+        if (err?.code === 10062 || err?.code === 40060) return;
+        console.error('[advanceweek] Error deferring reply:', err);
+        return;
+    }
     const dataManager = new DataManager();
     let season = dataManager.readData('season') || { currentWeek: 1, seasonNo: 1 };
     let weekNum = interaction.options.getInteger('week');

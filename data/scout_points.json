@@ -82,15 +82,20 @@
     "playersScouted": {
       "Taji Anikulapo-Kuti": [
         "build",
-        "draft_score"
+        "draft_score",
+        "overall",
+        "potential"
       ],
       "Abdoulaye Saint-Laurent": [
         "build",
-        "draft_score"
+        "draft_score",
+        "overall",
+        "potential"
       ]
     },
     "weeklyPoints": {
-      "week_1": 0
+      "week_1": 0,
+      "week_2": 0
     }
   },
   "1442183083695542272": {
@@ -100,10 +105,17 @@
         "draft_score",
         "overall",
         "potential"
+      ],
+      "Alex Mahon": [
+        "build",
+        "draft_score",
+        "overall",
+        "potential"
       ]
     },
     "weeklyPoints": {
-      "week_1": 0
+      "week_1": 0,
+      "week_2": 0
     }
   }
 }

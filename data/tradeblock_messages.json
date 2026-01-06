@@ -12,7 +12,9 @@
   },
   "Los_Angeles_Lakers": {
     "LeBron James": "1457452064421707796",
-    "Marcus Smart": "1457460714435248189"
+    "Marcus Smart": "1457460714435248189",
+    "Austin Reaves": "1457918753969930280",
+    "Rui Hachimura": "1457918843736293543"
   },
   "Utah_Jazz": {
     "Lauri Markkanen": "1457531744960905381",
@@ -29,5 +31,8 @@
   },
   "Toronto_Raptors": {
     "Ben Simmons": "1457600609606701248"
+  },
+  "Memphis_Grizzlies": {
+    "Jaren Jackson Jr.": "1458147672379887811"
   }
 }

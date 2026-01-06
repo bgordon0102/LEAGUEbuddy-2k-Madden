@@ -12,7 +12,9 @@
   ],
   "Los_Angeles_Lakers": [
     "LeBron James",
-    "Marcus Smart"
+    "Marcus Smart",
+    "Austin Reaves",
+    "Rui Hachimura"
   ],
   "Toronto_Raptors": [
     "Ben Simmons"
@@ -29,5 +31,8 @@
     "Rudy Gobert",
     "Donte DiVincenzo",
     "Bones Hyland"
+  ],
+  "Memphis_Grizzlies": [
+    "Jaren Jackson Jr."
   ]
 }

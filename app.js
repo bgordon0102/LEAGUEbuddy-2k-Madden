@@ -109,6 +109,12 @@ client.on('interactionCreate', async interaction => {
       }
       return;
     }
+    // Route set_game_info_modal_ modal submits to execute_modal_set_game_info handler.
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('set_game_info_modal_')) {
+      const setGameInfo = await import('./src/interactions/set_game_info.js');
+      await setGameInfo.execute_modal_set_game_info(interaction);
+      return;
+    }
     let foundHandler = null;
     for (const handler of client.interactionHandlers) {
       if (typeof handler.customId === 'string' && handler.customId === interaction.customId) {
@@ -184,7 +190,7 @@ if (!token) {
   process.exit(1);
 }
 
- 
+
 // Robust handleImageOCR implementation
 async function handleImageOCR(message) {
   // Only process if in a thread

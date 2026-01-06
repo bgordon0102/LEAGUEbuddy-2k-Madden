@@ -1,4 +1,33 @@
 {
+  "1767729896574": {
+    "tradeId": "1767729896574",
+    "proposerId": "729435455350636654",
+    "coachBId": "1428100684892344552",
+    "yourTeam": "Minnesota Timberwolves",
+    "otherTeam": "Memphis Grizzlies",
+    "assetsSent": "2026 1st Rd Pick Unprotected \nRudy Gobert",
+    "assetsReceived": "Jaren Jackson Jr.",
+    "notes": "",
+    "submittedAt": 1767729896575,
+    "guildId": "1255691165265821747",
+    "expiresAt": 1767816296575,
+    "status": "pending"
+  },
+  "1767734316585": {
+    "tradeId": "1767734316585",
+    "proposerId": "315639796422934530",
+    "coachBId": "1428100717243138061",
+    "yourTeam": "Memphis Grizzlies",
+    "otherTeam": "Oklahoma City Thunder",
+    "assetsSent": "Jaren Jackson Jr, Brandon Clarke, John Konchar",
+    "assetsReceived": "Isaiah Joe, Aaron Wiggins, Isaiah Hartenstein",
+    "notes": "",
+    "submittedAt": 1767734316585,
+    "guildId": "1255691165265821747",
+    "expiresAt": 1767820716585,
+    "status": "committee",
+    "postedToCommittee": true
+  },
   "1767587091234": {
     "tradeId": "1767587091234",
     "proposerId": "1443035513320636617",
@@ -183,7 +212,7 @@
     "submittedAt": 1767575996651,
     "guildId": "1255691165265821747",
     "expiresAt": 1767662396651,
-    "status": "pending"
+    "status": "expired"
   },
   "1767592415952": {
     "tradeId": "1767592415952",
