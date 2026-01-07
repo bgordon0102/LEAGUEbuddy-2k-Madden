@@ -41,6 +41,7 @@ function loadRecruiting(fileName) {
       position: e.position || '-',
       name: e.name || 'Unknown',
       college: e.college || '-',
+      school_logo: e.school_logo || null,
       hometown: e.hometown || '-',
       height: e.height || '-',
       weight: e.weight || '-',
@@ -91,7 +92,7 @@ export async function execute(interaction) {
   for (let i = 0; i < lines.length; i += chunkSize) {
     const chunk = lines.slice(i, i + chunkSize);
     const embed = new EmbedBuilder()
-      .setTitle(i === 0 ? 'ESPN Top 50 Recruits' : 'ESPN Top 50 Recruits (cont.)')
+      .setTitle(i === 0 ? "ESPN's Top 50 High School Recruits" : "ESPN's Top 50 High School Recruits (cont.)")
       .setDescription(chunk.join('\n\n') || 'No recruits found.');
     embeds.push(embed);
   }

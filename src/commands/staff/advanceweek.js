@@ -72,7 +72,8 @@ async function sendInitialWelcome(thread) {
             'Timberwolves': 'Minnesota Timberwolves',
         };
         if (!name) return null;
-        name = name.replace(/[^a-zA-Z ]/g, '').trim();
+        // Keep digits so teams like "76ers" still normalize correctly
+        name = name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
         return teamMap[name] || name;
     }
     teamA = normalize(teamA);
