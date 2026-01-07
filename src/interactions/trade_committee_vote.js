@@ -14,6 +14,17 @@ export async function execute(interaction) {
         return staffMap["Ghost Paradise Trade Committee"];
     }
 
+    function getCoachRole(teamName) {
+        try {
+            const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'coachRoleMap.json'), 'utf8'));
+            const norm = teamName.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const match = Object.entries(coachMap || {}).find(([name]) => name.toLowerCase().replace(/[^a-z0-9]/g, '') === norm);
+            return match ? match[1] : coachMap[teamName] || null;
+        } catch {
+            return null;
+        }
+    }
+
     function teamToFile(team) {
         const map = {
             "cavaliers": "cleveland_cavaliers.json",
@@ -150,6 +161,8 @@ export async function execute(interaction) {
         // Roster update logic
         const teamAFile = path.join(process.cwd(), 'data/teams_rosters', teamToFile(trade.yourTeam));
         const teamBFile = path.join(process.cwd(), 'data/teams_rosters', teamToFile(trade.otherTeam));
+        const coachRoleA = getCoachRole(trade.yourTeam);
+        const coachRoleB = getCoachRole(trade.otherTeam);
         let teamARoster, teamBRoster;
         try {
             teamARoster = JSON.parse(fs.readFileSync(teamAFile, 'utf8'));
@@ -250,7 +263,10 @@ export async function execute(interaction) {
         }
         if (approvedChannel) {
             try {
-                await approvedChannel.send({ content: `<@&${notifyRoleId}>`, embeds: [embed] });
+                await approvedChannel.send({
+                  content: `<@&${notifyRoleId}>${coachRoleA ? ` <@&${coachRoleA}>` : ''}${coachRoleB ? ` <@&${coachRoleB}>` : ''}`,
+                  embeds: [embed],
+                });
             } catch (err) {
                 console.error('Failed to send approved trade message:', err);
             }

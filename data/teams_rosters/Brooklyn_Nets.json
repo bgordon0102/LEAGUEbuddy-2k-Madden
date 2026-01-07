@@ -141,20 +141,6 @@
       "nationality": "United States"
     },
     {
-      "name": "Tyrese Martin",
-      "position": "SG / PG",
-      "height": "6'6\" (198cm)",
-      "weight": "215lbs (97kg)",
-      "archetype": "Point-Fading Wizard",
-      "birthdate": "March 7, 1999",
-      "yearsInNBA": "3",
-      "wingspan": "6'10\" (208cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Tyrese-Martin-2K-Rating.png",
-      "ovr": "74",
-      "prior_to_nba": "UConn",
-      "nationality": "United States"
-    },
-    {
       "name": "Jalen Wilson",
       "position": "SF / PF",
       "height": "6'6\" (198cm)",
@@ -194,6 +180,20 @@
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/Haywood-Highsmith-2K-Rating.png",
       "ovr": "73",
       "prior_to_nba": "Wheeling",
+      "nationality": "United States"
+    },
+    {
+      "name": "Alex Caruso",
+      "position": "SF / PG",
+      "height": "6'5\" (196cm)",
+      "weight": "186lbs (84kg)",
+      "archetype": "2-Way Mid-Range Menace",
+      "birthdate": "February 28, 1994",
+      "yearsInNBA": "9",
+      "wingspan": "6'6\" (198cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Alex-Caruso-2K-Rating.png",
+      "ovr": "80",
+      "prior_to_nba": "Texas A&M",
       "nationality": "United States"
     }
   ],
