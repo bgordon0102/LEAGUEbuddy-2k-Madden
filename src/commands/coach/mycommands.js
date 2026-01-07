@@ -40,6 +40,7 @@ async function execute(interaction) {
       { name: '/clearplayoffthreads', value: 'Remove playoff threads' },
       { name: '/assignrole', value: 'Assign a coach role to a user' },
       { name: '/availableteams', value: 'List open teams (and roles)' },
+      { name: '/recruiting', value: 'View ESPN-style Top 50 recruits (current phase)' },
       { name: '/clearmessages', value: 'Bulk clear messages in a thread/channel' },
       { name: '/deletegamechannel', value: 'Delete a game thread' },
       { name: '/remindgame', value: 'Send a scheduled game reminder' },
@@ -61,7 +62,8 @@ async function execute(interaction) {
       { name: '/roster [team]', value: 'Show a team roster (default yours)' },
       { name: '/schedule [team]', value: 'Show schedule (default yours)' },
       { name: '/scout name', value: 'Scout a player from the big board' },
-      { name: '/tradeblock add|remove', value: 'Manage your trade block' }
+      { name: '/tradeblock add|remove', value: 'Manage your trade block' },
+      { name: '/recruiting', value: 'View ESPN-style Top 50 recruits (current phase)' }
     )
     .setFooter({ text: 'Coach access only' });
 
