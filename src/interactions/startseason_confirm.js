@@ -30,7 +30,7 @@ export async function execute(interaction) {
         let errorMsg = '';
         console.log('[startseason_confirm] Button handler triggered for seasonno:', seasonno, 'guild:', interaction.guild?.id);
         try {
-            const { resetSeasonData } = await import('../commands/staff/startseason.js');
+            const { resetSeasonData } = await import('../commands/2k/staff/startseason.js');
             console.log('[startseason_confirm] Imported resetSeasonData:', typeof resetSeasonData);
             await resetSeasonData(seasonno, interaction.guild, 'button');
             console.log('[startseason_confirm] resetSeasonData completed.');

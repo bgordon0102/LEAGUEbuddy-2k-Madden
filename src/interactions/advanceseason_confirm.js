@@ -1,5 +1,5 @@
 import { ButtonInteraction } from 'discord.js';
-import { runAdvanceSeason } from '../commands/staff/advanceseason.js';
+import { runAdvanceSeason } from '../commands/2k/staff/advanceseason.js';
 
 export const customId = /^advanceseason_(confirm|cancel)_/;
 

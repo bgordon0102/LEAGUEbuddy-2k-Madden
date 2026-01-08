@@ -14,7 +14,9 @@ async function loadCommandsForDeployment() {
   const commandFolders = [
     ['2k', 'staff'],
     ['2k', 'coach'],
-    ['madden']
+    ['madden'],
+    ['madden', 'coach'],
+    ['madden', 'staff'],
   ];
 
   for (const parts of commandFolders) {

@@ -172,7 +172,9 @@ async function loadCommands() {
   const commandFolders = [
     ['2k', 'coach'],
     ['2k', 'staff'],
-    ['madden']
+    ['madden'],
+    ['madden', 'coach'],
+    ['madden', 'staff'],
   ];
   for (const parts of commandFolders) {
     const commandsPath = join(process.cwd(), 'src', 'commands', ...parts);

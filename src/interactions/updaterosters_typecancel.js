@@ -1,5 +1,5 @@
 import { ButtonInteraction } from 'discord.js';
-import { readSelectPending, writeSelectPending } from '../commands/staff/updaterosters.js';
+import { readSelectPending, writeSelectPending } from '../commands/2k/staff/updaterosters.js';
 
 export const customId = /^updaterosters_typecancel_/;
 

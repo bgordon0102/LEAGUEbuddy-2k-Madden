@@ -1,7 +1,7 @@
 import https from 'https';
 import { constants, randomBytes, createHash } from 'crypto';
 import { Buffer } from 'buffer';
-import { CLIENT_ID, CLIENT_SECRET, AUTH_SOURCE, LeagueData, Stage, BLAZE_SERVICE, BLAZE_PRODUCT_NAME, MACHINE_KEY } from './ea_constants.js';
+import { CLIENT_ID, CLIENT_SECRET, AUTH_SOURCE, LeagueData, Stage, BLAZE_SERVICE, BLAZE_PRODUCT_NAME, MACHINE_KEY, YEAR, getServiceVariantsForConsole } from './ea_constants.js';
 
 // Create an agent that allows EA's legacy SSL
 const agent = new https.Agent({
@@ -16,7 +16,7 @@ const agent = new https.Agent({
 const headers = (t) => ({
   "Accept-Charset": "UTF-8",
   "Accept": "application/json",
-  "X-BLAZE-ID": BLAZE_SERVICE[t.console],
+  "X-BLAZE-ID": t.serviceOverride || BLAZE_SERVICE[t.console],
   "X-BLAZE-VOID-RESP": "XML",
   "X-Application-Key": "MADDEN-MCA",
   "Content-Type": "application/json",
@@ -57,36 +57,49 @@ async function retrieveBlazeSession(token) {
   const consolesToTry = [token.console, 'ps5', 'ps4', 'xbsx', 'xone', 'pc'].filter(Boolean);
   const errors = [];
   for (const c of consolesToTry) {
-    const res = await fetch(
-      `https://wal2.tools.gos.bio-iad.ea.com/wal/authentication/login`,
-      {
-        method: "POST",
-        headers: headers({ ...token, console: c }),
-        body: JSON.stringify({
-          accessToken: token.accessToken,
-          productName: BLAZE_PRODUCT_NAME[c],
-        }),
-        agent,
+    const variants = token.serviceOverride && token.productOverride
+      ? [{ service: token.serviceOverride, product: token.productOverride }]
+      : token.serviceOverride
+        ? [{ service: token.serviceOverride, product: token.productOverride || token.serviceOverride }]
+        : getServiceVariantsForConsole(c);
+    if (!variants.length) {
+      errors.push(`console=${c} missing service/product for YEAR=${YEAR}`);
+      continue;
+    }
+    for (const variant of variants) {
+      const res = await fetch(
+        `https://wal2.tools.gos.bio-iad.ea.com/wal/authentication/login`,
+        {
+          method: "POST",
+          headers: headers({ ...token, console: c, serviceOverride: variant.service }),
+          body: JSON.stringify({
+            accessToken: token.accessToken,
+            productName: variant.product,
+          }),
+          agent,
+        }
+      );
+      const textResponse = await res.text();
+      if (!res.ok) {
+        errors.push(`console=${c} service=${variant.service} status=${res.status} body=${textResponse}`);
+        // On 404 server info not found, try next variant but break after trying all.
+        continue;
       }
-    );
-    const textResponse = await res.text();
-    if (!res.ok) {
-      errors.push(`console=${c} status=${res.status} body=${textResponse}`);
-      continue;
+      let blazeSession;
+      try {
+        blazeSession = JSON.parse(textResponse);
+      } catch (e) {
+        errors.push(`console=${c} service=${variant.service} non-JSON: ${textResponse}`);
+        continue;
+      }
+      const sessionKey = blazeSession?.userLoginInfo?.sessionKey;
+      const blazeId = blazeSession?.userLoginInfo?.personaDetails?.personaId;
+      if (sessionKey) {
+        console.info(`[ea] Blaze session established console=${c} service=${variant.service} blazeId=${blazeId}`);
+        return { blazeId: blazeId, sessionKey: sessionKey, requestId: 1, console: c, serviceOverride: variant.service, productOverride: variant.product };
+      }
+      errors.push(`console=${c} service=${variant.service} no sessionKey: ${textResponse}`);
     }
-    let blazeSession;
-    try {
-      blazeSession = JSON.parse(textResponse);
-    } catch (e) {
-      errors.push(`console=${c} non-JSON: ${textResponse}`);
-      continue;
-    }
-    const sessionKey = blazeSession?.userLoginInfo?.sessionKey;
-    const blazeId = blazeSession?.userLoginInfo?.personaDetails?.personaId;
-    if (sessionKey) {
-      return { blazeId: blazeId, sessionKey: sessionKey, requestId: 1, console: c };
-    }
-    errors.push(`console=${c} no sessionKey: ${textResponse}`);
   }
   throw new Error(`EA login failed (no sessionKey). Tried consoles: ${errors.join(' | ')}`);
 }
@@ -113,6 +126,9 @@ function calculateMessageAuthData(blazeId, requestId) {
 }
 
 async function sendBlazeRequest(token, session, request) {
+  if (!session?.sessionKey) {
+    throw new Error("Missing Blaze sessionKey; ensure login succeeded before sending requests.");
+  }
   const authData = calculateMessageAuthData(session.blazeId, session.requestId);
   const messageExpiration = Math.floor(Date.now() / 1000);
   const { requestPayload, ...rest } = request;
@@ -138,7 +154,12 @@ async function sendBlazeRequest(token, session, request) {
     }
   );
   const txtResponse = await res.text();
-  const parsed = JSON.parse(txtResponse);
+  let parsed;
+  try {
+    parsed = JSON.parse(txtResponse);
+  } catch (e) {
+    throw new Error(`Blaze parse error (${request.commandName || 'unknown'}): ${txtResponse}`);
+  }
   if (parsed.error) {
     throw new Error(`Blaze error: ${txtResponse}`);
   }
@@ -157,7 +178,11 @@ async function getExportData(token, session, exportType, body) {
   );
   const text = await res.text();
   const cleaned = text.replaceAll(/[\u0000-\u001F\u007F-\u009F]/g, "");
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    throw new Error(`Blaze export parse error (${exportType}): ${cleaned}`);
+  }
 }
 
 export async function createEAClientFromEnv(env) {
@@ -171,21 +196,37 @@ export async function createEAClientFromEnv(env) {
     expiry,
     console: consoleValue,
     blazeId: env.EA_BLAZE_ID || '0',
+    serviceOverride: env.EA_SERVICE_OVERRIDE,
+    productOverride: env.EA_PRODUCT_OVERRIDE,
   };
   if (!token.accessToken || !token.refreshToken) {
     throw new Error('Missing EA_ACCESS_TOKEN or EA_REFRESH_TOKEN in environment');
   }
+  if (env.EA_GAME_YEAR && `${env.EA_GAME_YEAR}` !== `${YEAR}`) {
+    throw new Error(`Cached tokens are for game year ${env.EA_GAME_YEAR}, current YEAR=${YEAR}. Please re-auth with /madden-auth.`);
+  }
 
   const freshToken = await refreshToken(token);
   const session = await retrieveBlazeSession(freshToken);
-  return await ephemeralClientFromToken(freshToken, session);
+  return await ephemeralClientFromToken({ ...freshToken, gameYear: env.EA_GAME_YEAR || YEAR }, session);
 }
 
 export async function ephemeralClientFromToken(token, session) {
   const validSession = session ? session : await retrieveBlazeSession(token);
+  const tokenWithService = validSession?.serviceOverride ? { ...token, serviceOverride: validSession.serviceOverride } : token;
   return {
+    async getLeagues() {
+      const res = await sendBlazeRequest(tokenWithService, validSession, {
+        commandName: "Mobile_GetMyLeagues",
+        componentId: 2060,
+        commandId: 801,
+        requestPayload: {},
+        componentName: "careermode",
+      });
+      return res.responseInfo?.value?.leagues || [];
+    },
     async getLeagueInfo(leagueId) {
-      const res = await sendBlazeRequest(token, validSession, {
+      const res = await sendBlazeRequest(tokenWithService, validSession, {
         commandName: "Mobile_Career_GetLeagueHub",
         componentId: 2060,
         commandId: 811,
@@ -195,13 +236,13 @@ export async function ephemeralClientFromToken(token, session) {
       return res.responseInfo.value;
     },
     async getTeams(leagueId) {
-      return await getExportData(token, validSession, LeagueData.TEAMS, { leagueId });
+      return await getExportData(tokenWithService, validSession, LeagueData.TEAMS, { leagueId });
     },
     async getStandings(leagueId) {
-      return await getExportData(token, validSession, LeagueData.STANDINGS, { leagueId });
+      return await getExportData(tokenWithService, validSession, LeagueData.STANDINGS, { leagueId });
     },
     async getSchedules(leagueId, stage, weekIndex) {
-      return await getExportData(token, validSession, LeagueData.WEEKLY_SCHEDULE, { leagueId, stageIndex: stage, weekIndex });
+      return await getExportData(tokenWithService, validSession, LeagueData.WEEKLY_SCHEDULE, { leagueId, stageIndex: stage, weekIndex });
     },
   };
 }

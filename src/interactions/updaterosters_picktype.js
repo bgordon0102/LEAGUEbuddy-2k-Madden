@@ -1,5 +1,5 @@
 import { StringSelectMenuInteraction } from 'discord.js';
-import { readSelectPending, writeSelectPending, processAndSummarize } from '../commands/staff/updaterosters.js';
+import { readSelectPending, writeSelectPending, processAndSummarize } from '../commands/2k/staff/updaterosters.js';
 
 export const customId = /^updaterosters_picktype_/;
 

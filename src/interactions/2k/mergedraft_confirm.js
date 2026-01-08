@@ -1,5 +1,5 @@
 import { ButtonInteraction } from 'discord.js';
-import { confirmMerge } from '../commands/staff/mergedraft.js';
+import { confirmMerge } from '../commands/2k/staff/mergedraft.js';
 
 export const customId = /^mergedraft_confirm_(\d+)/;
 

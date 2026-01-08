@@ -1,5 +1,5 @@
 // Extracted from Snallabot's madden_league_types (getMessageForWeek variants)
-export const MADDEN_SEASON = 2025;
+export const MADDEN_SEASON = 2026;
 
 export function getMessageForWeek(week) {
   if (week < 1 || week > 23 || week === 22) {
