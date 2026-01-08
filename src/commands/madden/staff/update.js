@@ -32,7 +32,12 @@ async function execute(interaction) {
     await interaction.editReply({ embeds: [embed] });
   } catch (err) {
     const msg = typeof err?.message === 'string' ? err.message : 'Unknown error';
-    await interaction.editReply({ content: `Update failed: ${msg}` });
+    const shortMsg = msg.length > 1800 ? `${msg.slice(0, 1797)}...` : msg;
+    const embed = new EmbedBuilder()
+      .setTitle('Madden Update Failed')
+      .setDescription(shortMsg)
+      .setColor(0xcc0000);
+    await interaction.editReply({ embeds: [embed] });
   }
 }
 

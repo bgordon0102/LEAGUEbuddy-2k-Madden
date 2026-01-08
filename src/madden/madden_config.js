@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { saveLeague as saveLeagueDb, loadLeague as loadLeagueDb } from './madden_db.js';
 
 const CONFIG_PATH = path.join(process.cwd(), 'data', 'madden', 'config.json');
 
@@ -22,10 +23,13 @@ export function setGuildLeague(guildId, leagueId) {
   cfg.guilds[guildId] = `${leagueId}`;
   cfg.globalDefault = cfg.globalDefault || `${leagueId}`;
   writeConfig(cfg);
+  saveLeagueDb(leagueId);
   return cfg;
 }
 
 export function getLeagueForGuild(guildId) {
+  const dbLeague = loadLeagueDb();
+  if (dbLeague) return dbLeague;
   const cfg = readConfig();
   if (guildId && cfg.guilds && cfg.guilds[guildId]) return cfg.guilds[guildId];
   return cfg.globalDefault || null;
@@ -35,6 +39,7 @@ export function setGlobalDefault(leagueId) {
   const cfg = readConfig();
   cfg.globalDefault = `${leagueId}`;
   writeConfig(cfg);
+  saveLeagueDb(leagueId);
   return cfg;
 }
 

@@ -4,11 +4,6 @@ import { loadLeagueSnapshot, findScheduleForWeek, getDefaultLeagueId } from '../
 const data = new SlashCommandBuilder()
   .setName('madden-game')
   .setDescription('Show a game from the last /madden-sync snapshot (by week + index).')
-  .addStringOption(opt =>
-    opt.setName('league_id')
-      .setDescription('League ID (defaults to most recent synced league)')
-      .setRequired(false)
-  )
   .addIntegerOption(opt =>
     opt.setName('week')
       .setDescription('Week number (required)')
@@ -18,6 +13,11 @@ const data = new SlashCommandBuilder()
     opt.setName('index')
       .setDescription('Game index in that week (1-based)')
       .setRequired(true)
+  )
+  .addStringOption(opt =>
+    opt.setName('league_id')
+      .setDescription('League ID (defaults to most recent synced league)')
+      .setRequired(false)
   );
 
 function summarizeGame(g) {

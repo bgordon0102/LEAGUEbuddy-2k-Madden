@@ -244,6 +244,43 @@ export async function ephemeralClientFromToken(token, session) {
     async getSchedules(leagueId, stage, weekIndex) {
       return await getExportData(tokenWithService, validSession, LeagueData.WEEKLY_SCHEDULE, { leagueId, stageIndex: stage, weekIndex });
     },
+    async getTeamRoster(leagueId, teamId, teamIndex) {
+      return await getExportData(tokenWithService, validSession, LeagueData.TEAM_ROSTER, {
+        leagueId,
+        listIndex: teamIndex,
+        returnFreeAgents: false,
+        teamId,
+      });
+    },
+    async getFreeAgents(leagueId) {
+      return await getExportData(tokenWithService, validSession, LeagueData.TEAM_ROSTER, {
+        leagueId,
+        listIndex: -1,
+        returnFreeAgents: true,
+        teamId: 0,
+      });
+    },
+    async getRushingStats(leagueId, stage, weekIndex) {
+      return await getExportData(tokenWithService, validSession, LeagueData.RUSHING_STATS, { leagueId, stageIndex: stage, weekIndex });
+    },
+    async getTeamStats(leagueId, stage, weekIndex) {
+      return await getExportData(tokenWithService, validSession, LeagueData.TEAM_STATS, { leagueId, stageIndex: stage, weekIndex });
+    },
+    async getPuntingStats(leagueId, stage, weekIndex) {
+      return await getExportData(tokenWithService, validSession, LeagueData.PUNTING_STATS, { leagueId, stageIndex: stage, weekIndex });
+    },
+    async getReceivingStats(leagueId, stage, weekIndex) {
+      return await getExportData(tokenWithService, validSession, LeagueData.RECEIVING_STATS, { leagueId, stageIndex: stage, weekIndex });
+    },
+    async getDefensiveStats(leagueId, stage, weekIndex) {
+      return await getExportData(tokenWithService, validSession, LeagueData.DEFENSIVE_STATS, { leagueId, stageIndex: stage, weekIndex });
+    },
+    async getKickingStats(leagueId, stage, weekIndex) {
+      return await getExportData(tokenWithService, validSession, LeagueData.KICKING_STATS, { leagueId, stageIndex: stage, weekIndex });
+    },
+    async getPassingStats(leagueId, stage, weekIndex) {
+      return await getExportData(tokenWithService, validSession, LeagueData.PASSING_STATS, { leagueId, stageIndex: stage, weekIndex });
+    },
   };
 }
 

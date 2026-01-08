@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { EA_LOGIN_URL, YEAR, ConsoleOverride } from '../../madden/ea_constants.js';
 import { exchangeLoginCode, fetchTokenInfo, fetchEntitlements, fetchPersonas, extractValidPersonas, exchangePersonaToken } from '../../madden/ea_personas.js';
+import { saveTokens as saveTokensDb } from '../../madden/madden_db.js';
 
 const data = new SlashCommandBuilder()
   .setName('madden-auth')
@@ -41,6 +42,7 @@ function ensureTokenDir() {
 function saveTokens(tokens) {
   ensureTokenDir();
   fs.writeFileSync(TOKEN_FILE, JSON.stringify(tokens, null, 2));
+  saveTokensDb(tokens);
 }
 
 async function execute(interaction) {

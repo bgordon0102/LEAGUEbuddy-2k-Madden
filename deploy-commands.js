@@ -33,6 +33,10 @@ async function loadCommandsForDeployment() {
       try {
         const commandModule = await import(fileURL);
         const command = commandModule.default || commandModule;
+        if (command?.skipDeploy) {
+          console.log(`⏭️  Skipping ${label}/${file} (skipDeploy=true)`);
+          continue;
+        }
         if (command && 'data' in command) {
           commands.push(command.data.toJSON());
           console.log(`✅ Loaded ${label}/${file}`);

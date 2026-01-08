@@ -137,6 +137,14 @@ export const LeagueData = {
   TEAMS: "CareerMode_GetLeagueTeamsExport",
   STANDINGS: "CareerMode_GetStandingsExport",
   WEEKLY_SCHEDULE: "CareerMode_GetWeeklySchedulesExport",
+  TEAM_ROSTER: "CareerMode_GetTeamRostersExport",
+  RUSHING_STATS: "CareerMode_GetWeeklyRushingStatsExport",
+  TEAM_STATS: "CareerMode_GetWeeklyTeamStatsExport",
+  PUNTING_STATS: "CareerMode_GetWeeklyPuntingStatsExport",
+  RECEIVING_STATS: "CareerMode_GetWeeklyReceivingStatsExport",
+  DEFENSIVE_STATS: "CareerMode_GetWeeklyDefensiveStatsExport",
+  KICKING_STATS: "CareerMode_GetWeeklyKickingStatsExport",
+  PASSING_STATS: "CareerMode_GetWeeklyPassingStatsExport",
 };
 
 export const Stage = {
