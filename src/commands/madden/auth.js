@@ -76,6 +76,7 @@ async function execute(interaction) {
   }
 
   try {
+    await interaction.deferReply({ ephemeral: true });
     const parsed = parseCodeAndRedirect(redirectUrl);
     if (!parsed || !parsed.code) {
       throw new Error('Could not find ?code= in the URL you provided.');
@@ -94,13 +95,17 @@ async function execute(interaction) {
         { name: 'Stored at', value: TOKEN_FILE, inline: false }
       )
       .setColor(0x00cc66);
-    await interaction.reply({ ephemeral: true, embeds: [embed] });
+    await interaction.editReply({ embeds: [embed] });
   } catch (err) {
     const embed = new EmbedBuilder()
       .setTitle('Madden Auth Failed')
       .setDescription(err.message || 'Unknown error')
       .setColor(0xcc0000);
-    await interaction.reply({ ephemeral: true, embeds: [embed] });
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply({ embeds: [embed] });
+    } else {
+      await interaction.reply({ ephemeral: true, embeds: [embed] });
+    }
   }
 }
 
