@@ -10,6 +10,10 @@ This repo now holds multiple apps and shared packages:
 
 Node version: `.nvmrc` set to 21 to satisfy Snallabot; use `nvm use`.
 
+## Madden EA sync (Snallabot-style)
+- Commands: `/madden-sync league_id:<id>` pulls from EA and saves to `src/data/madden/leagues/<id>.json`. `/madden-ping` checks the module.
+- Env required: `EA_ACCESS_TOKEN`, `EA_REFRESH_TOKEN`, optional `EA_ACCESS_TOKEN_EXPIRES_AT` (ms epoch), `EA_CONSOLE` (ps5/xbsx/xone/pc/ps4/stadia), `EA_BLAZE_ID` (persona id if known). Tokens expire ~4h; refresh token ~10 days.
+
 ## Working on the 2K bot
 ```
 cd apps/leaguebuddy-2k
