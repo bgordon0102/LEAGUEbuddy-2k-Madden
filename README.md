@@ -1,78 +1,29 @@
-# LEAGUEbuddy 🏀
+# LEAGUEbuddy Monorepo
 
-A Discord bot for managing basketball league operations, recruiting, and team management.
+This repo now holds multiple apps and shared packages:
+- `apps/leaguebuddy-2k` — existing NBA 2K Discord bot (moved from root).
+- `apps/snallabot-service` — Snallabot source (for Madden features/reference).
+- `apps/bot` — legacy bot snapshot (left untouched).
+- `packages/shared` — placeholder for code shared between bots.
+- `packages/madden-core` — placeholder for Madden logic ported from Snallabot.
+- `tools` — space for repo-level scripts and helpers.
 
-## Features
+Node version: `.nvmrc` set to 21 to satisfy Snallabot; use `nvm use`.
 
-- **Staff Commands**: Administrative functions for league staff
-- **Coach Commands**: Team management tools for coaches  
-- **League Data Management**: JSON-based data storage for teams, recruits, and scouting
-- **Role-based Command Access**: Separate command categories for staff and coaches
-
-## Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/bgordon0102/LEAGUEbuddy.git
-   cd LEAGUEbuddy
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment variables**
-   Create a `.env` file in the root directory:
-   ```env
-   TOKEN=your_discord_bot_token
-   CLIENT_ID=your_application_client_id
-   GUILD_ID=your_server_guild_id
-   ```
-
-4. **Deploy commands to Discord**
-   ```bash
-   node deploy-commands.js
-   ```
-
-5. **Start the bot**
-   ```bash
-   node app.js
-   ```
-
-## Commands
-
-### Staff Commands
-- `/ping` - Test bot responsiveness
-
-### Coach Commands  
-- `/hello` - Greeting command for coaches
-
-## Project Structure
-
+## Working on the 2K bot
 ```
-LEAGUEbuddy/
-├── src/
-│   ├── commands/
-│   │   ├── staff/          # Staff-only commands
-│   │   └── coach/          # Coach-only commands
-│   └── handler.js          # Command loading system
-├── data/                   # League data storage
-│   ├── league.json
-│   ├── teams.json
-│   ├── recruits.json
-│   └── scouting.json
-├── app.js                  # Main bot application
-├── deploy-commands.js      # Command registration
-└── package.json
+cd apps/leaguebuddy-2k
+npm install
+npm run start   # or npm run dev
 ```
 
-## Development
+## Working on Snallabot
+```
+cd apps/snallabot-service
+npm install
+npm run dev
+```
 
-This bot uses Discord.js v14 and ES modules. Add new commands by creating files in the appropriate `src/commands/` subdirectory.
-
-## License
-
-ISC
-
-A Discord bot for league management.
+## Notes
+- Root `node_modules` is from the old layout; reinstall per app as needed.
+- Env files stay where you prefer; place per-app `.env` files inside each app for clarity.

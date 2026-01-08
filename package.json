@@ -1,40 +1,11 @@
 {
-  "name": "leaguebuddy",
-  "version": "2.0.0",
-  "description": "Discord.js bot for managing NBA 2K/MyNBA league operations",
-  "main": "app.js",
-  "type": "module",
-  "scripts": {
-    "start": "node app.js",
-    "deploy": "node deploy-commands.js",
-    "dev": "node --watch app.js"
-  },
-  "keywords": [
-    "discord",
-    "bot",
-    "nba",
-    "2k",
-    "league",
-    "basketball"
+  "name": "leaguebuddy-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
   ],
-  "author": "bgordon0102",
-  "license": "ISC",
-  "dependencies": {
-    "@discordjs/builders": "^1.7.0",
-    "axios": "^1.12.2",
-    "cheerio": "^1.1.2",
-    "discord.js": "^14.13.0",
-    "dotenv": "^16.6.1",
-    "dotenv-cli": "^10.0.0",
-    "express": "^5.1.0",
-    "express-session": "^1.18.2",
-    "puppeteer": "^24.26.1",
-    "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "sharp": "^0.34.4",
-    "tesseract.js": "^6.0.1"
-  },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=21.0.0"
   }
 }
