@@ -349,6 +349,25 @@ async function sendOfferAlert(client, entry) {
 
 async function handleApproval(interaction, approve) {
   const id = interaction.customId.replace(approve ? 'inseason_fa_approve_' : 'inseason_fa_deny_', '');
+  // Gate to commish/co-commish only
+  try {
+    const staffMap = JSON.parse(fs.readFileSync(STAFF_ROLE_MAP_PATH, 'utf8'));
+    const allowedRoles = ['Paradise Commish', 'Paradise Co-Commish'];
+    const allowedIds = Object.entries(staffMap || {})
+      .filter(([name]) => allowedRoles.includes(name))
+      .map(([, rid]) => rid)
+      .filter(Boolean);
+    const memberRoles = interaction.member?.roles?.cache;
+    const isStaff = allowedIds.length ? allowedIds.some(rid => memberRoles?.has(rid)) : false;
+    if (!isStaff) {
+      await interaction.reply({ content: 'Only Commish/Co-Commish can approve or deny in-season FA offers.', flags: 64 });
+      return;
+    }
+  } catch {
+    // if map missing, deny to be safe
+    await interaction.reply({ content: 'Staff role map missing. Only Commish/Co-Commish may act.', flags: 64 });
+    return;
+  }
   const pending = readPending();
   const entry = pending[id];
   if (!entry) {

@@ -77,12 +77,21 @@
         "build"
       ],
       "Jaylen Simmons": [
+        "build",
+        "draft_score"
+      ],
+      "Riley Jamison": [
         "build"
+      ],
+      "Nicola Mancini": [
+        "build",
+        "draft_score"
       ]
     },
     "weeklyPoints": {
       "week_1": 0,
-      "week_3": 0
+      "week_3": 0,
+      "week_4": 0
     }
   },
   "737825554895732756": {
@@ -117,11 +126,18 @@
         "draft_score",
         "overall",
         "potential"
+      ],
+      "Trey James": [
+        "build",
+        "draft_score",
+        "overall",
+        "potential"
       ]
     },
     "weeklyPoints": {
       "week_1": 0,
-      "week_2": 0
+      "week_2": 0,
+      "week_4": 0
     }
   },
   "1442183083695542272": {

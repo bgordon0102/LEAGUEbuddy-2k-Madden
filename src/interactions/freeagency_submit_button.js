@@ -419,6 +419,23 @@ async function handleStaffPick(interaction) {
   const entryId = parts[3];
   const teamEncoded = parts.slice(4).join('_');
   const team = teamEncoded.replace(/_/g, ' ');
+  // Gate to commish/co-commish only
+  try {
+    const staffMap = JSON.parse(fs.readFileSync(STAFF_MAP_PATH, 'utf8'));
+    const allowedRoles = ['Paradise Commish', 'Paradise Co-Commish'];
+    const allowedIds = Object.entries(staffMap || {})
+      .filter(([name]) => allowedRoles.includes(name))
+      .map(([, id]) => id)
+      .filter(Boolean);
+    const memberRoles = interaction.member?.roles?.cache;
+    const isStaff = allowedIds.length ? allowedIds.some(rid => memberRoles?.has(rid)) : true;
+    if (!isStaff) {
+      await interaction.reply({ content: 'Only Commish/Co-Commish can finalize free agency signings.', flags: 64 });
+      return;
+    }
+  } catch {
+    // if map missing, allow by default
+  }
   await interaction.deferReply({ flags: 64 });
 
   const entries = readEntries();

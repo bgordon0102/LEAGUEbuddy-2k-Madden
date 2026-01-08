@@ -54,7 +54,21 @@
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/VJ-Edgecombe-2K-Rating.png",
       "ovr": "81",
       "prior_to_nba": "Baylor",
-      "nationality": "Bahamas"
+      "nationality": "Bahamas",
+      "progression": [
+        {
+          "skillSet": "Perimeter Defense",
+          "attributeUpgrades": "+4 PDEF",
+          "date": "2026-01-08T00:26:45.176Z",
+          "submittedBy": "1126312455111458849"
+        },
+        {
+          "skillSet": "Perimeter Defense",
+          "attributeUpgrades": "+4 PDEF +2 Steal",
+          "date": "2026-01-08T00:28:45.603Z",
+          "submittedBy": "1126312455111458849"
+        }
+      ]
     },
     {
       "name": "Kelly Oubre Jr.",
@@ -195,6 +209,19 @@
       "ovr": "70",
       "prior_to_nba": "Auburn",
       "nationality": "United States"
+    },
+    {
+      "name": "Ryan Nembhard",
+      "position": "PG",
+      "ovr": "78",
+      "age": 22,
+      "img": "https://www.2kratings.com/wp-content/uploads/Ryan-Nembhard-2K-Rating.png",
+      "thumbnail": "https://www.2kratings.com/wp-content/uploads/Ryan-Nembhard-2K-Rating.png",
+      "contractYears": "2",
+      "salaryPerYear": "4.5",
+      "lastSigned": "in-season free agency",
+      "lastUpdatedBy": "1195843329477328978",
+      "lastUpdatedAt": "2026-01-08T01:43:50.971Z"
     }
   ],
   "picks": [

@@ -138,5 +138,25 @@
       ],
       "regressionMessageId": "1457562019912880162"
     }
+  },
+  "Philadelphia 76ers": {
+    "VJ Edgecombe": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-08T00:29:48.785Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Perimeter Defense",
+          "skillSets": [
+            "perimeter defense"
+          ],
+          "attributes": "+4 PDEF +2 Steal",
+          "newOvr": null,
+          "regIncrement": 1,
+          "messageId": "1458618397129445461"
+        }
+      ],
+      "regressionMessageId": "1458618662196871344"
+    }
   }
 }
