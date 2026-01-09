@@ -7,10 +7,12 @@ import { getMessageForWeek } from '../../madden/madden_utils.js';
 import { YEAR } from '../../madden/ea_constants.js';
 import { resolveLeagueIdWithConfig } from '../../madden/madden_data.js';
 import { loadTokens as loadTokensDb } from '../../madden/madden_db.js';
+import { SnallabotProvider } from '../../madden/providers/SnallabotProvider.js';
 
 const leagueDir = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const tokenFile = path.join(process.cwd(), 'data', 'madden', 'tokens.json');
 const snapshotsDir = leagueDir;
+const useSnallabot = (process.env.MADDEN_SYNC_USE_SNALLABOT ?? 'true').toLowerCase() !== 'false';
 
 const data = new SlashCommandBuilder()
   .setName('madden-sync')
@@ -42,7 +44,7 @@ async function loadTokens() {
   }
 }
 
-export async function runSync(leagueId) {
+export async function runSync(leagueId, provider) {
   try {
     await ensureDir();
     const tokens = await loadTokens();
@@ -50,35 +52,80 @@ export async function runSync(leagueId) {
       throw new Error('No local EA tokens found. Run /madden-auth, log in, and then retry.');
     }
     const client = await createEAClientFromEnv({ ...process.env, EA_ACCESS_TOKEN: tokens.accessToken, EA_REFRESH_TOKEN: tokens.refreshToken, EA_ACCESS_TOKEN_EXPIRES_AT: tokens.expiry, EA_CONSOLE: tokens.console, EA_BLAZE_ID: tokens.blazeId, EA_GAME_YEAR: tokens.gameYear });
-    const info = await client.getLeagueInfo(Number(leagueId));
-    const currentWeek = info?.careerHubInfo?.seasonInfo?.seasonWeek;
-    const stage = info?.careerHubInfo?.seasonInfo?.seasonStage === 0 ? Stage.PRESEASON : Stage.SEASON;
+    let info = null;
+    let currentWeek = null;
+    let stage = Stage.SEASON;
+    if (provider) {
+      try {
+        const wk = await provider.getCurrentWeek(String(leagueId));
+        currentWeek = wk.week;
+        stage = wk.stage === 'preseason' ? Stage.PRESEASON : Stage.SEASON;
+      } catch (e) {
+        console.warn('[madden-sync] provider getCurrentWeek failed, falling back to EA hub:', e?.message || e);
+      }
+    }
+    if (!info || currentWeek === null || currentWeek === undefined || currentWeek <= 0) {
+      info = await client.getLeagueInfo(Number(leagueId));
+      const infoWeek = info?.careerHubInfo?.seasonInfo?.seasonWeek;
+      const infoStage = info?.careerHubInfo?.seasonInfo?.seasonStage;
+      if (currentWeek === null || currentWeek === undefined || currentWeek <= 0) currentWeek = infoWeek ?? currentWeek;
+      stage = infoStage === 0 ? Stage.PRESEASON : Stage.SEASON;
+    }
+    // Fallback: parse from getLeagues seasonText if still unset/zero.
+    if (currentWeek === null || currentWeek === undefined || currentWeek <= 0) {
+      try {
+        const leagues = await client.getLeagues();
+        const found = leagues.find(l => String(l.leagueId) === String(leagueId));
+        const text = found?.seasonText || '';
+        // e.g., "Season 2025 PRE Wk 1" or "Season 2025 REG Wk 2"
+        const match = /wk\s+(\d+)/i.exec(text);
+        if (match) currentWeek = Number(match[1]) || currentWeek || 0;
+        if (text.toLowerCase().includes('pre')) stage = Stage.PRESEASON;
+      } catch (e) {
+        console.warn('[madden-sync] getLeagues fallback failed:', e?.message || e);
+      }
+    }
+    if (currentWeek === null || currentWeek === undefined) currentWeek = 0;
 
     const [teams, standings] = await Promise.all([
       client.getTeams(Number(leagueId)),
       client.getStandings(Number(leagueId)),
     ]);
 
-    // Fetch full schedule (preseason and season weeks) to avoid empty weeks.
-    const allSchedules = [];
-    const collectSchedule = async (wk, stg) => {
+    // Schedule fetch: try provider first, then EA across all relevant weeks.
+    let schedule = { schedules: [] };
+    if (provider) {
       try {
-        const res = await client.getSchedules(Number(leagueId), stg, wk);
-        const list = res?.schedules || [];
-        allSchedules.push(...list);
+        schedule = await provider.getFullSchedule(String(leagueId));
       } catch (e) {
-        console.warn(`[madden-sync] schedule fetch failed for week=${wk} stage=${stg}: ${e?.message || e}`);
+        console.warn('[madden-sync] provider getFullSchedule failed, falling back to EA:', e?.message || e);
       }
+    }
+    const weekBuckets = {
+      preseason: [0, 1, 2, 3],
+      season: Array.from({ length: 23 }, (_, i) => i).filter(i => i !== 21), // 0-22 skip 21 (Pro Bowl)
     };
-    // Preseason weeks 0-3
-    for (let wk = 0; wk < 4; wk++) {
-      await collectSchedule(wk, Stage.PRESEASON);
+    if (!schedule?.schedules?.length) {
+      const allSchedules = [];
+      const seen = new Set();
+      const collectSchedule = async (wk, stg) => {
+        try {
+          const res = await client.getSchedules(Number(leagueId), stg, wk);
+          const list = res?.schedules || [];
+          for (const g of list) {
+            const key = g?.scheduleId || `${g?.homeTeamId}-${g?.awayTeamId}-${g?.weekIndex}-${stg}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            allSchedules.push(g);
+          }
+        } catch (e) {
+          console.warn(`[madden-sync] schedule fetch failed for week=${wk} stage=${stg}: ${e?.message || e}`);
+        }
+      };
+      for (const wk of weekBuckets.preseason) await collectSchedule(wk, Stage.PRESEASON);
+      for (const wk of weekBuckets.season) await collectSchedule(wk, Stage.SEASON);
+      schedule = { schedules: allSchedules };
     }
-    // Regular season/playoff weeks 0-22 (cap at 22)
-    for (let wk = 0; wk <= 22; wk++) {
-      await collectSchedule(wk, Stage.SEASON);
-    }
-    const schedule = { schedules: allSchedules };
 
     // Fetch rosters (all teams + free agents)
     const rosters = {};
@@ -207,13 +254,17 @@ async function execute(interaction) {
       });
       return;
     }
-    const summary = await runSync(leagueId);
+    const provider = useSnallabot ? new SnallabotProvider() : null;
+    const summary = await runSync(leagueId, provider);
+    const weekLabel = summary.currentWeek === null || summary.currentWeek === undefined
+      ? 'unknown'
+      : `${summary.currentWeek} (${getMessageForWeek(summary.currentWeek)})`;
     const embed = new EmbedBuilder()
       .setTitle('Madden Sync')
       .setColor(0x00cc66)
       .addFields(
         { name: 'League', value: String(summary.leagueId), inline: true },
-        { name: 'Week', value: summary.currentWeek ? `${summary.currentWeek} (${getMessageForWeek(summary.currentWeek)})` : 'unknown', inline: true },
+        { name: 'Week', value: weekLabel, inline: true },
         { name: 'Teams', value: String(summary.teamsCount), inline: true },
         { name: 'Standings', value: String(summary.standingsCount), inline: true },
         { name: 'Games', value: String(summary.gamesCount), inline: true },

@@ -6,6 +6,9 @@ import * as submitScore from './interactions/submit_score.js';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname, join } from 'path';
 import { startAuthServer } from './madden/auth_server.js';
+import { startExportWebhook } from './madden/export_webhook.js';
+import { startAutoSync } from './madden/auto_sync.js';
+import { startLocalSidecar } from './madden/local_sidecar.js';
 
 dotenv.config();
 
@@ -21,6 +24,21 @@ if (enableAuthServer) {
   } catch (err) {
     console.warn(`[madden-auth] Failed to start auth server: ${err.message}`);
   }
+}
+try {
+  startExportWebhook();
+} catch (err) {
+  console.warn(`[madden-export] Failed to start export webhook: ${err.message}`);
+}
+try {
+  startAutoSync();
+} catch (err) {
+  console.warn(`[madden-auto-sync] Failed to start auto sync: ${err.message}`);
+}
+try {
+  startLocalSidecar();
+} catch (err) {
+  console.warn(`[madden-sidecar] Failed to start local sidecar: ${err.message}`);
 }
 
 // Register startseason_confirm button handler

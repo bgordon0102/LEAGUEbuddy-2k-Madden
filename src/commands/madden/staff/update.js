@@ -2,6 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.
 import { resolveLeagueIdWithConfig } from '../../../madden/madden_data.js';
 import { runSync } from '../sync.js';
 import { getMessageForWeek } from '../../../madden/madden_utils.js';
+import { SnallabotProvider } from '../../../madden/providers/SnallabotProvider.js';
 
 const data = new SlashCommandBuilder()
   .setName('madden-update')
@@ -16,7 +17,8 @@ async function execute(interaction) {
       await interaction.editReply({ content: 'No league set. Run /madden-set-league or provide league_id via /madden-sync once.' });
       return;
     }
-    const summary = await runSync(leagueId);
+    const provider = new SnallabotProvider();
+    const summary = await runSync(leagueId, provider);
     const embed = new EmbedBuilder()
       .setTitle('Madden Update Complete')
       .setDescription('Latest data pulled from EA and saved locally.')
