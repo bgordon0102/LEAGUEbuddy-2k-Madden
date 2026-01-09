@@ -1,0 +1,91 @@
+import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
+
+const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
+const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
+
+function loadRoleMap() {
+  try {
+    return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function hasStaffRole(member, roleMap) {
+  return STAFF_ROLES.some(r => {
+    const id = roleMap[r];
+    return id && member.roles.cache.has(id);
+  });
+}
+
+const roleChoices = (roleMap) => Object.keys(roleMap)
+  .filter(name => name.endsWith('Coach') || STAFF_ROLES.includes(name))
+  .map(name => ({ name, value: name }));
+
+export const data = new SlashCommandBuilder()
+  .setName('madden-assignteam')
+  .setDescription('Assign up to two Madden roles to a user (Commish/Co-Commish only).')
+  .addUserOption(o => o.setName('user').setDescription('User to assign').setRequired(true))
+  .addStringOption(o => o.setName('role1').setDescription('First role to assign').setRequired(true).setAutocomplete(true))
+  .addStringOption(o => o.setName('role2').setDescription('Second role to assign (optional)').setRequired(false).setAutocomplete(true))
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+
+export async function execute(interaction) {
+  const roleMap = loadRoleMap();
+  await interaction.deferReply({ ephemeral: true });
+  const member = await interaction.guild.members.fetch(interaction.user.id);
+  if (!hasStaffRole(member, roleMap)) {
+    await interaction.editReply({ content: 'Only Madden Commish/Co-Commish can use this command.' });
+    return;
+  }
+  const target = interaction.options.getUser('user');
+  const roleName1 = interaction.options.getString('role1');
+  const roleName2 = interaction.options.getString('role2');
+
+  const guildMember = await interaction.guild.members.fetch(target.id).catch(() => null);
+  if (!guildMember) {
+    await interaction.editReply({ content: 'User not found in this server.' });
+    return;
+  }
+
+  const resolveRole = (name) => {
+    const id = roleMap[name];
+    return id ? interaction.guild.roles.cache.get(id) : null;
+  };
+
+  const r1 = resolveRole(roleName1);
+  if (!r1) {
+    await interaction.editReply({ content: `Role "${roleName1}" not found.` });
+    return;
+  }
+  let r2 = null;
+  if (roleName2) {
+    r2 = resolveRole(roleName2);
+    if (!r2) {
+      await interaction.editReply({ content: `Role "${roleName2}" not found.` });
+      return;
+    }
+  }
+
+  try {
+    await guildMember.roles.add(r1);
+    if (r2) await guildMember.roles.add(r2);
+    await interaction.editReply({ content: `Assigned ${r2 ? `"${r1.name}" and "${r2.name}"` : `"${r1.name}"`} to ${target.tag}.` });
+  } catch (err) {
+    await interaction.editReply({ content: `Failed to assign roles: ${err.message || err}` });
+  }
+}
+
+export async function autocomplete(interaction) {
+  if (!interaction.isAutocomplete()) return;
+  const roleMap = loadRoleMap();
+  const focused = interaction.options.getFocused().toLowerCase();
+  const options = roleChoices(roleMap)
+    .filter(r => r.name.toLowerCase().includes(focused))
+    .slice(0, 25);
+  await interaction.respond(options);
+}
+
+export default { data, execute, autocomplete };

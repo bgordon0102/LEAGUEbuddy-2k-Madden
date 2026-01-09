@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { EA_LOGIN_URL, YEAR, ConsoleOverride } from '../../madden/ea_constants.js';
 import { exchangeLoginCode, fetchTokenInfo, fetchEntitlements, fetchPersonas, extractValidPersonas, exchangePersonaToken } from '../../madden/ea_personas.js';
-import { saveTokens as saveTokensDb } from '../../madden/madden_db.js';
+import { saveTokens as saveTokensDb, deleteTokens as deleteTokensDb } from '../../madden/madden_db.js';
 
 const data = new SlashCommandBuilder()
   .setName('madden-auth')
@@ -13,23 +13,9 @@ const data = new SlashCommandBuilder()
       .setDescription('Paste the URL you land on after EA login (starts with http://127.0.0.1/success?code=...)')
       .setRequired(false)
   )
-  .addStringOption(option =>
-    option.setName('persona_id')
-      .setDescription('Optional: choose a specific personaId if multiple are found')
-      .setRequired(false)
-  )
-  .addStringOption(option =>
-    option.setName('console_override')
-      .setDescription('Optional: force a console if EA entitlements mismatch')
-      .addChoices(
-        { name: 'Default', value: ConsoleOverride.NONE },
-        { name: 'PS5', value: ConsoleOverride.PS5 },
-        { name: 'XBOX Series X', value: ConsoleOverride.XBOX_X },
-        { name: 'PS4', value: ConsoleOverride.PS4 },
-        { name: 'XBOX One', value: ConsoleOverride.XBOX_ONE },
-        { name: 'PC', value: ConsoleOverride.PC },
-        { name: 'Stadia', value: ConsoleOverride.STADIA },
-      )
+  .addBooleanOption(option =>
+    option.setName('reset')
+      .setDescription('Clear saved Madden tokens before authenticating again')
       .setRequired(false)
   );
 
@@ -48,8 +34,21 @@ function saveTokens(tokens) {
 async function execute(interaction) {
   await interaction.deferReply({ ephemeral: true });
   const redirectUrl = interaction.options.getString('redirect_url');
-  const personaIdInput = interaction.options.getString('persona_id');
-  const consoleOverride = interaction.options.getString('console_override') || ConsoleOverride.NONE;
+  const doReset = interaction.options.getBoolean('reset');
+  const consoleOverride = ConsoleOverride.NONE;
+
+  if (doReset) {
+    try { fs.unlinkSync(TOKEN_FILE); } catch {}
+    deleteTokensDb();
+    if (!redirectUrl) {
+      const embed = new EmbedBuilder()
+        .setTitle('Madden Tokens Reset')
+        .setDescription('Saved Madden tokens cleared. Run /madden-auth with redirect_url to relink.')
+        .setColor(0xffcc00);
+      await interaction.editReply({ embeds: [embed] });
+      return;
+    }
+  }
 
   if (!redirectUrl) {
     const embed = new EmbedBuilder()
@@ -77,14 +76,22 @@ async function execute(interaction) {
     if (!personas.length) {
       throw new Error('No Madden personas found for this EA account (check entitlements and platform).');
     }
-    let chosen = personas[0];
-    if (personaIdInput) {
-      const found = personas.find(p => `${p.personaId}` === `${personaIdInput}`);
-      if (!found) {
-        throw new Error(`persona_id ${personaIdInput} not found. Available: ${personas.map(p => p.personaId).join(', ')}`);
-      }
-      chosen = found;
-    }
+    const pickPersona = () => {
+      // Prefer PS5 or next-gen Madden 26 entitlements if present.
+      const score = p => {
+        let s = 0;
+        const ent = `${p.entitlement || ''}`.toUpperCase();
+        const ns = `${p.namespaceName || ''}`.toUpperCase();
+        if (p.systemConsole && p.systemConsole.toLowerCase() === 'ps5') s += 5;
+        if (p.systemConsole && p.systemConsole.toLowerCase() === 'xbsx') s += 4;
+        if (ent.includes('MADDEN_26')) s += 3;
+        if (ns.includes('MADDEN')) s += 1;
+        return s;
+      };
+      const sorted = [...personas].sort((a, b) => score(b) - score(a));
+      return sorted[0];
+    };
+    const chosen = pickPersona();
     const personaToken = await exchangePersonaToken(loginTokens.access_token, chosen.personaId, chosen.namespaceName);
     const tokens = {
       accessToken: personaToken.access_token,

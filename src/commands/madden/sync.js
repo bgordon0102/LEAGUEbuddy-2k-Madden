@@ -44,7 +44,8 @@ async function loadTokens() {
   }
 }
 
-export async function runSync(leagueId, provider) {
+export async function runSync(leagueId, provider, options = {}) {
+  const weekOverride = options.week ? Number(options.week) : null;
   try {
     await ensureDir();
     const tokens = await loadTokens();
@@ -66,9 +67,17 @@ export async function runSync(leagueId, provider) {
     }
     if (!info || currentWeek === null || currentWeek === undefined || currentWeek <= 0) {
       info = await client.getLeagueInfo(Number(leagueId));
-      const infoWeek = info?.careerHubInfo?.seasonInfo?.seasonWeek;
-      const infoStage = info?.careerHubInfo?.seasonInfo?.seasonStage;
-      if (currentWeek === null || currentWeek === undefined || currentWeek <= 0) currentWeek = infoWeek ?? currentWeek;
+      const seasonInfo = info?.careerHubInfo?.seasonInfo || {};
+      const infoDisplayWeek = seasonInfo.displayWeek;
+      const infoWeek = seasonInfo.seasonWeek;
+      // Madden hub appears to store seasonWeek as 0-based; displayWeek is already 1-based.
+      const normalizedInfoWeek = Number.isInteger(infoDisplayWeek) && infoDisplayWeek > 0
+        ? infoDisplayWeek
+        : Number.isInteger(infoWeek)
+          ? infoWeek + 1
+          : null;
+      if (normalizedInfoWeek) currentWeek = normalizedInfoWeek;
+      const infoStage = seasonInfo.seasonWeekType ?? seasonInfo.seasonStage;
       stage = infoStage === 0 ? Stage.PRESEASON : Stage.SEASON;
     }
     // Fallback: parse from getLeagues seasonText if still unset/zero.
@@ -86,6 +95,7 @@ export async function runSync(leagueId, provider) {
       }
     }
     if (currentWeek === null || currentWeek === undefined) currentWeek = 0;
+    if (weekOverride) currentWeek = weekOverride;
 
     const [teams, standings] = await Promise.all([
       client.getTeams(Number(leagueId)),
@@ -111,7 +121,7 @@ export async function runSync(leagueId, provider) {
       const collectSchedule = async (wk, stg) => {
         try {
           const res = await client.getSchedules(Number(leagueId), stg, wk);
-          const list = res?.schedules || [];
+          const list = res?.gameScheduleInfoList || res?.schedules || [];
           for (const g of list) {
             const key = g?.scheduleId || `${g?.homeTeamId}-${g?.awayTeamId}-${g?.weekIndex}-${stg}`;
             if (seen.has(key)) continue;
@@ -231,9 +241,6 @@ export async function runSync(leagueId, provider) {
     };
   } catch (err) {
     console.error('❌ Madden sync failed:', err);
-    if ((err.message || '').includes('Server Information was not found')) {
-      try { await fs.unlink(tokenFile); } catch {}
-    }
     throw err;
   }
 }
@@ -276,12 +283,22 @@ async function execute(interaction) {
     await interaction.editReply({ embeds: [embed] });
   } catch (err) {
     const msg = typeof err?.message === 'string' ? err.message : 'Unknown error';
-    const shortMsg = msg.length > 3900 ? `${msg.slice(0, 3897)}...` : msg;
+    const lower = msg.toLowerCase();
+    let guidance = 'Try again shortly.';
+    if (lower.includes('no local ea tokens')) {
+      guidance = 'Run `/madden-auth` (or `/madden-auth reset` then `/madden-auth`), then rerun the sync.';
+    } else if (lower.includes('no sessionkey') || lower.includes('auth_err_invalid_token') || lower.includes('server information was not found')) {
+      guidance = 'Tokens look bad. Run `/madden-auth reset` then `/madden-auth` (PS5 Madden 2026 account), ensure `EA_CONSOLE=ps5` / `EA_GAME_YEAR=2026`, then rerun.';
+    } else if (lower.includes('deleted') || lower.includes('league')) {
+      guidance = 'Check the league ID. Run `/madden-set-league <your_league_id>` then rerun.';
+    }
+    const shortMsg = msg.length > 3000 ? `${msg.slice(0, 2997)}...` : msg;
     await interaction.editReply({
       embeds: [
         new EmbedBuilder()
           .setTitle('Madden Sync Failed')
           .setDescription(`${shortMsg}\n(See server logs for full details)`)
+          .addFields({ name: 'Next steps', value: guidance })
           .setColor(0xcc0000)
       ]
     });

@@ -28,10 +28,13 @@ export function setGuildLeague(guildId, leagueId) {
 }
 
 export function getLeagueForGuild(guildId) {
+  const cfg = readConfig();
+  // Prefer guild-specific mapping first
+  if (guildId && cfg.guilds && cfg.guilds[guildId]) return cfg.guilds[guildId];
+  // Then fallback to DB-stored default
   const dbLeague = loadLeagueDb();
   if (dbLeague) return dbLeague;
-  const cfg = readConfig();
-  if (guildId && cfg.guilds && cfg.guilds[guildId]) return cfg.guilds[guildId];
+  // Finally global default in config
   return cfg.globalDefault || null;
 }
 

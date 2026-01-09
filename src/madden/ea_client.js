@@ -54,14 +54,15 @@ async function refreshToken(token) {
 }
 
 async function retrieveBlazeSession(token) {
-  const consolesToTry = [token.console, 'ps5', 'ps4', 'xbsx', 'xone', 'pc'].filter(Boolean);
+  const primaryConsole = token.console || process.env.EA_CONSOLE || 'ps5';
+  const consolesToTry = [primaryConsole];
   const errors = [];
   for (const c of consolesToTry) {
     const variants = token.serviceOverride && token.productOverride
       ? [{ service: token.serviceOverride, product: token.productOverride }]
       : token.serviceOverride
         ? [{ service: token.serviceOverride, product: token.productOverride || token.serviceOverride }]
-        : getServiceVariantsForConsole(c);
+        : getServiceVariantsForConsole(c); // try all known variants for this console/year
     if (!variants.length) {
       errors.push(`console=${c} missing service/product for YEAR=${YEAR}`);
       continue;

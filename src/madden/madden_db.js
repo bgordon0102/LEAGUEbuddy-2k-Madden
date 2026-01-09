@@ -48,6 +48,14 @@ export function saveTokens(tokens) {
   }
 }
 
+export function deleteTokens() {
+  try {
+    query(`DELETE FROM tokens WHERE id=1;`);
+  } catch (e) {
+    console.warn('[madden-db] deleteTokens failed:', e.message);
+  }
+}
+
 export function loadTokens() {
   try {
     const out = query(`SELECT accessToken, refreshToken, expiry, console, blazeId, gameYear FROM tokens WHERE id=1;`);

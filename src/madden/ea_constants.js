@@ -116,7 +116,24 @@ function buildVariantsForYear(consoleKey, yearStr) {
 }
 
 export function getServiceVariantsForConsole(consoleKey) {
-  const yearCandidates = [YEAR, TWO_DIGIT_YEAR].filter(Boolean);
+  // Force PS5 to known Madden 25/26 endpoints to avoid noisy 404s
+  if (consoleKey === 'ps5') {
+    const y = YEAR;
+    const base = `madden-${y}-ps5`;
+    const gen5 = `madden-${y}-ps5-gen5`;
+    return [
+      { service: gen5, product: `${gen5}-mca` },
+      { service: gen5, product: gen5 },
+      { service: base, product: `${base}-mca` },
+      { service: base, product: base },
+    ];
+  }
+
+  // Include current YEAR, two-digit YEAR, and a legacy fallback of YEAR-1 and its two-digit form.
+  const numericYear = Number(YEAR);
+  const legacyYear = Number.isFinite(numericYear) ? numericYear - 1 : null;
+  const legacyTwoDigit = legacyYear ? String(legacyYear).slice(-2) : null;
+  const yearCandidates = [YEAR, TWO_DIGIT_YEAR, legacyYear, legacyTwoDigit].filter(Boolean);
   const seen = new Set();
   const variants = [];
 
