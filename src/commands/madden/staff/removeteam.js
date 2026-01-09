@@ -5,6 +5,7 @@ import { updateAvailableTeamsPin } from '../../../madden/available_teams.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
+const ASSIGNABLE = ['Madden Trade Committe', 'Madden Trade Committee'];
 
 function loadRoleMap() {
   try {
@@ -22,12 +23,15 @@ function hasStaffRole(member, roleMap) {
 }
 
 const roleChoices = (roleMap) => Object.keys(roleMap)
-  .filter(name => name.endsWith('Coach') || STAFF_ROLES.includes(name))
+  .filter(name =>
+    name.endsWith(' Coach') ||
+    ASSIGNABLE.includes(name)
+  )
   .map(name => ({ name, value: name }));
 
 export const data = new SlashCommandBuilder()
-  .setName('madden-removeteam')
-  .setDescription('Remove up to two Madden roles from a user (Commish/Co-Commish only).')
+  .setName('madden-removerole')
+  .setDescription('Remove up to two Madden roles (coach or trade committee) from a user (Commish/Co-Commish only).')
   .addUserOption(o => o.setName('user').setDescription('User to update').setRequired(true))
   .addStringOption(o => o.setName('role1').setDescription('First role to remove').setRequired(true).setAutocomplete(true))
   .addStringOption(o => o.setName('role2').setDescription('Second role to remove (optional)').setRequired(false).setAutocomplete(true))
@@ -56,14 +60,16 @@ export async function execute(interaction) {
     return id ? interaction.guild.roles.cache.get(id) : null;
   };
 
-  // Resolve role1; if target doesn't have it, fall back to first coach role they do have.
+  // Resolve role1; if target doesn't have it, fall back to first assignable role they do have.
   let r1 = resolveRole(roleName1);
   if (r1 && !guildMember.roles.cache.has(r1.id)) {
     r1 = null;
   }
   if (!r1) {
-    const coachRoles = Object.entries(roleMap).filter(([n]) => n.endsWith('Coach'));
-    const found = coachRoles.find(([, id]) => guildMember.roles.cache.has(id));
+    const assignableRoles = Object.entries(roleMap).filter(([n]) =>
+      n.endsWith(' Coach') || ASSIGNABLE.includes(n)
+    );
+    const found = assignableRoles.find(([, id]) => guildMember.roles.cache.has(id));
     if (found) {
       roleName1 = found[0];
       r1 = resolveRole(roleName1);

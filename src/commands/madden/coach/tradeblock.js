@@ -48,13 +48,21 @@ function loadChannelMap() {
   try { return JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8')); } catch { return {}; }
 }
 
-async function announce(client, roleMap, channelMap, teamName, playerLabelText, positionText) {
+async function announce(client, roleMap, channelMap, teamName, playerLabelText, positionText, rosterId) {
   const coachRoleId = roleMap['Madden Coach'];
   const coachTag = coachRoleId ? `<@&${coachRoleId}>` : null;
   const tradeChannelId = channelMap['Trade Block'] || channelMap['Pending Trades'] || channelMap['Transaction Log'];
   if (!tradeChannelId) return;
   const channel = await client.channels.fetch(tradeChannelId).catch(() => null);
   if (!channel || !channel.isTextBased()) return;
+  // Short customId: mtrade:team:rosterId:label (kept well under Discord limits)
+  const safeTeam = encodeURIComponent((teamName || 'team').slice(0, 12));
+  const safeId = rosterId ? String(rosterId).slice(0, 18) : 'p';
+  let shortLabel = (playerLabelText || 'player').slice(0, 25);
+  const base = `mtrade:${safeTeam}:${safeId}:`;
+  const room = 90 - base.length; // ensure well under 100
+  if (shortLabel.length > room) shortLabel = shortLabel.slice(0, Math.max(5, room));
+  const customId = `${base}${encodeURIComponent(shortLabel)}`;
   const embed = {
     title: 'New Trade Block Addition',
     description: `${playerLabelText}\nTeam: ${teamName}`,
@@ -62,8 +70,8 @@ async function announce(client, roleMap, channelMap, teamName, playerLabelText, 
     timestamp: new Date().toISOString(),
   };
   const btn = new ButtonBuilder()
-    .setCustomId(`madden_trade_for::${encodeURIComponent(teamName)}::${encodeURIComponent(playerLabelText)}`)
-    .setLabel('Propose Trade')
+    .setCustomId(customId)
+    .setLabel('Trade For')
     .setStyle(ButtonStyle.Primary);
   const row = new ActionRowBuilder().addComponents(btn);
   const msg = await channel.send({ content: coachTag || null, embeds: [embed], components: [row] }).catch(() => null);
@@ -90,6 +98,11 @@ function findPlayer(roster, name) {
 
 function formatDev(dev) {
   const map = { 0: 'Normal', 1: 'Star', 2: 'Superstar', 3: 'X-Factor' };
+  const emojiMap = (() => {
+    try { return JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json'), 'utf8')); } catch { return {}; }
+  })();
+  const emojiId = emojiMap?.[dev] ?? emojiMap?.[String(dev)];
+  if (emojiId) return `<:dev_${dev}:${emojiId}>`;
   return map[dev] || 'Normal';
 }
 
@@ -244,7 +257,7 @@ async function execute(interaction) {
       await interaction.editReply({ content: `${playerLabel(player)} (${player.position}) added to your trade block.` });
       const teamName = (snapshot.teams?.leagueTeamInfoList || []).find(t => t.teamId === teamId)?.displayName || 'Team';
       const meta = `${playerLabel(player)} (${player.position}) — OVR ${player.playerBestOvr || player.teamSchemeOvr || player.playerSchemeOvr || 'N/A'}, Age ${player.age ?? 'N/A'}, Dev ${formatDev(player.devTrait)}`;
-      const msgId = await announce(interaction.client, roleMap, channelMap, teamName, meta, player.position || 'N/A');
+      const msgId = await announce(interaction.client, roleMap, channelMap, teamName, meta, player.position || 'N/A', player.rosterId);
       if (msgId) {
         block[teamId][block[teamId].length - 1].messageId = msgId;
         saveJson(BLOCK_FILE, block);

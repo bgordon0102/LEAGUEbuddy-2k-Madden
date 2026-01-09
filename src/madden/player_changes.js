@@ -43,14 +43,17 @@ function buildPlayerMap(snapshot) {
   return { byTeam, players };
 }
 
+const devEmojis = loadJson(path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json')) || {};
 const devMap = { 0: 'Normal', 1: 'Star', 2: 'Superstar', 3: 'X-Factor' };
 
 // Allowlist of attributes to report
 const allowedAttrs = new Set([
-  'playerBestOvr', 'playerSchemeOvr', 'teamSchemeOvr', 'awareRating', 'accelRating', 'agilityRating',
-  'strengthRating', 'throwAccuracyRating', 'throwPowerRating', 'breakSackRating', 'playActionRating',
-  'throwOnRunRating', 'throwUnderPressureRating', 'shortRouteRunRating', 'medRouteRunRating',
-  'deepRouteRunRating', 'catchRating', 'specCatchRating', 'cITRating', 'jumpRating',
+  'playerBestOvr',
+  'awareRating', 'accelRating', 'agilityRating', 'strengthRating',
+  'throwAccuracyRating', 'throwPowerRating', 'breakSackRating', 'playActionRating',
+  'throwOnRunRating', 'throwUnderPressureRating',
+  'shortRouteRunRating', 'medRouteRunRating', 'deepRouteRunRating',
+  'catchRating', 'specCatchRating', 'cITRating', 'jumpRating',
   'changeOfDirectionRating', 'carryingRating', 'bCVRating', 'truckRating', 'stiffArmRating',
   'spinMoveRating', 'jukeMoveRating', 'runBlockRating', 'runBlockPowerRating', 'runBlockFinesseRating',
   'passBlockRating', 'passBlockPowerRating', 'passBlockFinesseRating', 'impactBlockRating',
@@ -60,12 +63,68 @@ const allowedAttrs = new Set([
   'kickReturnRating', 'staminaRating', 'injuryRating', 'toughnessRating'
 ]);
 
+const labelMap = {
+  playerBestOvr: 'OVR',
+  awareRating: 'AWR',
+  accelRating: 'ACC',
+  agilityRating: 'AGI',
+  strengthRating: 'STR',
+  throwAccuracyRating: 'THA',
+  throwPowerRating: 'THP',
+  breakSackRating: 'BKS',
+  playActionRating: 'PAC',
+  throwOnRunRating: 'TOR',
+  throwUnderPressureRating: 'TUP',
+  shortRouteRunRating: 'SRR',
+  medRouteRunRating: 'MRR',
+  deepRouteRunRating: 'DRR',
+  catchRating: 'CTH',
+  specCatchRating: 'SPC',
+  cITRating: 'CIT',
+  jumpRating: 'JMP',
+  changeOfDirectionRating: 'COD',
+  carryingRating: 'CAR',
+  bCVRating: 'BCV',
+  truckRating: 'TRK',
+  stiffArmRating: 'SFA',
+  spinMoveRating: 'SPM',
+  jukeMoveRating: 'JKM',
+  runBlockRating: 'RBK',
+  runBlockPowerRating: 'RBP',
+  runBlockFinesseRating: 'RBF',
+  passBlockRating: 'PBK',
+  passBlockPowerRating: 'PBP',
+  passBlockFinesseRating: 'PBF',
+  impactBlockRating: 'IMP',
+  leadBlockRating: 'LBK',
+  breakTackleRating: 'BTK',
+  ballCarrierVisionRating: 'BCV',
+  tackleRating: 'TAK',
+  hitPowerRating: 'HPW',
+  pursuitRating: 'PUR',
+  playRecognitionRating: 'PRC',
+  blockShedRating: 'BSH',
+  finesseMovesRating: 'FMV',
+  powerMovesRating: 'PMV',
+  pressRating: 'PRS',
+  manCoverageRating: 'MCV',
+  zoneCoverageRating: 'ZCV',
+  kickPowerRating: 'KPW',
+  kickAccuracyRating: 'KAC',
+  kickReturnRating: 'RET',
+  staminaRating: 'STA',
+  injuryRating: 'INJ',
+  toughnessRating: 'TGH',
+};
+
 function playerLabel(p) {
   const name = `${p.firstName || ''} ${p.lastName || ''}`.trim() || (p.fullName || '').trim() || 'Unknown';
   const pos = p.position || '';
   const ovr = p.playerBestOvr || p.teamSchemeOvr || p.playerSchemeOvr || 'N/A';
-  const dev = devMap[p.devTrait] || 'Normal';
-  return `${pos} ${name} - ${ovr} OVR (${dev})`;
+  const devEmojiId = devEmojis?.[p.devTrait] ?? devEmojis?.[String(p.devTrait)];
+  const devText = devMap[p.devTrait] || 'Normal';
+  const dev = devEmojiId ? `<:dev_${p.devTrait}:${devEmojiId}>` : `(${devText})`;
+  return `${pos} ${name} - ${ovr} OVR ${dev}`;
 }
 
 function diffPlayer(prev, curr) {
@@ -75,20 +134,25 @@ function diffPlayer(prev, curr) {
     changes.push({ label: 'Position', from: prev.position || 'N/A', to: curr.position || 'N/A' });
   }
   if (prev.devTrait !== curr.devTrait) {
-    changes.push({ label: 'Dev Trait', from: devMap[prev.devTrait] || 'Normal', to: devMap[curr.devTrait] || 'Normal' });
+    const fromEmojiId = devEmojis?.[prev.devTrait] ?? devEmojis?.[String(prev.devTrait)];
+    const toEmojiId = devEmojis?.[curr.devTrait] ?? devEmojis?.[String(curr.devTrait)];
+    const fromLabel = fromEmojiId ? `<:dev_${prev.devTrait}:${fromEmojiId}>` : (devMap[prev.devTrait] || 'Normal');
+    const toLabel = toEmojiId ? `<:dev_${curr.devTrait}:${toEmojiId}>` : (devMap[curr.devTrait] || 'Normal');
+    changes.push({ label: 'Dev Trait', from: fromLabel, to: toLabel });
   }
   for (const key of Object.keys(curr)) {
     if (!allowedAttrs.has(key)) continue;
     const a = Number(prev[key]);
     const b = Number(curr[key]);
     if (Number.isFinite(a) && Number.isFinite(b) && a !== b) {
-      changes.push({ label: key.replace(/Rating$/i, '').replace(/_/g, ' '), from: a, to: b });
+      const label = labelMap[key] || key.replace(/Rating$/i, '').replace(/_/g, ' ');
+      changes.push({ label, from: a, to: b });
     }
   }
   return changes;
 }
 
-function chunkLines(lines, maxLen = 3400) {
+function chunkLines(lines, maxLen = 900) {
   const chunks = [];
   let current = [];
   let len = 0;

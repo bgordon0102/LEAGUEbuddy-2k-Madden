@@ -5,6 +5,7 @@ import { updateAvailableTeamsPin } from '../../../madden/available_teams.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
+const ASSIGNABLE = ['Madden Trade Committe', 'Madden Trade Committee'];
 
 function loadRoleMap() {
   try {
@@ -22,12 +23,15 @@ function hasStaffRole(member, roleMap) {
 }
 
 const roleChoices = (roleMap) => Object.keys(roleMap)
-  .filter(name => name.endsWith('Coach') || STAFF_ROLES.includes(name))
+  .filter(name =>
+    name.endsWith(' Coach') ||
+    ASSIGNABLE.includes(name)
+  )
   .map(name => ({ name, value: name }));
 
 export const data = new SlashCommandBuilder()
-  .setName('madden-assignteam')
-  .setDescription('Assign up to two Madden roles to a user (Commish/Co-Commish only).')
+  .setName('madden-assignrole')
+  .setDescription('Assign up to two Madden roles (coach or trade committee) to a user (Commish/Co-Commish only).')
   .addUserOption(o => o.setName('user').setDescription('User to assign').setRequired(true))
   .addStringOption(o => o.setName('role1').setDescription('First role to assign').setRequired(true).setAutocomplete(true))
   .addStringOption(o => o.setName('role2').setDescription('Second role to assign (optional)').setRequired(false).setAutocomplete(true))

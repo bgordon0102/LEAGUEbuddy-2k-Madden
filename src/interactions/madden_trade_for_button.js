@@ -1,10 +1,35 @@
 import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
 import { canTrade } from '../utils/madden_trade_utils.js';
 
-export const customId = /^madden_trade_for/;
+const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
+
+function loadRoleMap() {
+  try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
+}
+
+export const customId = /^madden_trade_for|^mtrade/;
 
 function parseTeamAndPlayer(customId) {
+  if (customId.startsWith('mtrade:')) {
+    const parts = customId.split(':');
+    // mtrade:team:rosterId:label
+    const team = decodeURIComponent(parts[1] || '');
+    const label = decodeURIComponent(parts[3] || '');
+    return { team, player: label };
+  }
+  // New format: madden_trade_for:team:rosterId:label
+  if (customId.includes(':')) {
+    const parts = customId.split(':');
+    if (parts.length >= 4) {
+      const team = decodeURIComponent(parts[1] || '');
+      const label = decodeURIComponent(parts.slice(3).join(':') || '');
+      return { team, player: label };
+    }
+  }
+  // Legacy format fallback
   let team = '';
   let player = '';
   if (customId.includes('::')) {
@@ -21,6 +46,14 @@ function getCoachTeamFromRoles(interaction, snapshot) {
   const member = interaction.member;
   const roles = member?.roles?.cache;
   if (!roles) return null;
+  // First, try explicit role map matching
+  const roleMap = loadRoleMap();
+  for (const [name, id] of Object.entries(roleMap)) {
+    if (!name.endsWith(' Coach')) continue;
+    if (roles.has(id)) {
+      return name.replace(/ Coach$/, '');
+    }
+  }
   const teams = snapshot?.teams?.leagueTeamInfoList || [];
   for (const r of roles.values()) {
     if (!r.name.endsWith('Coach')) continue;
@@ -65,7 +98,7 @@ export async function execute(interaction) {
           .setLabel('Your Team')
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
-          .setValue(yourTeam)
+          .setValue(yourTeam || '')
       ),
       new ActionRowBuilder().addComponents(
         new TextInputBuilder()

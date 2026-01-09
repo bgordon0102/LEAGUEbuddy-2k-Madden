@@ -11,14 +11,47 @@ function loadJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
 }
 
-function teamRoleMap(roleMap) {
-  const map = {};
-  Object.entries(roleMap).forEach(([name, id]) => {
-    if (!name.endsWith(' Coach')) return;
-    const base = name.replace(/ Coach$/, '');
-    map[base.toLowerCase()] = id;
+function resolveTeamRoleId(teamName, snapshot, roleMap) {
+  if (!teamName) return null;
+  const target = teamName.toLowerCase();
+  const variants = new Set([target]);
+
+  // Direct map match
+  for (const [name, id] of Object.entries(roleMap)) {
+    if (!name.endsWith(' Coach')) continue;
+    const base = name.replace(/ Coach$/, '').toLowerCase();
+    if (base === target) return id;
+    if (base.includes(target) || target.includes(base)) return id;
+  }
+
+  // Try matching against league snapshot (display/nick/abbr/city)
+  const teams = snapshot?.teams?.leagueTeamInfoList || [];
+  const team = teams.find(t => {
+    const cands = [
+      t.displayName,
+      t.nickName,
+      t.abbrName,
+      t.cityName,
+    ].map(x => (x || '').toLowerCase());
+    cands.forEach(c => variants.add(c));
+    return cands.includes(target) || cands.some(c => c.includes(target) || target.includes(c));
   });
-  return map;
+  if (team) {
+    const candidates = [
+      team.displayName,
+      team.nickName,
+      team.abbrName,
+      team.cityName,
+    ].filter(Boolean).map(x => x.toLowerCase());
+    candidates.forEach(c => variants.add(c));
+    for (const [name, id] of Object.entries(roleMap)) {
+      if (!name.endsWith(' Coach')) continue;
+      const base = name.replace(/ Coach$/, '').toLowerCase();
+      if (candidates.includes(base) || variants.has(base) || base.includes(target) || target.includes(base)) return id;
+    }
+  }
+
+  return null;
 }
 
 function teamDisplay(snapshot, teamName) {
@@ -82,35 +115,56 @@ export async function execute(interaction) {
 
     const embed = buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, notes });
     const tradeId = `${Date.now()}`;
+    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+    const expiresStamp = `<t:${Math.floor(expiresAt / 1000)}:R>`;
 
-    // Prepare DM buttons
-    const approveBtn = new ButtonBuilder().setCustomId(`madden_trade_dm_approve_${tradeId}`).setLabel('Approve').setStyle(ButtonStyle.Success);
-    const denyBtn = new ButtonBuilder().setCustomId(`madden_trade_dm_deny_${tradeId}`).setLabel('Deny').setStyle(ButtonStyle.Danger);
+    // Prepare DM buttons (Coach B approval)
+    const approveBtn = new ButtonBuilder().setCustomId(`mtrade_b_approve_${tradeId}`).setLabel('Approve').setStyle(ButtonStyle.Success);
+    const denyBtn = new ButtonBuilder().setCustomId(`mtrade_b_deny_${tradeId}`).setLabel('Deny').setStyle(ButtonStyle.Danger);
     const row = new ActionRowBuilder().addComponents(approveBtn, denyBtn);
 
-    // Pending channel post
-    const pendingId = channelMap['Pending Trades'];
-    let pendingMsgId = null;
-    if (pendingId) {
-      const pendingChan = await interaction.client.channels.fetch(pendingId).catch(() => null);
-      if (pendingChan?.isTextBased()) {
-        const pendingMsg = await pendingChan.send({ embeds: [embed], content: `Trade ID: ${tradeId}` }).catch(() => null);
-        pendingMsgId = pendingMsg?.id || null;
-      }
-    }
-
     // DM other coach
-    const coachMap = teamRoleMap(roleMap);
-    const otherRoleId = coachMap[(otherTeam || '').toLowerCase()];
+    let otherRoleId = resolveTeamRoleId(otherTeam, snapshot, roleMap);
     let dmSent = false;
-    if (otherRoleId && interaction.guild) {
-      const role = await interaction.guild.roles.fetch(otherRoleId).catch(() => null);
-      if (role) {
+    if (interaction.guild) {
+      // Fallback: try to find role by fuzzy name if map missed
+      if (!otherRoleId) {
+        const target = (otherTeam || '').toLowerCase();
+        const found = interaction.guild.roles.cache.find(r => r.name.toLowerCase().includes(target));
+        if (found) otherRoleId = found.id;
+      }
+
+      if (otherRoleId) {
+        let role = await interaction.guild.roles.fetch(otherRoleId).catch(() => null);
+        // If no cached members, try fetching guild members to populate
+        if (role && role.members.size === 0) {
+          await interaction.guild.members.fetch().catch(() => null);
+          role = await interaction.guild.roles.fetch(otherRoleId).catch(() => role);
+        }
+        if (role) {
+          // Build a swapped embed for the recipient so perspective is correct
+          const recipientEmbed = buildTradeEmbed({
+          yourTeam: otherTeam,
+          otherTeam: yourTeam,
+          assetsSent: assetsReceived,
+          assetsReceived: assetsSent,
+          notes,
+        });
         for (const m of role.members.values()) {
-          await m.send({ embeds: [embed], components: [row], content: `Trade ID: ${tradeId}. You have 24h to approve/deny.` }).catch(() => null);
+          await m.send({
+            embeds: [recipientEmbed],
+            components: [row],
+            content: `Trade ID: ${tradeId}. Please approve/deny within 24h (expires ${expiresStamp}).`,
+          }).catch(() => null);
           dmSent = true;
         }
       }
+    }
+    }
+
+    if (!dmSent) {
+      await interaction.editReply({ content: `Trade submitted (ID ${tradeId}), but I couldn't DM the other coach (no matching role members found).`, ephemeral: true });
+      return;
     }
 
     // Persist active trade
@@ -122,9 +176,12 @@ export async function execute(interaction) {
       assetsSent,
       assetsReceived,
       notes,
-      pendingMsgId,
-      status: 'pending',
+      status: 'awaiting_coach_b',
       createdAt: Date.now(),
+      expiresAt,
+      proposerId: interaction.user.id,
+      otherRoleId,
+      guildId: interaction.guildId,
     };
     saveActiveTrades(active);
 

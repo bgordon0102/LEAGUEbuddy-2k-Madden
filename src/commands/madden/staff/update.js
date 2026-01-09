@@ -10,6 +10,7 @@ import { updatePowerRankings } from '../../../madden/power_rankings.js';
 import { updateTransactions } from '../../../madden/transactions.js';
 import { updatePlayerChanges } from '../../../madden/player_changes.js';
 import { updateInjuries } from '../../../madden/injuries.js';
+import { Stage } from '../../../madden/ea_client.js';
 
 const data = new SlashCommandBuilder()
   .setName('madden-weeklyupdate')
@@ -28,29 +29,34 @@ async function execute(interaction) {
     }
     const provider = new SnallabotProvider();
     const summary = await runSync(leagueId, provider, { week: weekOverride });
-    // Update stat leaders embed if channel configured
-    try {
-      await updateStatLeaders(interaction.client, leagueId);
-    } catch (e) {
-      console.warn('[madden-weeklyupdate] stat leaders update skipped:', e?.message || e);
-    }
-    // Update standings embed
-    try {
-      await updateStandings(interaction.client, leagueId);
-    } catch (e) {
-      console.warn('[madden-weeklyupdate] standings update skipped:', e?.message || e);
-    }
-    // Update playoff picture embed
-    try {
-      await updatePlayoffPicture(interaction.client, leagueId);
-    } catch (e) {
-      console.warn('[madden-weeklyupdate] playoff picture update skipped:', e?.message || e);
-    }
-    // Update power rankings embed
-    try {
-      await updatePowerRankings(interaction.client, leagueId);
-    } catch (e) {
-      console.warn('[madden-weeklyupdate] power rankings update skipped:', e?.message || e);
+    const inPreseason = summary.stage === Stage.PRESEASON;
+    if (!inPreseason) {
+      // Update stat leaders embed if channel configured
+      try {
+        await updateStatLeaders(interaction.client, leagueId);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] stat leaders update skipped:', e?.message || e);
+      }
+      // Update standings embed
+      try {
+        await updateStandings(interaction.client, leagueId);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] standings update skipped:', e?.message || e);
+      }
+      // Update playoff picture embed
+      try {
+        await updatePlayoffPicture(interaction.client, leagueId);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] playoff picture update skipped:', e?.message || e);
+      }
+      // Update power rankings embed
+      try {
+        await updatePowerRankings(interaction.client, leagueId);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] power rankings update skipped:', e?.message || e);
+      }
+    } else {
+      console.log('[madden-weeklyupdate] Preseason detected: skipping stat leaders, standings, playoff picture, power rankings.');
     }
     // Post weekly transactions
     try {

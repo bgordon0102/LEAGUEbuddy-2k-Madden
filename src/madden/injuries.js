@@ -65,9 +65,8 @@ function chunkLines(lines, maxLen = 3400) {
 
 function formatInjury(p) {
   const weeks = Number(p.injuryLength) || 0;
-  const type = p.injuryType !== undefined ? ` (type ${p.injuryType})` : '';
   const status = weeks > 0 ? `Out ${weeks} wk${weeks === 1 ? '' : 's'}` : 'Out (length unknown)';
-  return `${playerLabel(p)} — ${status}${type}`;
+  return `${playerLabel(p)} — ${status}`;
 }
 
 export async function updateInjuries(client, leagueId) {
