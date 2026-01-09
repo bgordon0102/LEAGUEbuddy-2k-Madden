@@ -26,11 +26,11 @@ const roleChoices = (roleMap) => Object.keys(roleMap)
   .map(name => ({ name, value: name }));
 
 export const data = new SlashCommandBuilder()
-  .setName('madden-assignteam')
-  .setDescription('Assign up to two Madden roles to a user (Commish/Co-Commish only).')
-  .addUserOption(o => o.setName('user').setDescription('User to assign').setRequired(true))
-  .addStringOption(o => o.setName('role1').setDescription('First role to assign').setRequired(true).setAutocomplete(true))
-  .addStringOption(o => o.setName('role2').setDescription('Second role to assign (optional)').setRequired(false).setAutocomplete(true))
+  .setName('madden-removeteam')
+  .setDescription('Remove up to two Madden roles from a user (Commish/Co-Commish only).')
+  .addUserOption(o => o.setName('user').setDescription('User to update').setRequired(true))
+  .addStringOption(o => o.setName('role1').setDescription('First role to remove').setRequired(true).setAutocomplete(true))
+  .addStringOption(o => o.setName('role2').setDescription('Second role to remove (optional)').setRequired(false).setAutocomplete(true))
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
 export async function execute(interaction) {
@@ -42,7 +42,7 @@ export async function execute(interaction) {
     return;
   }
   const target = interaction.options.getUser('user');
-  const roleName1 = interaction.options.getString('role1');
+  let roleName1 = interaction.options.getString('role1');
   const roleName2 = interaction.options.getString('role2');
 
   const guildMember = await interaction.guild.members.fetch(target.id).catch(() => null);
@@ -56,9 +56,22 @@ export async function execute(interaction) {
     return id ? interaction.guild.roles.cache.get(id) : null;
   };
 
-  const r1 = resolveRole(roleName1);
+  // Resolve role1; if target doesn't have it, fall back to first coach role they do have.
+  let r1 = resolveRole(roleName1);
+  if (r1 && !guildMember.roles.cache.has(r1.id)) {
+    r1 = null;
+  }
   if (!r1) {
-    await interaction.editReply({ content: `Role "${roleName1}" not found.` });
+    const coachRoles = Object.entries(roleMap).filter(([n]) => n.endsWith('Coach'));
+    const found = coachRoles.find(([, id]) => guildMember.roles.cache.has(id));
+    if (found) {
+      roleName1 = found[0];
+      r1 = resolveRole(roleName1);
+    }
+  }
+
+  if (!r1) {
+    await interaction.editReply({ content: `Could not resolve a coach role to remove for ${target.tag}.` });
     return;
   }
   let r2 = null;
@@ -71,10 +84,9 @@ export async function execute(interaction) {
   }
 
   try {
-    await guildMember.roles.add(r1);
-    if (r2) await guildMember.roles.add(r2);
-    await interaction.editReply({ content: `Assigned ${r2 ? `"${r1.name}" and "${r2.name}"` : `"${r1.name}"`} to ${target.tag}.` });
-    // Refresh available teams pin
+    await guildMember.roles.remove(r1);
+    if (r2) await guildMember.roles.remove(r2);
+    await interaction.editReply({ content: `Removed ${r2 ? `"${r1.name}" and "${r2.name}"` : `"${r1.name}"`} from ${target.tag}.` });
     try {
       await updateAvailableTeamsPin(interaction.client, interaction.guildId, {
         allowCreate: true,
@@ -85,10 +97,10 @@ export async function execute(interaction) {
         skipMemberFetch: true
       });
     } catch (e) {
-      console.warn('[madden-assignteam] available teams pin update skipped:', e?.message || e);
+      console.warn('[madden-removeteam] available teams pin update skipped:', e?.message || e);
     }
   } catch (err) {
-    await interaction.editReply({ content: `Failed to assign roles: ${err.message || err}` });
+    await interaction.editReply({ content: `Failed to remove roles: ${err.message || err}` });
   }
 }
 
@@ -96,7 +108,29 @@ export async function autocomplete(interaction) {
   if (!interaction.isAutocomplete()) return;
   const roleMap = loadRoleMap();
   const focused = interaction.options.getFocused().toLowerCase();
-  const options = roleChoices(roleMap)
+
+  let filteredRoles = [];
+  try {
+    const targetOpt = interaction.options.get('user');
+    const targetId = targetOpt?.value;
+    if (!targetId) {
+      await interaction.respond([]);
+      return;
+    }
+    const member = await interaction.guild.members.fetch(targetId).catch(() => null);
+    if (!member) {
+      await interaction.respond([]);
+      return;
+    }
+    filteredRoles = roleChoices(roleMap).filter(r => {
+      const id = roleMap[r.name];
+      return id && member.roles.cache.has(id);
+    });
+  } catch {
+    filteredRoles = [];
+  }
+
+  const options = filteredRoles
     .filter(r => r.name.toLowerCase().includes(focused))
     .slice(0, 25);
   await interaction.respond(options);

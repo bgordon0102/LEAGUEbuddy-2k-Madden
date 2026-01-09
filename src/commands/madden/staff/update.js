@@ -7,6 +7,9 @@ import { updateStatLeaders } from '../../../madden/stat_leaders.js';
 import { updateStandings } from '../../../madden/standings_pin.js';
 import { updatePlayoffPicture } from '../../../madden/playoff_picture.js';
 import { updatePowerRankings } from '../../../madden/power_rankings.js';
+import { updateTransactions } from '../../../madden/transactions.js';
+import { updatePlayerChanges } from '../../../madden/player_changes.js';
+import { updateInjuries } from '../../../madden/injuries.js';
 
 const data = new SlashCommandBuilder()
   .setName('madden-weeklyupdate')
@@ -48,6 +51,24 @@ async function execute(interaction) {
       await updatePowerRankings(interaction.client, leagueId);
     } catch (e) {
       console.warn('[madden-weeklyupdate] power rankings update skipped:', e?.message || e);
+    }
+    // Post weekly transactions
+    try {
+      await updateTransactions(interaction.client, leagueId);
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] transactions update skipped:', e?.message || e);
+    }
+    // Player change log (position/attribute/dev changes)
+    try {
+      await updatePlayerChanges(interaction.client, leagueId);
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] player changes update skipped:', e?.message || e);
+    }
+    // Injuries
+    try {
+      await updateInjuries(interaction.client, leagueId);
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] injuries update skipped:', e?.message || e);
     }
     const embed = new EmbedBuilder()
       .setTitle('Madden Weekly Update Complete')

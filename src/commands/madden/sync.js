@@ -10,6 +10,7 @@ import { loadTokens as loadTokensDb } from '../../madden/madden_db.js';
 import { SnallabotProvider } from '../../madden/providers/SnallabotProvider.js';
 
 const leagueDir = path.join(process.cwd(), 'data', 'madden', 'leagues');
+const prevDir = path.join(leagueDir, 'previous');
 const tokenFile = path.join(process.cwd(), 'data', 'madden', 'tokens.json');
 const snapshotsDir = leagueDir;
 const useSnallabot = (process.env.MADDEN_SYNC_USE_SNALLABOT ?? 'true').toLowerCase() !== 'false';
@@ -25,6 +26,7 @@ const data = new SlashCommandBuilder()
 
 async function ensureDir() {
   await fs.mkdir(leagueDir, { recursive: true });
+  await fs.mkdir(prevDir, { recursive: true });
 }
 
 async function loadTokens() {
@@ -211,6 +213,12 @@ export async function runSync(leagueId, provider, options = {}) {
     };
 
     const outPath = path.join(leagueDir, `${leagueId}.json`);
+    const prevPath = path.join(prevDir, `${leagueId}.json`);
+    // Save previous snapshot for diffing (transactions, etc.)
+    try {
+      const existing = await fs.readFile(outPath, 'utf-8');
+      await fs.writeFile(prevPath, existing, 'utf-8');
+    } catch { /* no previous snapshot */ }
     await fs.writeFile(outPath, JSON.stringify(snapshot, null, 2), 'utf-8');
 
     // Cleanup: keep only snapshots for this league to avoid accumulating old leagues.
