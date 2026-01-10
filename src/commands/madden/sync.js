@@ -184,17 +184,6 @@ export async function runSync(leagueId, provider, options = {}) {
     // If schedule fetch returned empty, fall back to previous snapshot schedule if available from file
     let finalSchedule = schedule;
     let finalWeeklyStats = weeklyStats;
-    try {
-      const prevPath = path.join(leagueDir, `${leagueId}.json`);
-      const prevRaw = await fs.readFile(prevPath, 'utf-8');
-      const previous = JSON.parse(prevRaw);
-      if ((schedule?.schedules?.length ?? 0) === 0 && previous?.schedule?.schedules?.length) {
-        finalSchedule = previous.schedule;
-      }
-      if ((weeklyStats?.length ?? 0) === 0 && Array.isArray(previous?.weeklyStats)) {
-        finalWeeklyStats = previous.weeklyStats;
-      }
-    } catch {}
 
     const snapshot = {
       fetchedAt: new Date().toISOString(),

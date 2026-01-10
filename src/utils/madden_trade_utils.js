@@ -2,9 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
+import { getPinId, setPinId } from '../madden/pins_store.js';
 
 const ACTIVE_TRADES_FILE = path.join(process.cwd(), 'data', 'madden', 'active_trades.json');
 const TRADE_COUNTS_FILE = path.join(process.cwd(), 'data', 'madden', 'trade_counts.json');
+const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
+const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 
 export function canTrade(leagueId) {
   try {
@@ -47,9 +50,23 @@ export async function updateTradeCountsEmbed(client, channelMap, counts) {
   const channel = await client.channels.fetch(channelId).catch(() => null);
   if (!channel || !channel.isTextBased()) return;
 
-  const lines = Object.entries(counts)
-    .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
-    .map(([team, cnt], idx) => `${idx + 1}. ${team}: ${cnt}`);
+  const teamEmojis = (() => {
+    try { return JSON.parse(fs.readFileSync(TEAM_EMOJIS_FILE, 'utf8')); } catch { return {}; }
+  })();
+  const roleMap = (() => {
+    try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
+  })();
+  // Build full list with zeros for all teams we know
+  const keys = Object.keys(teamEmojis).length ? Object.keys(teamEmojis) : Object.keys(counts || {});
+  const allTeams = Array.from(new Set(keys));
+  allTeams.sort((a, b) => (a || '').localeCompare(b || ''));
+
+  const lines = allTeams.map(team => {
+    const cnt = counts[team] || 0;
+    const emojiId = teamEmojis[team];
+    const emoji = emojiId ? `<:${team.replace(/\s+/g, '')}:${emojiId}>` : '';
+    return `${emoji ? emoji + ' ' : ''}${team}: ${cnt}`;
+  });
 
   const embed = new EmbedBuilder()
     .setTitle('Trade Counts')
@@ -75,6 +92,15 @@ export async function updateTradeCountsEmbed(client, channelMap, counts) {
     }
   } catch {}
 
+  const pinId = getPinId('trade_counts');
+  if (pinId) {
+    const msg = await channel.messages.fetch(pinId).catch(() => null);
+    if (msg) {
+      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
+      return;
+    }
+  }
   const msg = await channel.send({ embeds: [embed] });
   try { await msg.pin(); } catch {}
+  setPinId('trade_counts', msg.id);
 }

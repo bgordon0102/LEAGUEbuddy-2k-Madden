@@ -1,7 +1,13 @@
 import fs from 'fs';
 import path from 'path';
+import { getPinId, setPinId } from './pins_store.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
+const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
+
+function loadJson(file, fallback = {}) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
+}
 
 function loadSnapshot(leagueId) {
   const file = path.join(process.cwd(), 'data', 'madden', 'leagues', `${leagueId}.json`);
@@ -13,15 +19,29 @@ function loadChannelMap() {
   try { return JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8')); } catch { return {}; }
 }
 
-function teamMap(snapshot) {
+function teamMap(snapshot, emojiMap) {
   const map = {};
   const list = snapshot?.teams?.leagueTeamInfoList || [];
   list.forEach(t => {
     if (!t.teamId) return;
     const name = [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim();
-    map[t.teamId] = name || `Team ${t.teamId}`;
+    const emoji = teamEmoji(name, emojiMap);
+    map[t.teamId] = emoji || name || `Team ${t.teamId}`;
   });
   return map;
+}
+
+function teamEmoji(name, emojiMap) {
+  if (!name) return '';
+  const target = name.toLowerCase();
+  const mascot = target.split(/\s+/).pop();
+  for (const [key, val] of Object.entries(emojiMap || {})) {
+    const base = key.toLowerCase();
+    if (base === target || base === mascot || target.includes(base) || base.includes(target)) {
+      return `<:${key.replace(/\\s+/g, '')}:${val}>`;
+    }
+  }
+  return '';
 }
 
 function shortName(fullName) {
@@ -36,7 +56,6 @@ function shortName(fullName) {
 function sumCategory(weeklyStats, key, listKey, fields) {
   const agg = new Map();
   weeklyStats.forEach(wk => {
-    if (Number(wk.stage) !== 1 && Number(wk.stageIndex) !== 1) return; // regular season only
     const list = wk?.[key]?.[listKey];
     if (!Array.isArray(list)) return;
     list.forEach(p => {
@@ -98,16 +117,46 @@ function topReceiving(weeklyStats, teams) {
   return lines;
 }
 
-function topDefense(weeklyStats, teams) {
-  const agg = sumCategory(weeklyStats, 'defense', 'playerDefensiveStatInfoList', ['defTotalTackles', 'defSacks', 'defInts']);
+function topDefenseSacks(weeklyStats, teams) {
+  const agg = sumCategory(weeklyStats, 'defense', 'playerDefensiveStatInfoList', ['defSacks', 'defTacklesForLoss', 'defTotalTackles']);
+  const arr = Array.from(agg.values());
+  arr.sort((a, b) => (b.totals.defSacks ?? 0) - (a.totals.defSacks ?? 0)
+    || (b.totals.defTacklesForLoss ?? 0) - (a.totals.defTacklesForLoss ?? 0)
+    || (b.totals.defTotalTackles ?? 0) - (a.totals.defTotalTackles ?? 0));
+  const lines = arr.slice(0, 10).map((p, i) => {
+    const team = teams[p.teamId] || '—';
+    const name = `${shortName(p.fullName)} (${team})`;
+    return `${i + 1}. ${name} — SACK ${p.totals.defSacks ?? 0}, TFL ${p.totals.defTacklesForLoss ?? 0}, TAK ${p.totals.defTotalTackles ?? 0}`;
+  });
+  while (lines.length < 10) lines.push(`${lines.length + 1}. N/A`);
+  return lines;
+}
+
+function topDefenseCoverage(weeklyStats, teams) {
+  const agg = sumCategory(weeklyStats, 'defense', 'playerDefensiveStatInfoList', ['defInts', 'defPassDeflections', 'defTotalTackles']);
+  const arr = Array.from(agg.values());
+  arr.sort((a, b) => (b.totals.defInts ?? 0) - (a.totals.defInts ?? 0)
+    || (b.totals.defPassDeflections ?? 0) - (a.totals.defPassDeflections ?? 0)
+    || (b.totals.defTotalTackles ?? 0) - (a.totals.defTotalTackles ?? 0));
+  const lines = arr.slice(0, 10).map((p, i) => {
+    const team = teams[p.teamId] || '—';
+    const name = `${shortName(p.fullName)} (${team})`;
+    return `${i + 1}. ${name} — INT ${p.totals.defInts ?? 0}, PD ${p.totals.defPassDeflections ?? 0}, TAK ${p.totals.defTotalTackles ?? 0}`;
+  });
+  while (lines.length < 10) lines.push(`${lines.length + 1}. N/A`);
+  return lines;
+}
+
+function topDefenseTackles(weeklyStats, teams) {
+  const agg = sumCategory(weeklyStats, 'defense', 'playerDefensiveStatInfoList', ['defTotalTackles', 'defSoloTackles', 'defInts']);
   const arr = Array.from(agg.values());
   arr.sort((a, b) => (b.totals.defTotalTackles ?? 0) - (a.totals.defTotalTackles ?? 0)
-    || (b.totals.defSacks ?? 0) - (a.totals.defSacks ?? 0)
+    || (b.totals.defSoloTackles ?? 0) - (a.totals.defSoloTackles ?? 0)
     || (b.totals.defInts ?? 0) - (a.totals.defInts ?? 0));
   const lines = arr.slice(0, 10).map((p, i) => {
     const team = teams[p.teamId] || '—';
     const name = `${shortName(p.fullName)} (${team})`;
-    return `${i + 1}. ${name} — TAK ${p.totals.defTotalTackles ?? 0}, SACK ${p.totals.defSacks ?? 0}, INT ${p.totals.defInts ?? 0}`;
+    return `${i + 1}. ${name} — TAK ${p.totals.defTotalTackles ?? 0}, SOLO ${p.totals.defSoloTackles ?? 0}, INT ${p.totals.defInts ?? 0}`;
   });
   while (lines.length < 10) lines.push(`${lines.length + 1}. N/A`);
   return lines;
@@ -156,7 +205,8 @@ function topPunting(weeklyStats, teams) {
 
 export async function updateStatLeaders(client, leagueId) {
   const snapshot = loadSnapshot(leagueId);
-  const teams = teamMap(snapshot);
+  const emojiMap = loadJson(TEAM_EMOJIS_FILE, {});
+  const teams = teamMap(snapshot, emojiMap);
   const weeklyStats = snapshot?.weeklyStats || [];
   const fields = [];
 
@@ -164,7 +214,9 @@ export async function updateStatLeaders(client, leagueId) {
     ['Passing', topPassing],
     ['Rushing', topRushing],
     ['Receiving', topReceiving],
-    ['Defense', topDefense],
+    ['Defense (Sacks/TFL)', topDefenseSacks],
+    ['Defense (INT/PD)', topDefenseCoverage],
+    ['Defense (Tackles)', topDefenseTackles],
     ['Kicking', topKicking],
     ['Punting', topPunting],
   ];
@@ -191,25 +243,15 @@ export async function updateStatLeaders(client, leagueId) {
     timestamp: new Date().toISOString(),
   };
 
-  // Edit existing bot message; do not create new pins/messages if missing.
-  try {
-    const pins = await channel.messages.fetchPinned().catch(() => null);
-    const botPin = pins ? pins.find(m => m.author.id === client.user.id) : null;
-    if (botPin) {
-      await botPin.edit({ embeds: [embed], content: null }).catch(() => null);
+  const pinId = getPinId('stat_leaders');
+  if (pinId) {
+    const msg = await channel.messages.fetch(pinId).catch(() => null);
+    if (msg) {
+      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
       return;
     }
-  } catch { /* ignore */ }
-
-  // If no pin, try to find the latest bot-authored message in the channel and edit it.
-  try {
-    const recent = await channel.messages.fetch({ limit: 50 });
-    const botMsg = recent.find(m => m.author.id === client.user.id);
-    if (botMsg) {
-      await botMsg.edit({ embeds: [embed], content: null }).catch(() => null);
-      return;
-    }
-  } catch { /* ignore */ }
-
-  throw new Error('Stat Leaders message not found; run the pin_stat_leaders script once to create it.');
+  }
+  const msg = await channel.send({ embeds: [embed] });
+  try { await msg.pin(); } catch { /* ignore */ }
+  setPinId('stat_leaders', msg.id);
 }

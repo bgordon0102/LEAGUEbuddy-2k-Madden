@@ -1,4 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
 import { resolveLeagueIdWithConfig } from '../../../madden/madden_data.js';
 import { runSync } from '../sync.js';
 import { getMessageForWeek } from '../../../madden/madden_utils.js';
@@ -11,6 +13,11 @@ import { updateTransactions } from '../../../madden/transactions.js';
 import { updatePlayerChanges } from '../../../madden/player_changes.js';
 import { updateInjuries } from '../../../madden/injuries.js';
 import { Stage } from '../../../madden/ea_client.js';
+import { saveTradeCounts, updateTradeCountsEmbed } from '../../../utils/madden_trade_utils.js';
+import { updateAwards } from '../../../madden/awards.js';
+
+const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
+const POWER_RANKS_FILE = path.join(process.cwd(), 'data', 'madden', 'power_ranks.json');
 
 const data = new SlashCommandBuilder()
   .setName('madden-weeklyupdate')
@@ -30,33 +37,49 @@ async function execute(interaction) {
     const provider = new SnallabotProvider();
     const summary = await runSync(leagueId, provider, { week: weekOverride });
     const inPreseason = summary.stage === Stage.PRESEASON;
-    if (!inPreseason) {
-      // Update stat leaders embed if channel configured
+
+    // On the first week of a new season (preseason), reset trade counts but keep pins
+    if (inPreseason) {
       try {
-        await updateStatLeaders(interaction.client, leagueId);
+        const channelMap = JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8'));
+        const emptyCounts = {};
+        saveTradeCounts(emptyCounts);
+        await updateTradeCountsEmbed(interaction.client, channelMap, emptyCounts);
       } catch (e) {
-        console.warn('[madden-weeklyupdate] stat leaders update skipped:', e?.message || e);
+        console.warn('[madden-weeklyupdate] trade counts reset skipped:', e?.message || e);
       }
-      // Update standings embed
+      // Reset stored power ranks for this league so new-entrant messages fire
       try {
-        await updateStandings(interaction.client, leagueId);
+        const ranks = fs.existsSync(POWER_RANKS_FILE) ? JSON.parse(fs.readFileSync(POWER_RANKS_FILE, 'utf8')) : {};
+        if (ranks[leagueId]) {
+          delete ranks[leagueId];
+          fs.writeFileSync(POWER_RANKS_FILE, JSON.stringify(ranks, null, 2));
+        }
       } catch (e) {
-        console.warn('[madden-weeklyupdate] standings update skipped:', e?.message || e);
+        console.warn('[madden-weeklyupdate] power ranks reset skipped:', e?.message || e);
       }
-      // Update playoff picture embed
-      try {
-        await updatePlayoffPicture(interaction.client, leagueId);
-      } catch (e) {
-        console.warn('[madden-weeklyupdate] playoff picture update skipped:', e?.message || e);
-      }
-      // Update power rankings embed
-      try {
-        await updatePowerRankings(interaction.client, leagueId);
-      } catch (e) {
-        console.warn('[madden-weeklyupdate] power rankings update skipped:', e?.message || e);
-      }
-    } else {
-      console.log('[madden-weeklyupdate] Preseason detected: skipping stat leaders, standings, playoff picture, power rankings.');
+    }
+
+    // Always refresh pins; in preseason this will reset content for the new league
+    try {
+      await updateStatLeaders(interaction.client, leagueId);
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] stat leaders update skipped:', e?.message || e);
+    }
+    try {
+      await updateStandings(interaction.client, leagueId);
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] standings update skipped:', e?.message || e);
+    }
+    try {
+      await updatePlayoffPicture(interaction.client, leagueId);
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] playoff picture update skipped:', e?.message || e);
+    }
+    try {
+      await updatePowerRankings(interaction.client, leagueId);
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] power rankings update skipped:', e?.message || e);
     }
     // Post weekly transactions
     try {
@@ -75,6 +98,32 @@ async function execute(interaction) {
       await updateInjuries(interaction.client, leagueId);
     } catch (e) {
       console.warn('[madden-weeklyupdate] injuries update skipped:', e?.message || e);
+    }
+    // Weekly awards (derived locally)
+    try {
+      await updateAwards(interaction.client, leagueId, summary.currentWeek);
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] awards update skipped:', e?.message || e);
+    }
+    // Debug: report which weeks have player stats
+    try {
+      const snapPath = path.join(process.cwd(), 'data', 'madden', 'leagues', `${leagueId}.json`);
+      const snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
+      const ws = snap.weeklyStats || [];
+      const withData = ws
+        .filter(w => {
+          const buckets = [
+            w?.passing?.playerPassingStatInfoList,
+            w?.rushing?.playerRushingStatInfoList,
+            w?.receiving?.playerReceivingStatInfoList,
+            w?.defense?.playerDefensiveStatInfoList,
+          ];
+          return buckets.some(b => Array.isArray(b) && b.length > 0);
+        })
+        .map(w => `W${w.weekIndex} (stage ${w.stage ?? w.stageIndex ?? 0})`);
+      console.log('[madden-weeklyupdate] weeklyStats with player data:', withData.join(', ') || 'none');
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] weeklyStats debug skipped:', e?.message || e);
     }
     const embed = new EmbedBuilder()
       .setTitle('Madden Weekly Update Complete')

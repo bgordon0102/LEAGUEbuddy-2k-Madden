@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
+import { getPinId, setPinId } from './pins_store.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const RANKS_FILE = path.join(process.cwd(), 'data', 'madden', 'power_ranks.json');
+const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
 
 function loadSnapshot(leagueId) {
   const file = path.join(process.cwd(), 'data', 'madden', 'leagues', `${leagueId}.json`);
@@ -13,6 +15,19 @@ function loadSnapshot(leagueId) {
 
 function loadJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
+}
+
+function teamEmoji(name, emojiMap) {
+  if (!name) return '';
+  const target = name.toLowerCase();
+  const mascot = target.split(/\s+/).pop();
+  for (const [key, val] of Object.entries(emojiMap || {})) {
+    const base = key.toLowerCase();
+    if (base === target || base === mascot || target.includes(base) || base.includes(target)) {
+      return `<:${key.replace(/\s+/g, '')}:${val}>`;
+    }
+  }
+  return '';
 }
 
 function teamNameMap(snapshot) {
@@ -59,18 +74,32 @@ function saveRanks(map) {
   fs.writeFileSync(RANKS_FILE, JSON.stringify(map, null, 2));
 }
 
+function teamRoleMention(teamName, roleMap) {
+  if (!teamName) return null;
+  const target = teamName.toLowerCase();
+  const mascot = target.split(/\s+/).pop();
+  for (const [key, val] of Object.entries(roleMap)) {
+    if (!key.endsWith(' Coach')) continue;
+    const base = key.replace(/ Coach$/, '').toLowerCase();
+    if (base === target || (mascot && base === mascot) || target.includes(base)) {
+      return `<@&${val}>`;
+    }
+  }
+  return null;
+}
+
 export async function updatePowerRankings(client, leagueId) {
   const snapshot = loadSnapshot(leagueId);
   const teams = teamNameMap(snapshot);
   const roleMap = loadJson(ROLE_MAP_FILE);
-  const coachRoleId = roleMap['Madden Coach'];
-  const coachTag = coachRoleId ? `<@&${coachRoleId}>` : null;
+  const emojiMap = loadJson(TEAM_EMOJIS_FILE);
 
   const ranked = rankTeams(snapshot);
   const prevMap = loadPrevRanks();
   const prev = prevMap[leagueId] || {};
   const fields = [];
   let lines = [];
+  const newEntrants = [];
   if (ranked.length === 0) {
     lines = Array.from({ length: 10 }, (_, i) => `${i + 1}) N/A`);
     // reset previous ranks for a fresh season
@@ -79,18 +108,22 @@ export async function updatePowerRankings(client, leagueId) {
   } else {
     lines = ranked.map((s, idx) => {
       const name = teams[s.teamId] || 'Team';
+       const emoji = teamEmoji(name, emojiMap);
       const rec = formatRecord(s);
       const currentRank = idx + 1;
       const prevRank = prev[s.teamId];
       let move = '(=)';
-      if (prevRank === undefined) {
+      if (prevRank === undefined || prevRank > 10) {
         move = '(new)';
+        const mention = teamRoleMention(name, roleMap);
+        newEntrants.push({ mention, name, emoji });
       } else {
         const diff = prevRank - currentRank;
-        if (diff > 0) move = `+${diff}`;
-        else if (diff < 0) move = `${diff}`;
+        if (diff > 0) move = `(+${diff})`;
+        else if (diff < 0) move = `(${diff})`;
       }
-      return `${currentRank}) ${name} — ${rec} ${move}`;
+      const prefix = emoji ? `${emoji} ` : '';
+      return `${currentRank}) ${prefix}${name} — ${rec} ${move}`;
     });
     while (lines.length < 10) lines.push(`${lines.length + 1}) N/A`);
     // Save current ranks for next comparison
@@ -112,29 +145,38 @@ export async function updatePowerRankings(client, leagueId) {
     timestamp: new Date().toISOString(),
   };
 
-  // Edit existing bot message if present (pinned preferred)
-  try {
-    const pins = await channel.messages.fetchPinned().catch(() => null);
-    const botPin = pins ? pins.find(m => m.author.id === client.user.id) : null;
-    if (botPin) {
-      await botPin.edit({ embeds: [embed], content: coachTag || null }).catch(() => null);
-      return;
+  const pinId = getPinId('power_rankings');
+  if (pinId) {
+    const msg = await channel.messages.fetch(pinId).catch(() => null);
+    if (msg) {
+      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
+    } else {
+      const newMsg = await channel.send({ embeds: [embed] });
+      try { await newMsg.pin(); } catch { /* ignore */ }
+      setPinId('power_rankings', newMsg.id);
     }
-  } catch { /* ignore */ }
+  } else {
+    const msg = await channel.send({ embeds: [embed] });
+    try { await msg.pin(); } catch { /* ignore */ }
+    setPinId('power_rankings', msg.id);
+  }
 
-  // Otherwise edit most recent bot message
-  try {
-    const recent = await channel.messages.fetch({ limit: 50 });
-    const botMsg = recent.find(m => m.author.id === client.user.id);
-    if (botMsg) {
-      await botMsg.edit({ embeds: [embed], content: coachTag || null }).catch(() => null);
-      return;
-    }
-  } catch { /* ignore */ }
-
-  // If none exists, post once and pin so future updates can edit
-  const msg = await channel.send({ content: coachTag || null, embeds: [embed] });
-  try { await msg.pin(); } catch { /* ignore */ }
+  // Tag new entrants separately
+  if (newEntrants.length && channel?.isTextBased()) {
+    console.log('[power_rankings] new entries detected:', newEntrants.map(e => e.name));
+    const lines = newEntrants.map(e => {
+      const coachTag = e.mention || 'Coach';
+      const logo = e.emoji ? `${e.emoji} ` : '';
+      return `${logo}${coachTag} has entered the Top 10!`;
+    });
+    const announce = {
+      title: 'New Teams in the Power Rankings',
+      description: lines.join('\n'),
+      color: 0xffcc00,
+      timestamp: new Date().toISOString(),
+    };
+    await channel.send({ embeds: [announce] }).catch(() => null);
+  }
 }
 
 export default { updatePowerRankings };

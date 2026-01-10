@@ -6,6 +6,7 @@ import { getMessageForWeek } from './madden_utils.js';
 const LEAGUE_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const PREV_DIR = path.join(LEAGUE_DIR, 'previous');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
+const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 
 function loadJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
@@ -185,6 +186,11 @@ export async function updatePlayerChanges(client, leagueId) {
     console.warn('[player_changes] Player Change Log channel missing.');
     return;
   }
+  const roleMap = loadJson(ROLE_MAP_FILE) || {};
+  const commishMentions = ['Madden Commish', 'Madden Co-Commish']
+    .map(r => roleMap[r] ? `<@&${roleMap[r]}>` : null)
+    .filter(Boolean)
+    .join(' ');
   const channel = await client.channels.fetch(channelId).catch(() => null);
   if (!channel || !channel.isTextBased()) {
     console.warn('[player_changes] Player Change Log channel not text-based or missing.');
@@ -199,11 +205,13 @@ export async function updatePlayerChanges(client, leagueId) {
 
   for (const [teamId, players] of Object.entries(currTeamMap)) {
     const lines = [];
+    let positionChangedForTeam = false;
     for (const [key, currPlayer] of Object.entries(players)) {
       const prevPlayer = prevPlayers[key];
       if (!prevPlayer) continue;
       const diffs = diffPlayer(prevPlayer, currPlayer);
       if (!diffs.length) continue;
+      if (diffs.some(d => d.label === 'Position')) positionChangedForTeam = true;
       const header = `**${playerLabel(currPlayer)}**`;
       const body = diffs.map(d => `${d.label}: ${d.from}->${d.to}`).join('\n');
       lines.push(`${header}\n${body}`);
@@ -220,7 +228,8 @@ export async function updatePlayerChanges(client, leagueId) {
         .addFields({ name: '\u200b', value: part.join('\n\n') })
         .setColor(0x1e90ff)
         .setTimestamp(new Date());
-      await channel.send({ embeds: [embed] }).catch(() => null);
+      const content = positionChangedForTeam ? commishMentions : null;
+      await channel.send({ content: content || undefined, embeds: [embed] }).catch(() => null);
     }
   }
 }

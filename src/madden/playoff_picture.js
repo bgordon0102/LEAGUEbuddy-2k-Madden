@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
+import { getPinId, setPinId } from './pins_store.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
+const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
 
 function loadSnapshot(leagueId) {
   const file = path.join(process.cwd(), 'data', 'madden', 'leagues', `${leagueId}.json`);
@@ -12,14 +14,31 @@ function loadSnapshot(leagueId) {
 function loadChannelMap() {
   try { return JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8')); } catch { return {}; }
 }
+function loadEmojiMap() {
+  try { return JSON.parse(fs.readFileSync(TEAM_EMOJIS_FILE, 'utf8')); } catch { return {}; }
+}
 
-function teamNameMap(snapshot) {
+function teamEmoji(name, emojiMap) {
+  if (!name) return '';
+  const target = name.toLowerCase();
+  const mascot = target.split(/\s+/).pop();
+  for (const [key, val] of Object.entries(emojiMap || {})) {
+    const base = key.toLowerCase();
+    if (base === target || base === mascot || target.includes(base) || base.includes(target)) {
+      return `<:${key.replace(/\s+/g, '')}:${val}>`;
+    }
+  }
+  return '';
+}
+
+function teamNameMap(snapshot, emojiMap) {
   const map = {};
   const list = snapshot?.teams?.leagueTeamInfoList || [];
   list.forEach(t => {
     if (!t.teamId) return;
     const name = [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim();
-    map[t.teamId] = name || `Team ${t.teamId}`;
+    const emoji = teamEmoji(name, emojiMap);
+    map[t.teamId] = emoji || name || `Team ${t.teamId}`;
   });
   return map;
 }
@@ -58,7 +77,8 @@ function topSeeds(standings, conferenceName, teams) {
 
 export async function updatePlayoffPicture(client, leagueId) {
   const snapshot = loadSnapshot(leagueId);
-  const teams = teamNameMap(snapshot);
+  const emojiMap = loadEmojiMap();
+  const teams = teamNameMap(snapshot, emojiMap);
   const standings = snapshot?.standings?.teamStandingInfoList || [];
 
   const afcSeeds = topSeeds(standings, 'afc', teams);
@@ -80,29 +100,17 @@ export async function updatePlayoffPicture(client, leagueId) {
     timestamp: new Date().toISOString(),
   };
 
-  // Edit existing bot message if present (pinned preferred)
-  try {
-    const pins = await channel.messages.fetchPinned().catch(() => null);
-    const botPin = pins ? pins.find(m => m.author.id === client.user.id) : null;
-    if (botPin) {
-      await botPin.edit({ embeds: [embed], content: null }).catch(() => null);
+  const pinId = getPinId('playoff_picture');
+  if (pinId) {
+    const msg = await channel.messages.fetch(pinId).catch(() => null);
+    if (msg) {
+      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
       return;
     }
-  } catch { /* ignore */ }
-
-  // Otherwise edit most recent bot message
-  try {
-    const recent = await channel.messages.fetch({ limit: 50 });
-    const botMsg = recent.find(m => m.author.id === client.user.id);
-    if (botMsg) {
-      await botMsg.edit({ embeds: [embed], content: null }).catch(() => null);
-      return;
-    }
-  } catch { /* ignore */ }
-
-  // If none exists, post once and pin so future updates can edit
+  }
   const msg = await channel.send({ embeds: [embed] });
   try { await msg.pin(); } catch { /* ignore */ }
+  setPinId('playoff_picture', msg.id);
 }
 
 export default { updatePlayoffPicture };

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { canTrade, loadActiveTrades, saveActiveTrades } from '../utils/madden_trade_utils.js';
+import { canTrade, loadActiveTrades, saveActiveTrades, loadTradeCounts } from '../utils/madden_trade_utils.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -112,6 +112,14 @@ export async function execute(interaction) {
 
     const yourTeam = teamDisplay(snapshot, yourTeamRaw);
     const otherTeam = teamDisplay(snapshot, otherTeamRaw);
+
+    // Enforce per-team trade cap before sending proposal
+    const counts = loadTradeCounts();
+    const overCap = [yourTeam, otherTeam].find(t => t && (counts[t] || 0) >= 5);
+    if (overCap) {
+      await interaction.editReply({ content: `Trade blocked: ${overCap} has already made 5 trades this season.` });
+      return;
+    }
 
     const embed = buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, notes });
     const tradeId = `${Date.now()}`;

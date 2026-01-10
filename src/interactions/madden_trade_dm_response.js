@@ -21,6 +21,10 @@ function loadRoleMap() {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
 }
 
+function hasTradeCapacity(counts, teams, max = 5) {
+  return teams.every(t => (counts[t] || 0) < max);
+}
+
 function buildEmbed(trade, tradeId, status, actor) {
   const colors = { approved: 0x3ba55d, denied: 0xed4245 };
   const title = status === 'approved' ? 'Trade Approved' : 'Trade Denied';
@@ -95,6 +99,20 @@ export async function execute(interaction) {
     }
     await deletePendingMessage(interaction.client, channelMap, trade);
     await interaction.editReply({ content: 'Trade denied and proposer notified.' });
+    return;
+  }
+
+  // Enforce trade limit (5 per team per season)
+  const counts = loadTradeCounts();
+  const teamsInTrade = [trade.yourTeam, trade.otherTeam].filter(Boolean);
+  if (!hasTradeCapacity(counts, teamsInTrade, 5)) {
+    await interaction.editReply({ content: 'Trade blocked: one of the teams has reached the 5-trade limit for this season.' });
+    if (trade.proposerId) {
+      try {
+        const userA = await interaction.client.users.fetch(trade.proposerId);
+        await userA.send({ content: 'Your trade was blocked because one of the teams has already made 5 trades this season.' }).catch(() => null);
+      } catch {}
+    }
     return;
   }
 

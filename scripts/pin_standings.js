@@ -1,44 +1,65 @@
-#!/usr/bin/env node
 import 'dotenv/config';
-import { Client, GatewayIntentBits } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
+import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import { updateStandings } from '../src/madden/standings_pin.js';
-import { getDefaultLeagueId } from '../src/madden/madden_data.js';
-import { getLeagueForGuild } from '../src/madden/madden_config.js';
+import { setPinId } from '../src/madden/pins_store.js';
 
-async function main() {
-  const token = process.env.DISCORD_TOKEN;
-  if (!token) {
-    console.error('DISCORD_TOKEN missing. Add it to .env before running this script.');
-    process.exit(1);
-  }
-
-  const cliLeague = process.argv[2];
-  const envLeague = process.env.MADDEN_LEAGUE_ID;
-  const guildLeague = process.env.DISCORD_GUILD_ID ? getLeagueForGuild(process.env.DISCORD_GUILD_ID) : null;
-  const snapshotLeague = getDefaultLeagueId();
-  const leagueId = cliLeague || envLeague || guildLeague || snapshotLeague;
-  if (!leagueId) {
-    console.error('No league id found. Pass one as arg or set MADDEN_LEAGUE_ID / run /madden-set-league once.');
-    process.exit(1);
-  }
-
-  const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-  client.once('ready', async () => {
-    console.log(`Logged in as ${client.user.tag}, updating Standings for league ${leagueId}...`);
-    try {
-      await updateStandings(client, leagueId);
-      console.log('Standings embed updated.');
-    } catch (e) {
-      console.error('Failed to update Standings:', e?.message || e);
-    } finally {
-      client.destroy();
-    }
-  });
-
-  await client.login(token);
+function latestLeagueId() {
+  const dir = path.join(process.cwd(), 'data', 'madden', 'leagues');
+  if (!fs.existsSync(dir)) return null;
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+  if (!files.length) return null;
+  // pick most recently modified
+  const sorted = files
+    .map(f => ({ f, mtime: fs.statSync(path.join(dir, f)).mtimeMs }))
+    .sort((a, b) => b.mtime - a.mtime);
+  return sorted[0].f.replace('.json', '');
 }
 
-main().catch(err => {
-  console.error(err);
+const leagueId = process.env.LEAGUE_ID || process.env.MADDEN_LEAGUE_ID || latestLeagueId();
+const token = process.env.DISCORD_TOKEN;
+if (!token) {
+  console.error('DISCORD_TOKEN missing in environment.');
   process.exit(1);
+}
+
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+  partials: [Partials.Channel],
 });
+
+client.once('ready', async () => {
+  console.log(`Logged in as ${client.user.tag}. Pinning Standings${leagueId ? ` for league ${leagueId}` : ''}...`);
+  try {
+    let pinned = false;
+    if (leagueId) {
+      try {
+        await updateStandings(client, leagueId);
+        console.log('Standings pin updated.');
+        pinned = true;
+      } catch (err) {
+        console.warn('Standings update failed, falling back to placeholder:', err?.message || err);
+      }
+    }
+    if (!pinned) {
+      const channelMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json'), 'utf8'));
+      const channelId = channelMap['Standings'];
+      if (!channelId) throw new Error('Standings channel not configured');
+      const channel = await client.channels.fetch(channelId).catch(() => null);
+      if (!channel?.isTextBased()) throw new Error('Standings channel not accessible');
+      const msg = await channel.send({
+        embeds: [{ title: 'Madden Standings', description: 'Awaiting league data.', color: 0x00b0f4 }],
+      });
+      try { await msg.pin(); } catch {}
+      setPinId('standings', msg.id);
+      console.log('Standings placeholder pin created.');
+    }
+  } catch (e) {
+    console.error('Failed to update Standings pin:', e?.message || e);
+  } finally {
+    setTimeout(() => client.destroy(), 500);
+  }
+});
+
+client.login(token);
