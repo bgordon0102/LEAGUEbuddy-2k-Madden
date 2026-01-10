@@ -46,16 +46,26 @@ function computePlayerValue(p) {
   return Math.max(1, Math.round(raw * 10) / 10);
 }
 
-function parsePickValueDot(label) {
-  const m = /^(\d)\.(\d{1,2})$/.exec(label.trim());
+function parsePickValueDot(label, seasonYear) {
+  const m = /^(\d)\.(\d{1,2})(?:\s+(\d{2,4}))?$/.exec(label.trim());
   if (!m) return null;
   const round = Number(m[1]);
   const pick = Number(m[2]);
+  let year = seasonYear;
+  if (m[3]) {
+    const y = Number(m[3]);
+    year = y < 100 ? 2000 + y : y;
+  }
   if (round < 1 || round > 7 || pick < 1 || pick > 32) return null;
   const baseChart = { 1: 800, 2: 400, 3: 200, 4: 100, 5: 60, 6: 40, 7: 20 };
   const base = baseChart[round] || 10;
   const slider = 1 - ((pick - 1) / 32) * 0.35;
-  const val = Math.max(5, Math.round(base * slider * 10) / 10);
+  let val = Math.max(5, Math.round(base * slider * 10) / 10);
+  if (seasonYear && year && year > seasonYear) {
+    const diff = year - seasonYear;
+    const decay = diff === 1 ? 0.85 : 0.7;
+    val = Math.max(5, Math.round(val * decay * 10) / 10);
+  }
   return val;
 }
 
@@ -97,6 +107,19 @@ function listTeams(snapshot) {
   return teams.map(t => `${t.cityName} ${t.displayName || t.nickName || ''}`.trim());
 }
 
+function buildPickChoices(seasonYear) {
+  const picks = [];
+  const baseYear = seasonYear || new Date().getFullYear();
+  const years = [baseYear, baseYear + 1, baseYear + 2];
+  for (let r = 1; r <= 7; r++) {
+    for (let p = 1; p <= 32; p++) {
+      const base = `${r}.${p}`;
+      years.forEach(y => picks.push(`${base} ${String(y).slice(-2)}`));
+    }
+  }
+  return picks;
+}
+
 const data = new SlashCommandBuilder()
   .setName('madden-tradevalue')
   .setDescription('Estimate trade value for one of your players (by position).')
@@ -117,10 +140,11 @@ const data = new SlashCommandBuilder()
   )
   .addStringOption(o =>
     o.setName('pick')
-      .setDescription('Optional pick to include, e.g., "2026 1st"')
+      .setDescription('Optional pick, e.g., "1.26", "2.20 27" (current + next 2 years)')
       .setRequired(false)
+      .setAutocomplete(true)
   )
-  .setDefaultMemberPermissions(PermissionFlagsBits.SendMessages);
+  // Removed permission restriction so all coaches can use this command
 
 async function execute(interaction) {
   await interaction.deferReply({ ephemeral: true });
@@ -162,8 +186,9 @@ async function execute(interaction) {
         return id ? `<:dev:${id}>` : '';
       } catch { return ''; }
     })();
+    const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear;
     const pickInput = interaction.options.getString('pick');
-    const pickVal = pickInput ? parsePickValueDot(pickInput) : null;
+    const pickVal = pickInput ? parsePickValueDot(pickInput, seasonYear) : null;
 
     const desc = [
       `${match.position} ${match.firstName} ${match.lastName} ${devEmoji}`,
@@ -172,7 +197,7 @@ async function execute(interaction) {
       `Est. Trade Value: **${val.toFixed(1)}**`,
     ];
     if (pickInput) {
-      desc.push(`Pick ${pickInput}: ${pickVal ? pickVal.toFixed(1) : 'N/A (format: 1.1 .. 7.32, picks 1-32)'}`);
+      desc.push(`Pick ${pickInput}: ${pickVal ? pickVal.toFixed(1) : 'N/A (format: 1.1 .. 7.32, picks 1-32, optional year e.g. 1.1 26)'}`);
       if (pickVal) desc.push(`Total (player + pick): ${(val + pickVal).toFixed(1)}`);
     }
 
@@ -204,12 +229,22 @@ async function autocomplete(interaction) {
       .map(n => ({ name: n, value: n }));
     return interaction.respond(filteredTeams);
   }
+  if (focusedRaw?.name === 'pick') {
+    const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear;
+    const pickChoices = buildPickChoices(seasonYear);
+    const filteredPicks = pickChoices
+      .filter(p => p.toLowerCase().includes((focusedRaw.value || '').toLowerCase()))
+      .slice(0, 25)
+      .map(p => ({ name: p, value: p }));
+    return interaction.respond(filteredPicks);
+  }
   if (!member) return interaction.respond([]);
   const teamOpt = interaction.options.getString('team');
   const teamId = teamOpt ? findTeamIdByName(snapshot, teamOpt) : findCoachTeamId(member, snapshot, roleMap);
   if (!teamId) return interaction.respond([]);
   const position = interaction.options.getString('position');
   const focused = (focusedRaw?.value || '').toLowerCase();
+
   const roster = (snapshot?.rosters?.teams?.[teamId] || {}).rosterInfoList || [];
   const filtered = roster
     .filter(p => !position || p.position === position)
