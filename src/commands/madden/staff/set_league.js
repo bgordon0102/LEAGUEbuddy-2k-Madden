@@ -4,6 +4,7 @@ import { saveLeague as saveLeagueDb } from '../../../madden/madden_db.js';
 import fs from 'fs';
 import path from 'path';
 import { loadTradeCounts, saveTradeCounts, updateTradeCountsEmbed } from '../../../utils/madden_trade_utils.js';
+import { resetStatLeaders } from '../../../madden/stat_leaders.js';
 
 const SNAPSHOT_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -83,6 +84,10 @@ async function execute(interaction) {
       const counts = {};
       saveTradeCounts(counts);
       await updateTradeCountsEmbed(interaction.client, channelMap, counts);
+    } catch { /* ignore */ }
+    // Reset stat leaders pin to blank for the new league
+    try {
+      await resetStatLeaders(interaction.client);
     } catch { /* ignore */ }
 
     const embed = new EmbedBuilder()

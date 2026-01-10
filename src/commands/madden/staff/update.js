@@ -5,7 +5,7 @@ import { resolveLeagueIdWithConfig } from '../../../madden/madden_data.js';
 import { runSync } from '../sync.js';
 import { getMessageForWeek } from '../../../madden/madden_utils.js';
 import { SnallabotProvider } from '../../../madden/providers/SnallabotProvider.js';
-import { updateStatLeaders } from '../../../madden/stat_leaders.js';
+import { updateStatLeaders, resetStatLeaders } from '../../../madden/stat_leaders.js';
 import { updateStandings } from '../../../madden/standings_pin.js';
 import { updatePlayoffPicture } from '../../../madden/playoff_picture.js';
 import { updatePowerRankings } from '../../../madden/power_rankings.js';
@@ -15,6 +15,7 @@ import { updateInjuries } from '../../../madden/injuries.js';
 import { Stage } from '../../../madden/ea_client.js';
 import { saveTradeCounts, updateTradeCountsEmbed } from '../../../utils/madden_trade_utils.js';
 import { updateAwards } from '../../../madden/awards.js';
+import { maybePostDraftGrades } from '../../../madden/draft_grades_auto.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const POWER_RANKS_FILE = path.join(process.cwd(), 'data', 'madden', 'power_ranks.json');
@@ -60,11 +61,19 @@ async function execute(interaction) {
       }
     }
 
-    // Always refresh pins; in preseason this will reset content for the new league
-    try {
-      await updateStatLeaders(interaction.client, leagueId);
-    } catch (e) {
-      console.warn('[madden-weeklyupdate] stat leaders update skipped:', e?.message || e);
+    // Stat leaders: reset in preseason/new season, otherwise update
+    if (inPreseason) {
+      try {
+        await resetStatLeaders(interaction.client);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] stat leaders reset skipped:', e?.message || e);
+      }
+    } else {
+      try {
+        await updateStatLeaders(interaction.client, leagueId);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] stat leaders update skipped:', e?.message || e);
+      }
     }
     try {
       await updateStandings(interaction.client, leagueId);
@@ -87,23 +96,38 @@ async function execute(interaction) {
     } catch (e) {
       console.warn('[madden-weeklyupdate] transactions update skipped:', e?.message || e);
     }
-    // Player change log (position/attribute/dev changes)
-    try {
-      await updatePlayerChanges(interaction.client, leagueId);
-    } catch (e) {
-      console.warn('[madden-weeklyupdate] player changes update skipped:', e?.message || e);
+    const isSuperBowlBye = summary.currentWeek === 22;
+    // Player change log (position/attribute/dev changes) — skip bye week
+    if (!isSuperBowlBye) {
+      try {
+        await updatePlayerChanges(interaction.client, leagueId);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] player changes update skipped:', e?.message || e);
+      }
+      // Injuries
+      try {
+        await updateInjuries(interaction.client, leagueId);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] injuries update skipped:', e?.message || e);
+      }
+      // Weekly awards (derived locally) — skip offseason
+      try {
+        if (!inOffseason && seasonInfo.isWeeklyAwardsPeriodActive !== false && summary.currentWeek && summary.currentWeek <= 23) {
+          await updateAwards(interaction.client, leagueId, summary.currentWeek);
+        } else {
+          console.warn('[madden-weeklyupdate] awards skipped (offseason or awards period inactive)');
+        }
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] awards update skipped:', e?.message || e);
+      }
+    } else {
+      console.warn('[madden-weeklyupdate] bye week between Conference and Super Bowl: skipping player changes/injuries/awards');
     }
-    // Injuries
+    // Draft grades auto-post (after draft recap)
     try {
-      await updateInjuries(interaction.client, leagueId);
+      await maybePostDraftGrades(interaction.client, leagueId);
     } catch (e) {
-      console.warn('[madden-weeklyupdate] injuries update skipped:', e?.message || e);
-    }
-    // Weekly awards (derived locally)
-    try {
-      await updateAwards(interaction.client, leagueId, summary.currentWeek);
-    } catch (e) {
-      console.warn('[madden-weeklyupdate] awards update skipped:', e?.message || e);
+      console.warn('[madden-weeklyupdate] draft grades skipped:', e?.message || e);
     }
     // Debug: report which weeks have player stats
     try {
@@ -125,10 +149,45 @@ async function execute(interaction) {
     } catch (e) {
       console.warn('[madden-weeklyupdate] weeklyStats debug skipped:', e?.message || e);
     }
+    // Load snapshot once for context (offseason detection and awards guard)
+    let snap = null;
+    try {
+      const snapPath = path.join(process.cwd(), 'data', 'madden', 'leagues', `${leagueId}.json`);
+      snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
+    } catch {}
+    const seasonInfo = snap?.info?.careerHubInfo?.seasonInfo || {};
+    const inOffseason = (seasonInfo.offSeasonStage || 0) > 0;
+
     const missingWeeks = summary.missingWeeks || [];
-    const missingField = missingWeeks.length
-      ? missingWeeks.map(w => `Stage ${w.stage} Week ${w.weekIndex} (players: ${w.playerCount})`).join('\n')
+    const deduped = [];
+    const seen = new Map();
+    missingWeeks.forEach(w => {
+      const key = `${w.stage}-${w.weekIndex}`;
+      seen.set(key, (seen.get(key) || 0) + 1);
+      const existing = deduped.find(d => `${d.stage}-${d.weekIndex}` === key);
+      if (!existing) {
+        deduped.push({ ...w, runs: 1 });
+      } else {
+        existing.runs += 1;
+        existing.playerCount = w.playerCount ?? existing.playerCount;
+      }
+    });
+    const weekLabel = (stage, wk) => {
+      if (stage === 0 && wk >= 0 && wk <= 3) return `Preseason Week ${wk + 1}`;
+      const display = wk + 1;
+      if (stage === 1 && display >= 1 && display <= 18) return `Week ${display}`;
+      if (display === 19) return 'Wildcard';
+      if (display === 20) return 'Divisional';
+      if (display === 21) return 'Conference';
+      if (display === 23) return 'Super Bowl';
+      return `Stage ${stage} Week ${wk}`;
+    };
+    let missingField = deduped.length
+      ? deduped.map(w => `${weekLabel(w.stage, w.weekIndex)} (players: ${w.playerCount})${w.runs && w.runs > 1 ? ` x${w.runs}` : ''}`).join('\n')
       : 'None';
+    if (inOffseason && deduped.length === 0) {
+      missingField = 'Offseason – no weekly player stats expected';
+    }
 
     const embed = new EmbedBuilder()
       .setTitle('Madden Weekly Update Complete')

@@ -262,3 +262,39 @@ export async function updateStatLeaders(client, leagueId) {
   try { await msg.pin(); } catch { /* ignore */ }
   setPinId('stat_leaders', msg.id);
 }
+
+export async function resetStatLeaders(client) {
+  const channelMap = loadChannelMap();
+  const channelId = channelMap['Stat Leaders'];
+  if (!channelId) return;
+  const channel = await client.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased()) return;
+  const sections = [
+    'Passing', 'Rushing', 'Receiving',
+    'Defense (Sacks/TFL)', 'Defense (INT/PD)', 'Defense (Tackles)',
+    'Kicking', 'Punting'
+  ];
+  const fields = sections.map(name => ({
+    name,
+    value: 'No data yet (new season).',
+    inline: true,
+  }));
+  const embed = {
+    title: 'Madden Stat Leaders (Season-to-Date)',
+    description: 'Reset for new season. Stats will populate after games are played.',
+    color: 0x00b0f4,
+    fields,
+    timestamp: new Date().toISOString(),
+  };
+  const pinId = getPinId('stat_leaders');
+  if (pinId) {
+    const msg = await channel.messages.fetch(pinId).catch(() => null);
+    if (msg) {
+      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
+      return;
+    }
+  }
+  const msg = await channel.send({ embeds: [embed] });
+  try { await msg.pin(); } catch { /* ignore */ }
+  setPinId('stat_leaders', msg.id);
+}

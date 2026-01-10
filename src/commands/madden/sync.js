@@ -143,7 +143,14 @@ export async function runSync(leagueId, provider, options = {}) {
         }
       };
       for (const wk of weekBuckets.preseason) await collectSchedule(wk, Stage.PRESEASON);
-      for (const wk of weekBuckets.season) await collectSchedule(wk, Stage.SEASON);
+      for (const wk of weekBuckets.season) {
+        await collectSchedule(wk, Stage.SEASON);
+        // Playoffs can be exposed as a different stage; try stage 2 (and 0 as a fallback) for postseason weeks (19+)
+        if (wk >= 19) {
+          await collectSchedule(wk, 2);
+          await collectSchedule(wk, Stage.PRESEASON); // some exports mark playoff games as stage 0
+        }
+      }
       schedule = { schedules: allSchedules };
     }
 
@@ -243,6 +250,11 @@ export async function runSync(leagueId, provider, options = {}) {
     const maxWeekToFetch = Math.min(22, maxSeasonWeek);
     for (let wk = 0; wk <= maxWeekToFetch; wk++) {
       await collectWeek(wk, Stage.SEASON);
+      // Also pull potential playoff stats that may be exposed as stage 2 or stage 0 (fallback)
+      if (wk >= 19) {
+        await collectWeek(wk, 2);
+        await collectWeek(wk, Stage.PRESEASON);
+      }
     }
 
     // Retry up to 2 additional times for weeks with zero players

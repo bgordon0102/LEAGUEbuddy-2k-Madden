@@ -336,7 +336,8 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
       nfc_offense: pickWinner(byPlayer, 'NFC'),
       afc_defense: pickDefWinner(byPlayer, 'AFC'),
       nfc_defense: pickDefWinner(byPlayer, 'NFC'),
-      rookie: isPlayoffs ? null : pickRookie(byPlayer, seasonYear),
+      rookie_offense: isPlayoffs ? null : pickWinner(new Map(Array.from(byPlayer).filter(([,p]) => isRookie(p))), null),
+      rookie_defense: isPlayoffs ? null : pickDefWinner(new Map(Array.from(byPlayer).filter(([,p]) => isRookie(p))), null),
     };
     // Fallbacks if any category didn't resolve
     const all = Array.from(byPlayer.values());
@@ -346,10 +347,11 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
     if (!winners.nfc_offense) winners.nfc_offense = fallbackOff(all);
     if (!winners.afc_defense) winners.afc_defense = fallbackDef(all);
     if (!winners.nfc_defense) winners.nfc_defense = fallbackDef(all);
-    if (!winners.rookie && !isPlayoffs) winners.rookie = fallbackOff(all.filter(p=>isRookie(p)));
+    if (!winners.rookie_offense && !isPlayoffs) winners.rookie_offense = fallbackOff(all.filter(p=>isRookie(p)));
+    if (!winners.rookie_defense && !isPlayoffs) winners.rookie_defense = fallbackDef(all.filter(p=>isRookie(p)));
 
     // If rookie still missing, broaden to all weeks in the snapshot and pick best rookie by totals
-    if (!winners.rookie && !isPlayoffs) {
+    if ((!winners.rookie_offense || !winners.rookie_defense) && !isPlayoffs) {
       const agg = new Map();
       const addPlayerTotals = (wk) => {
         const mp = mergePlayerStats(wk);
@@ -368,8 +370,8 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
         p.fullName = p.fullName || `${p.firstName || ''} ${p.lastName || ''}`.trim();
       });
       const rookiesAllWeeks = new Map(Array.from(agg.entries()).filter(([,p]) => isRookie(p)));
-      const rook = pickRookie(rookiesAllWeeks);
-      if (rook) winners.rookie = rook;
+      if (!winners.rookie_offense) winners.rookie_offense = pickWinner(rookiesAllWeeks, null);
+      if (!winners.rookie_defense) winners.rookie_defense = pickDefWinner(rookiesAllWeeks, null);
     }
   }
 
@@ -378,7 +380,7 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
     !winners.nfc_offense &&
     !winners.afc_defense &&
     !winners.nfc_defense &&
-    (!winners.rookie || isPlayoffs);
+    ((isPlayoffs) || (!winners.rookie_offense && !winners.rookie_defense));
   if (allMissing) {
     console.warn('[awards] Computed awards are empty for week', currentWeek, '; will retry on next update.');
     return;
@@ -392,7 +394,7 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
     const line = formatLine(p);
     return {
       name: label,
-      value: `${header}${mention ? ` (${mention})` : ''}\n${line}\nScore: ${p.score?.toFixed(1) ?? 'N/A'}`,
+      value: `${header}${mention ? ` (${mention})` : ''}\n${line}`,
       inline: false,
     };
   };
@@ -408,7 +410,10 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
       makeField('NFC Offensive Player of the Week', winners.nfc_offense),
       makeField('AFC Defensive Player of the Week', winners.afc_defense),
       makeField('NFC Defensive Player of the Week', winners.nfc_defense),
-      ...(isPlayoffs ? [] : [makeField('Rookie of the Week', winners.rookie)]),
+      ...(isPlayoffs ? [] : [
+        makeField('Offensive Rookie of the Week', winners.rookie_offense),
+        makeField('Defensive Rookie of the Week', winners.rookie_defense),
+      ]),
     )
     .setTimestamp(new Date());
 
