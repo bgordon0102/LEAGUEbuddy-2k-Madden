@@ -34,6 +34,17 @@ function buildEmbed(trade, tradeId, status) {
     .setColor(colors[status] || colors.vote)
     .setTimestamp(new Date())
     .setFooter({ text: `Trade ID ${tradeId}` });
+  if (trade.sendTotal !== undefined && trade.recvTotal !== undefined) {
+    const gap = trade.valueGap ?? (trade.sendTotal - trade.recvTotal);
+    embed.addFields({
+      name: 'Trade Value Check',
+      value: [
+        `Your side total: ${Number(trade.sendTotal).toFixed(1)}`,
+        `Other side total: ${Number(trade.recvTotal).toFixed(1)}`,
+        gap === 0 ? 'Balance: even' : `Balance: ${gap > 0 ? '+' : ''}${Number(gap).toFixed(1)} (positive = you send more)`,
+      ].join('\n'),
+    });
+  }
   if (trade.notes) embed.addFields({ name: 'Notes', value: trade.notes });
   return embed;
 }

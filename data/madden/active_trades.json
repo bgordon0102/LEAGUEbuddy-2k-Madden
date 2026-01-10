@@ -1,0 +1,19 @@
+{
+  "1768077864731": {
+    "tradeId": "1768077864731",
+    "yourTeam": "Browns",
+    "otherTeam": "Ravens",
+    "assetsSent": "Myles Garret, 2.3",
+    "assetsReceived": "Lamar Jackson, 7.3, 7.8",
+    "notes": "",
+    "status": "denied",
+    "createdAt": 1768077865181,
+    "expiresAt": 1768164264731,
+    "proposerId": "1076243288056664234",
+    "otherRoleId": "1459020547538026689",
+    "guildId": "1415452215044473036",
+    "closedAt": 1768077960016,
+    "approvedBy": "1390369353605840977",
+    "committeeMsgId": "1459649248181354630"
+  }
+}

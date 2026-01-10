@@ -304,6 +304,7 @@ export async function runSync(leagueId, provider, options = {}) {
       }).sort((a, b) => (a.stage - b.stage) || (a.weekIndex - b.weekIndex));
     })();
 
+    const seasonInfo = info?.careerHubInfo?.seasonInfo || existingSnapshot?.info?.careerHubInfo?.seasonInfo || {};
     const snapshot = {
       fetchedAt: new Date().toISOString(),
       leagueId,
@@ -360,6 +361,7 @@ export async function runSync(leagueId, provider, options = {}) {
         playerCount: w.playerCount ?? 0,
       })),
       outPath,
+      offSeasonStage: seasonInfo.offSeasonStage ?? 0,
     };
   } catch (err) {
     console.error('❌ Madden sync failed:', err);

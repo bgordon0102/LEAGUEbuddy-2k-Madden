@@ -38,6 +38,8 @@ async function execute(interaction) {
     const provider = new SnallabotProvider();
     const summary = await runSync(leagueId, provider, { week: weekOverride });
     const inPreseason = summary.stage === Stage.PRESEASON;
+    let inOffseason = (summary.offSeasonStage ?? 0) > 0;
+    let seasonInfo = {};
 
     // On the first week of a new season (preseason), reset trade counts but keep pins
     if (inPreseason) {
@@ -155,10 +157,13 @@ async function execute(interaction) {
       const snapPath = path.join(process.cwd(), 'data', 'madden', 'leagues', `${leagueId}.json`);
       snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
     } catch {}
-    const seasonInfo = snap?.info?.careerHubInfo?.seasonInfo || {};
-    const inOffseason = (seasonInfo.offSeasonStage || 0) > 0;
+    seasonInfo = snap?.info?.careerHubInfo?.seasonInfo || {};
+    if (!inOffseason) {
+      inOffseason = (summary.offSeasonStage ?? seasonInfo.offSeasonStage ?? 0) > 0;
+    }
 
-    const missingWeeks = summary.missingWeeks || [];
+    // Only surface weeks where we actually missed players
+    const missingWeeks = (summary.missingWeeks || []).filter(w => (w.playerCount ?? 0) > 0);
     const deduped = [];
     const seen = new Map();
     missingWeeks.forEach(w => {
@@ -172,22 +177,35 @@ async function execute(interaction) {
         existing.playerCount = w.playerCount ?? existing.playerCount;
       }
     });
-    const weekLabel = (stage, wk) => {
+    const weekLabel = (stage, wk, offSeasonStage = 0) => {
+      if (offSeasonStage > 0) return `Offseason Stage ${offSeasonStage}`;
       if (stage === 0 && wk >= 0 && wk <= 3) return `Preseason Week ${wk + 1}`;
       const display = wk + 1;
       if (stage === 1 && display >= 1 && display <= 18) return `Week ${display}`;
-      if (display === 19) return 'Wildcard';
-      if (display === 20) return 'Divisional';
-      if (display === 21) return 'Conference';
+      if (display === 19) return 'Wildcard Round';
+      if (display === 20) return 'Divisional Round';
+      if (display === 21) return 'Conference Championship';
+      if (display === 22) return 'Super Bowl Bye';
       if (display === 23) return 'Super Bowl';
-      return `Stage ${stage} Week ${wk}`;
+      return `Stage ${stage} Week ${wk + 1}`;
+    };
+    const displayWeekLabel = (stage, currentWeek, offSeasonStage = 0) => {
+      if (offSeasonStage > 0) return `Offseason Stage ${offSeasonStage}`;
+      if (currentWeek === null || currentWeek === undefined) return 'unknown';
+      const wkIdx = Math.max(0, Number(currentWeek) - 1);
+      return weekLabel(stage ?? 1, wkIdx);
     };
     let missingField = deduped.length
-      ? deduped.map(w => `${weekLabel(w.stage, w.weekIndex)} (players: ${w.playerCount})${w.runs && w.runs > 1 ? ` x${w.runs}` : ''}`).join('\n')
+      ? deduped.map(w => `${weekLabel(w.stage, w.weekIndex, summary.offSeasonStage ?? 0)} (players: ${w.playerCount})${w.runs && w.runs > 1 ? ` x${w.runs}` : ''}`).join('\n')
       : 'None';
     if (inOffseason && deduped.length === 0) {
       missingField = 'Offseason – no weekly player stats expected';
     }
+
+    const weekLabelPretty = summary.currentWeek
+      ? displayWeekLabel(summary.stage, summary.currentWeek, summary.offSeasonStage ?? 0)
+      : (inOffseason ? `Offseason Stage ${summary.offSeasonStage ?? (seasonInfo.offSeasonStage ?? 'unknown')}` : 'unknown');
+    const weekFieldValue = weekLabelPretty;
 
     const embed = new EmbedBuilder()
       .setTitle('Madden Weekly Update Complete')
@@ -195,7 +213,7 @@ async function execute(interaction) {
       .setColor(0x00cc66)
       .addFields(
         { name: 'League', value: String(summary.leagueId), inline: true },
-        { name: 'Week', value: summary.currentWeek ? `${summary.currentWeek} (${getMessageForWeek(summary.currentWeek)})` : 'unknown', inline: true },
+        { name: 'Week', value: weekFieldValue, inline: true },
         { name: 'Teams', value: String(summary.teamsCount), inline: true },
         { name: 'Standings', value: String(summary.standingsCount), inline: true },
         { name: 'Games', value: String(summary.gamesCount), inline: true },
