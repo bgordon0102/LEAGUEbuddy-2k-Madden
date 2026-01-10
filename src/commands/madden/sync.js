@@ -50,6 +50,14 @@ export async function runSync(leagueId, provider, options = {}) {
   const weekOverride = options.week ? Number(options.week) : null;
   try {
     await ensureDir();
+    // Load existing snapshot (if any) so we can merge/retain weekly stats
+    let existingSnapshot = null;
+    const outPath = path.join(leagueDir, `${leagueId}.json`);
+    try {
+      const existing = await fs.readFile(outPath, 'utf-8');
+      existingSnapshot = JSON.parse(existing);
+    } catch { /* no prior snapshot */ }
+
     const tokens = await loadTokens();
     if (!tokens || !tokens.accessToken || !tokens.refreshToken) {
       throw new Error('No local EA tokens found. Run /madden-auth, log in, and then retry.');
@@ -160,6 +168,57 @@ export async function runSync(leagueId, provider, options = {}) {
     // Fetch weekly stats for all weeks up to currentWeek (season) and preseason weeks 0-3
     const weeklyStats = [];
     const maxSeasonWeek = Math.max(1, currentWeek ?? 1);
+    const isWeekComplete = (entry) => {
+      const buckets = [
+        entry?.passing?.playerPassingStatInfoList,
+        entry?.rushing?.playerRushingStatInfoList,
+        entry?.receiving?.playerReceivingStatInfoList,
+        entry?.defense?.playerDefensiveStatInfoList,
+        entry?.kicking?.playerKickingStatInfoList,
+      ];
+      return buckets.some(b => Array.isArray(b) && b.length > 0);
+    };
+    const countPlayers = (entry) => {
+      const buckets = [
+        entry?.passing?.playerPassingStatInfoList,
+        entry?.rushing?.playerRushingStatInfoList,
+        entry?.receiving?.playerReceivingStatInfoList,
+        entry?.defense?.playerDefensiveStatInfoList,
+        entry?.kicking?.playerKickingStatInfoList,
+      ];
+      return buckets.reduce((acc, b) => acc + (Array.isArray(b) ? b.length : 0), 0);
+    };
+
+    const mergeWeekEntries = (a, b) => {
+      if (!a) return b;
+      if (!b) return a;
+      const merged = { ...a, ...b };
+      const mergeList = (key) => {
+        const listA = (a[key] && a[key].playerPassingStatInfoList) || (a[key] && a[key].playerRushingStatInfoList) || (a[key] && a[key].playerReceivingStatInfoList) || (a[key] && a[key].playerDefensiveStatInfoList) || (a[key] && a[key].playerKickingStatInfoList) || [];
+        const listB = (b[key] && b[key].playerPassingStatInfoList) || (b[key] && b[key].playerRushingStatInfoList) || (b[key] && b[key].playerReceivingStatInfoList) || (b[key] && b[key].playerDefensiveStatInfoList) || (b[key] && b[key].playerKickingStatInfoList) || [];
+        const combined = [...listA, ...listB];
+        // If both are empty, keep structure from b if present
+        if (!combined.length) return b[key] ?? a[key];
+        // Rebuild the container with combined list under the detected list name
+        if (b[key]?.playerPassingStatInfoList || a[key]?.playerPassingStatInfoList) return { ...(b[key] || a[key]), playerPassingStatInfoList: combined };
+        if (b[key]?.playerRushingStatInfoList || a[key]?.playerRushingStatInfoList) return { ...(b[key] || a[key]), playerRushingStatInfoList: combined };
+        if (b[key]?.playerReceivingStatInfoList || a[key]?.playerReceivingStatInfoList) return { ...(b[key] || a[key]), playerReceivingStatInfoList: combined };
+        if (b[key]?.playerDefensiveStatInfoList || a[key]?.playerDefensiveStatInfoList) return { ...(b[key] || a[key]), playerDefensiveStatInfoList: combined };
+        if (b[key]?.playerKickingStatInfoList || a[key]?.playerKickingStatInfoList) return { ...(b[key] || a[key]), playerKickingStatInfoList: combined };
+        return b[key] ?? a[key];
+      };
+      merged.passing = mergeList('passing');
+      merged.rushing = mergeList('rushing');
+      merged.receiving = mergeList('receiving');
+      merged.defense = mergeList('defense');
+      merged.kicking = mergeList('kicking');
+      merged.teamstats = b.teamstats || a.teamstats;
+      merged.isIncomplete = !isWeekComplete(merged);
+      merged.playerCount = countPlayers(merged);
+      return merged;
+    };
+
+    const collectedByKey = new Map();
     const collectWeek = async (wk, stg) => {
       const entry = { weekIndex: wk, stage: stg };
       try { entry.rushing = await client.getRushingStats(Number(leagueId), stg, wk); } catch (e) { entry.rushingError = e?.message || String(e); }
@@ -169,7 +228,12 @@ export async function runSync(leagueId, provider, options = {}) {
       try { entry.defense = await client.getDefensiveStats(Number(leagueId), stg, wk); } catch (e) { entry.defenseError = e?.message || String(e); }
       try { entry.kicking = await client.getKickingStats(Number(leagueId), stg, wk); } catch (e) { entry.kickingError = e?.message || String(e); }
       try { entry.passing = await client.getPassingStats(Number(leagueId), stg, wk); } catch (e) { entry.passingError = e?.message || String(e); }
-      weeklyStats.push(entry);
+      entry.isIncomplete = !isWeekComplete(entry);
+      entry.playerCount = countPlayers(entry);
+      const key = `${stg}-${wk}`;
+      const prev = collectedByKey.get(key);
+      const merged = mergeWeekEntries(prev, entry);
+      collectedByKey.set(key, merged);
     };
     // Preseason weeks (0-3)
     for (let wk = 0; wk < 4; wk++) {
@@ -181,9 +245,52 @@ export async function runSync(leagueId, provider, options = {}) {
       await collectWeek(wk, Stage.SEASON);
     }
 
+    // Retry up to 2 additional times for weeks with zero players
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const missing = Array.from(collectedByKey.values()).filter(e => (e.playerCount ?? 0) === 0);
+      if (!missing.length) break;
+      for (const m of missing) {
+        await collectWeek(m.weekIndex, m.stage);
+      }
+    }
+
     // If schedule fetch returned empty, fall back to previous snapshot schedule if available from file
     let finalSchedule = schedule;
-    let finalWeeklyStats = weeklyStats;
+
+    // Merge collected weeks with existing weekly stats, picking the richer entry per week/stage
+    const mergedWeekly = (() => {
+      const byKey = new Map();
+      const addEntry = (e) => {
+        if (!e) return;
+        const key = `${e.stage}-${e.weekIndex}`;
+        const prev = byKey.get(key);
+        if (!prev) {
+          byKey.set(key, e);
+          return;
+        }
+        // prefer entry with more players; if tie, prefer the new one
+        const prevCount = prev.playerCount ?? 0;
+        const newCount = e.playerCount ?? countPlayers(e);
+        if (newCount > prevCount) {
+          byKey.set(key, e);
+        }
+      };
+
+      // existing
+      (existingSnapshot?.weeklyStats || []).forEach(w => {
+        w.playerCount = w.playerCount ?? countPlayers(w);
+        w.isIncomplete = w.isIncomplete ?? !isWeekComplete(w);
+        addEntry(w);
+      });
+      // newly collected
+      Array.from(collectedByKey.values()).forEach(addEntry);
+
+      return Array.from(byKey.values()).map(w => {
+        // update completeness flag using current data
+        const complete = isWeekComplete(w);
+        return { ...w, isIncomplete: !complete, playerCount: countPlayers(w) };
+      }).sort((a, b) => (a.stage - b.stage) || (a.weekIndex - b.weekIndex));
+    })();
 
     const snapshot = {
       fetchedAt: new Date().toISOString(),
@@ -198,10 +305,11 @@ export async function runSync(leagueId, provider, options = {}) {
         teams: rosters,
         freeAgents,
       },
-      weeklyStats: finalWeeklyStats,
+      weeklyStats: mergedWeekly,
     };
 
-    const outPath = path.join(leagueDir, `${leagueId}.json`);
+    const incompleteWeeks = mergedWeekly.filter(w => w.isIncomplete || (w.playerCount ?? 0) === 0);
+
     const prevPath = path.join(prevDir, `${leagueId}.json`);
     // Save previous snapshot for diffing (transactions, etc.)
     try {
@@ -233,7 +341,12 @@ export async function runSync(leagueId, provider, options = {}) {
       gamesCount: finalSchedule?.schedules?.length ?? 0,
       rosterCount: Object.keys(rosters).length,
       hasFreeAgents: !!freeAgents,
-      statsWeeks: finalWeeklyStats?.length ?? 0,
+      statsWeeks: mergedWeekly?.length ?? 0,
+      missingWeeks: incompleteWeeks.map(w => ({
+        stage: w.stage ?? w.stageIndex ?? 0,
+        weekIndex: w.weekIndex,
+        playerCount: w.playerCount ?? 0,
+      })),
       outPath,
     };
   } catch (err) {

@@ -48,9 +48,16 @@ function shortName(fullName) {
   if (!fullName) return 'Unknown';
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
-  const first = parts[0][0] || '';
-  const last = parts[parts.length - 1];
-  return `${first}. ${last}`;
+  const suffixes = new Set(['jr', 'sr', 'ii', 'iii', 'iv', 'v', 'jr.', 'sr.']);
+  let last = parts.pop();
+  let suffix = '';
+  if (last && suffixes.has(last.toLowerCase())) {
+    suffix = last;
+    last = parts.pop();
+  }
+  const first = parts[0]?.[0] || '';
+  const lastPortion = suffix ? `${last} ${suffix}` : last;
+  return `${first}. ${lastPortion}`;
 }
 
 function sumCategory(weeklyStats, key, listKey, fields) {

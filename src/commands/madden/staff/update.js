@@ -125,6 +125,11 @@ async function execute(interaction) {
     } catch (e) {
       console.warn('[madden-weeklyupdate] weeklyStats debug skipped:', e?.message || e);
     }
+    const missingWeeks = summary.missingWeeks || [];
+    const missingField = missingWeeks.length
+      ? missingWeeks.map(w => `Stage ${w.stage} Week ${w.weekIndex} (players: ${w.playerCount})`).join('\n')
+      : 'None';
+
     const embed = new EmbedBuilder()
       .setTitle('Madden Weekly Update Complete')
       .setDescription('Latest data pulled and saved locally.')
@@ -135,6 +140,7 @@ async function execute(interaction) {
         { name: 'Teams', value: String(summary.teamsCount), inline: true },
         { name: 'Standings', value: String(summary.standingsCount), inline: true },
         { name: 'Games', value: String(summary.gamesCount), inline: true },
+        { name: 'Missing player stats', value: missingField, inline: false },
         { name: 'Saved', value: summary.outPath, inline: false }
       );
     await interaction.editReply({ embeds: [embed] });

@@ -69,9 +69,11 @@ function teamEmoji(teamName, emojiMap) {
   return '';
 }
 
-function isRookie(player, seasonYear) {
-  if (player?.isRookie) return true;
-  if (player?.draftYear && seasonYear && Number(player.draftYear) === Number(seasonYear)) return true;
+function isRookie(player) {
+  // Per request: only players with yearsPro === 0 qualify as rookies
+  if (player?.yearsPro !== undefined && player?.yearsPro !== null) {
+    return Number(player.yearsPro) === 0;
+  }
   return false;
 }
 
@@ -301,11 +303,32 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
     const confMap = conferenceMap(snapshot);
     const teamNames = teamNameMap(snapshot);
 
+    // Build roster lookup to enrich player metadata (yearsPro, name) for rookie detection
+    const rosterLookup = new Map();
+    const addRosterList = (list) => {
+      (list || []).forEach(p => {
+        if (p?.rosterId === undefined || p?.rosterId === null) return;
+        rosterLookup.set(p.rosterId, p);
+      });
+    };
+    Object.values(snapshot?.rosters?.teams || {}).forEach(r => addRosterList(r?.rosterInfoList || r?.rosterPlayerInfoList || []));
+    addRosterList(snapshot?.rosters?.freeAgents?.rosterInfoList || snapshot?.rosters?.freeAgents || []);
+
     // attach team/conference/name metadata
     byPlayer.forEach(p => {
       p.teamName = teamNames[p.teamId] || 'Unknown';
       p.conference = confMap[p.teamId] || null;
-      p.fullName = p.fullName || `${p.firstName || ''} ${p.lastName || ''}`.trim();
+      const rosterMatch = p.rosterId != null ? rosterLookup.get(p.rosterId) : null;
+      p.fullName = p.fullName || `${p.firstName || ''} ${p.lastName || ''}`.trim() || (rosterMatch ? `${rosterMatch.firstName || ''} ${rosterMatch.lastName || ''}`.trim() : '');
+      if (p.yearsPro === undefined || p.yearsPro === null) {
+        p.yearsPro = rosterMatch?.yearsPro;
+      }
+      if (p.draftYear === undefined || p.draftYear === null) {
+        p.draftYear = rosterMatch?.draftYear;
+      }
+      if (p.isRookie === undefined || p.isRookie === null) {
+        p.isRookie = rosterMatch?.isRookie;
+      }
     });
 
     winners = {
@@ -323,7 +346,31 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
     if (!winners.nfc_offense) winners.nfc_offense = fallbackOff(all);
     if (!winners.afc_defense) winners.afc_defense = fallbackDef(all);
     if (!winners.nfc_defense) winners.nfc_defense = fallbackDef(all);
-    if (!winners.rookie && !isPlayoffs) winners.rookie = fallbackOff(all.filter(p=>isRookie(p, seasonYear)));
+    if (!winners.rookie && !isPlayoffs) winners.rookie = fallbackOff(all.filter(p=>isRookie(p)));
+
+    // If rookie still missing, broaden to all weeks in the snapshot and pick best rookie by totals
+    if (!winners.rookie && !isPlayoffs) {
+      const agg = new Map();
+      const addPlayerTotals = (wk) => {
+        const mp = mergePlayerStats(wk);
+        mp.forEach((val, key) => {
+          const existing = agg.get(key) || { ...val, totals: {} };
+          Object.entries(val.totals || {}).forEach(([k,v]) => {
+            existing.totals[k] = (existing.totals[k] || 0) + (Number(v) || 0);
+          });
+          agg.set(key, existing);
+        });
+      };
+      (snapshot?.weeklyStats || []).forEach(addPlayerTotals);
+      agg.forEach(p => {
+        p.teamName = teamNames[p.teamId] || 'Unknown';
+        p.conference = confMap[p.teamId] || null;
+        p.fullName = p.fullName || `${p.firstName || ''} ${p.lastName || ''}`.trim();
+      });
+      const rookiesAllWeeks = new Map(Array.from(agg.entries()).filter(([,p]) => isRookie(p)));
+      const rook = pickRookie(rookiesAllWeeks);
+      if (rook) winners.rookie = rook;
+    }
   }
 
   const allMissing =
