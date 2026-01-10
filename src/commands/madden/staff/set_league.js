@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { loadTradeCounts, saveTradeCounts, updateTradeCountsEmbed } from '../../../utils/madden_trade_utils.js';
 import { resetStatLeaders } from '../../../madden/stat_leaders.js';
+import { ensureMaddenAwardsButton } from '../../../madden/awards_button_helper.js';
 
 const SNAPSHOT_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -88,6 +89,10 @@ async function execute(interaction) {
     // Reset stat leaders pin to blank for the new league
     try {
       await resetStatLeaders(interaction.client);
+    } catch { /* ignore */ }
+    // Refresh/pin Madden yearly awards button so staff can re-enter awards each season
+    try {
+      await ensureMaddenAwardsButton(interaction.client);
     } catch { /* ignore */ }
 
     const embed = new EmbedBuilder()
