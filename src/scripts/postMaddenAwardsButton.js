@@ -2,6 +2,7 @@ import { Client, GatewayIntentBits, ActionRowBuilder, ButtonBuilder, ButtonStyle
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import { setPinId } from '../madden/pins_store.js';
 
 dotenv.config();
 
@@ -45,11 +46,13 @@ client.once('ready', async () => {
       components: [new ActionRowBuilder().addComponents(button)],
     });
 
+    // Persist the pin id so bot can update without re-pinning
+    setPinId('madden_awards_button', message.id);
     try {
       await message.pin();
-      console.log('[postMaddenAwardsButton] Message sent and pinned.');
+      console.log('[postMaddenAwardsButton] Message sent, pinned, and stored pin id.');
     } catch (pinErr) {
-      console.error('[postMaddenAwardsButton] Sent message but failed to pin:', pinErr);
+      console.error('[postMaddenAwardsButton] Sent message and stored pin id but failed to pin:', pinErr);
     }
   } catch (err) {
     console.error('[postMaddenAwardsButton] Failed:', err);

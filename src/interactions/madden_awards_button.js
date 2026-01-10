@@ -89,6 +89,14 @@ function coachTag(teamName, roleMap) {
   return '';
 }
 
+function titleCase(str) {
+  return (str || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export const customId = /^madden_awards_button$/;
 export const customId_modal = /^madden_awards_modal$/;
 
@@ -117,22 +125,13 @@ export async function execute(interaction) {
         new TextInputBuilder().setCustomId('coy').setLabel('Coach of the Year (team)').setStyle(TextInputStyle.Short).setRequired(true),
       ),
       new ActionRowBuilder().addComponents(
-        new TextInputBuilder().setCustomId('opoy').setLabel('Offensive Player of the Year (player)').setStyle(TextInputStyle.Short).setRequired(true),
+        new TextInputBuilder().setCustomId('opdpoy').setLabel('OPOY / DPOY (offense | defense)').setStyle(TextInputStyle.Short).setRequired(true),
       ),
       new ActionRowBuilder().addComponents(
-        new TextInputBuilder().setCustomId('dpoy').setLabel('Defensive Player of the Year (player)').setStyle(TextInputStyle.Short).setRequired(true),
+        new TextInputBuilder().setCustomId('rookies').setLabel('OROY / DROY (offense | defense)').setStyle(TextInputStyle.Short).setRequired(true),
       ),
       new ActionRowBuilder().addComponents(
-        new TextInputBuilder().setCustomId('oroy').setLabel('Offensive Rookie of the Year (player)').setStyle(TextInputStyle.Short).setRequired(true),
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder().setCustomId('droy').setLabel('Defensive Rookie of the Year (player)').setStyle(TextInputStyle.Short).setRequired(true),
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder().setCustomId('sbchamp').setLabel('Super Bowl Champion (team)').setStyle(TextInputStyle.Short).setRequired(true),
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder().setCustomId('sbmvp').setLabel('Super Bowl MVP (player)').setStyle(TextInputStyle.Short).setRequired(true),
+        new TextInputBuilder().setCustomId('sbcombo').setLabel('Super Bowl (champ team | MVP player)').setStyle(TextInputStyle.Short).setRequired(true),
       ),
     );
   await interaction.showModal(modal);
@@ -156,15 +155,19 @@ export async function execute_modal(interaction) {
   const fields = {
     mvp: 'MVP',
     coy: 'Coach of the Year',
-    opoy: 'Offensive Player of the Year',
-    dpoy: 'Defensive Player of the Year',
-    oroy: 'Offensive Rookie of the Year',
-    droy: 'Defensive Rookie of the Year',
-    sbchamp: 'Super Bowl Champion',
-    sbmvp: 'Super Bowl MVP',
+    opdpoy: 'OPOY / DPOY (offense | defense)',
+    rookies: 'OROY / DROY (offense | defense)',
+    sbcombo: 'Super Bowl (champ team | MVP player)',
   };
   const inputs = {};
   Object.keys(fields).forEach(k => inputs[k] = interaction.fields.getTextInputValue(k));
+
+  const splitPair = (text) => {
+    const parts = (text || '').split(/[,|/]+/).map(s => s.trim()).filter(Boolean);
+    if (parts.length >= 2) return [parts[0], parts[1]];
+    if (parts.length === 1) return [parts[0], parts[0]];
+    return ['', ''];
+  };
 
   const posts = [];
   const addPlayerAward = (key, label) => {
@@ -174,14 +177,15 @@ export async function execute_modal(interaction) {
     const emoji = teamEmoji(team, emojiMap);
     const teamName = team ? `${team.cityName} ${team.displayName || team.nickName || ''}`.trim() : 'Unknown Team';
     const coachRole = coachTag(teamName, roleMap);
+    const playerName = player ? `${player.firstName || ''} ${player.lastName || ''}`.trim() : titleCase(inputs[key]);
     const title = `🏆 ${label} — Season ${seasonYear}`;
-    const desc = `${emoji ? emoji + ' ' : ''}${inputs[key]} — ${teamName}${coachRole ? ` (${coachRole})` : ''}`;
+    const desc = `${emoji ? emoji + ' ' : ''}${playerName} — ${teamName}${coachRole ? ` (${coachRole})` : ''}`;
     const embed = new EmbedBuilder().setTitle(title).setDescription(desc).setColor(0xFFD700);
     posts.push({ embed, content: null });
   };
   const addTeamAward = (key, label) => {
     const team = findTeam(snapshot, inputs[key]);
-    const teamName = team ? `${team.cityName} ${team.displayName || team.nickName || ''}`.trim() : inputs[key];
+    const teamName = team ? `${team.cityName} ${team.displayName || team.nickName || ''}`.trim() : titleCase(inputs[key]);
     const emoji = teamEmoji(team, emojiMap);
     const coachRole = coachTag(teamName, roleMap);
     const title = `🏆 ${label} — Season ${seasonYear}`;
@@ -193,12 +197,23 @@ export async function execute_modal(interaction) {
   try {
     addPlayerAward('mvp', fields.mvp);
     addTeamAward('coy', fields.coy);
-    addPlayerAward('opoy', fields.opoy);
-    addPlayerAward('dpoy', fields.dpoy);
-    addPlayerAward('oroy', fields.oroy);
-    addPlayerAward('droy', fields.droy);
-    addTeamAward('sbchamp', fields.sbchamp);
-    addPlayerAward('sbmvp', fields.sbmvp);
+    const [opoyVal, dpoyVal] = splitPair(inputs.opdpoy);
+    const [oroyVal, droyVal] = splitPair(inputs.rookies);
+    const [sbChampVal, sbMvpVal] = splitPair(inputs.sbcombo);
+
+    inputs.opoy = opoyVal;
+    inputs.dpoy = dpoyVal;
+    inputs.oroy = oroyVal;
+    inputs.droy = droyVal;
+    inputs.sbchamp = sbChampVal;
+    inputs.sbmvp = sbMvpVal;
+
+    addPlayerAward('opoy', 'Offensive Player of the Year');
+    addPlayerAward('dpoy', 'Defensive Player of the Year');
+    addPlayerAward('oroy', 'Offensive Rookie of the Year');
+    addPlayerAward('droy', 'Defensive Rookie of the Year');
+    addTeamAward('sbchamp', 'Super Bowl Champion');
+    addPlayerAward('sbmvp', 'Super Bowl MVP');
   } catch (e) {
     console.error('[madden_awards_modal] compose failed:', e);
   }

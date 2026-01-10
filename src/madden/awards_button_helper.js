@@ -35,15 +35,10 @@ export async function ensureMaddenAwardsButton(client) {
   const components = [new ActionRowBuilder().addComponents(button)];
 
   const pinId = getPinId('madden_awards_button');
-  if (pinId) {
-    const msg = await channel.messages.fetch(pinId).catch(() => null);
-    if (msg) {
-      await msg.edit({ embeds: [embed], components }).catch(() => null);
-      return;
-    }
+  if (!pinId) return; // only update if a pin was already created via the script
+  const msg = await channel.messages.fetch(pinId).catch(() => null);
+  if (msg) {
+    await msg.edit({ embeds: [embed], components }).catch(() => null);
+    return;
   }
-
-  const message = await channel.send({ embeds: [embed], components });
-  try { await message.pin(); } catch { /* ignore */ }
-  setPinId('madden_awards_button', message.id);
 }
