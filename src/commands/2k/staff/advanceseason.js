@@ -101,7 +101,7 @@ export async function runAdvanceSeason(seasonno, guild) {
 }
 
 export const data = new SlashCommandBuilder()
-  .setName('advanceseason')
+  .setName('2k-advanceseason')
   .setDescription('Promote rosters/picks to master and start next season; season number maps draft class')
   .addIntegerOption(option =>
     option.setName('seasonno')

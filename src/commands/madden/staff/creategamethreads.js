@@ -299,7 +299,7 @@ function deriveWinnersByConference(games, seedsMap) {
     if (!homeSeed || !awaySeed) return;
     const conf = (g.conferenceName || '').toLowerCase().includes('afc') ? 'afc'
       : (g.conferenceName || '').toLowerCase().includes('nfc') ? 'nfc'
-      : (homeSeed <= 16 ? 'afc' : 'nfc'); // crude fallback by seed range if labeled that way
+        : (homeSeed <= 16 ? 'afc' : 'nfc'); // crude fallback by seed range if labeled that way
     const homeScore = Number(g.homeScore ?? g.finalHomeScore ?? 0);
     const awayScore = Number(g.awayScore ?? g.finalAwayScore ?? 0);
     const winnerId = homeScore >= awayScore ? g.homeTeamId : g.awayTeamId;
@@ -380,7 +380,8 @@ async function execute(interaction) {
       const rawWeek = Number(g.seasonWeek ?? g.seasonWeekIndex ?? g.weekIndex ?? g.week ?? -1);
       const weekVal = Number.isNaN(rawWeek) ? -1 : rawWeek;
       const stageOk = playoffRound ? true : targetStages.includes(stage);
-      return stageOk && (weekVal === targetWeekIdx || weekVal === Number(wkNumeric));
+      // Only match the exact week index (zero-based)
+      return stageOk && (weekVal === targetWeekIdx);
     });
     let gamesFinal = games.filter(g => g.awayTeamId && g.homeTeamId);
 
@@ -483,11 +484,11 @@ async function execute(interaction) {
             const fmt = (val, decimals = 1) => val != null ? (Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals)).toString() : '–';
             return [
               `Off Pts/G ${fmt(v.offPtsPerG)} (Playoffs)`,
-              `Pass Yds ${fmt(v.offPassYds,0)} (Playoffs)`,
-              `Rush Yds ${fmt(v.offRushYds,0)} (Playoffs)`,
+              `Pass Yds ${fmt(v.offPassYds, 0)} (Playoffs)`,
+              `Rush Yds ${fmt(v.offRushYds, 0)} (Playoffs)`,
               `Opp Pts/G ${fmt(v.defPtsPerG)} (Playoffs)`,
-              `Opp Pass ${fmt(v.defPassYds,0)} (Playoffs)`,
-              `Opp Rush ${fmt(v.defRushYds,0)} (Playoffs)`,
+              `Opp Pass ${fmt(v.defPassYds, 0)} (Playoffs)`,
+              `Opp Rush ${fmt(v.defRushYds, 0)} (Playoffs)`,
             ].join('\n');
           }
           const v = ranks.values[tid] || {};
@@ -502,11 +503,11 @@ async function execute(interaction) {
           const rushD = v.defRushYds ?? s.defRushYds;
           return [
             `Off Pts/G ${fmt(offPts)} (R${r?.offPtsPerG?.[tid] || s.ptsForRank || '–'})`,
-            `Pass Yds ${fmt(passO,0)} (R${r?.offPassYds?.[tid] || s.offPassYdsRank || '–'})`,
-            `Rush Yds ${fmt(rushO,0)} (R${r?.offRushYds?.[tid] || s.offRushYdsRank || '–'})`,
+            `Pass Yds ${fmt(passO, 0)} (R${r?.offPassYds?.[tid] || s.offPassYdsRank || '–'})`,
+            `Rush Yds ${fmt(rushO, 0)} (R${r?.offRushYds?.[tid] || s.offRushYdsRank || '–'})`,
             `Opp Pts/G ${fmt(defPts)} (R${r?.defPtsPerG?.[tid] || s.ptsAgainstRank || '–'})`,
-            `Opp Pass ${fmt(passD,0)} (R${r?.defPassYds?.[tid] || s.defPassYdsRank || '–'})`,
-            `Opp Rush ${fmt(rushD,0)} (R${r?.defRushYds?.[tid] || s.defRushYdsRank || '–'})`,
+            `Opp Pass ${fmt(passD, 0)} (R${r?.defPassYds?.[tid] || s.defPassYdsRank || '–'})`,
+            `Opp Rush ${fmt(rushD, 0)} (R${r?.defRushYds?.[tid] || s.defRushYdsRank || '–'})`,
           ].join('\n');
         };
         const embed = {

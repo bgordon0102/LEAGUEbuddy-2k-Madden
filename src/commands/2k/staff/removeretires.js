@@ -79,7 +79,7 @@ function writePending(data) {
 }
 
 export const data = new SlashCommandBuilder()
-  .setName('removeretires')
+  .setName('2k-removeretires')
   .setDescription('Staff: upload a screenshot of retirees or specify a single player to remove')
   .addAttachmentOption(option =>
     option.setName('image')

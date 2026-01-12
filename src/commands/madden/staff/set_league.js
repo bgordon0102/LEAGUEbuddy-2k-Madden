@@ -40,7 +40,7 @@ const data = new SlashCommandBuilder()
 
 async function execute(interaction) {
   const leagueId = interaction.options.getString('league_id');
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply();
   try {
     if (!interaction.guildId) throw new Error('This command must be used in a guild.');
     setGuildLeague(interaction.guildId, leagueId);
@@ -65,19 +65,19 @@ async function execute(interaction) {
           fs.unlinkSync(path.join(prevDir, f));
         }
       }
-    } catch {}
+    } catch { }
     // Reset power rankings/history and available teams pin ids for a clean slate on new league
-    try { fs.existsSync(POWER_RANKS_FILE) && fs.unlinkSync(POWER_RANKS_FILE); } catch {}
-    try { fs.existsSync(AVAILABLE_TEAMS_PIN_FILE) && fs.unlinkSync(AVAILABLE_TEAMS_PIN_FILE); } catch {}
+    try { fs.existsSync(POWER_RANKS_FILE) && fs.unlinkSync(POWER_RANKS_FILE); } catch { }
+    try { fs.existsSync(AVAILABLE_TEAMS_PIN_FILE) && fs.unlinkSync(AVAILABLE_TEAMS_PIN_FILE); } catch { }
     // Reset scouting and trade state so prior season data doesn't leak
-    try { fs.existsSync(SCOUT_POINTS_FILE) && fs.unlinkSync(SCOUT_POINTS_FILE); } catch {}
-    try { fs.existsSync(TRADE_BLOCK_FILE) && fs.unlinkSync(TRADE_BLOCK_FILE); } catch {}
-    try { fs.existsSync(TRADE_COUNTS_FILE) && fs.unlinkSync(TRADE_COUNTS_FILE); } catch {}
-    try { fs.existsSync(ACTIVE_TRADES_FILE) && fs.unlinkSync(ACTIVE_TRADES_FILE); } catch {}
-    try { fs.existsSync(PLAYER_CHANGES_FILE) && fs.unlinkSync(PLAYER_CHANGES_FILE); } catch {}
-    try { fs.existsSync(INJURIES_FILE) && fs.unlinkSync(INJURIES_FILE); } catch {}
-    try { fs.existsSync(TRANSACTIONS_FILE) && fs.unlinkSync(TRANSACTIONS_FILE); } catch {}
-    try { fs.existsSync(AWARDS_FILE) && fs.unlinkSync(AWARDS_FILE); } catch {}
+    try { fs.existsSync(SCOUT_POINTS_FILE) && fs.unlinkSync(SCOUT_POINTS_FILE); } catch { }
+    try { fs.existsSync(TRADE_BLOCK_FILE) && fs.unlinkSync(TRADE_BLOCK_FILE); } catch { }
+    try { fs.existsSync(TRADE_COUNTS_FILE) && fs.unlinkSync(TRADE_COUNTS_FILE); } catch { }
+    try { fs.existsSync(ACTIVE_TRADES_FILE) && fs.unlinkSync(ACTIVE_TRADES_FILE); } catch { }
+    try { fs.existsSync(PLAYER_CHANGES_FILE) && fs.unlinkSync(PLAYER_CHANGES_FILE); } catch { }
+    try { fs.existsSync(INJURIES_FILE) && fs.unlinkSync(INJURIES_FILE); } catch { }
+    try { fs.existsSync(TRANSACTIONS_FILE) && fs.unlinkSync(TRANSACTIONS_FILE); } catch { }
+    try { fs.existsSync(AWARDS_FILE) && fs.unlinkSync(AWARDS_FILE); } catch { }
     // Keep existing pin ids so messages continue to update across seasons
     // Recreate baseline trade counts pin with zeros
     try {

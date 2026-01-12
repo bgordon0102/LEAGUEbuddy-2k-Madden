@@ -2,7 +2,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 
 const data = new SlashCommandBuilder()
-  .setName('clearmessages')
+  .setName('2k-clearmessages')
   .setDescription('Clear messages in the current thread or text channel.')
   .addStringOption(option =>
     option.setName('amount')

@@ -3,7 +3,7 @@ import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 const PLAYOFF_CHANNEL_ID = '1455100196315861126';
 
 export const data = new SlashCommandBuilder()
-  .setName('clearplayoffthreads')
+  .setName('2k-clearplayoffthreads')
   .setDescription('Delete all playoff threads in the playoff channel')
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 

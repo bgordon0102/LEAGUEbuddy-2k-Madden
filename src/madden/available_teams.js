@@ -98,7 +98,7 @@ export async function updateAvailableTeamsPin(client, guildId, options = {}) {
     }
     // Refresh member cache so role membership is accurate
     if (!skipMemberFetch) {
-      try { await guild.members.fetch(); } catch {}
+      try { await guild.members.fetch(); } catch { }
     }
     const channel = await guild.channels.fetch(channelId).catch(() => null);
     if (!channel || !channel.isTextBased()) {
@@ -156,18 +156,9 @@ export async function updateAvailableTeamsPin(client, guildId, options = {}) {
     }
 
     if (!botPin) {
-      if (!allowCreate) {
-        console.warn('[available-teams] No existing bot pin found; skipping update (won’t create a new pin).');
-        return false;
-      }
-      const msg = await channel.send({ embeds }).catch(() => null);
-      if (!msg) {
-        console.warn('[available-teams] Failed to send new pin message.');
-        return false;
-      }
-      try { await msg.pin(); } catch {}
-      saveJson(PIN_FILE, { messageId: msg.id });
-      return true;
+      // Never create a new pin; only update if an existing pin is found
+      console.warn('[available-teams] No existing bot pin found; skipping update (will not create a new pin).');
+      return false;
     }
 
     const edited = await botPin.edit({ embeds, content: null }).catch(() => null);

@@ -37,8 +37,9 @@ async function main() {
         .setDescription(
           [
             'Click the button to open the trade form.',
-            'List who you send (players/picks) and who you receive.',
-            'Example send: “WR John Smith (OVR 88), 2027 2nd”',
+            'List what you **send** and what you **receive** (players/picks).',
+            'Pick format: use round.pick with year, e.g., `1.26`, `1.26 27`, `2.14 28` (current + next 2 drafts).',
+            'Example send: “WR John Smith (OVR 88), 1.26 27”',
             'Example receive: “LT Ryan Jones (OVR 85)”',
             'Trades lock after Week 8.'
           ].join('\n')

@@ -12,7 +12,7 @@ async function loadTokens() {
     const parsed = JSON.parse(txt);
     if (parsed?.gameYear && `${parsed.gameYear}` !== `${YEAR}`) {
       console.warn(`[madden-leagues] Ignoring cached tokens from year ${parsed.gameYear}, current YEAR=${YEAR}`);
-      try { await fs.unlink(tokenFile); } catch {}
+      try { await fs.unlink(tokenFile); } catch { }
       return null;
     }
     return parsed;
@@ -32,7 +32,7 @@ function shorten(msg, max = 1000) {
 }
 
 async function execute(interaction) {
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply();
   try {
     const tokens = await loadTokens();
     if (!tokens || !tokens.accessToken || !tokens.refreshToken) {
@@ -61,7 +61,7 @@ async function execute(interaction) {
     await interaction.editReply({ embeds: [embed] });
   } catch (err) {
     if ((err?.message || '').includes('Server Information was not found')) {
-      try { await fs.unlink(tokenFile); } catch {}
+      try { await fs.unlink(tokenFile); } catch { }
     }
     console.error('Madden leagues failed:', err);
     const description = shorten(err?.message, 3900);

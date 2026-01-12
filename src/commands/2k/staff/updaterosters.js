@@ -208,7 +208,7 @@ function buildWarnings(type, entries, rosterCache) {
 }
 
 export const data = new SlashCommandBuilder()
-  .setName('updaterosters')
+  .setName('2k-updaterosters')
   .setDescription('Staff: OCR roster updates (signings, waives, trades) from a screenshot')
   .addStringOption(option =>
     option.setName('type')

@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChannelType } from 'discord.js';
 
 export const data = new SlashCommandBuilder()
-    .setName('deletegamechannel')
+    .setName('2k-deletegamechannel')
     .setDescription('Delete all game channels for a given week')
     .addIntegerOption(option =>
         option.setName('week')

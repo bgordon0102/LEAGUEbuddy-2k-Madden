@@ -144,7 +144,7 @@ const data = new SlashCommandBuilder()
       .setRequired(false)
       .setAutocomplete(true)
   )
-  // Removed permission restriction so all coaches can use this command
+// Removed permission restriction so all coaches can use this command
 
 async function execute(interaction) {
   await interaction.deferReply({ ephemeral: true });

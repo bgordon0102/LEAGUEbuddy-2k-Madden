@@ -295,7 +295,7 @@ function generateWeekBasedSchedule(teams, gameno) {
 
 // Discord command builder and execute function
 export const data = new SlashCommandBuilder()
-    .setName('startleague')
+    .setName('2k-startleague')
     .setDescription('Start a brand-new league at Season 1 (confirmation required).')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 

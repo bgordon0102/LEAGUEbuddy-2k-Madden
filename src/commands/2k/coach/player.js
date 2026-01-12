@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 
 const data = new SlashCommandBuilder()
-    .setName("player")
+    .setName("2k-player")
     .setDescription("Search for an NBA 2K player")
     .addStringOption((option) =>
         option

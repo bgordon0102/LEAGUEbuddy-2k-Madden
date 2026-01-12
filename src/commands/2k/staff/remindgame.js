@@ -2,7 +2,7 @@ import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import fs from 'fs';
 
 export const data = new SlashCommandBuilder()
-    .setName('remindgame')
+    .setName('2k-remindgame')
     .setDescription('Send a reminder to play the game in this thread (staff only)')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels);
 

@@ -61,7 +61,7 @@ function starsToEmoji(stars) {
 }
 
 export const data = new SlashCommandBuilder()
-  .setName('recruiting')
+  .setName('2k-recruiting')
   .setDescription('View ESPN-style Top 50 recruits for the current class')
   .setDefaultMemberPermissions(PermissionFlagsBits.SendMessages);
 

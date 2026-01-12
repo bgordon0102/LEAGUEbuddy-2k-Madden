@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 
 const data = new SlashCommandBuilder()
-    .setName('ping')
+    .setName('2k-ping')
     .setDescription('Replies with Pong!');
 
 async function execute(interaction) {

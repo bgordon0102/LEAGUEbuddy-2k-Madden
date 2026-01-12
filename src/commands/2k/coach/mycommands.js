@@ -5,7 +5,7 @@ import path from 'path';
 const STAFF_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
 
 const data = new SlashCommandBuilder()
-  .setName('mycommands')
+  .setName('2k-mycommands')
   .setDescription('Shows a list of commands available to you.');
 
 function isStaff(member) {
@@ -31,23 +31,23 @@ async function execute(interaction) {
     .setTitle('⭐ Staff Commands')
     .setDescription('Core staff tools (brief).')
     .addFields(
-      { name: '/mycommands', value: 'Show this menu' },
-      { name: '/startseason', value: 'Start/reset league data (use /advanceseason for next year)' },
-      { name: '/advanceseason <seasonno>', value: 'Promote current rosters/picks, start next season' },
-      { name: '/advanceweek', value: 'Advance the league week and update schedule state' },
-      { name: '/mergedraft [classno]', value: 'Merge draft results into rosters (season # default)' },
-      { name: '/playoffthread', value: 'Create a playoff matchup thread' },
-      { name: '/clearplayoffthreads', value: 'Remove playoff threads' },
-      { name: '/assignrole', value: 'Assign a coach role to a user' },
-      { name: '/availableteams', value: 'List open teams (and roles)' },
-      { name: '/recruiting', value: 'View ESPN-style Top 50 recruits (current phase)' },
-      { name: '/clearmessages', value: 'Bulk clear messages in a thread/channel' },
-      { name: '/deletegamechannel', value: 'Delete a game thread' },
-      { name: '/remindgame', value: 'Send a scheduled game reminder' },
-      { name: '/removeretires', value: 'Remove retirees (OCR or autocomplete)' },
-      { name: '/resetnbaroles', value: 'Reset NBA coach roles' },
-      { name: '/resetscouting', value: 'Reset all scouting data' },
-      { name: '/ping', value: 'Bot health check' }
+      { name: '/2k-mycommands', value: 'Show this menu' },
+      { name: '/2k-startleague', value: 'Start/reset league data (use /2k-advanceseason for next year)' },
+      { name: '/2k-advanceseason <seasonno>', value: 'Promote current rosters/picks, start next season' },
+      { name: '/2k-advanceweek', value: 'Advance the league week and update schedule state' },
+      { name: '/2k-mergedraft [classno]', value: 'Merge draft results into rosters (season # default)' },
+      { name: '/2k-playoffthread', value: 'Create a playoff matchup thread' },
+      { name: '/2k-clearplayoffthreads', value: 'Remove playoff threads' },
+      { name: '/2k-assignrole', value: 'Assign a coach role to a user' },
+      { name: '/2k-availableteams', value: 'List open teams (and roles)' },
+      { name: '/2k-recruiting', value: 'View ESPN-style Top 50 recruits (current phase)' },
+      { name: '/2k-clearmessages', value: 'Bulk clear messages in a thread/channel' },
+      { name: '/2k-deletegamechannel', value: 'Delete a game thread' },
+      { name: '/2k-remindgame', value: 'Send a scheduled game reminder' },
+      { name: '/2k-removeretires', value: 'Remove retirees (OCR or autocomplete)' },
+      { name: '/2k-resetnbaroles', value: 'Reset NBA coach roles' },
+      { name: '/2k-resetscouting', value: 'Reset all scouting data' },
+      { name: '/2k-ping', value: 'Bot health check' }
     )
     .setFooter({ text: 'Staff access only' });
 
@@ -56,14 +56,14 @@ async function execute(interaction) {
     .setTitle('⭐ Coach Commands')
     .setDescription('Everyday coach tools (brief).')
     .addFields(
-      { name: '/mycommands', value: 'Show this menu' },
-      { name: '/bigboard', value: 'View the draft big board' },
-      { name: '/player name', value: 'View player card (team/FA, pos, OVR, age, image)' },
-      { name: '/roster [team]', value: 'Show a team roster (default yours)' },
-      { name: '/schedule [team]', value: 'Show schedule (default yours)' },
-      { name: '/scout name', value: 'Scout a player from the big board' },
-      { name: '/tradeblock add|remove', value: 'Manage your trade block' },
-      { name: '/recruiting', value: 'View ESPN-style Top 50 recruits (current phase)' }
+      { name: '/2k-mycommands', value: 'Show this menu' },
+      { name: '/2k-bigboard', value: 'View the draft big board' },
+      { name: '/2k-player name', value: 'View player card (team/FA, pos, OVR, age, image)' },
+      { name: '/2k-roster [team]', value: 'Show a team roster (default yours)' },
+      { name: '/2k-schedule [team]', value: 'Show schedule (default yours)' },
+      { name: '/2k-scout name', value: 'Scout a player from the big board' },
+      { name: '/2k-tradeblock add|remove', value: 'Manage your trade block' },
+      { name: '/2k-recruiting', value: 'View ESPN-style Top 50 recruits (current phase)' }
     )
     .setFooter({ text: 'Coach access only' });
 

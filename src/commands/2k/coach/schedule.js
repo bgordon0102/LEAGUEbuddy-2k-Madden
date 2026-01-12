@@ -5,7 +5,7 @@ import path from "path";
 
 
 export const data = new SlashCommandBuilder()
-    .setName("schedule")
+    .setName("2k-schedule")
     .setDescription("Show a team's NBA season schedule")
     .addStringOption((option) =>
         option

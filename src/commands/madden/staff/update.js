@@ -27,7 +27,7 @@ const data = new SlashCommandBuilder()
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
 async function execute(interaction) {
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply();
   try {
     const weekOverride = interaction.options.getInteger('week');
     const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
@@ -156,7 +156,7 @@ async function execute(interaction) {
     try {
       const snapPath = path.join(process.cwd(), 'data', 'madden', 'leagues', `${leagueId}.json`);
       snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
-    } catch {}
+    } catch { }
     seasonInfo = snap?.info?.careerHubInfo?.seasonInfo || {};
     if (!inOffseason) {
       inOffseason = (summary.offSeasonStage ?? seasonInfo.offSeasonStage ?? 0) > 0;

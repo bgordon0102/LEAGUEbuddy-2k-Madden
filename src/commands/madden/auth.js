@@ -32,13 +32,13 @@ function saveTokens(tokens) {
 }
 
 async function execute(interaction) {
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply();
   const redirectUrl = interaction.options.getString('redirect_url');
   const doReset = interaction.options.getBoolean('reset');
   const consoleOverride = ConsoleOverride.NONE;
 
   if (doReset) {
-    try { fs.unlinkSync(TOKEN_FILE); } catch {}
+    try { fs.unlinkSync(TOKEN_FILE); } catch { }
     deleteTokensDb();
     if (!redirectUrl) {
       const embed = new EmbedBuilder()

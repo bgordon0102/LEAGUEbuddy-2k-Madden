@@ -4,7 +4,7 @@ import { DataManager } from '../../utils/dataManager.js';
 import fs from 'fs';
 
 export const data = new SlashCommandBuilder()
-    .setName('advanceweek')
+    .setName('2k-advanceweek')
     .setDescription('Advance the current week by 1, or specify a week to advance to')
     .addIntegerOption(option =>
         option.setName('week')

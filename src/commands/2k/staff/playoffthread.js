@@ -31,7 +31,7 @@ function getSeriesConfig(round) {
 }
 
 export const data = new SlashCommandBuilder()
-  .setName('playoffthread')
+  .setName('2k-playoffthread')
   .setDescription('Create a playoff coordination thread for two teams')
   .addStringOption(option =>
     option.setName('team1')

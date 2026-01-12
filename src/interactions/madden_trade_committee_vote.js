@@ -44,6 +44,23 @@ function buildEmbed(trade, tradeId, status) {
         gap === 0 ? 'Balance: even' : `Balance: ${gap > 0 ? '+' : ''}${Number(gap).toFixed(1)} (positive = you send more)`,
       ].join('\n'),
     });
+    // Detailed value breakdown if available
+    if (Array.isArray(trade.assetsSentDetails) || Array.isArray(trade.assetsReceivedDetails)) {
+      let sentBreakdown = '';
+      let recvBreakdown = '';
+      if (Array.isArray(trade.assetsSentDetails)) {
+        sentBreakdown = trade.assetsSentDetails.map(a => `- ${a.name}: ${a.value}`).join('\n');
+      }
+      if (Array.isArray(trade.assetsReceivedDetails)) {
+        recvBreakdown = trade.assetsReceivedDetails.map(a => `- ${a.name}: ${a.value}`).join('\n');
+      }
+      if (sentBreakdown) {
+        embed.addFields({ name: 'Your Side Value Breakdown', value: sentBreakdown });
+      }
+      if (recvBreakdown) {
+        embed.addFields({ name: 'Other Side Value Breakdown', value: recvBreakdown });
+      }
+    }
   }
   if (trade.notes) embed.addFields({ name: 'Notes', value: trade.notes });
   return embed;

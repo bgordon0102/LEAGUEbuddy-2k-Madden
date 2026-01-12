@@ -29,7 +29,7 @@ function safeReadJSON(file, fallback) {
 }
 
 export const data = new SlashCommandBuilder()
-  .setName('resetscouting')
+  .setName('2k-resetscouting')
   .setDescription('Reset all coaches weekly scouting points and info.')
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 

@@ -206,7 +206,7 @@ function previewPlayers(players) {
 }
 
 export const data = new SlashCommandBuilder()
-  .setName('mergedraft')
+  .setName('2k-mergedraft')
   .setDescription('Merge drafted prospects into team rosters; undrafted go to free agency')
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 

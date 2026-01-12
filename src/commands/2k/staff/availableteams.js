@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 export const data = new SlashCommandBuilder()
-    .setName('availableteams')
+    .setName('2k-availableteams')
     .setDescription('List all teams with no coach assigned (staff only)')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels);
 

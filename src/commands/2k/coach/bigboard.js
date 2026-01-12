@@ -9,7 +9,7 @@ function readJSON(file) {
 }
 
 export const data = new SlashCommandBuilder()
-    .setName('bigboard')
+    .setName('2k-bigboard')
     .setDescription('View the big board');
 
 export async function execute(interaction) {

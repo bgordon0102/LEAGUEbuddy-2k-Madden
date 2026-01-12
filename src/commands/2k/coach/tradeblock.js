@@ -141,7 +141,7 @@ async function postTradeBlockEmbed(interaction, team, players) {
 
 
 const data = new SlashCommandBuilder()
-    .setName('tradeblock')
+    .setName('2k-tradeblock')
     .setDescription('Manage your team’s trade block')
     .addStringOption(option =>
         option.setName('action')

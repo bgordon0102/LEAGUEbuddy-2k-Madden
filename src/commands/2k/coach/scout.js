@@ -4,7 +4,7 @@ import path from 'path';
 import { getSeasonState } from '../../utils/seasonUtils.js';
 
 export const data = new SlashCommandBuilder()
-    .setName('scout')
+    .setName('2k-scout')
     .setDescription('Scout a player from the current big board');
 
 export async function execute(interaction) {

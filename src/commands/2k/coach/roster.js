@@ -6,7 +6,7 @@ import { readRoster } from "../../utils/rosterUtils.js";
 import { normalizeName } from "../../utils/rosterUtils.js";
 
 const data = new SlashCommandBuilder()
-    .setName("roster")
+    .setName("2k-roster")
     .setDescription("Show a team's NBA 2K roster")
     .addStringOption((option) =>
         option

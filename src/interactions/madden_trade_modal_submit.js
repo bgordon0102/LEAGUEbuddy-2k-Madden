@@ -59,17 +59,25 @@ function buildValueMap(snapshot) {
 }
 
 function parsePickValue(label, seasonYear) {
-  // Patterns like "2026 1st", "1.10", "2.20", "2027 3rd", "1st rounder 2025"
-  const dotMatch = /^(\d)\.(\d{1,2})$/.exec(label.trim());
+  // Patterns like "2026 1st", "1.10", "1.10 26", "2.20", "2027 3rd", "1st rounder 2025"
+  const trimmed = label.trim();
   let year = seasonYear;
   let round = null;
+  const dotMatch = /^(\d)\.(\d{1,2})(?:\s+(\d{2,4}))?$/.exec(trimmed);
   if (dotMatch) {
     round = Number(dotMatch[1]);
+    if (dotMatch[3]) {
+      const y = Number(dotMatch[3]);
+      year = y < 100 ? 2000 + y : y;
+    }
   } else {
-    const regex = /(?:(\d{4}))?\s*(\d)(?:st|nd|rd|th)?\s*(?:round|rd)?/i;
-    const m = regex.exec(label);
+    const regex = /(?:(\d{2,4}))?\s*(\d)(?:st|nd|rd|th)?\s*(?:round|rd)?/i;
+    const m = regex.exec(trimmed);
     if (!m) return null;
-    if (m[1]) year = Number(m[1]);
+    if (m[1]) {
+      const y = Number(m[1]);
+      year = y < 100 ? 2000 + y : y;
+    }
     round = Number(m[2]);
   }
   if (!round || round < 1 || round > 7) return null;
