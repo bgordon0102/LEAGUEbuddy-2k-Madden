@@ -139,20 +139,42 @@ async function main() {
     }
   }
 
+  // Custom Ghost Legacy emoji (provided ID)
+  const ghostIconPath = path.join(process.cwd(), 'ghost_logos', 'ghost_legacy.png');
+
   // Apply icons to team roles where possible.
   for (const [name, role] of byName.entries()) {
-    if (!name.endsWith('Coach')) continue;
-    const baseName = name.replace(/ Coach$/, '').trim();
-    const iconData = loadIcon(baseName);
-    if (!iconData) {
-      console.log(`Skip (no icon): ${name}`);
+    // Ghost Legacy family uses a ghost unicode emoji
+    if (name.startsWith('Ghost Legacy')) {
+      try {
+        await rest.patch(Routes.guildRole(guildId, role.id), { body: { unicode_emoji: undefined, icon: undefined } });
+        if (fs.existsSync(ghostIconPath)) {
+          const buf = fs.readFileSync(ghostIconPath);
+          const iconData = `data:image/png;base64,${buf.toString('base64')}`;
+          await rest.patch(Routes.guildRole(guildId, role.id), { body: { icon: iconData } });
+          console.log(`Updated icon for role: ${name} using custom Ghost Legacy icon`);
+        } else {
+          console.warn(`Ghost Legacy icon file not found at ${ghostIconPath}, skipping icon update for ${name}`);
+        }
+      } catch (err) {
+        console.error(`Failed to set icon for ${name}:`, err?.message || err);
+      }
       continue;
     }
-    try {
-      await rest.patch(Routes.guildRole(guildId, role.id), { body: { icon: iconData } });
-      console.log(`Updated icon for role: ${name}`);
-    } catch (err) {
-      console.error(`Failed to set icon for ${name}:`, err?.message || err);
+
+    if (name.endsWith('Coach')) {
+      const baseName = name.replace(/ Coach$/, '').trim();
+      const iconData = loadIcon(baseName);
+      if (!iconData) {
+        console.log(`Skip (no icon): ${name}`);
+        continue;
+      }
+      try {
+        await rest.patch(Routes.guildRole(guildId, role.id), { body: { icon: iconData } });
+        console.log(`Updated icon for role: ${name}`);
+      } catch (err) {
+        console.error(`Failed to set icon for ${name}:`, err?.message || err);
+      }
     }
   }
 
