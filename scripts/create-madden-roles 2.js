@@ -16,10 +16,11 @@ if (!token || !guildId) {
 }
 
 const baseRoles = [
-  'Ghost Legacy Commish',
-  'Ghost Legacy Co-Commish',
-  'Ghost Legacy',
-  'Ghost Legacy Trade Committee',
+  'Madden Commish',
+  'Madden Co-Commish',
+  'Madden Free Agent Coach',
+  'Madden Coach',
+  'Madden Trade Committee',
 ];
 
 const teamRoles = [

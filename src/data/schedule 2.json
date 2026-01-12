@@ -1,0 +1,6586 @@
+[
+  [],
+  [
+    {
+      "id": 0,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 1,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 2,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 3,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 4,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 5,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 6,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 7,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 8,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 9,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 10,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 11,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 12,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 13,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 14,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 15,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 16,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 17,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 18,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 19,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 20,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 21,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 22,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 23,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 24,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 25,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 26,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 27,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 28,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 29,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 30,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 31,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 32,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 33,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 34,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 35,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 36,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 37,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 38,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 39,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 40,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 41,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 42,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 43,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 44,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 45,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 46,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 47,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 48,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 49,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 50,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 51,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 52,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 53,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 54,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 55,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 56,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 57,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 58,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 59,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 60,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 61,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 62,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 63,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 64,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 65,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 66,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 67,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 68,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 69,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 70,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 71,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 72,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 73,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 74,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 75,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 76,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 77,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 78,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 79,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 80,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 81,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 82,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 83,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 84,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 85,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 86,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 87,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 88,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 89,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 90,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 91,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 92,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 93,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 94,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 95,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 96,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 97,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 98,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 99,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 100,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 101,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 102,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 103,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 104,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 105,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 106,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 107,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 108,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 109,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 110,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 111,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 112,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 113,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 114,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 115,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 116,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 117,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 118,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 119,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 120,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 121,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 122,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 123,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 124,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 125,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 126,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 127,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 128,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 129,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 130,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 131,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 132,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 133,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 134,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 135,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 136,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 137,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 138,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 139,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 140,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 141,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 142,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 143,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 144,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 145,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 146,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 147,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 148,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 149,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 150,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 151,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 152,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 153,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 154,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 155,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 156,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 157,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 158,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 159,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 160,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 161,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 162,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 163,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 164,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 165,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 166,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 167,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 168,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 169,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 170,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 171,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 172,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 173,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 174,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 175,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 176,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 177,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 178,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 179,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 180,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 181,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 182,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 183,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 184,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 185,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 186,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 187,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 188,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 189,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 190,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 191,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 192,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 193,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 194,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 195,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    },
+    {
+      "id": 196,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 197,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 198,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 199,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 200,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 201,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 202,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 203,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 204,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 205,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 206,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 207,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 208,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 209,
+      "team1": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 210,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      }
+    },
+    {
+      "id": 211,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 212,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 213,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 214,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 215,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 216,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 217,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 218,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 219,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 220,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 221,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 222,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 223,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 224,
+      "team1": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 225,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      }
+    },
+    {
+      "id": 226,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 227,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 228,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 229,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 230,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 231,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 232,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 233,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 234,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 235,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 236,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 237,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 238,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 239,
+      "team1": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 240,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 241,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 242,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 243,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 244,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 245,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 246,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 247,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 248,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 249,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 250,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 251,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 252,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 253,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 254,
+      "team1": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 255,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 256,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 257,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 258,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 259,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 260,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 261,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 262,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 263,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 264,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 265,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 266,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 267,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 268,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 269,
+      "team1": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 270,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      }
+    },
+    {
+      "id": 271,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 272,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 273,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 274,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 275,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 276,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 277,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 278,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 279,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 280,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 281,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 282,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 283,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 284,
+      "team1": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 285,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      }
+    },
+    {
+      "id": 286,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 287,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 288,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 289,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 290,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 291,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 292,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 293,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 294,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 295,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 296,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 297,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 298,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 299,
+      "team1": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 300,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 301,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 302,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 303,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 304,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 305,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 306,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 307,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 308,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 309,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 310,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 311,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 312,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 313,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 314,
+      "team1": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 315,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      }
+    },
+    {
+      "id": 316,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 317,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 318,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 319,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 320,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 321,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 322,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 323,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 324,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 325,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 326,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 327,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 328,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 329,
+      "team1": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 330,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      }
+    },
+    {
+      "id": 331,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 332,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 333,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 334,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 335,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 336,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 337,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 338,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 339,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 340,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 341,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 342,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 343,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 344,
+      "team1": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 345,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      }
+    },
+    {
+      "id": 346,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 347,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 348,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 349,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 350,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 351,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 352,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 353,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 354,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 355,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 356,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 357,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 358,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 359,
+      "team1": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 360,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      }
+    },
+    {
+      "id": 361,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 362,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 363,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 364,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 365,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 366,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 367,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 368,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 369,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 370,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 371,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 372,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 373,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 374,
+      "team1": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 375,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      }
+    },
+    {
+      "id": 376,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 377,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 378,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 379,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 380,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 381,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 382,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 383,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 384,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 385,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 386,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 387,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 388,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 389,
+      "team1": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 390,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      }
+    },
+    {
+      "id": 391,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 392,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 393,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 394,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 395,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 396,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 397,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 398,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 399,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 400,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 401,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 402,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 403,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 404,
+      "team1": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 405,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      }
+    },
+    {
+      "id": 406,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 407,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 408,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 409,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 410,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 411,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 412,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 413,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 414,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 415,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 416,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 417,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 418,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 419,
+      "team1": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    }
+  ],
+  [
+    {
+      "id": 420,
+      "team1": {
+        "id": 11,
+        "name": "Houston Rockets",
+        "abbreviation": "HOU",
+        "coach": null
+      },
+      "team2": {
+        "id": 1,
+        "name": "Atlanta Hawks",
+        "abbreviation": "ATL",
+        "coach": null
+      }
+    },
+    {
+      "id": 421,
+      "team1": {
+        "id": 24,
+        "name": "Phoenix Suns",
+        "abbreviation": "PHX",
+        "coach": null
+      },
+      "team2": {
+        "id": 4,
+        "name": "Charlotte Hornets",
+        "abbreviation": "CHA",
+        "coach": null
+      }
+    },
+    {
+      "id": 422,
+      "team1": {
+        "id": 12,
+        "name": "Indiana Pacers",
+        "abbreviation": "IND",
+        "coach": null
+      },
+      "team2": {
+        "id": 14,
+        "name": "Los Angeles Lakers",
+        "abbreviation": "LAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 423,
+      "team1": {
+        "id": 18,
+        "name": "Minnesota Timberwolves",
+        "abbreviation": "MIN",
+        "coach": null
+      },
+      "team2": {
+        "id": 17,
+        "name": "Milwaukee Bucks",
+        "abbreviation": "MIL",
+        "coach": null
+      }
+    },
+    {
+      "id": 424,
+      "team1": {
+        "id": 6,
+        "name": "Cleveland Cavaliers",
+        "abbreviation": "CLE",
+        "coach": null
+      },
+      "team2": {
+        "id": 7,
+        "name": "Dallas Mavericks",
+        "abbreviation": "DAL",
+        "coach": null
+      }
+    },
+    {
+      "id": 425,
+      "team1": {
+        "id": 9,
+        "name": "Detroit Pistons",
+        "abbreviation": "DET",
+        "coach": null
+      },
+      "team2": {
+        "id": 20,
+        "name": "New York Knicks",
+        "abbreviation": "NYK",
+        "coach": null
+      }
+    },
+    {
+      "id": 426,
+      "team1": {
+        "id": 29,
+        "name": "Utah Jazz",
+        "abbreviation": "UTA",
+        "coach": null
+      },
+      "team2": {
+        "id": 5,
+        "name": "Chicago Bulls",
+        "abbreviation": "CHI",
+        "coach": null
+      }
+    },
+    {
+      "id": 427,
+      "team1": {
+        "id": 2,
+        "name": "Boston Celtics",
+        "abbreviation": "BOS",
+        "coach": null
+      },
+      "team2": {
+        "id": 19,
+        "name": "New Orleans Pelicans",
+        "abbreviation": "NOP",
+        "coach": null
+      }
+    },
+    {
+      "id": 428,
+      "team1": {
+        "id": 30,
+        "name": "Washington Wizards",
+        "abbreviation": "WAS",
+        "coach": null
+      },
+      "team2": {
+        "id": 22,
+        "name": "Orlando Magic",
+        "abbreviation": "ORL",
+        "coach": null
+      }
+    },
+    {
+      "id": 429,
+      "team1": {
+        "id": 8,
+        "name": "Denver Nuggets",
+        "abbreviation": "DEN",
+        "coach": null
+      },
+      "team2": {
+        "id": 27,
+        "name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "coach": null
+      }
+    },
+    {
+      "id": 430,
+      "team1": {
+        "id": 16,
+        "name": "Miami Heat",
+        "abbreviation": "MIA",
+        "coach": null
+      },
+      "team2": {
+        "id": 21,
+        "name": "Oklahoma City Thunder",
+        "abbreviation": "OKC",
+        "coach": null
+      }
+    },
+    {
+      "id": 431,
+      "team1": {
+        "id": 26,
+        "name": "Sacramento Kings",
+        "abbreviation": "SAC",
+        "coach": null
+      },
+      "team2": {
+        "id": 13,
+        "name": "Los Angeles Clippers",
+        "abbreviation": "LAC",
+        "coach": null
+      }
+    },
+    {
+      "id": 432,
+      "team1": {
+        "id": 23,
+        "name": "Philadelphia 76ers",
+        "abbreviation": "PHI",
+        "coach": null
+      },
+      "team2": {
+        "id": 15,
+        "name": "Memphis Grizzlies",
+        "abbreviation": "MEM",
+        "coach": null
+      }
+    },
+    {
+      "id": 433,
+      "team1": {
+        "id": 10,
+        "name": "Golden State Warriors",
+        "abbreviation": "GSW",
+        "coach": null
+      },
+      "team2": {
+        "id": 3,
+        "name": "Brooklyn Nets",
+        "abbreviation": "BKN",
+        "coach": null
+      }
+    },
+    {
+      "id": 434,
+      "team1": {
+        "id": 25,
+        "name": "Portland Trail Blazers",
+        "abbreviation": "POR",
+        "coach": null
+      },
+      "team2": {
+        "id": 28,
+        "name": "Toronto Raptors",
+        "abbreviation": "TOR",
+        "coach": null
+      }
+    }
+  ]
+]
