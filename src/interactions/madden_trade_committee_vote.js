@@ -85,6 +85,17 @@ function teamRoleMention(teamName, roleMap) {
   return '';
 }
 
+function teamRoleId(teamName, roleMap) {
+  if (!teamName) return null;
+  const target = (teamName || '').toLowerCase();
+  for (const [key, val] of Object.entries(roleMap)) {
+    if (!key.endsWith(' Coach')) continue;
+    const base = key.replace(/ Coach$/, '').toLowerCase();
+    if (base === target) return val;
+  }
+  return null;
+}
+
 export const customId = /^mtrade_c_(approve|deny)_/;
 
 export async function execute(interaction) {
@@ -105,20 +116,29 @@ export async function execute(interaction) {
   }
 
   const roleMap = loadRoleMap();
-  const coachRoleMention = roleMap['Madden Coach'] ? `<@&${roleMap['Madden Coach']}> ` : '';
+  const coachRoleId = roleMap['Ghost Legacy'];
+  const coachRoleMention = coachRoleId ? `<@&${coachRoleId}> ` : '';
+  const committeeRoleId = '1460494064678998282';
+  const committeeMention = `<@&${committeeRoleId}> `;
   const teamMentions = [
     teamRoleMention(trade.yourTeam, roleMap),
     teamRoleMention(trade.otherTeam, roleMap),
   ].filter(Boolean).join(' ');
-  const channelMentions = `${coachRoleMention}${teamMentions}`.trim();
+  const channelMentions = `${committeeMention}${coachRoleMention}${teamMentions}`.trim();
+  const mentionRoleIds = [
+    committeeRoleId,
+    coachRoleId,
+    teamRoleId(trade.yourTeam, roleMap),
+    teamRoleId(trade.otherTeam, roleMap),
+  ].filter(Boolean).map(String);
 
   const channelMap = loadChannelMap();
   const approvedId = channelMap['Approved trades'];
   const deniedId = channelMap['Denied trades'];
 
   // Permission: only Trade Committee role can vote
-  const committeeRoleId = roleMap['Madden Trade Committe'] || roleMap['Madden Trade Committee'];
-  if (committeeRoleId && !interaction.member?.roles?.cache?.has(committeeRoleId)) {
+  const votingRoleId = committeeRoleId;
+  if (votingRoleId && !interaction.member?.roles?.cache?.has(votingRoleId)) {
     await interaction.editReply({ content: 'Only Trade Committee members can vote on trades.' });
     return;
   }
@@ -128,13 +148,16 @@ export async function execute(interaction) {
     trade.closedAt = Date.now();
     trades[tradeId] = trade;
     saveActiveTrades(trades);
-    const embed = buildEmbed(trade, tradeId, 'denied');
+    const embed = EmbedBuilder.from(buildEmbed(trade, tradeId, 'denied'))
+      .setDescription(`${channelMentions ? `${channelMentions}\n` : ''}Trade ID: ${tradeId}`);
     if (deniedId) {
       const deniedChan = await interaction.client.channels.fetch(deniedId).catch(() => null);
       if (deniedChan?.isTextBased()) {
-        const tagged = channelMentions ? `${channelMentions} Trade ID: ${tradeId}` : `Trade ID: ${tradeId}`;
-        const taggedEmbed = EmbedBuilder.from(embed).setDescription(tagged);
-        await deniedChan.send({ embeds: [taggedEmbed] }).catch(() => null);
+        const content = channelMentions ? `${channelMentions} Trade ID: ${tradeId}` : `Trade ID: ${tradeId}`;
+        await deniedChan.send({
+          content,
+          embeds: [embed]
+        }).catch(() => null);
       }
     }
     await dmProposer(interaction.client, trade.proposerId, embed, `Your trade with ${trade.otherTeam} was denied by committee.`);
@@ -147,13 +170,15 @@ export async function execute(interaction) {
   trade.closedAt = Date.now();
   trades[tradeId] = trade;
   saveActiveTrades(trades);
-  const embed = buildEmbed(trade, tradeId, 'approved');
+  const embed = EmbedBuilder.from(buildEmbed(trade, tradeId, 'approved'))
+    .setDescription(`${channelMentions ? `${channelMentions}\n` : ''}Trade ID: ${tradeId}`);
   if (approvedId) {
     const approvedChan = await interaction.client.channels.fetch(approvedId).catch(() => null);
     if (approvedChan?.isTextBased()) {
-      const tagged = channelMentions ? `${channelMentions} Trade ID: ${tradeId}` : `Trade ID: ${tradeId}`;
-      const taggedEmbed = EmbedBuilder.from(embed).setDescription(tagged);
-      await approvedChan.send({ embeds: [taggedEmbed] }).catch(() => null);
+      const content = channelMentions ? `${channelMentions} Trade ID: ${tradeId}` : `Trade ID: ${tradeId}`;
+      await approvedChan.send({
+        content: `<@&${committeeRoleId}>`,
+      }).catch(() => null);
     }
   }
   // Update trade counts
