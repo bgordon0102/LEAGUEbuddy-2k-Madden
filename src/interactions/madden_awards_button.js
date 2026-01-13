@@ -149,8 +149,23 @@ export async function execute_modal(interaction) {
   const roleMap = loadJson(ROLE_MAP_FILE);
   const channelMap = loadJson(CHANNEL_MAP_FILE);
   const emojiMap = loadJson(TEAM_EMOJIS_FILE);
-  const awardsChannelId = channelMap['Yearly Awards'] || channelMap['Awards'];
-  const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear || 'Unknown';
+  const awardsChannelId = channelMap['Yearly awards'] || channelMap['Yearly Awards'] || channelMap['Awards'];
+  // Fallback season year: use config.json if snapshot lacks seasonYear
+  let seasonYear =
+    snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear ||
+    snapshot?.info?.seasonInfo?.seasonYear ||
+    snapshot?.seasonYear ||
+    null;
+  if (!seasonYear) {
+    try {
+      const config = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'madden', 'config.json'), 'utf8'));
+      seasonYear = config?.seasonYear || config?.season || null;
+    } catch { /* ignore */ }
+  }
+  if (!seasonYear || Number(seasonYear) === 0) {
+    const current = new Date().getFullYear();
+    seasonYear = current;
+  }
 
   const fields = {
     mvp: 'MVP',

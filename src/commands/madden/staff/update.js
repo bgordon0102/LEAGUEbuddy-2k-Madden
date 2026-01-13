@@ -44,10 +44,18 @@ async function execute(interaction) {
       snap = JSON.parse(fs.readFileSync(snapPath, 'utf8'));
     } catch { }
     const seasonInfo = snap?.info?.careerHubInfo?.seasonInfo || {};
-    // Choose a current week value: summary.currentWeek, else displayWeek from seasonInfo (EA hub), else 0
+    // Derive a week if missing: prefer summary.currentWeek, else displayWeek, else highest regular-season weeklyStats index + 1
+    const derivedWeekFromStats = (() => {
+      const regWeeks = (snap?.weeklyStats || []).filter(w => Number(w.stage ?? w.stageIndex ?? 1) === 1);
+      if (!regWeeks.length) return 0;
+      const maxIdx = Math.max(...regWeeks.map(w => Number(w.weekIndex ?? -1)).filter(n => n >= 0));
+      return maxIdx >= 0 ? maxIdx + 1 : 0;
+    })();
     const currentWeekValue = summary.currentWeek && summary.currentWeek > 0
       ? summary.currentWeek
-      : (seasonInfo.displayWeek && seasonInfo.displayWeek > 0 ? seasonInfo.displayWeek : 0);
+      : (seasonInfo.displayWeek && seasonInfo.displayWeek > 0
+        ? seasonInfo.displayWeek
+        : derivedWeekFromStats);
     const currentWeekIndex = currentWeekValue > 0 ? currentWeekValue - 1 : null;
     const weekEntry = snap?.weeklyStats?.find(w => w.weekIndex === currentWeekIndex);
     const seasonWeekType = seasonInfo.seasonWeekType;
@@ -61,17 +69,23 @@ async function execute(interaction) {
     if (weekEntry?.stage !== undefined && (weekEntry.weekIndex ?? 0) >= 18) {
       stageForWeek = weekEntry.stage;
     }
-    // If we have a valid current week in the regular-season range, force regular-season stage even if stats carry stage=0
-    if (currentWeekValue >= 1 && currentWeekValue <= 18) {
+    // If we have a numbered week (>=1), force SEASON stage even if the export mislabels it as preseason
+    if (currentWeekValue >= 1) {
       stageForWeek = Stage.SEASON;
     }
     let inOffseason = (summary.offSeasonStage ?? seasonInfo.offSeasonStage ?? 0) > 0;
-    // If we're clearly in a numbered regular-season week, treat as in-season even if offSeasonStage lingered
-    if (stageForWeek === Stage.SEASON && currentWeekValue >= 1 && currentWeekValue <= 18) {
+    // If we're clearly in a numbered week, treat as in-season even if offSeasonStage lingered
+    if (stageForWeek === Stage.SEASON && currentWeekValue >= 1) {
       inOffseason = false;
     }
-    const inPreseason = stageForWeek === Stage.PRESEASON;
+    const inPreseason = stageForWeek === Stage.PRESEASON && currentWeekValue < 1;
     const inRegularSeason = stageForWeek === Stage.SEASON && currentWeekValue >= 1 && currentWeekValue <= 18 && !inOffseason && !inPreseason;
+    // Allow updates through regular season; allow Wild Card (week 19) to capture final regular stats; freeze after that
+    const inSeasonWindow = currentWeekValue >= 1 && currentWeekValue <= 18;
+    const isWildcard = currentWeekValue === 19;
+    // If week is unknown but we have weeklyStats data, still allow updates (useful when EA exports omit current week)
+    const hasSeasonData = (snap?.weeklyStats || []).some(w => Number(w.weekIndex ?? -1) >= 0);
+    const allowPinnedUpdates = (!inOffseason && !inPreseason && (inSeasonWindow || isWildcard)) || (!inOffseason && hasSeasonData);
     const effectiveCurrentWeek = currentWeekValue;
 
     // On the first week of a new season (preseason), reset trade counts but keep pins
@@ -119,7 +133,7 @@ async function execute(interaction) {
       } catch (e) {
         console.warn('[madden-weeklyupdate] power rankings reset skipped:', e?.message || e);
       }
-    } else if (inRegularSeason) {
+    } else if (allowPinnedUpdates) {
       try {
         await updateStatLeaders(interaction.client, leagueId);
       } catch (e) {
@@ -129,7 +143,7 @@ async function execute(interaction) {
       console.warn('[madden-weeklyupdate] stat leaders skipped (not regular season)');
     }
 
-    if (inRegularSeason) {
+    if (allowPinnedUpdates) {
       try {
         await updateStandings(interaction.client, leagueId);
       } catch (e) {
@@ -146,7 +160,7 @@ async function execute(interaction) {
         console.warn('[madden-weeklyupdate] power rankings update skipped:', e?.message || e);
       }
     } else {
-      console.warn('[madden-weeklyupdate] standings/playoff picture/power rankings skipped (not regular season)');
+      console.warn('[madden-weeklyupdate] standings/playoff picture/power rankings skipped (offseason/preseason or after Wild Card)');
     }
     // Post weekly transactions
     try {

@@ -90,6 +90,16 @@ function teamRoleMention(teamName, roleMap) {
 
 export async function updatePowerRankings(client, leagueId) {
   const snapshot = loadSnapshot(leagueId);
+  const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+  const displayWeek = seasonInfo.displayWeek ?? seasonInfo.seasonWeek ?? 0;
+  const hasSeasonData = (snapshot?.weeklyStats || []).some(w => Number(w.weekIndex ?? -1) >= 0) ||
+    (snapshot?.standings?.teamStandingInfoList || []).length > 0;
+  const inPreseason = displayWeek <= 0 && !hasSeasonData;
+  if (inPreseason) {
+    // Preseason: keep the placeholder message instead of updating rankings
+    await resetPowerRankings(client);
+    return;
+  }
   const teams = teamNameMap(snapshot);
   const roleMap = loadJson(ROLE_MAP_FILE);
   const emojiMap = loadJson(TEAM_EMOJIS_FILE);

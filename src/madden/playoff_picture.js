@@ -77,9 +77,17 @@ function topSeeds(standings, conferenceName, teams) {
 
 export async function updatePlayoffPicture(client, leagueId) {
   const snapshot = loadSnapshot(leagueId);
+  const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+  const displayWeek = seasonInfo.displayWeek ?? seasonInfo.seasonWeek ?? 0;
+  const standings = snapshot?.standings?.teamStandingInfoList || [];
+  const hasSeasonData = (snapshot?.weeklyStats || []).some(w => Number(w.weekIndex ?? -1) >= 0) || standings.length > 0;
+  const inPreseason = displayWeek <= 0 && !hasSeasonData;
+  if (inPreseason) {
+    await resetPlayoffPicture(client);
+    return;
+  }
   const emojiMap = loadEmojiMap();
   const teams = teamNameMap(snapshot, emojiMap);
-  const standings = snapshot?.standings?.teamStandingInfoList || [];
 
   const afcSeeds = topSeeds(standings, 'afc', teams);
   const nfcSeeds = topSeeds(standings, 'nfc', teams);

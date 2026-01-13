@@ -53,6 +53,7 @@ function aggregateWeeklyTeamStats(snapshot) {
   const weeks = (snapshot?.weeklyStats || []).filter(w => Number(w.stage ?? w.stageIndex ?? 1) === 1);
   if (!weeks.length) return null;
   const maxWeekIdx = Math.max(...weeks.map(w => Number(w.weekIndex ?? -1)).filter(n => n >= 0));
+  const isFirstWeek = (currentWeek !== null && Number(currentWeek) <= 1) || maxWeekIdx <= 0;
 
   // Use the latest available week entry for each team (season stage)
   const latest = {};
@@ -93,6 +94,10 @@ function aggregateWeeklyTeamStats(snapshot) {
     { key: 'defRushYds', desc: false },
   ];
   const ranks = {};
+  // Week 1: show “unranked” (no ranks yet)
+  if (isFirstWeek) {
+    return { values, ranks: {}, maxWeekIdx };
+  }
   rankKeys.forEach(({ key, desc }) => {
     const arr = Object.entries(values).map(([tid, v]) => ({ teamId: Number(tid), val: v[key] }));
     arr.sort((a, b) => desc ? (b.val - a.val) : (a.val - b.val));
@@ -176,8 +181,24 @@ function buildRankMaps(snapshot) {
       rankKey: 'ptsForRank',
       desc: true,
     },
-    offPassYds: { getter: s => pickField(s, ['offPassYds', 'offPassYards', 'passYdsFor']), rankKey: 'offPassYdsRank', desc: true },
-    offRushYds: { getter: s => pickField(s, ['offRushYds', 'offRushYards', 'rushYdsFor']), rankKey: 'offRushYdsRank', desc: true },
+    offPassYds: {
+      getter: s => {
+        const yards = pickField(s, ['offPassYds', 'offPassYards', 'passYdsFor']);
+        const games = gp(s) || 0;
+        return yards != null ? (games ? yards / games : yards) : null;
+      },
+      rankKey: 'offPassYdsRank',
+      desc: true,
+    },
+    offRushYds: {
+      getter: s => {
+        const yards = pickField(s, ['offRushYds', 'offRushYards', 'rushYdsFor']);
+        const games = gp(s) || 0;
+        return yards != null ? (games ? yards / games : yards) : null;
+      },
+      rankKey: 'offRushYdsRank',
+      desc: true,
+    },
     defPtsPerG: {
       getter: s => {
         const pts = pickField(s, ['pointsAgainst', 'ptsAllowed', 'defPtsAllowed', 'ptsAgainst']);
@@ -187,8 +208,24 @@ function buildRankMaps(snapshot) {
       rankKey: 'ptsAgainstRank',
       desc: false,
     },
-    defPassYds: { getter: s => pickField(s, ['defPassYds', 'defPassYdsAllowed', 'defPassYardsAllowed', 'passYdsAllowed', 'oppPassYds']), rankKey: 'defPassYdsRank', desc: false },
-    defRushYds: { getter: s => pickField(s, ['defRushYds', 'defRushYdsAllowed', 'defRushYardsAllowed', 'rushYdsAllowed', 'oppRushYds']), rankKey: 'defRushYdsRank', desc: false },
+    defPassYds: {
+      getter: s => {
+        const yards = pickField(s, ['defPassYds', 'defPassYdsAllowed', 'defPassYardsAllowed', 'passYdsAllowed', 'oppPassYds']);
+        const games = gp(s) || 0;
+        return yards != null ? (games ? yards / games : yards) : null;
+      },
+      rankKey: 'defPassYdsRank',
+      desc: false,
+    },
+    defRushYds: {
+      getter: s => {
+        const yards = pickField(s, ['defRushYds', 'defRushYdsAllowed', 'defRushYardsAllowed', 'rushYdsAllowed', 'oppRushYds']);
+        const games = gp(s) || 0;
+        return yards != null ? (games ? yards / games : yards) : null;
+      },
+      rankKey: 'defRushYdsRank',
+      desc: false,
+    },
   };
 
   const values = {};
@@ -571,7 +608,27 @@ async function execute(interaction) {
     }
     const teams = teamMap(snapshot);
     const weeklyAgg = aggregateWeeklyTeamStats(snapshot);
-    const ranks = weeklyAgg ? { values: weeklyAgg.values, ranks: weeklyAgg.ranks, standings: {} } : buildRankMaps(snapshot);
+    const baseRanks = buildRankMaps(snapshot);
+    const isWeekOne = !playoffRound && Number(wkNumeric) <= 1;
+    // Blend: keep PPG from weeklyAgg (most accurate), but use standings-based metrics for other stats
+    const ranks = { values: {}, ranks: baseRanks.ranks || {}, standings: baseRanks.standings || {} };
+    const copyMetric = (src, key) => {
+      Object.entries(src.values || {}).forEach(([tid, vals]) => {
+        ranks.values[tid] = ranks.values[tid] || {};
+        if (vals[key] !== undefined) ranks.values[tid][key] = vals[key];
+      });
+    };
+    // Always seed with base (standings) metrics
+    ['offPtsPerG', 'defPtsPerG', 'offPassYds', 'offRushYds', 'defPassYds', 'defRushYds'].forEach(k => copyMetric(baseRanks, k));
+    // Override PPG with weekly aggregates when available
+    if (weeklyAgg) {
+      copyMetric(weeklyAgg, 'offPtsPerG');
+      copyMetric(weeklyAgg, 'defPtsPerG');
+    }
+    // Week 1: treat as unranked (keep values, drop ranks)
+    if (isWeekOne) {
+      ranks.ranks = {};
+    }
     const playoffAvgs = playoffRound ? buildPlayoffAverages(snapshot) : null;
     let created = 0;
     const deadline = Math.floor((Date.now() + 48 * 3600 * 1000) / 1000);
@@ -607,13 +664,15 @@ async function execute(interaction) {
           const r = ranks.ranks;
           const s = ranks.standings[tid] || {};
           const fmt = (val, decimals = 1) => val != null ? (Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals)).toString() : '–';
-          const line = (label, val, rank) => `${label}: R${rank ?? '–'} — ${fmt(val)}`;
           const offPts = v.offPtsPerG ?? s.ptsFor ?? s.pointsFor ?? s.offPts;
           const defPts = v.defPtsPerG ?? s.ptsAgainst ?? s.pointsAgainst ?? s.defPtsAllowed;
           const passO = v.offPassYds ?? s.offPassYds;
           const rushO = v.offRushYds ?? s.offRushYds;
           const passD = v.defPassYds ?? s.defPassYds;
           const rushD = v.defRushYds ?? s.defRushYds;
+          const hasValue = [offPts, defPts, passO, rushO, passD, rushD].some(n => Number(n) > 0);
+          const forceUnranked = isWeekOne || !hasValue;
+          const line = (label, val, rank) => `${label}: ${forceUnranked ? 'R–' : `R${rank ?? '–'}`} — ${fmt(val)}`;
           return [
             line('Off Pts/G', offPts, r?.offPtsPerG?.[tid] || s.ptsForRank),
             line('Pass Yds', passO, r?.offPassYds?.[tid] || s.offPassYdsRank),

@@ -21,6 +21,33 @@ function loadRoleMap() {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
 }
 
+function formatValueSummary(sendTotal, recvTotal, gap) {
+  const net = typeof gap === 'number' ? gap : (Number(sendTotal) - Number(recvTotal));
+  const direction = net === 0 ? 'even' : net > 0 ? 'you send more value' : 'you receive more value';
+  const netLabel = net === 0 ? 'Net: even' : `Net: ${net > 0 ? '+' : ''}${Number(net).toFixed(1)} (${direction})`;
+  return [
+    `You send: ${Number(sendTotal).toFixed(1)}`,
+    `They send: ${Number(recvTotal).toFixed(1)}`,
+    netLabel,
+  ].join('\n');
+}
+
+function formatCommitteeValueSummary(trade) {
+  const sendTotal = Number(trade.sendTotal);
+  const recvTotal = Number(trade.recvTotal);
+  const net = typeof trade.valueGap === 'number' ? trade.valueGap : (sendTotal - recvTotal);
+  const giver = net > 0 ? trade.yourTeam : trade.otherTeam;
+  const diff = Math.abs(net);
+  const headline = net === 0
+    ? 'Value gap: even'
+    : `Value gap: ${giver || 'One side'} sending ${diff.toFixed(1)} more value`;
+  return [
+    `You send: ${sendTotal.toFixed(1)}`,
+    `They send: ${recvTotal.toFixed(1)}`,
+    headline,
+  ].join('\n');
+}
+
 function buildEmbed(trade, tradeId, status) {
   const colors = { approved: 0x3ba55d, denied: 0xed4245, vote: 0x5865f2 };
   const titles = { approved: 'Trade Approved', denied: 'Trade Denied', vote: 'Trade Committee Vote' };
@@ -38,11 +65,7 @@ function buildEmbed(trade, tradeId, status) {
     const gap = trade.valueGap ?? (trade.sendTotal - trade.recvTotal);
     embed.addFields({
       name: 'Trade Value Check',
-      value: [
-        `Your side total: ${Number(trade.sendTotal).toFixed(1)}`,
-        `Other side total: ${Number(trade.recvTotal).toFixed(1)}`,
-        gap === 0 ? 'Balance: even' : `Balance: ${gap > 0 ? '+' : ''}${Number(gap).toFixed(1)} (positive = you send more)`,
-      ].join('\n'),
+      value: formatCommitteeValueSummary(trade),
     });
     // Detailed value breakdown if available
     if (Array.isArray(trade.assetsSentDetails) || Array.isArray(trade.assetsReceivedDetails)) {
@@ -120,14 +143,13 @@ export async function execute(interaction) {
   const coachRoleId = roleMap['Ghost Legacy'];
   const coachRoleMention = coachRoleId ? `<@&${coachRoleId}> ` : '';
   const committeeRoleId = '1460399406737002579';
-  const committeeMention = `<@&${committeeRoleId}> `;
+  // Only tag Ghost Legacy + the two team roles on final approve/deny
   const teamMentions = [
     teamRoleMention(trade.yourTeam, roleMap),
     teamRoleMention(trade.otherTeam, roleMap),
   ].filter(Boolean).join(' ');
-  const channelMentions = `${committeeMention}${coachRoleMention}${teamMentions}`.trim();
+  const channelMentions = `${coachRoleMention}${teamMentions}`.trim();
   const mentionRoleIds = [
-    committeeRoleId,
     coachRoleId,
     teamRoleId(trade.yourTeam, roleMap),
     teamRoleId(trade.otherTeam, roleMap),
@@ -154,10 +176,13 @@ export async function execute(interaction) {
     if (deniedId) {
       const deniedChan = await interaction.client.channels.fetch(deniedId).catch(() => null);
       if (deniedChan?.isTextBased()) {
-        const content = channelMentions ? `${channelMentions} Trade ID: ${tradeId}` : `Trade ID: ${tradeId}`;
         await deniedChan.send({
-          content,
-          embeds: [embed]
+          content: `Trade ID: ${tradeId}`,
+          embeds: [embed],
+          allowedMentions: {
+            parse: [],
+            roles: mentionRoleIds,
+          },
         }).catch(() => null);
       }
     }
@@ -176,23 +201,12 @@ export async function execute(interaction) {
   if (approvedId) {
     const approvedChan = await interaction.client.channels.fetch(approvedId).catch(() => null);
     if (approvedChan?.isTextBased()) {
-      const content = channelMentions
-        ? `${channelMentions} Trade ID: ${tradeId}`
-        : `Trade ID: ${tradeId}`;
-
-      // Debugging output
-      console.log('---DEBUG TRADE APPROVAL---');
-      console.log('committeeRoleId:', committeeRoleId);
-      console.log('mentionRoleIds:', mentionRoleIds);
-      console.log('channelMentions:', channelMentions);
-      console.log('content:', content);
-      console.log('allowedMentions:', { roles: mentionRoleIds });
-      console.log('embed:', embed?.data || embed);
-
       await approvedChan.send({
-        content,
+        // Mention stays in the embed so the tagged roles still ping without doubling in content
+        content: `Trade ID: ${tradeId}`,
         embeds: [embed],
         allowedMentions: {
+          parse: [],
           roles: mentionRoleIds,
         },
       }).catch((err) => {

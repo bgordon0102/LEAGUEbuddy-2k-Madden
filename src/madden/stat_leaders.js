@@ -226,9 +226,13 @@ export async function updateStatLeaders(client, leagueId) {
   const inOffseason = (seasonInfo.offSeasonStage ?? 0) > 0;
   const inPreseason = stageForWeek === Stage.PRESEASON || seasonWeekType === 0 || currentWeek <= 0;
   const inPostseason = currentWeek > 18;
-  if (inPreseason || inOffseason || inPostseason) {
-    // Preseason/offseason/postseason: keep placeholders / don’t update
+  if (inPreseason || inOffseason) {
+    // Preseason/offseason: keep placeholders / don’t update
     await resetStatLeaders(client);
+    return;
+  }
+  if (inPostseason) {
+    // Postseason: keep last posted leaders (do not reset)
     return;
   }
   const emojiMap = loadJson(TEAM_EMOJIS_FILE, {});
@@ -238,7 +242,7 @@ export async function updateStatLeaders(client, leagueId) {
     const wkStage = w?.stage ?? w?.stageIndex ?? Stage.SEASON;
     const wkIdx = w?.weekIndex ?? 0;
     const isReg = wkStage === Stage.SEASON;
-    const withinCurrent = currentWeekIndex === null ? true : wkIdx <= currentWeekIndex;
+    const withinCurrent = currentWeekIndex === null ? true : wkIdx <= Math.min(currentWeekIndex, 17); // cap at week 18 (index 17)
     return isReg && withinCurrent;
   });
   const fields = [];

@@ -2,6 +2,7 @@ import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } fro
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { computePlayerValue as computeValueBase } from '../../../interactions/madden_trade_modal_submit.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const BLOCK_FILE = path.join(process.cwd(), 'data', 'madden', 'trade_block.json');
@@ -19,6 +20,23 @@ function saveJson(file, data) {
 function normalizeName(name) {
   if (!name) return '';
   return name.trim().toLowerCase();
+}
+
+function formatHeight(heightInches) {
+  if (!heightInches || Number.isNaN(Number(heightInches))) return null;
+  const total = Number(heightInches);
+  const ft = Math.floor(total / 12);
+  const inch = Math.round(total % 12);
+  return `${ft}'${inch}"`;
+}
+
+function computeTradeValue(player) {
+  try {
+    return computeValueBase(player);
+  } catch {
+    const ovr = player?.overallRating ?? player?.playerBestOvr ?? player?.ovrRating ?? 0;
+    return Math.max(1, Number(ovr) || 1);
+  }
 }
 
 function findCoachTeam(member, roleMap, snapshot) {
@@ -48,24 +66,49 @@ function loadChannelMap() {
   try { return JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8')); } catch { return {}; }
 }
 
-async function announce(client, roleMap, channelMap, teamName, playerLabelText, positionText, rosterId) {
+async function announce(client, roleMap, channelMap, teamName, cleanLabelText, detailText, positionText, rosterId) {
   const coachRoleId = roleMap['Ghost Legacy'];
   const coachTag = coachRoleId ? `<@&${coachRoleId}>` : null;
   const tradeChannelId = channelMap['Trade Block'] || channelMap['Pending Trades'] || channelMap['Transaction Log'];
   if (!tradeChannelId) return;
   const channel = await client.channels.fetch(tradeChannelId).catch(() => null);
   if (!channel || !channel.isTextBased()) return;
+
+  // Find or create a team-specific thread inside the trade block channel
+  const normTeam = (teamName || '').toLowerCase();
+  const matchesTeam = (t) => {
+    const name = (t?.name || '').toLowerCase();
+    return name.includes(normTeam) || normTeam.includes(name.replace('trade block', '').trim());
+  };
+  let thread = null;
+  try {
+    const active = await channel.threads.fetchActive().catch(() => null);
+    thread = active?.threads?.find(matchesTeam) || null;
+    if (!thread) {
+      const archived = await channel.threads.fetchArchived().catch(() => null);
+      thread = archived?.threads?.find(matchesTeam) || null;
+    }
+    if (!thread) {
+      thread = await channel.threads.create({
+        name: `${teamName} Trade Block`,
+        autoArchiveDuration: 10080, // 7 days
+        reason: `Trade block thread for ${teamName}`,
+      }).catch(() => null);
+    }
+  } catch { /* ignore thread discovery/creation errors */ }
+  const target = thread || channel;
+
   // Short customId: mtrade:team:rosterId:label (kept well under Discord limits)
   const safeTeam = encodeURIComponent((teamName || 'team').slice(0, 12));
   const safeId = rosterId ? String(rosterId).slice(0, 18) : 'p';
-  let shortLabel = (playerLabelText || 'player').slice(0, 25);
+  let shortLabel = (cleanLabelText || 'player').slice(0, 25);
   const base = `mtrade:${safeTeam}:${safeId}:`;
   const room = 90 - base.length; // ensure well under 100
   if (shortLabel.length > room) shortLabel = shortLabel.slice(0, Math.max(5, room));
   const customId = `${base}${encodeURIComponent(shortLabel)}`;
   const embed = {
     title: 'New Trade Block Addition',
-    description: `${playerLabelText}\nTeam: ${teamName}`,
+    description: `${detailText || cleanLabelText}\nTeam: ${teamName}`,
     color: 0x00AE86,
     timestamp: new Date().toISOString(),
   };
@@ -74,8 +117,8 @@ async function announce(client, roleMap, channelMap, teamName, playerLabelText, 
     .setLabel('Trade For')
     .setStyle(ButtonStyle.Primary);
   const row = new ActionRowBuilder().addComponents(btn);
-  const msg = await channel.send({ content: coachTag || null, embeds: [embed], components: [row] }).catch(() => null);
-  return msg?.id;
+  const msg = await target.send({ content: coachTag || null, embeds: [embed], components: [row] }).catch(() => null);
+  return msg ? { messageId: msg.id, threadId: thread?.id || null } : null;
 }
 
 function getPositions(snapshot, teamId) {
@@ -256,10 +299,27 @@ async function execute(interaction) {
       saveJson(BLOCK_FILE, block);
       await interaction.editReply({ content: `${playerLabel(player)} (${player.position}) added to your trade block.` });
       const teamName = (snapshot.teams?.leagueTeamInfoList || []).find(t => t.teamId === teamId)?.displayName || 'Team';
-      const meta = `${playerLabel(player)} (${player.position}) — OVR ${player.playerBestOvr || player.teamSchemeOvr || player.playerSchemeOvr || 'N/A'}, Age ${player.age ?? 'N/A'}, Dev ${formatDev(player.devTrait)}`;
-      const msgId = await announce(interaction.client, roleMap, channelMap, teamName, meta, player.position || 'N/A', player.rosterId);
-      if (msgId) {
-        block[teamId][block[teamId].length - 1].messageId = msgId;
+      // Build a rich description for the post while keeping the modal label clean
+      const cleanLabel = `${playerLabel(player)} (${player.position})`;
+      const height = formatHeight(player.heightInches ?? player.height);
+      const weight = player.weight ?? player.weightLbs ?? null;
+      const dev = formatDev(player.devTrait);
+      const ovr = player.playerBestOvr || player.teamSchemeOvr || player.playerSchemeOvr || player.overallRating || player.ovrRating;
+      const tradeValue = computeTradeValue(player);
+      const detailParts = [
+        cleanLabel,
+        ovr ? `OVR: ${ovr}` : null,
+        player.age ? `Age: ${player.age}` : null,
+        height ? `Ht: ${height}` : null,
+        weight ? `Wt: ${weight} lbs` : null,
+        dev ? `Dev: ${dev}` : null,
+        tradeValue ? `Trade Value: ${tradeValue}` : null,
+      ].filter(Boolean);
+      const detailText = detailParts.join('\n');
+      const msgInfo = await announce(interaction.client, roleMap, channelMap, teamName, cleanLabel, detailText, player.position || 'N/A', player.rosterId);
+      if (msgInfo?.messageId) {
+        block[teamId][block[teamId].length - 1].messageId = msgInfo.messageId;
+        block[teamId][block[teamId].length - 1].threadId = msgInfo.threadId || null;
         saveJson(BLOCK_FILE, block);
       }
       return;
@@ -278,10 +338,12 @@ async function execute(interaction) {
       try {
         if (removed.messageId) {
           const tradeChannelId = channelMap['Trade Block'] || channelMap['Pending Trades'] || channelMap['Transaction Log'];
-          if (tradeChannelId) {
-            const channel = await interaction.client.channels.fetch(tradeChannelId).catch(() => null);
-            if (channel && channel.isTextBased()) {
-              const msg = await channel.messages.fetch(removed.messageId).catch(() => null);
+          const threadId = removed.threadId;
+          const targetChannelId = threadId || tradeChannelId;
+          if (targetChannelId) {
+            const targetChannel = await interaction.client.channels.fetch(targetChannelId).catch(() => null);
+            if (targetChannel && targetChannel.isTextBased()) {
+              const msg = await targetChannel.messages.fetch(removed.messageId).catch(() => null);
               if (msg) await msg.delete().catch(() => null);
             }
           }

@@ -29,7 +29,7 @@ function devBonus(devTrait) {
   return 0;
 }
 
-function computePlayerValue(p) {
+export function computePlayerValue(p) {
   if (!p) return 0;
   const ovr = p.overallRating ?? p.playerBestOvr ?? p.ovrRating ?? 0;
   const age = p.age ?? 26;
@@ -182,10 +182,24 @@ function teamDisplay(snapshot, teamName) {
   return t ? (t.displayName || t.nickName || t.cityName) : teamName;
 }
 
-function buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, notes, valueSummary }) {
+function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
+  const youSend = flip ? recvTotal : sendTotal;
+  const theySend = flip ? sendTotal : recvTotal;
+  const netRaw = typeof gap === 'number' ? gap : (Number(sendTotal) - Number(recvTotal));
+  const net = flip ? -netRaw : netRaw;
+  const direction = net === 0 ? 'even' : net > 0 ? 'you send more value' : 'they send more value';
+  const netLabel = net === 0 ? 'Net: even' : `Net: ${net > 0 ? '+' : ''}${Number(net).toFixed(1)} (${direction})`;
+  return [
+    `You send: ${Number(youSend).toFixed(1)}`,
+    `They send: ${Number(theySend).toFixed(1)}`,
+    netLabel,
+  ].join('\n');
+}
+
+function buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, notes, valueSummary, hideInstructions = false }) {
   const embed = new EmbedBuilder()
     .setTitle('Trade Proposal')
-    .setDescription('List the exact players/picks going each way. Example send: “WR J. Smith (OVR 88), 2027 2nd” and receive: “LT R. Jones (OVR 85)”. Trades lock after Week 8.')
+    .setDescription(hideInstructions ? null : 'List the exact players/picks going each way. Example send: “WR J. Smith (OVR 88), 2027 2nd” and receive: “LT R. Jones (OVR 85)”. Trades lock after Week 8.')
     .addFields(
       { name: 'Your Team', value: yourTeam, inline: true },
       { name: 'Other Team', value: otherTeam, inline: true },
@@ -231,11 +245,7 @@ export async function execute(interaction) {
     const sendVal = parseAssets(assetsSent, valueMap, seasonYear);
     const recvVal = parseAssets(assetsReceived, valueMap, seasonYear);
     const gap = sendVal.total - recvVal.total;
-    const valueSummary = [
-      `Your side total: ${sendVal.total.toFixed(1)}`,
-      `Other side total: ${recvVal.total.toFixed(1)}`,
-      gap === 0 ? 'Balance: even' : `Balance: ${gap > 0 ? '+' : ''}${gap.toFixed(1)} (positive = you send more)`,
-    ].join('\n');
+    const valueSummary = formatValueSummary(sendVal.total, recvVal.total, gap, false);
     const unmatched = [...sendVal.unmatched, ...recvVal.unmatched];
 
     const yourTeam = teamDisplay(snapshot, yourTeamRaw);
@@ -285,7 +295,8 @@ export async function execute(interaction) {
             assetsSent: assetsReceived,
             assetsReceived: assetsSent,
             notes,
-            valueSummary,
+            valueSummary: formatValueSummary(sendVal.total, recvVal.total, gap, true),
+            hideInstructions: true,
           });
         for (const m of role.members.values()) {
           await m.send({

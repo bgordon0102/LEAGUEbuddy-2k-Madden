@@ -48,6 +48,8 @@ export async function execute(interaction) {
   const channelMap = loadJson(CHANNEL_MAP_FILE);
   const roleMap = loadJson(ROLE_MAP_FILE);
   const streamingChannelId = channelMap['Streaming links'];
+  const ghostRoleId = roleMap['Ghost Legacy'];
+  const ghostMention = ghostRoleId ? `<@&${ghostRoleId}>` : null;
   if (!streamingChannelId) {
     await interaction.reply({ content: 'Streaming links channel not configured.', ephemeral: true });
     return;
@@ -72,7 +74,14 @@ export async function execute(interaction) {
     .setTimestamp(new Date());
   if (note) embed.addFields({ name: 'Note', value: note });
 
-  await channel.send({ embeds: [embed] }).catch(() => null);
+  await channel.send({
+    content: ghostMention || null,
+    embeds: [embed],
+    allowedMentions: {
+      parse: [],
+      roles: ghostRoleId ? [ghostRoleId] : [],
+    },
+  }).catch(() => null);
   await interaction.editReply({ content: 'Stream link posted.' });
 }
 

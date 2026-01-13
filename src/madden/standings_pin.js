@@ -97,6 +97,16 @@ function sortDivision(list) {
 
 export async function updateStandings(client, leagueId) {
   const snapshot = loadSnapshot(leagueId);
+  const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+  const seasonWeekType = seasonInfo.seasonWeekType;
+  const displayWeek = seasonInfo.displayWeek ?? seasonInfo.seasonWeek ?? 0;
+  const hasSeasonData = (snapshot?.weeklyStats || []).some(w => Number(w.weekIndex ?? -1) >= 0) ||
+    (snapshot?.standings?.teamStandingInfoList || []).length > 0;
+  const inPreseason = (seasonWeekType === 0 || displayWeek <= 0) && !hasSeasonData;
+  if (inPreseason) {
+    await resetStandings(client);
+    return;
+  }
   const divisions = groupByDivision(snapshot);
   const emojiMap = loadEmojiMap();
   const teams = teamNameMap(snapshot, emojiMap);
