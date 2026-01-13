@@ -15,7 +15,7 @@ const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_id
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
 
-const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
+const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
 
 function loadJson(file, fallback = {}) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }

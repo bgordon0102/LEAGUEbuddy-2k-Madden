@@ -197,8 +197,9 @@ export async function execute(interaction) {
       if (cat === 'dev') fields.push(`**Dev Trait:** ${formatDev(player.dev_trait, devEmojis)}`);
     }
   });
+  const yearLabel = player.year ? ` • ${player.year}` : '';
   const embed = new EmbedBuilder()
-    .setTitle(`${player.position} ${player.name}`)
+    .setTitle(`${player.position} ${player.name}${yearLabel}`)
     .setDescription(fields.join('\n') || 'No info unlocked yet.')
     .setFooter({ text: `Used 10 pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason' : 'this week'}. Class ${classId.toUpperCase()}` })
     .setColor(0x1e90ff);

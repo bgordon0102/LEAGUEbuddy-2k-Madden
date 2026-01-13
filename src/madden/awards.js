@@ -399,7 +399,7 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
     };
   };
 
-  const coachTag = roleMap['Madden Coach'] ? `<@&${roleMap['Madden Coach']}>` : null;
+  const coachTag = roleMap['Ghost Legacy'] ? `<@&${roleMap['Ghost Legacy']}>` : null;
 
   const embed = new EmbedBuilder()
     .setTitle(`Weekly Awards — Week ${awardsWeek}${isPlayoffs ? ' (Playoffs)' : ''}`)

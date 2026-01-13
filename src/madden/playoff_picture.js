@@ -113,4 +113,31 @@ export async function updatePlayoffPicture(client, leagueId) {
   setPinId('playoff_picture', msg.id);
 }
 
+export async function resetPlayoffPicture(client) {
+  const channelMap = loadChannelMap();
+  const channelId = channelMap['Playoff Picture'];
+  if (!channelId) throw new Error('Playoff Picture channel not configured');
+  const channel = await client.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased()) throw new Error('Playoff Picture channel not accessible');
+
+  const embed = {
+    title: 'Madden Playoff Picture',
+    description: 'Preseason — playoff picture will appear once the regular season starts.',
+    color: 0x00b0f4,
+    timestamp: new Date().toISOString(),
+  };
+
+  const pinId = getPinId('playoff_picture');
+  if (pinId) {
+    const msg = await channel.messages.fetch(pinId).catch(() => null);
+    if (msg) {
+      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
+      return;
+    }
+  }
+  const msg = await channel.send({ embeds: [embed] });
+  try { await msg.pin(); } catch { /* ignore */ }
+  setPinId('playoff_picture', msg.id);
+}
+
 export default { updatePlayoffPicture };

@@ -66,9 +66,8 @@ async function execute(interaction) {
         }
       }
     } catch { }
-    // Reset power rankings/history and available teams pin ids for a clean slate on new league
+    // Reset power rankings/history for a clean slate on new league (keep available-teams pin id so it reuses the same message)
     try { fs.existsSync(POWER_RANKS_FILE) && fs.unlinkSync(POWER_RANKS_FILE); } catch { }
-    try { fs.existsSync(AVAILABLE_TEAMS_PIN_FILE) && fs.unlinkSync(AVAILABLE_TEAMS_PIN_FILE); } catch { }
     // Reset scouting and trade state so prior season data doesn't leak
     try { fs.existsSync(SCOUT_POINTS_FILE) && fs.unlinkSync(SCOUT_POINTS_FILE); } catch { }
     try { fs.existsSync(TRADE_BLOCK_FILE) && fs.unlinkSync(TRADE_BLOCK_FILE); } catch { }

@@ -134,6 +134,26 @@ function chunkLines(lines, maxLen = 3500) {
   return chunks;
 }
 
+function lastCompletedWeek(snapshot) {
+  const currentWeek = snapshot.currentWeek ?? 0;
+  const currentStage = snapshot.stage ?? snapshot.info?.careerHubInfo?.seasonInfo?.seasonWeekType ?? 1;
+  const targetIdx = Math.max(0, currentWeek - 1); // 0-based
+  const weeks = Array.isArray(snapshot.weeklyStats) ? snapshot.weeklyStats : [];
+  let best = null;
+  for (const w of weeks) {
+    const st = w.stage ?? w.stageIndex ?? currentStage;
+    const wk = w.weekIndex ?? -1;
+    const beforeCurrent = (st < currentStage) || (st === currentStage && wk < targetIdx);
+    if (!beforeCurrent) continue;
+    if (!best) { best = { st, wk }; continue; }
+    if (st > best.st || (st === best.st && wk > best.wk)) {
+      best = { st, wk };
+    }
+  }
+  if (best) return best;
+  return { st: currentStage, wk: targetIdx };
+}
+
 export async function updateTransactions(client, leagueId) {
   const currPath = path.join(LEAGUE_DIR, `${leagueId}.json`);
   const prevPath = path.join(PREV_DIR, `${leagueId}.json`);
@@ -161,7 +181,14 @@ export async function updateTransactions(client, leagueId) {
     console.log('[transactions] No roster changes detected.');
     return;
   }
-  const weekLabel = curr.currentWeek ? `${curr.currentWeek} (${getMessageForWeek(curr.currentWeek)})` : 'Week';
+  // Use the previous week when labeling, since updates run after advancing
+  const prevWeekIdx = Math.max(0, (curr.currentWeek ?? 1) - 1);
+  const weekEntry = curr.weeklyStats?.find(w => w.weekIndex === prevWeekIdx);
+  const seasonWeekType = curr.info?.careerHubInfo?.seasonInfo?.seasonWeekType ?? weekEntry?.stage ?? curr.stage ?? 1;
+  const stageForWeek = seasonWeekType === 1 ? 1 : (weekEntry?.stage ?? curr.stage ?? 1);
+  const offSeasonStage = curr.info?.careerHubInfo?.seasonInfo?.offSeasonStage ?? 0;
+  const last = lastCompletedWeek(curr);
+  const weekLabel = getMessageForWeek((last.wk ?? prevWeekIdx) + 1, last.st ?? stageForWeek, offSeasonStage);
 
   for (const change of changes) {
     const teamMeta = teamNames[change.teamId] || {};
@@ -172,7 +199,7 @@ export async function updateTransactions(client, leagueId) {
     for (const part of chunks) {
       const embed = new EmbedBuilder()
         .setTitle(`${teamName} Transactions`)
-        .setDescription(`Regular Season Week ${weekLabel}`)
+        .setDescription(weekLabel)
         .addFields({ name: '\u200b', value: part.join('\n\n') })
         .setColor(0x007bff)
         .setTimestamp(new Date());

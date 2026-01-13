@@ -81,6 +81,7 @@ export async function execute(interaction) {
     if (unlocked.includes('dev')) parts.push(`Dev: ${formatDev(p.dev_trait, devEmojis)}`);
     const meta = [];
     if (p.position) meta.push(p.position);
+    if (p.year) meta.push(p.year);
     if (p.school) meta.push(p.school);
     if (p.height || p.weight) meta.push(`${p.height || 'N/A'} / ${p.weight ? `${p.weight} lbs` : 'N/A'}`);
     const boardPos = p.order ?? p['#'];

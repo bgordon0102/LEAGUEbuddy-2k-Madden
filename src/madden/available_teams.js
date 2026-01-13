@@ -156,9 +156,19 @@ export async function updateAvailableTeamsPin(client, guildId, options = {}) {
     }
 
     if (!botPin) {
-      // Never create a new pin; only update if an existing pin is found
-      console.warn('[available-teams] No existing bot pin found; skipping update (will not create a new pin).');
-      return false;
+      if (!allowCreate) {
+        console.warn('[available-teams] No existing bot pin found; skipping update (will not create a new pin).');
+        return false;
+      }
+      // Create new pin
+      const msg = await channel.send({ embeds, content: null }).catch(() => null);
+      if (!msg) {
+        console.warn('[available-teams] Failed to create new pin message.');
+        return false;
+      }
+      try { await msg.pin(); } catch {}
+      saveJson(PIN_FILE, { messageId: msg.id });
+      return true;
     }
 
     const edited = await botPin.edit({ embeds, content: null }).catch(() => null);

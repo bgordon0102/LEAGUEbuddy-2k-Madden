@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
-const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
+const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
 
 function loadRoleMap() {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
@@ -60,7 +60,7 @@ export async function execute(interaction) {
   const member = await interaction.guild.members.fetch(interaction.user.id);
   const authorized = isStaff(member, roleMap) || member.roles.cache.some(r => allowedIds.has(r.id));
   if (!authorized) {
-    await interaction.reply({ content: 'Only the two coaches for this game or Madden Commish/Co-Commish can mark it complete.', ephemeral: true });
+    await interaction.reply({ content: 'Only the two coaches for this game or Ghost Legacy Commish/Co-Commish can mark it complete.', ephemeral: true });
     return;
   }
 

@@ -5,7 +5,7 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/m
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const RETIRED_FILE = path.join(process.cwd(), 'data', 'madden', 'retired_players.json');
-const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
+const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
 
 function loadJson(file, fallback = {}) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
@@ -51,7 +51,7 @@ async function execute(interaction) {
   const roleMap = loadJson(ROLE_MAP_FILE);
   const member = await interaction.guild.members.fetch(interaction.user.id);
   if (!hasStaffRole(member, roleMap)) {
-    await interaction.editReply({ content: 'Only Madden Commish/Co-Commish can use this command.' });
+    await interaction.editReply({ content: 'Only Ghost Legacy Commish/Co-Commish can use this command.' });
     return;
   }
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);

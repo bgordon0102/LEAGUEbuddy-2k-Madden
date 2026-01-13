@@ -20,7 +20,7 @@ function isStaff(member) {
   } catch {
     // ignore and fall back to name check
   }
-  const fallbackNames = ['Madden Commish', 'Madden Co-Commish'];
+  const fallbackNames = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
   return member?.roles?.cache?.some(r => fallbackNames.includes(r.name)) ?? false;
 }
 
@@ -64,7 +64,6 @@ async function execute(interaction) {
       { name: '/madden-player name', value: 'View player card' },
       { name: '/madden-playersearch name', value: 'Search any player and view a card' },
       { name: '/madden-tradeblock add|remove', value: 'Manage your trade block' },
-      { name: '/madden-tradevalue team position player [pick]', value: 'Estimate trade value with picks' },
       { name: '/madden-streamlink', value: 'Post your streaming link to the channel' },
       { name: '/madden-scout', value: 'Scout draft prospects' },
       { name: '/madden-myscouts', value: 'View your scouted prospects' }

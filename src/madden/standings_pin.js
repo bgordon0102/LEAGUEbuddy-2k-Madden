@@ -169,4 +169,31 @@ export async function updateStandings(client, leagueId) {
   setPinId('standings', msg.id);
 }
 
+export async function resetStandings(client) {
+  const channelMap = loadChannelMap();
+  const channelId = channelMap['Standings'];
+  if (!channelId) throw new Error('Standings channel not configured');
+  const channel = await client.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased()) throw new Error('Standings channel not accessible');
+
+  const placeholder = {
+    title: 'Madden Standings',
+    description: 'Preseason — standings will appear here once the regular season starts.',
+    color: 0x00b0f4,
+    timestamp: new Date().toISOString(),
+  };
+
+  const pinId = getPinId('standings');
+  if (pinId) {
+    const msg = await channel.messages.fetch(pinId).catch(() => null);
+    if (msg) {
+      await msg.edit({ embeds: [placeholder], content: null }).catch(() => null);
+      return;
+    }
+  }
+  const msg = await channel.send({ embeds: [placeholder] });
+  try { await msg.pin(); } catch { /* ignore */ }
+  setPinId('standings', msg.id);
+}
+
 export default { updateStandings };

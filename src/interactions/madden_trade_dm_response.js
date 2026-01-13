@@ -80,8 +80,10 @@ export async function execute(interaction) {
 
   const channelMap = loadChannelMap();
   const roleMap = loadRoleMap();
-  const committeeRoleId = roleMap['Madden Trade Committe'] || roleMap['Madden Trade Committee'];
-  const committeeMention = committeeRoleId ? `<@&${committeeRoleId}> ` : '';
+  const committeeRoleId = '1460399406737002579';
+  const committeeMention = `<@&${committeeRoleId}> `;
+  const ghostRoleId = roleMap['Ghost Legacy'];
+  const ghostMention = ghostRoleId ? `<@&${ghostRoleId}> ` : '';
   const actor = interaction.user?.tag || interaction.user?.username;
 
   if (interaction.customId.startsWith('mtrade_b_deny_')) {
@@ -132,10 +134,16 @@ export async function execute(interaction) {
       const approveBtn = new ButtonBuilder().setCustomId(`mtrade_c_approve_${tradeId}`).setLabel('Approve').setStyle(ButtonStyle.Success);
       const denyBtn = new ButtonBuilder().setCustomId(`mtrade_c_deny_${tradeId}`).setLabel('Deny').setStyle(ButtonStyle.Danger);
       const row = new ActionRowBuilder().addComponents(approveBtn, denyBtn);
-      embed.setDescription(`${committeeMention}Trade ID: ${tradeId}`);
+      embed.setDescription(`${committeeMention || ghostMention ? `${(committeeMention + ghostMention).trim()}\n` : ''}Trade ID: ${tradeId}`);
+      const contentMention = `${committeeMention}${ghostMention}`.trim();
       const msg = await committeeChan.send({
+        content: contentMention || null,
         embeds: [embed],
         components: [row],
+        allowedMentions: {
+          parse: ['roles'],
+          roles: [committeeRoleId, ghostRoleId].filter(Boolean).map(String),
+        },
       }).catch(() => null);
       committeeMsgId = msg?.id || null;
     }

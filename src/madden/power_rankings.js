@@ -179,4 +179,31 @@ export async function updatePowerRankings(client, leagueId) {
   }
 }
 
+export async function resetPowerRankings(client) {
+  const channelMap = loadJson(CHANNEL_MAP_FILE);
+  const channelId = channelMap['Power Rankings'];
+  if (!channelId) throw new Error('Power Rankings channel not configured');
+  const channel = await client.channels.fetch(channelId).catch(() => null);
+  if (!channel || !channel.isTextBased()) throw new Error('Power Rankings channel not accessible');
+
+  const embed = {
+    title: 'Madden Power Rankings',
+    description: 'Preseason — rankings will appear once the regular season starts.',
+    color: 0xffcc00,
+    timestamp: new Date().toISOString(),
+  };
+
+  const pinId = getPinId('power_rankings');
+  if (pinId) {
+    const msg = await channel.messages.fetch(pinId).catch(() => null);
+    if (msg) {
+      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
+      return;
+    }
+  }
+  const msg = await channel.send({ embeds: [embed] });
+  try { await msg.pin(); } catch { /* ignore */ }
+  setPinId('power_rankings', msg.id);
+}
+
 export default { updatePowerRankings };

@@ -59,6 +59,7 @@ const teamRoles = [
 
 const desiredRoles = [...baseRoles, ...teamRoles];
 const desiredRoleSet = new Set(desiredRoles);
+const teamRoleSet = new Set(teamRoles);
 
 const logosDir = path.join(process.cwd(), 'apps', 'snallabot-service', 'emojis', 'nfl_logos');
 
@@ -162,7 +163,7 @@ async function main() {
       continue;
     }
 
-    if (name.endsWith('Coach')) {
+    if (teamRoleSet.has(name)) {
       const baseName = name.replace(/ Coach$/, '').trim();
       const iconData = loadIcon(baseName);
       if (!iconData) {

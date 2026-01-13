@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { getPinId, setPinId } from './pins_store.js';
+import { Stage } from './ea_client.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
@@ -212,9 +213,34 @@ function topPunting(weeklyStats, teams) {
 
 export async function updateStatLeaders(client, leagueId) {
   const snapshot = loadSnapshot(leagueId);
+  const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+  const currentWeek = (snapshot?.currentWeek ?? seasonInfo.displayWeek ?? 0);
+  const currentWeekIndex = currentWeek ? Math.max(0, currentWeek - 1) : null;
+  const seasonWeekType = seasonInfo.seasonWeekType;
+  let stageForWeek = Stage.SEASON;
+  if (typeof seasonWeekType === 'number') {
+    stageForWeek = seasonWeekType === 0 ? Stage.PRESEASON : Stage.SEASON;
+  } else if (snapshot?.stage !== undefined) {
+    stageForWeek = snapshot.stage;
+  }
+  const inOffseason = (seasonInfo.offSeasonStage ?? 0) > 0;
+  const inPreseason = stageForWeek === Stage.PRESEASON || seasonWeekType === 0 || currentWeek <= 0;
+  const inPostseason = currentWeek > 18;
+  if (inPreseason || inOffseason || inPostseason) {
+    // Preseason/offseason/postseason: keep placeholders / don’t update
+    await resetStatLeaders(client);
+    return;
+  }
   const emojiMap = loadJson(TEAM_EMOJIS_FILE, {});
   const teams = teamMap(snapshot, emojiMap);
-  const weeklyStats = snapshot?.weeklyStats || [];
+  // Only include regular-season weeks up to the current week; ignore preseason/postseason so totals don’t inflate
+  const weeklyStats = (snapshot?.weeklyStats || []).filter(w => {
+    const wkStage = w?.stage ?? w?.stageIndex ?? Stage.SEASON;
+    const wkIdx = w?.weekIndex ?? 0;
+    const isReg = wkStage === Stage.SEASON;
+    const withinCurrent = currentWeekIndex === null ? true : wkIdx <= currentWeekIndex;
+    return isReg && withinCurrent;
+  });
   const fields = [];
 
   const sections = [

@@ -4,8 +4,8 @@ import path from 'path';
 import { updateAvailableTeamsPin } from '../../../madden/available_teams.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
-const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
-const ASSIGNABLE = ['Madden Trade Committe', 'Madden Trade Committee'];
+const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
+const ASSIGNABLE = ['Ghost Legacy Trade Committee', 'Ghost Legacy'];
 
 function loadRoleMap() {
   try {
@@ -42,7 +42,7 @@ export async function execute(interaction) {
   await interaction.deferReply({ ephemeral: true });
   const member = await interaction.guild.members.fetch(interaction.user.id);
   if (!hasStaffRole(member, roleMap)) {
-    await interaction.editReply({ content: 'Only Madden Commish/Co-Commish can use this command.' });
+    await interaction.editReply({ content: 'Only Ghost Legacy Commish/Co-Commish can use this command.' });
     return;
   }
   const target = interaction.options.getUser('user');

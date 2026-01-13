@@ -99,6 +99,7 @@ function teamRoleId(teamName, roleMap) {
 export const customId = /^mtrade_c_(approve|deny)_/;
 
 export async function execute(interaction) {
+  console.log('Trade committee vote execute called');
   if (!(interaction instanceof ButtonInteraction)) return;
   if (!customId.test(interaction.customId)) return;
   try { await interaction.deferReply({ ephemeral: true }); } catch { return; }
@@ -118,7 +119,7 @@ export async function execute(interaction) {
   const roleMap = loadRoleMap();
   const coachRoleId = roleMap['Ghost Legacy'];
   const coachRoleMention = coachRoleId ? `<@&${coachRoleId}> ` : '';
-  const committeeRoleId = '1460494064678998282';
+  const committeeRoleId = '1460399406737002579';
   const committeeMention = `<@&${committeeRoleId}> `;
   const teamMentions = [
     teamRoleMention(trade.yourTeam, roleMap),
@@ -175,10 +176,28 @@ export async function execute(interaction) {
   if (approvedId) {
     const approvedChan = await interaction.client.channels.fetch(approvedId).catch(() => null);
     if (approvedChan?.isTextBased()) {
-      const content = channelMentions ? `${channelMentions} Trade ID: ${tradeId}` : `Trade ID: ${tradeId}`;
+      const content = channelMentions
+        ? `${channelMentions} Trade ID: ${tradeId}`
+        : `Trade ID: ${tradeId}`;
+
+      // Debugging output
+      console.log('---DEBUG TRADE APPROVAL---');
+      console.log('committeeRoleId:', committeeRoleId);
+      console.log('mentionRoleIds:', mentionRoleIds);
+      console.log('channelMentions:', channelMentions);
+      console.log('content:', content);
+      console.log('allowedMentions:', { roles: mentionRoleIds });
+      console.log('embed:', embed?.data || embed);
+
       await approvedChan.send({
-        content: `<@&${committeeRoleId}>`,
-      }).catch(() => null);
+        content,
+        embeds: [embed],
+        allowedMentions: {
+          roles: mentionRoleIds,
+        },
+      }).catch((err) => {
+        console.error('Error sending approved trade message:', err);
+      });
     }
   }
   // Update trade counts

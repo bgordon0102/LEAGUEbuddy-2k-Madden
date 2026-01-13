@@ -5,7 +5,7 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/m
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
-const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
+const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
 
 function loadJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
@@ -48,6 +48,63 @@ function buildThreadName(game, teams, weekLabel) {
   return `${away} vs ${home} - ${weekLabel}`;
 }
 
+function aggregateWeeklyTeamStats(snapshot) {
+  const currentWeek = snapshot?.currentWeek ?? snapshot?.info?.careerHubInfo?.seasonInfo?.seasonWeek ?? null;
+  const weeks = (snapshot?.weeklyStats || []).filter(w => Number(w.stage ?? w.stageIndex ?? 1) === 1);
+  if (!weeks.length) return null;
+  const maxWeekIdx = Math.max(...weeks.map(w => Number(w.weekIndex ?? -1)).filter(n => n >= 0));
+
+  // Use the latest available week entry for each team (season stage)
+  const latest = {};
+  weeks.forEach(w => {
+    const wkIdx = Number(w.weekIndex ?? -1);
+    if (wkIdx < 0) return;
+    // clamp to currentWeek-1 if provided
+    if (currentWeek && wkIdx >= currentWeek) return;
+    const list = w.teamstats?.teamStatInfoList || [];
+    list.forEach(ts => {
+      if (!ts.teamId) return;
+      const prev = latest[ts.teamId];
+      if (!prev || wkIdx > prev.weekIndex) {
+        latest[ts.teamId] = { weekIndex: wkIdx, ts };
+      }
+    });
+  });
+  if (!Object.keys(latest).length) return null;
+
+  const values = {};
+  Object.entries(latest).forEach(([tid, { ts }]) => {
+    values[tid] = {
+      offPtsPerG: ts.offPtsPerGame ?? ts.offPts ?? null,
+      defPtsPerG: ts.defPtsPerGame ?? ts.defPts ?? null,
+      offPassYds: ts.offPassYds ?? null,
+      offRushYds: ts.offRushYds ?? null,
+      defPassYds: ts.defPassYds ?? null,
+      defRushYds: ts.defRushYds ?? null,
+    };
+  });
+
+  const rankKeys = [
+    { key: 'offPtsPerG', desc: true },
+    { key: 'offPassYds', desc: true },
+    { key: 'offRushYds', desc: true },
+    { key: 'defPtsPerG', desc: false },
+    { key: 'defPassYds', desc: false },
+    { key: 'defRushYds', desc: false },
+  ];
+  const ranks = {};
+  rankKeys.forEach(({ key, desc }) => {
+    const arr = Object.entries(values).map(([tid, v]) => ({ teamId: Number(tid), val: v[key] }));
+    arr.sort((a, b) => desc ? (b.val - a.val) : (a.val - b.val));
+    arr.forEach((item, idx) => {
+      if (!ranks[key]) ranks[key] = {};
+      ranks[key][item.teamId] = idx + 1;
+    });
+  });
+
+  return { values, ranks, maxWeekIdx };
+}
+
 function teamMentions(game, teams, roleMap) {
   const names = [
     teams[game.awayTeamId],
@@ -64,9 +121,16 @@ function pickField(obj, keys) {
   return null;
 }
 
-function pointsFromSchedule(snapshot) {
+function pointsFromSchedule(snapshot, currentWeekLimit) {
   const out = {};
-  const games = (snapshot?.schedule?.schedules || []).filter(g => Number(g.stageIndex ?? g.stage ?? 1) === 1);
+  const games = (snapshot?.schedule?.schedules || []).filter(g => {
+    const stage = Number(g.stageIndex ?? g.stage ?? 1);
+    if (stage !== 1) return false;
+    if (currentWeekLimit && Number.isInteger(g.weekIndex)) {
+      return g.weekIndex < currentWeekLimit; // weekIndex is 0-based
+    }
+    return true;
+  });
   games.forEach(g => {
     const away = g.awayTeamId, home = g.homeTeamId;
     const ascore = Number(g.awayScore ?? 0);
@@ -83,7 +147,24 @@ function buildRankMaps(snapshot) {
   const standings = snapshot?.standings?.teamStandingInfoList || [];
   const gp = (s) => pickField(s, ['gamesPlayed']) ?? ((s.totalWins || 0) + (s.totalLosses || 0) + (s.totalTies || 0));
   const byTeam = Object.fromEntries(standings.map(s => [s.teamId, s]));
-  const schedulePts = pointsFromSchedule(snapshot);
+  const currentWeek = snapshot?.currentWeek ?? snapshot?.info?.careerHubInfo?.seasonInfo?.seasonWeek ?? null;
+  const schedulePts = pointsFromSchedule(snapshot, currentWeek ? currentWeek : null);
+  const latestTeamStats = (() => {
+    const map = {};
+    const weeks = (snapshot?.weeklyStats || []).filter(w => Number(w.stage ?? w.stageIndex ?? 1) === 1);
+    weeks.forEach(w => {
+      const wkIdx = Number(w.weekIndex ?? -1);
+      if (wkIdx < 0) return;
+      if (currentWeek && wkIdx >= currentWeek) return;
+      (w.teamstats?.teamStatInfoList || []).forEach(ts => {
+        const prev = map[ts.teamId];
+        if (!prev || wkIdx > prev.weekIndex) {
+          map[ts.teamId] = { weekIndex: wkIdx, ts };
+        }
+      });
+    });
+    return map;
+  })();
 
   const metrics = {
     offPtsPerG: {
@@ -115,7 +196,15 @@ function buildRankMaps(snapshot) {
 
   for (const [key, cfg] of Object.entries(metrics)) {
     const list = standings.map(s => {
-      const val = cfg.getter(s);
+      let val = cfg.getter(s);
+      // fallback to latest teamstats for yards if standings missing
+      if ((val === null || val === undefined) && latestTeamStats[s.teamId]) {
+        const ts = latestTeamStats[s.teamId].ts;
+        if (key === 'offPassYds') val = ts.offPassYds ?? null;
+        if (key === 'offRushYds') val = ts.offRushYds ?? null;
+        if (key === 'defPassYds') val = ts.defPassYds ?? null;
+        if (key === 'defRushYds') val = ts.defRushYds ?? null;
+      }
       const rank = cfg.rankKey ? s[cfg.rankKey] : null;
       return { teamId: s.teamId, val, rank };
     }).filter(x => x.val !== null && x.val !== undefined || x.rank !== null && x.rank !== undefined);
@@ -144,6 +233,28 @@ function buildRankMaps(snapshot) {
       v.defPtsPerG = sched.against / games;
     }
   });
+
+  // If we have currentWeek and standings points, recompute ppg using games up to that week.
+  // Fallback to latest teamstats ppg if standings missing.
+  if (currentWeek && currentWeek > 0) {
+    Object.entries(values).forEach(([tid, v]) => {
+      const s = byTeam[tid];
+      const games = gp(s) || Math.max(1, currentWeek - 1);
+      if (s?.pointsFor != null) v.offPtsPerG = s.pointsFor / games;
+      if (s?.ptsAgainst != null) v.defPtsPerG = s.ptsAgainst / games;
+      const sched = schedulePts[tid];
+      if (sched && sched.games > 0) {
+        v.offPtsPerG = sched.for / sched.games;
+        v.defPtsPerG = sched.against / sched.games;
+      }
+      if ((v.offPtsPerG === undefined || v.offPtsPerG === null) && latestTeamStats[tid]) {
+        v.offPtsPerG = latestTeamStats[tid].ts.offPtsPerGame ?? null;
+      }
+      if ((v.defPtsPerG === undefined || v.defPtsPerG === null) && latestTeamStats[tid]) {
+        v.defPtsPerG = latestTeamStats[tid].ts.defPtsPerGame ?? null;
+      }
+    });
+  }
 
   return { ranks, values, standings: byTeam };
 }
@@ -336,7 +447,7 @@ async function execute(interaction) {
   const channelMap = loadJson(CHANNEL_MAP_FILE);
   const member = await interaction.guild.members.fetch(interaction.user.id);
   if (!hasStaffRole(member, roleMap)) {
-    await interaction.editReply({ content: 'Only Madden Commish/Co-Commish can use this command.' });
+    await interaction.editReply({ content: 'Only Ghost Legacy Commish/Co-Commish can use this command.' });
     return;
   }
 
@@ -459,7 +570,8 @@ async function execute(interaction) {
       return;
     }
     const teams = teamMap(snapshot);
-    const ranks = buildRankMaps(snapshot);
+    const weeklyAgg = aggregateWeeklyTeamStats(snapshot);
+    const ranks = weeklyAgg ? { values: weeklyAgg.values, ranks: weeklyAgg.ranks, standings: {} } : buildRankMaps(snapshot);
     const playoffAvgs = playoffRound ? buildPlayoffAverages(snapshot) : null;
     let created = 0;
     const deadline = Math.floor((Date.now() + 48 * 3600 * 1000) / 1000);
@@ -483,18 +595,19 @@ async function execute(interaction) {
             const v = playoffAvgs[tid];
             const fmt = (val, decimals = 1) => val != null ? (Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals)).toString() : '–';
             return [
-              `Off Pts/G ${fmt(v.offPtsPerG)} (Playoffs)`,
-              `Pass Yds ${fmt(v.offPassYds, 0)} (Playoffs)`,
-              `Rush Yds ${fmt(v.offRushYds, 0)} (Playoffs)`,
-              `Opp Pts/G ${fmt(v.defPtsPerG)} (Playoffs)`,
-              `Opp Pass ${fmt(v.defPassYds, 0)} (Playoffs)`,
-              `Opp Rush ${fmt(v.defRushYds, 0)} (Playoffs)`,
+              `Off Pts/G — ${fmt(v.offPtsPerG)} (PO)`,
+              `Pass Yds — ${fmt(v.offPassYds, 0)} (PO)`,
+              `Rush Yds — ${fmt(v.offRushYds, 0)} (PO)`,
+              `Opp Pts/G — ${fmt(v.defPtsPerG)} (PO)`,
+              `Opp Pass — ${fmt(v.defPassYds, 0)} (PO)`,
+              `Opp Rush — ${fmt(v.defRushYds, 0)} (PO)`,
             ].join('\n');
           }
           const v = ranks.values[tid] || {};
           const r = ranks.ranks;
           const s = ranks.standings[tid] || {};
           const fmt = (val, decimals = 1) => val != null ? (Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals)).toString() : '–';
+          const line = (label, val, rank) => `${label}: R${rank ?? '–'} — ${fmt(val)}`;
           const offPts = v.offPtsPerG ?? s.ptsFor ?? s.pointsFor ?? s.offPts;
           const defPts = v.defPtsPerG ?? s.ptsAgainst ?? s.pointsAgainst ?? s.defPtsAllowed;
           const passO = v.offPassYds ?? s.offPassYds;
@@ -502,12 +615,12 @@ async function execute(interaction) {
           const passD = v.defPassYds ?? s.defPassYds;
           const rushD = v.defRushYds ?? s.defRushYds;
           return [
-            `Off Pts/G ${fmt(offPts)} (R${r?.offPtsPerG?.[tid] || s.ptsForRank || '–'})`,
-            `Pass Yds ${fmt(passO, 0)} (R${r?.offPassYds?.[tid] || s.offPassYdsRank || '–'})`,
-            `Rush Yds ${fmt(rushO, 0)} (R${r?.offRushYds?.[tid] || s.offRushYdsRank || '–'})`,
-            `Opp Pts/G ${fmt(defPts)} (R${r?.defPtsPerG?.[tid] || s.ptsAgainstRank || '–'})`,
-            `Opp Pass ${fmt(passD, 0)} (R${r?.defPassYds?.[tid] || s.defPassYdsRank || '–'})`,
-            `Opp Rush ${fmt(rushD, 0)} (R${r?.defRushYds?.[tid] || s.defRushYdsRank || '–'})`,
+            line('Off Pts/G', offPts, r?.offPtsPerG?.[tid] || s.ptsForRank),
+            line('Pass Yds', passO, r?.offPassYds?.[tid] || s.offPassYdsRank),
+            line('Rush Yds', rushO, r?.offRushYds?.[tid] || s.offRushYdsRank),
+            line('Opp Pts/G', defPts, r?.defPtsPerG?.[tid] || s.ptsAgainstRank),
+            line('Opp Pass', passD, r?.defPassYds?.[tid] || s.defPassYdsRank),
+            line('Opp Rush', rushD, r?.defRushYds?.[tid] || s.defRushYdsRank),
           ].join('\n');
         };
         const embed = {
@@ -524,7 +637,7 @@ async function execute(interaction) {
     }
     try {
       const announceChannelId = channelMap['Madden League Buddy Announcements'];
-      const coachRoleId = roleMap['Madden Coach'];
+      const coachRoleId = roleMap['Ghost Legacy'];
       const coachTag = coachRoleId ? `<@&${coachRoleId}>` : '';
       if (announceChannelId) {
         const announce = await interaction.client.channels.fetch(announceChannelId).catch(() => null);

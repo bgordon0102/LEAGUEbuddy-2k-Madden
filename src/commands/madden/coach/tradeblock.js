@@ -49,7 +49,7 @@ function loadChannelMap() {
 }
 
 async function announce(client, roleMap, channelMap, teamName, playerLabelText, positionText, rosterId) {
-  const coachRoleId = roleMap['Madden Coach'];
+  const coachRoleId = roleMap['Ghost Legacy'];
   const coachTag = coachRoleId ? `<@&${coachRoleId}>` : null;
   const tradeChannelId = channelMap['Trade Block'] || channelMap['Pending Trades'] || channelMap['Transaction Log'];
   if (!tradeChannelId) return;

@@ -4,7 +4,7 @@ import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
-const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
+const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
 
 function loadRoleMap() {
   try {
@@ -48,7 +48,7 @@ async function execute(interaction) {
   const roleMap = loadRoleMap();
   const member = await interaction.guild.members.fetch(interaction.user.id);
   if (!hasStaffRole(member, roleMap)) {
-    await interaction.editReply({ content: 'Only Madden Commish/Co-Commish can use this command.' });
+    await interaction.editReply({ content: 'Only Ghost Legacy Commish/Co-Commish can use this command.' });
     return;
   }
 

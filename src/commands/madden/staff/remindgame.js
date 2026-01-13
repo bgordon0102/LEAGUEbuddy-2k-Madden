@@ -4,7 +4,7 @@ import path from 'path';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
-const STAFF_ROLES = ['Madden Commish', 'Madden Co-Commish'];
+const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
 
 function loadRoleMap() {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
@@ -85,7 +85,7 @@ export async function execute(interaction) {
   const channelMap = loadChannelMap();
   const member = await interaction.guild.members.fetch(interaction.user.id);
   if (!hasStaffRole(member, roleMap)) {
-    await interaction.editReply({ content: 'Only Madden Commish/Co-Commish can use this command.' });
+    await interaction.editReply({ content: 'Only Ghost Legacy Commish/Co-Commish can use this command.' });
     return;
   }
   const gameThreadsChannelId = channelMap['Game threads'];
