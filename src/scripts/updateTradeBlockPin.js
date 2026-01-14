@@ -9,7 +9,7 @@ dotenv.config();
 
 const TRADE_BLOCK_CHANNEL_ID = '1432507364468068412';
 const TOKEN = process.env.DISCORD_TOKEN || process.env.TOKEN;
-const teamsRostersPath = path.join(process.cwd(), 'data', 'teams_rosters');
+const teamsRostersPath = path.join(process.cwd(), 'teams_rosters');
 const tradeBlockPath = path.join(process.cwd(), 'data', 'tradeblock.json');
 
 function getTradeBlock() {

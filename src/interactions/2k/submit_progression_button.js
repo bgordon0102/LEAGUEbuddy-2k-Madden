@@ -7,6 +7,7 @@ const PROGRESSION_CHANNEL_ID = "1425555037328773220";
 export const customId = "submit_progression_button";
 
 export async function execute(interaction) {
+    console.log('[PROGRESSION DEBUG] submit_progression_button handler triggered');
     // Route approve/deny button to progression_approve_deny.js
     if (interaction.customId.startsWith('progression_approve_') || interaction.customId.startsWith('progression_deny_')) {
         await progressionApproveDeny.execute(interaction);

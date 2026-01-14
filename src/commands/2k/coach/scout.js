@@ -40,12 +40,21 @@ export async function execute(interaction) {
         // Resolve the current season's big board file
         const seasonNo = seasonState.seasonNo || 1;
         const classString = `CUS${seasonNo.toString().padStart(2, '0')}`;
-        const boardDir = path.join(process.cwd(), 'bot', 'draft classes', 'big boards');
-        const boardFile = fs.existsSync(boardDir)
-            ? fs.readdirSync(boardDir).find(f => f.includes(classString) && f.includes('Big Board.json'))
-            : null;
-        const boardFilePath = boardFile ? path.join(boardDir, boardFile) : null;
-        if (!fs.existsSync(boardFilePath)) {
+        // Prefer new location under data/draft_classes/2k, fall back to legacy bot/draft classes/big boards
+        const candidates = [
+            path.join(process.cwd(), 'data', 'draft_classes', '2k'),
+            path.join(process.cwd(), 'bot', 'draft classes', 'big boards'),
+        ];
+        let boardFilePath = null;
+        for (const dir of candidates) {
+            if (!fs.existsSync(dir)) continue;
+            const file = fs.readdirSync(dir).find(f => f.includes(classString) && f.toLowerCase().includes('big board'));
+            if (file) {
+                boardFilePath = path.join(dir, file);
+                break;
+            }
+        }
+        if (!boardFilePath || !fs.existsSync(boardFilePath)) {
             if (deferred) await interaction.editReply({ content: 'Big board file not found.' });
             else await interaction.reply({ content: 'Big board file not found.', ephemeral: true });
             return;
@@ -140,11 +149,19 @@ export async function handleScoutSelect(interaction, menuIndex) {
     // Resolve the current season's big board file
     const seasonNo = seasonState.seasonNo || 1;
     const classString = `CUS${seasonNo.toString().padStart(2, '0')}`;
-    const boardDir = path.join(process.cwd(), 'bot', 'draft classes', 'big boards');
-    const boardFile = fs.existsSync(boardDir)
-        ? fs.readdirSync(boardDir).find(f => f.includes(classString) && f.includes('Big Board.json'))
-        : null;
-    const boardFilePath = boardFile ? path.join(boardDir, boardFile) : null;
+    const candidates = [
+        path.join(process.cwd(), 'data', 'draft_classes', '2k'),
+        path.join(process.cwd(), 'bot', 'draft classes', 'big boards'),
+    ];
+    let boardFilePath = null;
+    for (const dir of candidates) {
+        if (!fs.existsSync(dir)) continue;
+        const file = fs.readdirSync(dir).find(f => f.includes(classString) && f.toLowerCase().includes('big board'));
+        if (file) {
+            boardFilePath = path.join(dir, file);
+            break;
+        }
+    }
     if (!boardFilePath || !fs.existsSync(boardFilePath)) {
         await interaction.editReply({ content: `Board file not found for season ${seasonNo}.` });
         return;

@@ -14,21 +14,19 @@ const data = new SlashCommandBuilder()
             .setAutocomplete(true)
     );
 
-// Helper to load all players from all team roster files
+// Helper to load all players from all team roster files using readRoster utility
+import { readRoster } from '../../utils/rosterUtils.js';
 function loadAllPlayers() {
-    const rostersDir = path.join(process.cwd(), "data/teams_rosters");
+    const rostersDir = path.join(process.cwd(), "teams_rosters");
     const files = fs.readdirSync(rostersDir).filter(f => f.endsWith('.json'));
     let players = [];
     for (const file of files) {
+        const teamNameRaw = file.replace('.json', '').replace(/_/g, ' ');
+        const teamName = teamNameRaw.split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
         try {
-            const raw = JSON.parse(fs.readFileSync(path.join(rostersDir, file), "utf8"));
-            const teamNameRaw = file.replace('.json', '').replace(/_/g, ' ');
-            const teamName = teamNameRaw.split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
-            if (Array.isArray(raw)) {
-                players.push(...raw.map(p => ({ ...p, team: p.team || teamName })));
-            } else if (raw && typeof raw === 'object') {
-                const arr = Array.isArray(raw.players) ? raw.players : [];
-                players.push(...arr.map(p => ({ ...p, team: p.team || teamName })));
+            const data = readRoster(teamNameRaw.replace(/ /g, '_'));
+            if (data && data.roster && Array.isArray(data.roster.players)) {
+                players.push(...data.roster.players.map(p => ({ ...p, team: p.team || teamName })));
             }
         } catch { }
     }

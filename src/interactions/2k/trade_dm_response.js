@@ -110,12 +110,27 @@ export async function execute(interaction) {
             );
         if (trade.notes) embed.addFields({ name: "Notes", value: trade.notes });
         embed.setColor(0x5865F2);
-        const committeeRoleId = "1428100787225235526";
+        const getCommitteeRoleId = () => {
+            try {
+                const staff = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'staffRoleMap.main.json'), 'utf8'));
+                if (staff["Ghost Paradise Trade Committee"]) return staff["Ghost Paradise Trade Committee"];
+            } catch {}
+            try {
+                const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'coachRoleMap.json'), 'utf8'));
+                if (coachMap["Ghost Paradise Trade Committee"]) return coachMap["Ghost Paradise Trade Committee"];
+            } catch {}
+            return null;
+        };
+        const committeeRoleId = getCommitteeRoleId();
         const approveBtn = new ButtonBuilder().setCustomId(`committee_approve_${tradeId}`).setLabel("Approve").setStyle(ButtonStyle.Success);
         const denyBtn = new ButtonBuilder().setCustomId(`committee_deny_${tradeId}`).setLabel("Deny").setStyle(ButtonStyle.Danger);
         const row = new ActionRowBuilder().addComponents(approveBtn, denyBtn);
         const committeeChannel = await interaction.client.channels.fetch(COMMITTEE_CHANNEL_ID);
-        const committeeMsg = await committeeChannel.send({ content: `<@&${committeeRoleId}>`, embeds: [embed], components: [row] });
+        const committeeMsg = await committeeChannel.send({
+            content: committeeRoleId ? `<@&${committeeRoleId}>` : undefined,
+            embeds: [embed],
+            components: [row]
+        });
         // Save trade data in pendingTrades.json using committeeMsg.id as key
         const pendingPath = path.join(process.cwd(), 'data/pendingTrades.json');
         let pendingTrades = {};

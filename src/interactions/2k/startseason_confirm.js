@@ -2,7 +2,7 @@ console.log('[startseason_confirm] File loaded and registered.');
 import { ButtonInteraction } from 'discord.js';
 
 const SEASON_FILE = './data/season.json';
-const TEAMS_FILE = './data/teams.json';
+// const TEAMS_FILE = './data/teams.json'; // No longer used, teams are sourced from /teams_rosters/
 const LEAGUE_FILE = './data/league.json';
 const PLAYERS_FILE = './data/players.json';
 // const BIGBOARD_FILE = './data/bigboard.json'; // REMOVED: No longer used

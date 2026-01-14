@@ -53,25 +53,22 @@ export async function execute(interaction) {
         .setTitle('Submit Trade Proposal');
 
 
-    // Synchronously detect user's team before building modal
+    // Synchronously detect user's team before building modal (NBA coaches only; ignore admin/ghost roles)
     let detectedTeam = '';
     try {
         const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/coachRoleMap.json'), 'utf8'));
-        // Try user ID match first
-        for (const [team, coachId] of Object.entries(coachMap)) {
-            if (coachId === interaction.user.id) {
-                detectedTeam = team;
-                break;
-            }
+        const nbaTeams = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/teams.json'), 'utf8'));
+        const validCoachNames = new Set(nbaTeams.map(t => `${t.name} Coach`));
+        // Build roleId->team map for coach roles only
+        const roleIdToTeam = {};
+        for (const [team, roleId] of Object.entries(coachMap || {})) {
+            if (validCoachNames.has(team)) roleIdToTeam[roleId] = team;
         }
-        // If not found, try role ID match (check all user role IDs as strings)
-        if (!detectedTeam && interaction.member && interaction.member.roles) {
-            const userRoleIds = interaction.member.roles.cache ? Array.from(interaction.member.roles.cache.keys()) : [];
-            for (const [team, coachId] of Object.entries(coachMap)) {
-                if (userRoleIds.includes(coachId)) {
-                    detectedTeam = team;
-                    break;
-                }
+        if (interaction.member?.roles?.cache) {
+            const userRoleIds = Array.from(interaction.member.roles.cache.keys());
+            const matched = userRoleIds.filter(rid => roleIdToTeam[rid]);
+            if (matched.length === 1) {
+                detectedTeam = roleIdToTeam[matched[0]];
             }
         }
     } catch (e) {

@@ -13,7 +13,7 @@ import { normalizeName } from '../utils/rosterUtils.js';
 import { getSeasonState } from '../utils/seasonUtils.js';
 
 const STAFF_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
-const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
+const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 const AWARDS_CHANNEL_ID = '1425556300405670021';
 const SEASON_FILE = path.join(process.cwd(), 'data', 'season.json');
 const COACH_ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'coachRoleMap.json');

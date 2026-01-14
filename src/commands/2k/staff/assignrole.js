@@ -1,42 +1,42 @@
 // Role name to ID mapping for reliable assignment
 const ROLE_ID_MAP = {
-    "Commish": "1428100771513237654",
-    "Schedule Tracker": "1428100777229942895",
-    "Gameplay Mod": "1428100782246330398",
-    // "Trade Committee": "1428100787225235526", // removed
-    "Ghost Paradise": "1428119680572325929",
-    "Hawks Coach": "1428100606622695485",
-    "Celtics Coach": "1428100611395817604",
-    "Nets Coach": "1428100616982368367",
-    "Hornets Coach": "1428100621931778153",
-    "Bulls Coach": "1428100628017840128",
-    "Cavaliers Coach": "1428100633898127532",
-    "Mavericks Coach": "1428100638486822913",
-    "Nuggets Coach": "1428100644916428864",
-    "Pistons Coach": "1428100650423550074",
-    "Warriors Coach": "1428100655267971214",
-    "Rockets Coach": "1428100664516415548",
-    "Pacers Coach": "1428100669453242479",
-    "Clippers Coach": "1428100674750644345",
-    "Lakers Coach": "1428100680018559076",
-    "Grizzlies Coach": "1428100684892344552",
-    "Heat Coach": "1428100690479284246",
-    "Bucks Coach": "1428100695416111165",
-    "Timberwolves Coach": "1428100700688351303",
-    "Pelicans Coach": "1428100705776046211",
-    "Knicks Coach": "1428100710997954651",
-    "Thunder Coach": "1428100717243138061",
-    "Magic Coach": "1428100723077419008",
-    "76ers Coach": "1428100728194470012",
-    "Suns Coach": "1428100733416374475",
-    "Trail Blazers Coach": "1428100738566979594",
-    "Kings Coach": "1428100744992788651",
-    "Spurs Coach": "1428100749966966784",
-    "Raptors Coach": "1428100754585026767",
-    "Jazz Coach": "1428100759936831639",
-    "Wizards Coach": "1428100764877848787"
+    "Ghost Paradise": "1460733464721490108",
+    "Ghost Paradise Commish": "1460734128935665817",
+    "Ghost Paradise Co-Commish": "1460734222238220326",
+    "Ghost Paradise Trade Committee": "1460734289015603355",
+    "76ers Coach": "1460734581325172807",
+    "Bucks Coach": "1460734654901653525",
+    "Bulls Coach": "1460734780600619193",
+    "Cavaliers Coach": "1460734885667934373",
+    "Celtics Coach": "1460734967934877902",
+    "Clippers Coach": "1460735025455829225",
+    "Grizzlies Coach": "1460735084566155555",
+    "Hawks Coach": "1460735211137532059",
+    "Heat Coach": "1460735288174313534",
+    "Hornets Coach": "1460735355568525413",
+    "Jazz Coach": "1460735407531626791",
+    "Kings Coach": "1460735481128947823",
+    "Knicks Coach": "1460735531271848180",
+    "Lakers Coach": "1460735640835719382",
+    "Magic Coach": "1460735694761754698",
+    "Mavericks Coach": "1460735750319378585",
+    "Nets Coach": "1460735822742425732",
+    "Nuggets Coach": "1460735894276542484",
+    "Pacers Coach": "1460735962719191183",
+    "Pelicans Coach": "1460736030029385790",
+    "Pistons Coach": "1460736087499604180",
+    "Raptors Coach": "1460736152788144398",
+    "Rockets Coach": "1460736215178285209",
+    "Spurs Coach": "1460736265682026779",
+    "Suns Coach": "1460736336150528094",
+    "Thunder Coach": "1460736393465696300",
+    "Timberwolves Coach": "1460736451473051739",
+    "Trail Blazers Coach": "1460736507206697081",
+    "Warriors Coach": "1460736566103244808",
+    "Wizards Coach": "1460736622390935562"
 };
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { updateAvailable2KTeamsPin } from '../../../2k/available_teams.js';
 
 const NBA_TEAMS = [
     'Hawks', 'Celtics', 'Nets', 'Hornets', 'Bulls', 'Cavaliers', 'Mavericks', 'Nuggets', 'Pistons',
@@ -129,6 +129,12 @@ export async function execute(interaction) {
             msg = `Assigned roles "${role1.name}" and "${role2.name}" to ${user.tag}.`;
         }
         await replyMethod(msg, true);
+        // Update the available teams pin after assignment
+        try {
+            await updateAvailable2KTeamsPin(interaction.client, interaction.guildId, { allowCreate: true });
+        } catch (pinErr) {
+            console.error('[2k-assignrole] Failed to update available teams pin:', pinErr);
+        }
     } catch (err) {
         console.error('Error assigning role:', err);
         await replyMethod('Error assigning role. Check bot permissions.');

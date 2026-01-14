@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Clear progression from all team rosters
-const rostersDir = path.join(__dirname, '../data/teams_rosters');
+const rostersDir = path.join(__dirname, '../teams_rosters');
 const rosterFiles = fs.readdirSync(rostersDir);
 rosterFiles.forEach(file => {
     const filePath = path.join(rostersDir, file);

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const rostersDir = path.join(__dirname, '../data/teams_rosters');
+const rostersDir = path.join(__dirname, '../teams_rosters');
 const simplePicks = [
     "2026 1st",
     "2026 2nd",

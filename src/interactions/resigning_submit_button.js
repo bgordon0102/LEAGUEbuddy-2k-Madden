@@ -19,7 +19,7 @@ const STAFF_ROLES = ['Paradise Commish', 'Paradise Co-Commish', 'Schedule Tracke
 const RESIGNING_LOG_PATH = path.join(process.cwd(), 'data', 'resigning_log.json');
 const ANNOUNCE_CHANNEL_ID = process.env.FREE_AGENCY_ANNOUNCE_CHANNEL_ID || '1455152984089694218';
 const STAFF_REVIEW_CHANNEL_ID = '1455151770383814666';
-const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
+const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
 
 function readStore() {

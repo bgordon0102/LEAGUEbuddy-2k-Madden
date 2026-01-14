@@ -144,7 +144,7 @@ export async function execute(interaction) {
     }
 
     // Prepare embed for notification
-    const notifyRoleId = "1428119680572325929";
+    const notifyRoleId = "1460733464721490108";
     const embed = new EmbedBuilder()
         .setTitle(trade.status === 'approved' ? "Trade Approved" : trade.status === 'denied' ? "Trade Denied" : "Trade Committee Vote Required")
         .addFields(

@@ -2,7 +2,10 @@ import { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, ActionRowBu
 import fs from 'fs';
 import path from 'path';
 
-const BIGBOARD_DIR = path.join(process.cwd(), 'bot', 'draft classes', 'big boards');
+const BIGBOARD_DIRS = [
+    path.join(process.cwd(), 'data', 'draft_classes', '2k'),
+    path.join(process.cwd(), 'bot', 'draft classes', 'big boards'),
+];
 
 function readJSON(file) {
     return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -28,12 +31,15 @@ export async function execute(interaction) {
         }
         // Map season number to class string
         const classString = `CUS${seasonNo.toString().padStart(2, '0')}`;
-        // Find the big board file in the root 'draft classes' folder
-        const draftClassesDir = BIGBOARD_DIR;
+        // Find the big board file in new location first, then legacy
         let bigBoardFile = null;
-        if (fs.existsSync(draftClassesDir)) {
-            const files = fs.readdirSync(draftClassesDir).filter(f => f.includes(classString) && f.includes('Big Board.json'));
-            if (files.length > 0) bigBoardFile = path.join(draftClassesDir, files[0]);
+        for (const dir of BIGBOARD_DIRS) {
+            if (!fs.existsSync(dir)) continue;
+            const files = fs.readdirSync(dir).filter(f => f.includes(classString) && f.toLowerCase().includes('big board') && f.toLowerCase().endsWith('.json'));
+            if (files.length > 0) {
+                bigBoardFile = path.join(dir, files[0]);
+                break;
+            }
         }
         if (!bigBoardFile || !fs.existsSync(bigBoardFile)) {
             await interaction.editReply({ content: `No big board found for season ${seasonNo}.` });

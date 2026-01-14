@@ -3,16 +3,24 @@
 // This script recalculates standings from scores.json and outputs a summary for debugging.
 
 const fs = require('fs');
+const path = require('path');
 const SCORES_FILE = './data/scores.json';
-const TEAMS_FILE = './data/teams.json';
+const TEAMS_ROSTERS_DIR = path.join(__dirname, '../../teams_rosters');
 
 function readScores() {
     if (!fs.existsSync(SCORES_FILE)) return [];
     return JSON.parse(fs.readFileSync(SCORES_FILE, 'utf8'));
 }
+
 function readTeams() {
-    if (!fs.existsSync(TEAMS_FILE)) return [];
-    return JSON.parse(fs.readFileSync(TEAMS_FILE, 'utf8'));
+    if (!fs.existsSync(TEAMS_ROSTERS_DIR)) return [];
+    // Get all .json files in teams_rosters, use the filename (without .json) as the team name
+    return fs.readdirSync(TEAMS_ROSTERS_DIR)
+        .filter(f => f.endsWith('.json') && f !== 'Free_Agency.json')
+        .map(f => ({
+            name: f.replace('.json', '').replace(/_/g, ' '),
+            file: f
+        }));
 }
 
 function calculateStandings() {

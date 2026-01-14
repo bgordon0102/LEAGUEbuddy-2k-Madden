@@ -144,7 +144,8 @@ export async function execute(interaction) {
     }
 
     // Prepare embed for notification
-    const notifyRoleId = "1428119680572325929";
+    const notifyRoleId = getCommitteeRoleId();
+    const GHOST_PARADISE_ROLE_ID = "1460733464721490108";
     const embed = new EmbedBuilder()
         .setTitle(trade.status === 'approved' ? "Trade Approved" : trade.status === 'denied' ? "Trade Denied" : "Trade Committee Vote Required")
         .addFields(
@@ -263,8 +264,9 @@ export async function execute(interaction) {
         }
         if (approvedChannel) {
             try {
+                const tagLine = `${GHOST_PARADISE_ROLE_ID ? `<@&${GHOST_PARADISE_ROLE_ID}> ` : ''}${coachRoleA ? `<@&${coachRoleA}>` : ''}${coachRoleB ? ` <@&${coachRoleB}>` : ''}`;
                 await approvedChannel.send({
-                  content: `<@&${notifyRoleId}>${coachRoleA ? ` <@&${coachRoleA}>` : ''}${coachRoleB ? ` <@&${coachRoleB}>` : ''}`,
+                  content: tagLine || null,
                   embeds: [embed],
                 });
             } catch (err) {
@@ -287,7 +289,8 @@ export async function execute(interaction) {
         }
         if (deniedChannel) {
             try {
-                await deniedChannel.send({ content: `<@&${notifyRoleId}>`, embeds: [embed] });
+                const tagLine = `${GHOST_PARADISE_ROLE_ID ? `<@&${GHOST_PARADISE_ROLE_ID}> ` : ''}${coachRoleA ? `<@&${coachRoleA}>` : ''}${coachRoleB ? ` <@&${coachRoleB}>` : ''}`;
+                await deniedChannel.send({ content: tagLine || null, embeds: [embed] });
             } catch (err) {
                 console.error('Failed to send denied trade message:', err);
             }

@@ -11,11 +11,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Set your Ghost Paradise role ID here
-const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
+const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 
 // Paths to data files
 const coachRoleMapPath = path.join(__dirname, '../../../data/coachRoleMap.json');
-const teamsRostersPath = path.join(__dirname, '../../../data/teams_rosters');
+import { readRoster } from '../../utils/rosterUtils.js';
 const tradeBlockPath = path.join(__dirname, '../../../data/tradeblock.json');
 const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
 
@@ -86,10 +86,9 @@ function getCoachTeamFromRoles(interaction) {
 }
 
 function getTeamPlayers(team) {
-    const teamFile = path.join(teamsRostersPath, `${team}.json`);
-    if (!fs.existsSync(teamFile)) return [];
-    const roster = JSON.parse(fs.readFileSync(teamFile));
-    return roster.players ? roster.players.map(p => p.name) : [];
+    const data = readRoster(team);
+    if (!data || !data.roster || !Array.isArray(data.roster.players)) return [];
+    return data.roster.players.map(p => p.name);
 }
 
 function getTradeBlock() {

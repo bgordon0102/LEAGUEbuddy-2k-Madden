@@ -25,34 +25,26 @@ async function autocomplete(interaction) {
     }, 1900);
     try {
         const focusedValue = interaction.options.getFocused();
-        const teamsPath = path.join(process.cwd(), "data/teams.json");
+        // Read team names from /teams_rosters/
+        const rostersDir = path.join(process.cwd(), "teams_rosters");
         let teams = [];
-        if (fs.existsSync(teamsPath)) {
-            try {
-                teams = JSON.parse(fs.readFileSync(teamsPath, "utf8"));
-                // Always sort full list alphabetically
-                teams.sort((a, b) => a.name.localeCompare(b.name));
-                console.log(`[autocomplete] Loaded teams from teams.json:`, teams);
-            } catch (e) {
-                console.error('[autocomplete] Failed to parse teams.json:', e);
-            }
-        } else {
-            console.error('[autocomplete] teams.json does not exist at', teamsPath);
+        if (fs.existsSync(rostersDir)) {
+            teams = fs.readdirSync(rostersDir)
+                .filter(f => f.endsWith('.json'))
+                .map(f => f.replace('.json', '').replace(/_/g, ' '))
+                .sort((a, b) => a.localeCompare(b));
         }
         let filtered;
         if (!focusedValue) {
-            // No filter: show all teams in ABC order
             filtered = teams;
         } else {
-            filtered = teams.filter(team => team.name && team.name.toLowerCase().includes(focusedValue.toLowerCase()));
+            filtered = teams.filter(name => name.toLowerCase().includes(focusedValue.toLowerCase()));
         }
-        // filtered is now always in ABC order
-        console.log(`[autocomplete] Focused value: '${focusedValue}', Filtered:`, filtered);
         if (!responded) {
             responded = true;
             clearTimeout(timeout);
             await interaction.respond(
-                filtered.map(team => ({ name: team.name, value: team.name })).slice(0, 25)
+                filtered.map(name => ({ name, value: name })).slice(0, 25)
             );
         }
         return;
@@ -75,26 +67,27 @@ async function execute(interaction) {
         responded = true;
         const team = interaction.options.getString("team");
         console.log(`[DEBUG] Requested team: ${team}`);
-        const teamsPath = path.join(process.cwd(), "data/teams.json");
+        const rostersDir = path.join(process.cwd(), "teams_rosters");
         const schedulePath = path.join(process.cwd(), "data/schedule.json");
         const seasonPath = path.join(process.cwd(), "data/season.json");
-        console.log(`[DEBUG] teamsPath: ${teamsPath}, schedulePath: ${schedulePath}, seasonPath: ${seasonPath}`);
-        if (!fs.existsSync(teamsPath) || !fs.existsSync(schedulePath) || !fs.existsSync(seasonPath)) {
-            console.log('[DEBUG] One or more data files missing');
+        if (!fs.existsSync(rostersDir) || !fs.existsSync(schedulePath) || !fs.existsSync(seasonPath)) {
             await interaction.editReply({
                 content: "No season data found. Please run `/startseason` first."
             });
             return;
         }
-        const teams = JSON.parse(fs.readFileSync(teamsPath, "utf8"));
+        const teams = fs.readdirSync(rostersDir)
+            .filter(f => f.endsWith('.json'))
+            .map(f => f.replace('.json', '').replace(/_/g, ' '));
         const schedule = JSON.parse(fs.readFileSync(schedulePath, "utf8"));
         const seasonData = JSON.parse(fs.readFileSync(seasonPath, "utf8"));
-        console.log('[DEBUG] Loaded teams:', teams.length);
-        console.log('[DEBUG] Loaded schedule:', Array.isArray(schedule), schedule.length);
-        console.log('[DEBUG] Loaded seasonData:', seasonData);
         const currentWeek = seasonData.currentWeek;
         let week = 1;
         let gamesList = [];
+        if (!teams.includes(team)) {
+            await interaction.editReply({ content: `Team not found: ${team}` });
+            return;
+        }
         if (currentWeek === 0) {
             gamesList.push('**Week 0**');
         }
@@ -119,7 +112,6 @@ async function execute(interaction) {
                 }
             }).filter(Boolean)
         );
-        console.log('[DEBUG] gamesList:', gamesList);
         const weekLabel = currentWeek === 0 ? 'Week 0' : `Current Week: ${currentWeek}`;
         const embed = new EmbedBuilder()
             .setTitle(`Schedule for ${team}`)
@@ -127,7 +119,6 @@ async function execute(interaction) {
             .setFooter({ text: weekLabel })
             .setColor(0x1E90FF);
         await interaction.editReply({ embeds: [embed] });
-        console.log('[DEBUG] Sent schedule embed');
     } catch (err) {
         console.error('Error in schedule:', err);
         if (responded) {

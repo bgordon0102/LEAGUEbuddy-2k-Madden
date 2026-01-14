@@ -11,21 +11,28 @@ const STANDINGS_CHANNEL_ID = '1428159168904167535';
 const PLAYOFF_CHANNEL_ID = '1428159324341141576';
 
 // --- Standings logic (copied from standings.js) ---
-const EAST = [
+// Dynamically build EAST and WEST arrays from teams_rosters directory
+const TEAMS_ROSTERS_DIR = path.join(process.cwd(), 'teams_rosters');
+const eastTeams = [
     'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls', 'Cleveland Cavaliers', 'Detroit Pistons', 'Indiana Pacers', 'Miami Heat', 'Milwaukee Bucks', 'New York Knicks', 'Orlando Magic', 'Philadelphia 76ers', 'Toronto Raptors', 'Washington Wizards'
 ];
-const WEST = [
+const westTeams = [
     'Dallas Mavericks', 'Denver Nuggets', 'Golden State Warriors', 'Houston Rockets', 'Los Angeles Clippers', 'Los Angeles Lakers', 'Memphis Grizzlies', 'Minnesota Timberwolves', 'New Orleans Pelicans', 'Oklahoma City Thunder', 'Phoenix Suns', 'Portland Trail Blazers', 'Sacramento Kings', 'San Antonio Spurs', 'Utah Jazz'
 ];
+// Only include teams that have a roster file
+const allTeamFiles = fs.readdirSync(TEAMS_ROSTERS_DIR).filter(f => f.endsWith('.json') && f !== 'Free_Agency.json');
+const allTeamNames = allTeamFiles.map(f => f.replace('.json', '').replace(/_/g, ' '));
+const EAST = eastTeams.filter(t => allTeamNames.includes(t));
+const WEST = westTeams.filter(t => allTeamNames.includes(t));
 function getStandings() {
-    const TEAMS_FILE = './data/teams.json';
     const SCORES_FILE = './data/scores.json';
-    if (!fs.existsSync(TEAMS_FILE) || !fs.existsSync(SCORES_FILE)) return null;
-    const teamsArr = JSON.parse(fs.readFileSync(TEAMS_FILE, 'utf8'));
+    if (!fs.existsSync(SCORES_FILE)) return null;
+    // Use allTeamNames from above
+    const teamsArr = allTeamNames;
     const scores = JSON.parse(fs.readFileSync(SCORES_FILE, 'utf8'));
     const standings = {};
     for (const team of teamsArr) {
-        standings[team.name] = { team: team.name, wins: 0, losses: 0, winPct: 0, gb: 0 };
+        standings[team] = { team: team, wins: 0, losses: 0, winPct: 0, gb: 0 };
     }
     for (const game of scores) {
         if (!game.approved) continue;
@@ -40,7 +47,7 @@ function getStandings() {
         }
     }
     for (const team of teamsArr) {
-        const s = standings[team.name];
+        const s = standings[team];
         const total = s.wins + s.losses;
         s.winPct = total > 0 ? (s.wins / total) : 0;
     }

@@ -20,36 +20,22 @@ async function autocomplete(interaction) {
     try {
         console.log('[DEBUG] roster autocomplete called');
         const focusedValue = interaction.options.getFocused() || "";
-        console.log(`[DEBUG] focusedValue: '${focusedValue}'`);
-        const teamsPath = path.join(process.cwd(), "data/teams.json");
+        const rostersDir = path.join(process.cwd(), "teams_rosters");
         let teams = [];
-        if (fs.existsSync(teamsPath)) {
-            try {
-                teams = JSON.parse(fs.readFileSync(teamsPath, "utf8"));
-                console.log(`[DEBUG] Loaded teams: ${teams.length}`);
-            } catch (e) {
-                console.error('[roster autocomplete] Failed to parse teams.json:', e);
-            }
-        } else {
-            console.error(`[DEBUG] teams.json does not exist at ${teamsPath}`);
+        if (fs.existsSync(rostersDir)) {
+            teams = fs.readdirSync(rostersDir)
+                .filter(f => f.endsWith('.json') && f.toLowerCase() !== 'free_agency.json')
+                .map(f => f.replace('.json', '').replace(/_/g, ' '))
+                .sort((a, b) => a.localeCompare(b));
         }
-        // Support searching by name or abbreviation
-        const filtered = teams.filter(team => {
-            const name = team.name?.toLowerCase() || "";
-            const abbr = team.abbreviation?.toLowerCase() || "";
-            const search = focusedValue.toLowerCase();
-            return name.includes(search) || abbr.includes(search);
-        });
-        console.log(`[DEBUG] Filtered teams: ${filtered.length}`);
-        // If nothing matches, show all teams
-        const options = (filtered.length ? filtered : teams)
-            .map(team => ({ name: `${team.name} (${team.abbreviation})`, value: team.name }))
-            .slice(0, 25);
-        console.log('[DEBUG] Autocomplete options:', options);
+        let filtered = teams;
+        if (focusedValue) {
+            filtered = teams.filter(name => name.toLowerCase().includes(focusedValue.toLowerCase()));
+        }
+        const options = filtered.map(name => ({ name, value: name })).slice(0, 25);
         await interaction.respond(options);
         return;
     } catch (err) {
-        // Avoid noisy logs/replies on expired or already-acknowledged interactions
         if (err?.code === 10062 || err?.code === 40060) return;
         console.error('[roster autocomplete] Fatal error:', err);
         try { await interaction.respond([{ name: 'No teams found', value: 'none' }]); } catch (e) {
@@ -72,11 +58,21 @@ async function execute(interaction) {
         const team = interaction.options.getString("team");
         // Load roster using shared helper to honor aliases and fuzzy matches
         const data = readRoster(team);
-        if (!data) {
-            await interaction.editReply({ content: `No roster found for ${team}.` });
+        let playersArr, teamPicks;
+        if (Array.isArray(data)) {
+            playersArr = data;
+            teamPicks = [];
+        } else if (data && typeof data === 'object') {
+            playersArr = Array.isArray(data.players) ? data.players : [];
+            teamPicks = Array.isArray(data.picks) ? data.picks : [];
+        } else {
+            playersArr = [];
+            teamPicks = [];
+        }
+        if (!Array.isArray(playersArr) || playersArr.length === 0) {
+            await interaction.editReply({ content: `No players found for ${team}.` });
             return;
         }
-        const { rosterPath, roster } = data;
         // Determine if the viewer is the coach of this team (for waive button visibility)
         let canWaive = false;
         try {
@@ -105,8 +101,7 @@ async function execute(interaction) {
         } catch {
             // ignore
         }
-        // Handle new roster format: object with players and picks
-        let playersArr = Array.isArray(roster) ? roster : roster.players || [];
+        // playersArr and teamPicks are now declared above for all formats
         if (!Array.isArray(playersArr) || playersArr.length === 0) {
             await interaction.editReply({ content: `No players found for ${team}.` });
             return;
@@ -118,9 +113,6 @@ async function execute(interaction) {
         for (const player of sortedRoster) {
             lines.push(`**${player.name}** | ${player.position} | OVR: ${player.ovr}`);
         }
-
-        // Load draft picks for this team from roster file
-        let teamPicks = Array.isArray(roster.picks) ? roster.picks : [];
         // Group and format picks by year for embed
         function formatPicksByYear(picks, teamName) {
             const grouped = {};

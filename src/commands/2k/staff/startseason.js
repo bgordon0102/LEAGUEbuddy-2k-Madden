@@ -88,7 +88,7 @@ function clearDataFiles() {
         { file: 'prospectBoards.json', data: {} },
         { file: 'regressionEmbeds.json', data: {} },
         { file: 'regression.json', data: {} },
-        { file: 'freeagency.json', data: [] },
+        // { file: 'freeagency.json', data: [] },
         { file: 'freeagency_entries.json', data: [] },
         { file: 'freeagency_offers.json', data: [] },
         { file: 'freeagency_log.json', data: [] },
@@ -142,38 +142,15 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
     console.log(`[resetSeasonData] process.cwd():`, process.cwd());
     const gameno = 29;
     // Static NBA team list (shuffled for random schedule)
-    const nbaTeams = [
-        { id: 1, name: "Atlanta Hawks", abbreviation: "ATL" },
-        { id: 2, name: "Boston Celtics", abbreviation: "BOS" },
-        { id: 3, name: "Brooklyn Nets", abbreviation: "BKN" },
-        { id: 4, name: "Charlotte Hornets", abbreviation: "CHA" },
-        { id: 5, name: "Chicago Bulls", abbreviation: "CHI" },
-        { id: 6, name: "Cleveland Cavaliers", abbreviation: "CLE" },
-        { id: 7, name: "Dallas Mavericks", abbreviation: "DAL" },
-        { id: 8, name: "Denver Nuggets", abbreviation: "DEN" },
-        { id: 9, name: "Detroit Pistons", abbreviation: "DET" },
-        { id: 10, name: "Golden State Warriors", abbreviation: "GSW" },
-        { id: 11, name: "Houston Rockets", abbreviation: "HOU" },
-        { id: 12, name: "Indiana Pacers", abbreviation: "IND" },
-        { id: 13, name: "Los Angeles Clippers", abbreviation: "LAC" },
-        { id: 14, name: "Los Angeles Lakers", abbreviation: "LAL" },
-        { id: 15, name: "Memphis Grizzlies", abbreviation: "MEM" },
-        { id: 16, name: "Miami Heat", abbreviation: "MIA" },
-        { id: 17, name: "Milwaukee Bucks", abbreviation: "MIL" },
-        { id: 18, name: "Minnesota Timberwolves", abbreviation: "MIN" },
-        { id: 19, name: "New Orleans Pelicans", abbreviation: "NOP" },
-        { id: 20, name: "New York Knicks", abbreviation: "NYK" },
-        { id: 21, name: "Oklahoma City Thunder", abbreviation: "OKC" },
-        { id: 22, name: "Orlando Magic", abbreviation: "ORL" },
-        { id: 23, name: "Philadelphia 76ers", abbreviation: "PHI" },
-        { id: 24, name: "Phoenix Suns", abbreviation: "PHX" },
-        { id: 25, name: "Portland Trail Blazers", abbreviation: "POR" },
-        { id: 26, name: "Sacramento Kings", abbreviation: "SAC" },
-        { id: 27, name: "San Antonio Spurs", abbreviation: "SAS" },
-        { id: 28, name: "Toronto Raptors", abbreviation: "TOR" },
-        { id: 29, name: "Utah Jazz", abbreviation: "UTA" },
-        { id: 30, name: "Washington Wizards", abbreviation: "WAS" }
-    ];
+    // Dynamically build team list from teams_rosters directory
+    const teamsRostersDir = path.join(process.cwd(), 'data', 'teams_rosters');
+    const teamFiles = fs.readdirSync(teamsRostersDir).filter(f => f.endsWith('.json') && f !== 'Free_Agency.json');
+    const nbaTeams = teamFiles.map((file, idx) => {
+        const name = file.replace('.json', '').replace(/_/g, ' ');
+        // Try to infer abbreviation from file name (first 3 letters of each word)
+        const abbr = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 3);
+        return { id: idx + 1, name, abbreviation: abbr };
+    });
     // Shuffle for random schedule
     const staticTeams = nbaTeams.map(team => ({ ...team, coach: null }));
     for (let i = staticTeams.length - 1; i > 0; i--) {

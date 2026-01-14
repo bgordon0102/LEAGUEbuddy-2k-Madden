@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
+import { readRoster } from '../utils/rosterUtils.js';
 
 const REGRESSION_CHANNEL_ID = '1455069209523650590';
 const REGRESSION_LOG_PATH = path.join(process.cwd(), 'data', 'regression.json');
@@ -105,27 +106,30 @@ export async function handleOvrModal(interaction) {
         return;
     }
     const regressionLog = readRegressionLog();
-    // Load roster file
-    const fileName = teamName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() + '.json';
-    const rosterPath = path.join(process.cwd(), 'data/teams_rosters', fileName);
-    if (!fs.existsSync(rosterPath)) {
-        interaction.reply({ content: 'Roster file not found.', ephemeral: true });
+    // Load roster via shared helper (handles normalization/fuzzy)
+    const { roster, rosterPath } = readRoster(teamName);
+    if (!roster || !roster.length) {
+        interaction.reply({ content: `Roster file not found or empty for ${teamName}. Path tried: ${rosterPath}`, ephemeral: true });
         return;
     }
-    const roster = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
-    const players = Array.isArray(roster) ? roster : roster.players || [];
-    const idx = players.findIndex(p => p.name?.toLowerCase() === playerName.toLowerCase());
+    const players = roster;
+    const idx = players.findIndex(p => (p.name || '').toLowerCase() === playerName.toLowerCase());
     if (idx === -1) {
-        interaction.reply({ content: 'Player not found in roster.', ephemeral: true });
+        interaction.reply({ content: `Player not found in roster ${teamName}.`, ephemeral: true });
         return;
     }
     if (newOvr) {
         players[idx].ovr = newOvr;
-        if (Array.isArray(roster)) {
-            fs.writeFileSync(rosterPath, JSON.stringify(players, null, 2));
-        } else {
-            roster.players = players;
-            fs.writeFileSync(rosterPath, JSON.stringify(roster, null, 2));
+        try {
+            const current = rosterPath && fs.existsSync(rosterPath) ? JSON.parse(fs.readFileSync(rosterPath, 'utf8')) : players;
+            if (Array.isArray(current)) {
+                fs.writeFileSync(rosterPath, JSON.stringify(players, null, 2));
+            } else {
+                current.players = players;
+                fs.writeFileSync(rosterPath, JSON.stringify(current, null, 2));
+            }
+        } catch (e) {
+            console.error('[PROGRESSION DEBUG] Failed to write roster on approval:', e?.message || e);
         }
     }
     // Update embed with approval

@@ -18,7 +18,7 @@ const STAFF_ROLES = ['Paradise Commish', 'Paradise Co-Commish', 'Schedule Tracke
 const STAFF_OFFER_CHANNEL_ID = process.env.FREE_AGENCY_STAFF_CHANNEL_ID || '1455151770383814666';
 const ANNOUNCE_CHANNEL_ID = process.env.FREE_AGENCY_ANNOUNCE_CHANNEL_ID || '1455152984089694218';
 const OFFER_ALERT_CHANNEL_ID = process.env.FREE_AGENCY_OFFER_ALERT_CHANNEL_ID || '1425555647167987792';
-const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
+const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
 
 // Data store helpers

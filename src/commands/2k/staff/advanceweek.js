@@ -26,66 +26,67 @@ const DEDICATED_CHANNEL_ID = '1428417230000885830';
 // Channel for global advance announcements
 const ANNOUNCE_CHANNEL_ID = '1425555647167987792';
 const PHASE_ANNOUNCE_CHANNEL_ID = '1425555647167987792';
-const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
-async function sendInitialWelcome(thread) {
-    // Extract team names from thread name
-    const threadName = thread.name || '';
-    const parts = threadName.split(/-vs-/i).map(s => s.replace(/-w\d+|-week\d+/i, '').trim());
-    let teamA = parts[0] || 'Team A';
-    let teamB = parts[1] || 'Team B';
-    // Mention coaches using role IDs from coachRoleMap.json
-    let coachRoleMap = {};
+const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
+
+function loadCoachRoleMap() {
     try {
-        coachRoleMap = JSON.parse(fs.readFileSync('./data/coachRoleMap.json', 'utf8'));
-    } catch (err) { }
-    function normalize(name) {
-        const teamMap = {
-            'Trail Blazers': 'Portland Trail Blazers',
-            'Celtics': 'Boston Celtics',
-            'Warriors': 'Golden State Warriors',
-            'Lakers': 'Los Angeles Lakers',
-            'Knicks': 'New York Knicks',
-            'Nets': 'Brooklyn Nets',
-            'Bulls': 'Chicago Bulls',
-            'Heat': 'Miami Heat',
-            'Suns': 'Phoenix Suns',
-            'Spurs': 'San Antonio Spurs',
-            'Raptors': 'Toronto Raptors',
-            'Jazz': 'Utah Jazz',
-            'Wizards': 'Washington Wizards',
-            'Thunder': 'Oklahoma City Thunder',
-            'Magic': 'Orlando Magic',
-            '76ers': 'Philadelphia 76ers',
-            'Pelicans': 'New Orleans Pelicans',
-            'Grizzlies': 'Memphis Grizzlies',
-            'Mavericks': 'Dallas Mavericks',
-            'Cavaliers': 'Cleveland Cavaliers',
-            'Pistons': 'Detroit Pistons',
-            'Pacers': 'Indiana Pacers',
-            'Rockets': 'Houston Rockets',
-            'Clippers': 'Los Angeles Clippers',
-            'Nuggets': 'Denver Nuggets',
-            'Bucks': 'Milwaukee Bucks',
-            'Hornets': 'Charlotte Hornets',
-            'Kings': 'Sacramento Kings',
-            'Hawks': 'Atlanta Hawks',
-            'Timberwolves': 'Minnesota Timberwolves',
-        };
-        if (!name) return null;
-        // Keep digits so teams like "76ers" still normalize correctly
-        name = name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
-        return teamMap[name] || name;
+        return JSON.parse(fs.readFileSync('./data/coachRoleMap.json', 'utf8'));
+    } catch (err) {
+        return {};
     }
-    teamA = normalize(teamA);
-    teamB = normalize(teamB);
+}
+
+function findCoachRoleId(teamName, coachRoleMap) {
+    if (!teamName) return null;
+    const normalized = teamName.trim().toLowerCase();
+    if (coachRoleMap[`${teamName} Coach`]) return coachRoleMap[`${teamName} Coach`];
+    const entries = Object.entries(coachRoleMap || {}).map(([name, id]) => ({
+        raw: name,
+        base: name.replace(/\s+coach$/i, '').trim().toLowerCase(),
+        id,
+    }));
+    const tokens = normalized.split(/\s+/);
+    const last = tokens[tokens.length - 1];
+    const lastTwo = tokens.slice(-2).join(' ');
+    const nickname = tokens.slice(1).join(' ');
+
+    // Exact/base matches
+    const exact = entries.find(e =>
+        e.base === normalized ||
+        e.raw.toLowerCase() === normalized ||
+        e.raw.toLowerCase() === `${normalized} coach`
+    );
+    if (exact) return exact.id;
+
+    // Nickname / trailing words
+    const nickHit = entries.find(e =>
+        (nickname && e.base === nickname) ||
+        (lastTwo && e.base === lastTwo) ||
+        (last && e.base === last) ||
+        (last && e.raw.toLowerCase().includes(last))
+    );
+    if (nickHit) return nickHit.id;
+
+    // Contains fallback
+    const contains = entries.find(e =>
+        normalized.includes(e.base) || e.base.includes(normalized)
+    );
+    return contains ? contains.id : null;
+}
+
+async function sendInitialWelcome(thread, teamA, teamB) {
+    const coachRoleMap = loadCoachRoleMap();
+    const teamARole = findCoachRoleId(teamA, coachRoleMap);
+    const teamBRole = findCoachRoleId(teamB, coachRoleMap);
+    console.log(`[sendInitialWelcome] Role lookup: ${teamA} -> ${teamARole || 'none'}, ${teamB} -> ${teamBRole || 'none'}`);
     const mentions = [];
-    if (coachRoleMap[teamA]) mentions.push(`<@&${coachRoleMap[teamA]}>`);
-    if (coachRoleMap[teamB]) mentions.push(`<@&${coachRoleMap[teamB]}>`);
-    const coachMentions = mentions.join(' & ') || `${teamA} Coach & ${teamB} Coach`;
+    if (teamARole) mentions.push(`<@&${teamARole}>`);
+    if (teamBRole) mentions.push(`<@&${teamBRole}>`);
+    const coachMentions = mentions.join(' ') || `${teamA} Coach & ${teamB} Coach`;
     const deadline = Math.floor((Date.now() + 24 * 60 * 60 * 1000) / 1000); // UNIX seconds
     const welcomeMsg = `Welcome ${coachMentions}!\nUse this thread to coordinate your matchup. Share availability and confirm tip-off here.\n\nSet the in-game date using the button below so staff can sim if needed.\n\n**In-game date:** _not set (tap Set Game Info)_\n\nDeadline: <t:${deadline}:F> (<t:${deadline}:R>)`;
     // Debug logging
-    console.log(`[sendInitialWelcome] Attempting to send welcome message to thread: ${threadName}`);
+    console.log(`[sendInitialWelcome] Attempting to send welcome message to thread: ${thread.name}`);
     try {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
@@ -94,9 +95,9 @@ async function sendInitialWelcome(thread) {
                 .setStyle(ButtonStyle.Primary)
         );
         const sentMsg = await thread.send({ content: welcomeMsg, components: [row] });
-        console.log(`[sendInitialWelcome] Message sent to thread: ${threadName}, messageId: ${sentMsg.id}`);
+        console.log(`[sendInitialWelcome] Message sent to thread: ${thread.name}, messageId: ${sentMsg.id}`);
         await sentMsg.pin();
-        console.log(`[sendInitialWelcome] Message pinned in thread: ${threadName}`);
+        console.log(`[sendInitialWelcome] Message pinned in thread: ${thread.name}`);
     } catch (err) {
         console.error('[sendInitialWelcome] Failed to send or pin welcome message:', err);
     }
@@ -203,7 +204,7 @@ export async function execute(interaction) {
                 reason: `Game thread for ${threadName} (Week ${weekNum})`
             });
             createdThreads.push(threadName);
-            await sendInitialWelcome(thread);
+            await sendInitialWelcome(thread, matchup.team1.name, matchup.team2.name);
         } catch (err) {
             console.error(`[advanceweek] Error creating thread:`, err);
         }
@@ -221,7 +222,7 @@ export async function execute(interaction) {
         if (announceChannel) {
             const deadline = Math.floor((Date.now() + 24 * 60 * 60 * 1000) / 1000);
             await announceChannel.send({
-                content: `<@&1428119680572325929> Week ${weekNum} threads created. Deadline to play/tag staff: <t:${deadline}:F> (<t:${deadline}:R>).`
+                content: `<@&1460733464721490108> Week ${weekNum} threads created. Deadline to play/tag staff: <t:${deadline}:F> (<t:${deadline}:R>).`
             });
         }
     } catch (err) {

@@ -5,7 +5,7 @@ import { getSeasonState } from '../utils/seasonUtils.js';
 import { normalizeName } from '../utils/rosterUtils.js';
 
 const ANNOUNCE_CHANNEL_ID = '1455175711001411830';
-const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
+const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 const COACH_ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'coachRoleMap.json');
 const SEASON_FILE = path.join(process.cwd(), 'data', 'season.json');
 

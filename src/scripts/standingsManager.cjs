@@ -7,7 +7,7 @@ const fs = require('fs');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
 const SCORES_FILE = './data/scores.json';
-const TEAMS_FILE = './data/teams.json';
+const ROSTERS_DIR = './data/teams_rosters';
 const STANDINGS_CHANNEL_ID = '1428159168904167535'; // <-- Provided channel ID
 const STANDINGS_PINNED_MESSAGE_ID = '1429648846610497556'; // <-- Your provided message ID
 const BOT_TOKEN = process.env.DISCORD_TOKEN || 'YOUR_BOT_TOKEN_HERE'; // <-- Set your bot token in .env or environment
@@ -17,8 +17,10 @@ function readScores() {
     return JSON.parse(fs.readFileSync(SCORES_FILE, 'utf8'));
 }
 function readTeams() {
-    if (!fs.existsSync(TEAMS_FILE)) return [];
-    return JSON.parse(fs.readFileSync(TEAMS_FILE, 'utf8'));
+    if (!fs.existsSync(ROSTERS_DIR)) return [];
+    return fs.readdirSync(ROSTERS_DIR)
+        .filter(f => f.endsWith('.json'))
+        .map(f => ({ name: f.replace('.json', '').replace(/_/g, ' ') }));
 }
 
 function calculateStandings() {
@@ -68,15 +70,14 @@ function calculateStandings() {
             // Add more mappings as needed
         };
         if (altMap[name]) {
-            // Return the full team name from teams.json
+            // Return the full team name from /teams_rosters/
             const mapped = teams.find(t => t.name.trim().toUpperCase() === altMap[name]);
             return mapped ? mapped.name : null;
         }
         for (const team of teams) {
             const fullName = team.name.trim().toUpperCase();
-            const abbr = team.abbreviation ? team.abbreviation.trim().toUpperCase() : '';
             const mascot = fullName.split(' ').pop();
-            if (name === fullName || name === abbr || name === mascot) {
+            if (name === fullName || name === mascot) {
                 return team.name;
             }
         }
@@ -114,7 +115,7 @@ function calculateStandings() {
 }
 
 function getEastWestTeams() {
-    // Actual team names from teams.json
+    // Team names from /teams_rosters/ (static order for NBA)
     return {
         east: [
             'Atlanta Hawks',

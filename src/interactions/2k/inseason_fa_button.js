@@ -14,7 +14,7 @@ import { readRoster, saveRoster, upsertPlayer, removePlayerFromOtherRostersFuzzy
 import { getSeasonState } from '../utils/seasonUtils.js';
 
 const FA_CHANNEL_ID = '1455148525179502602';
-const GHOST_PARADISE_ROLE_ID = '1428119680572325929';
+const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 const ANNOUNCE_CHANNEL_ID = '1455152984089694218'; // offseason announcements channel
 const OFFER_ALERT_CHANNEL_ID = process.env.FREE_AGENCY_OFFER_ALERT_CHANNEL_ID || '1425555647167987792';
 const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json');
@@ -104,7 +104,11 @@ function computeSeasonAge(birthdate) {
 
 function loadFreeAgents() {
   const fa = readRoster('free agency');
-  const players = fa?.roster?.players || [];
+  const players = Array.isArray(fa?.roster)
+    ? fa.roster
+    : Array.isArray(fa?.roster?.players)
+      ? fa.roster.players
+      : [];
   return players.map(p => ({
     name: p.name,
     position: p.position || p.position_1 || '',

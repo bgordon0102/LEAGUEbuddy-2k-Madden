@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import { EmbedBuilder } from "discord.js";
+import { readRoster } from "../utils/rosterUtils.js";
 
 const PROGRESSION_CHANNEL_ID = "1425555037328773220";
 
@@ -9,21 +10,60 @@ export const customId = "player_progression_modal_submit";
 
 export async function execute(interaction) {
     if (!interaction.isModalSubmit() || interaction.customId !== "player_progression_modal_submit") return;
+    const log = (msg) => { console.log(msg); try { process.stdout.write(msg + '\n'); } catch {} };
+    const errorLog = (msg) => { console.error(msg); try { process.stderr.write(msg + '\n'); } catch {} };
+    log('[PROGRESSION DEBUG] player_progression_modal_submit handler triggered');
     // Early error handling before deferReply
-    const teamName = interaction.fields.getTextInputValue("teamName");
+    const formTeamName = interaction.fields.getTextInputValue("teamName");
     const playerName = interaction.fields.getTextInputValue("playerName");
     const skillSet = interaction.fields.getTextInputValue("skillSet");
     const attributeUpgrades = interaction.fields.getTextInputValue("attributeUpgrades");
 
-    // Load roster
-    const fileName = teamName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() + ".json";
-    const rosterPath = path.join(process.cwd(), "data/teams_rosters", fileName);
-    if (!fs.existsSync(rosterPath)) {
-        await interaction.reply({ content: "Roster file not found.", ephemeral: true });
+    // Resolve team via coach roles (prefer roles ending in Coach); fallback to form value
+    let teamName = formTeamName;
+    try {
+        const coachRoleMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'coachRoleMap.json'), 'utf8'));
+        const member = interaction.member;
+        let matchedRole = null;
+        const coachEntries = Object.entries(coachRoleMap).filter(([label]) => /coach$/i.test(label.trim()));
+        for (const [label, roleId] of coachEntries) {
+            if (member?.roles?.cache?.has(roleId)) {
+                matchedRole = label;
+                teamName = label.replace(/ Coach$/i, '').trim();
+                break;
+            }
+        }
+        if (!matchedRole) {
+            for (const [label, roleId] of Object.entries(coachRoleMap)) {
+                if (member?.roles?.cache?.has(roleId)) {
+                    matchedRole = label;
+                    teamName = label.replace(/ Coach$/i, '').trim();
+                    break;
+                }
+            }
+        }
+        log(`[PROGRESSION DEBUG] (root modal) Matched role: ${matchedRole || 'none'}, teamName: ${teamName || formTeamName}`);
+    } catch (e) {
+        errorLog(`[PROGRESSION DEBUG] (root modal) Failed to read coachRoleMap: ${e?.message || e}`);
+    }
+
+    // Load roster using shared helper (works with 2K rosters in /teams_rosters)
+    let rosterPath = null;
+    let players = [];
+    try {
+        const res = readRoster(teamName);
+        rosterPath = res.rosterPath;
+        players = res.roster || [];
+    } catch (e) {
+        errorLog(`[PROGRESSION DEBUG] Failed to load roster via readRoster: ${e?.message || e}`);
+    }
+
+    log(`[PROGRESSION DEBUG] Modal readRoster('${teamName}') -> path: ${rosterPath}, players: ${players ? players.length : 'null'}`);
+
+    if (!players || players.length === 0) {
+        await interaction.reply({ content: `Roster file not found or empty for ${teamName}. Path tried: ${rosterPath}`, ephemeral: true });
         return;
     }
-    const roster = JSON.parse(fs.readFileSync(rosterPath, "utf8"));
-    const players = Array.isArray(roster) ? roster : roster.players || [];
     const norm = str => str.toLowerCase().replace(/[^a-z0-9]/g, '');
     const idx = players.findIndex(p => norm(p.name) === norm(playerName));
     if (idx === -1) {
@@ -42,12 +82,19 @@ export async function execute(interaction) {
         submittedBy: interaction.user.id
     });
 
-    // Save changes
-    if (Array.isArray(roster)) {
-        fs.writeFileSync(rosterPath, JSON.stringify(players, null, 2));
-    } else {
-        roster.players = players;
-        fs.writeFileSync(rosterPath, JSON.stringify(roster, null, 2));
+    // Save changes (preserve shape)
+    try {
+        const exists = rosterPath && fs.existsSync(rosterPath);
+        if (!exists) throw new Error('rosterPath missing or file does not exist');
+        const current = JSON.parse(fs.readFileSync(rosterPath, 'utf8'));
+        if (Array.isArray(current)) {
+            fs.writeFileSync(rosterPath, JSON.stringify(players, null, 2));
+        } else {
+            current.players = players;
+            fs.writeFileSync(rosterPath, JSON.stringify(current, null, 2));
+        }
+    } catch (e) {
+        errorLog(`[PROGRESSION DEBUG] Failed to write roster: ${e?.message || e}`);
     }
 
 

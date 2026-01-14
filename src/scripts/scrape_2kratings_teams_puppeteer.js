@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 
 const TEAM_LINKS_FILE = './data/teamLinks.json';
-const OUTPUT_DIR = './data/teams_rosters';
+const OUTPUT_DIR = './teams_rosters';
 
 puppeteer.use(StealthPlugin());
 

@@ -1,0 +1,182 @@
+{
+  "Los Angeles Lakers": {
+    "Bronny James Jr.": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-04T19:16:37.145Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Shooting",
+          "skillSets": [
+            "shooting"
+          ],
+          "attributes": "Mid +1 3pt +2",
+          "newOvr": null,
+          "regIncrement": 1,
+          "messageId": "1457450710659760180"
+        }
+      ],
+      "regressionMessageId": "1457452680636006432"
+    }
+  },
+  "Toronto Raptors": {
+    "Scottie Barnes": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-04T19:17:28.314Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Shooting",
+          "skillSets": [
+            "shooting"
+          ],
+          "attributes": "+7 3 pointer",
+          "newOvr": null,
+          "regIncrement": 1,
+          "messageId": "1457451523993895036"
+        }
+      ],
+      "regressionMessageId": "1457452896160321668"
+    }
+  },
+  "San Antonio Spurs": {
+    "Victor Wembanyama": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-04T19:17:53.199Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Shooting",
+          "skillSets": [
+            "shooting"
+          ],
+          "attributes": "+5 3pt",
+          "newOvr": null,
+          "regIncrement": 1,
+          "messageId": "1457451846003069214"
+        }
+      ],
+      "regressionMessageId": "1457452999893848308"
+    }
+  },
+  "Utah Jazz": {
+    "Keyonte George": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-05T00:30:49.255Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Shooting",
+          "skillSets": [
+            "shooting"
+          ],
+          "attributes": "3pt +7",
+          "newOvr": "84",
+          "regIncrement": 1,
+          "messageId": "1457531601704583331"
+        }
+      ],
+      "regressionMessageId": "1457531752448004252"
+    }
+  },
+  "Minnesota Timberwolves": {
+    "Anthony Edwards": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-05T00:56:42.674Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Driving",
+          "skillSets": [
+            "driving"
+          ],
+          "attributes": "Speed w ball +5",
+          "newOvr": null,
+          "regIncrement": 1,
+          "messageId": "1457537802072756376"
+        }
+      ],
+      "regressionMessageId": "1457538267737227449"
+    }
+  },
+  "Oklahoma City Thunder": {
+    "Bol Bol": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-05T02:13:51.628Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Interior Defense",
+          "skillSets": [
+            "interior defense"
+          ],
+          "attributes": "Inside defense +3",
+          "newOvr": null,
+          "regIncrement": 1,
+          "messageId": "1457556869471146170"
+        }
+      ],
+      "regressionMessageId": "1457557683203735714"
+    }
+  },
+  "Cleveland Cavaliers": {
+    "Evan Mobley": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-05T02:31:05.573Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Shooting",
+          "skillSets": [
+            "shooting"
+          ],
+          "attributes": "+3 3pt",
+          "newOvr": null,
+          "regIncrement": 1,
+          "messageId": "1457561667054469253"
+        }
+      ],
+      "regressionMessageId": "1457562019912880162"
+    }
+  },
+  "Philadelphia 76ers": {
+    "VJ Edgecombe": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-08T00:29:48.785Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Perimeter Defense",
+          "skillSets": [
+            "perimeter defense"
+          ],
+          "attributes": "+4 PDEF +2 Steal",
+          "newOvr": null,
+          "regIncrement": 1,
+          "messageId": "1458618397129445461"
+        }
+      ],
+      "regressionMessageId": "1458618662196871344"
+    }
+  },
+  "Cavaliers": {
+    "Donovan Mitchell": {
+      "count": 1,
+      "logs": [
+        {
+          "date": "2026-01-14T00:12:06.813Z",
+          "reviewer": "1076243288056664234",
+          "skillSet": "Driving",
+          "skillSets": [
+            "driving"
+          ],
+          "attributes": "+1 Layup",
+          "newOvr": null,
+          "regIncrement": 1,
+          "messageId": "1460788515926446239"
+        }
+      ],
+      "regressionMessageId": "1460788535282897212"
+    }
+  }
+}

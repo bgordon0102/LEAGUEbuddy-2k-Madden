@@ -8,13 +8,21 @@ const bigBoardsFile = path.join(process.cwd(), "draft classes", "2k26_CUS01 - Bi
 
 export async function execute(interaction) {
     await interaction.deferReply({ flags: 64 });
-    // Aggregate all players from every Big Board JSON file in draft classes
-    const draftClassesDir = path.join(process.cwd(), 'draft classes');
-    const boardFiles = fs.readdirSync(draftClassesDir)
-        .filter(f => f.endsWith('Big Board.json'));
+    // Aggregate all players from every Big Board JSON file (new data path first, legacy second)
+    const candidates = [
+        path.join(process.cwd(), 'data', 'draft_classes', '2k'),
+        path.join(process.cwd(), 'draft classes'),
+    ];
+    let boardFiles = [];
+    for (const dir of candidates) {
+        if (!fs.existsSync(dir)) continue;
+        boardFiles = fs.readdirSync(dir)
+            .filter(f => f.toLowerCase().includes('big board') && f.toLowerCase().endsWith('.json'))
+            .map(f => path.join(dir, f));
+        if (boardFiles.length) break;
+    }
     let allPlayers = [];
-    for (const file of boardFiles) {
-        const filePath = path.join(draftClassesDir, file);
+    for (const filePath of boardFiles) {
         if (fs.existsSync(filePath)) {
             try {
                 const boardData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -35,8 +43,20 @@ export async function execute(interaction) {
             .replace(/[\u0300-\u036f]/g, '');
     }
     const normalizedSelected = normalize(interaction.values[0]);
-    // Search the full allPlayers list for the selected player
-    const selected = allPlayers.find(p => p.name && normalize(p.name) === normalizedSelected);
+    // Search the full allPlayers list for the selected player (exact, then startsWith, then id/substr)
+    let selected = allPlayers.find(p => p.name && normalize(p.name) === normalizedSelected);
+    if (!selected) {
+        selected = allPlayers.find(p => p.name && normalize(p.name).startsWith(normalizedSelected));
+    }
+    if (!selected) {
+        selected = allPlayers.find(p =>
+            (p.id_number != null && normalize(String(p.id_number)) === normalizedSelected) ||
+            (p.name && normalize(p.name).includes(normalizedSelected))
+        );
+    }
+    if (!selected) {
+        console.warn('[bigboard_select_3] Player not found. normalizedSelected:', normalizedSelected, 'sample:', allPlayers.slice(0, 5).map(p => p.name));
+    }
     if (!selected) {
         try {
             await interaction.editReply({ content: "Player not found." });

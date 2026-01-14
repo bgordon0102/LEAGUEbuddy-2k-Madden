@@ -8,14 +8,21 @@ const bigBoardsFile = path.join(process.cwd(), "data/prospectBoards.json");
 
 export async function execute(interaction) {
     await interaction.deferReply({ flags: 64 });
-    // Aggregate all players from every Big Board JSON file
-    const draftClassesDir = path.join(process.cwd(), 'bot', 'draft classes', 'big boards');
-    const boardFiles = fs.existsSync(draftClassesDir)
-        ? fs.readdirSync(draftClassesDir).filter(f => f.endsWith('Big Board.json'))
-        : [];
+    // Aggregate all players from every Big Board JSON file (new data path first, legacy second)
+    const candidates = [
+        path.join(process.cwd(), 'data', 'draft_classes', '2k'),
+        path.join(process.cwd(), 'bot', 'draft classes', 'big boards'),
+    ];
+    let boardFiles = [];
+    for (const dir of candidates) {
+        if (!fs.existsSync(dir)) continue;
+        boardFiles = fs.readdirSync(dir)
+            .filter(f => f.toLowerCase().includes('big board') && f.toLowerCase().endsWith('.json'))
+            .map(f => path.join(dir, f));
+        if (boardFiles.length) break;
+    }
     let allPlayers = [];
-    for (const file of boardFiles) {
-        const filePath = path.join(draftClassesDir, file);
+    for (const filePath of boardFiles) {
         try {
             const boardData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
             const players = Object.values(boardData).filter(player => player && player.name && (player.position_1 || player.position));
@@ -24,6 +31,7 @@ export async function execute(interaction) {
             console.error(`Error reading big board file ${filePath}:`, err);
         }
     }
+    console.log('[bigboard_select(space)] values:', interaction.values, 'players:', allPlayers.length, 'files:', boardFiles.length);
 
     // Extract player name (remove leading number and dot if present)
     function normalize(str) {
@@ -35,10 +43,20 @@ export async function execute(interaction) {
             .replace(/[\u0300-\u036f]/g, '');
     }
     const normalizedSelected = normalize(interaction.values[0]);
-    // Search the full allPlayers list for the selected player
-    const selected = allPlayers.find(p => p.name && normalize(p.name) === normalizedSelected);
+    // Search the full allPlayers list for the selected player (exact, then startsWith, then id/substr)
+    let selected = allPlayers.find(p => p.name && normalize(p.name) === normalizedSelected);
+    if (!selected) {
+        selected = allPlayers.find(p => p.name && normalize(p.name).startsWith(normalizedSelected));
+    }
+    if (!selected) {
+        selected = allPlayers.find(p =>
+            (p.id_number != null && normalize(String(p.id_number)) === normalizedSelected) ||
+            (p.name && normalize(p.name).includes(normalizedSelected))
+        );
+    }
     if (!selected) {
         try {
+            console.warn('[bigboard_select(space)] Player not found. normalizedSelected:', normalizedSelected, 'sample:', allPlayers.slice(0,5).map(p => p.name));
             await interaction.editReply({ content: "Player not found." });
         } catch (err) {
             console.error('bigboard_select: Failed to editReply for not found:', err);

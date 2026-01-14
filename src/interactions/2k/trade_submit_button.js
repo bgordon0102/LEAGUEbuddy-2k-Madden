@@ -53,28 +53,40 @@ export async function execute(interaction) {
         .setTitle('Submit Trade Proposal');
 
 
-    // Synchronously detect user's team before building modal
+    // Synchronously detect user's team before building modal (NBA coach roles only)
     let detectedTeam = '';
     try {
         const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/coachRoleMap.json'), 'utf8'));
-        // Try user ID match first
-        for (const [team, coachId] of Object.entries(coachMap)) {
-            if (coachId === interaction.user.id) {
-                detectedTeam = team;
-                break;
+        const nbaTeams = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/teams.json'), 'utf8'));
+        // Build a set of valid NBA coach role IDs
+        const validCoachRoles = nbaTeams.map(t => `${t.name} Coach`);
+        const nbaCoachRoleIdToTeam = {};
+        for (const [team, roleId] of Object.entries(coachMap)) {
+            if (validCoachRoles.includes(team)) {
+                nbaCoachRoleIdToTeam[roleId] = team;
             }
         }
-        // If not found, try role ID match (check all user role IDs as strings)
-        if (!detectedTeam && interaction.member && interaction.member.roles) {
-            const userRoleIds = interaction.member.roles.cache ? Array.from(interaction.member.roles.cache.keys()) : [];
-            for (const [team, coachId] of Object.entries(coachMap)) {
-                if (userRoleIds.includes(coachId)) {
-                    detectedTeam = team;
-                    break;
+        if (interaction.member && interaction.member.roles && interaction.member.roles.cache) {
+            const userRoleIds = Array.from(interaction.member.roles.cache.keys());
+            console.log('[TRADE DEBUG] User role IDs:', userRoleIds);
+            console.log('[TRADE DEBUG] NBA coach roleId->team map:', nbaCoachRoleIdToTeam);
+            // Find all NBA coach roles the user has (by role ID)
+            const matchedCoachRoles = userRoleIds.filter(roleId => nbaCoachRoleIdToTeam[roleId]);
+            console.log('[TRADE DEBUG] Matched NBA coach roles:', matchedCoachRoles);
+            if (matchedCoachRoles.length === 1) {
+                detectedTeam = nbaCoachRoleIdToTeam[matchedCoachRoles[0]];
+                console.log('[TRADE DEBUG] Detected NBA team:', detectedTeam);
+            } else {
+                detectedTeam = '';
+                if (matchedCoachRoles.length > 1) {
+                    console.log('[TRADE DEBUG] Multiple NBA coach roles detected, leaving blank.');
+                } else {
+                    console.log('[TRADE DEBUG] No NBA coach role detected, leaving blank.');
                 }
             }
         }
     } catch (e) {
+        console.error('[TRADE DEBUG] Exception in NBA coach role detection:', e);
         // fallback: leave blank
     }
 
@@ -83,8 +95,10 @@ export async function execute(interaction) {
         .setCustomId('yourTeam')
         .setLabel('Your Team (name or keyword)')
         .setStyle(TextInputStyle.Short)
-        .setRequired(true)
-        .setValue(detectedTeam);
+        .setRequired(true);
+    if (detectedTeam) {
+        yourTeamInput.setValue(detectedTeam);
+    }
 
     const otherTeamInput = new TextInputBuilder()
         .setCustomId('otherTeam')

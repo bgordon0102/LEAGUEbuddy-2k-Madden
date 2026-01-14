@@ -6,7 +6,7 @@ const fs = require('fs');
 const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 
 const SCORES_FILE = './data/scores.json';
-const TEAMS_FILE = './data/teams.json';
+const ROSTERS_DIR = './teams_rosters';
 const STANDINGS_CHANNEL_ID = 'YOUR_STANDINGS_CHANNEL_ID'; // <-- Replace with your channel ID
 const STANDINGS_PINNED_MESSAGE_ID = '1429648846610497556'; // <-- Your provided message ID
 const BOT_TOKEN = 'YOUR_BOT_TOKEN'; // <-- Replace with your bot token
@@ -16,8 +16,10 @@ function readScores() {
     return JSON.parse(fs.readFileSync(SCORES_FILE, 'utf8'));
 }
 function readTeams() {
-    if (!fs.existsSync(TEAMS_FILE)) return [];
-    return JSON.parse(fs.readFileSync(TEAMS_FILE, 'utf8'));
+    if (!fs.existsSync(ROSTERS_DIR)) return [];
+    return fs.readdirSync(ROSTERS_DIR)
+        .filter(f => f.endsWith('.json'))
+        .map(f => ({ name: f.replace('.json', '').replace(/_/g, ' ') }));
 }
 
 function calculateStandings() {
@@ -48,7 +50,7 @@ function calculateStandings() {
     function matchTeam(name) {
         name = name.trim().toUpperCase();
         for (const team of teams) {
-            if (team.name.toUpperCase() === name || team.abbreviation === name || team.name.toUpperCase().includes(name)) {
+            if (team.name.toUpperCase() === name || team.name.toUpperCase().includes(name)) {
                 return team.name;
             }
         }
@@ -77,7 +79,7 @@ function calculateStandings() {
 }
 
 function getEastWestTeams() {
-    // Fill in with your actual team names
+    // Team names from /teams_rosters/ (static order for NBA)
     return {
         east: [
             'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls', 'Cleveland Cavaliers', 'Detroit Pistons', 'Indiana Pacers', 'Miami Heat', 'Milwaukee Bucks', 'New York Knicks', 'Orlando Magic', 'Philadelphia 76ers', 'Toronto Raptors', 'Washington Wizards'

@@ -26,7 +26,7 @@ export function writeConfig(config) {
 
 // Defaults for mergedraft and other commands
 export const TEAM_FILES = {
-  default: path.join(process.cwd(), 'data', 'teams.json')
+  default: path.join(process.cwd(), 'data', 'teams_rosters')
 };
 
 export const TEAM_ALIASES = {};

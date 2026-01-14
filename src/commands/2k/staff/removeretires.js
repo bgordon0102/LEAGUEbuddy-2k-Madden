@@ -3,9 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import Tesseract from 'tesseract.js';
 import sharp from 'sharp';
-import { normalizeName } from '../../utils/rosterUtils.js';
+import { normalizeName, readRoster, saveRoster } from '../../utils/rosterUtils.js';
 
-const ROSTER_DIR = path.join(process.cwd(), 'data', 'teams_rosters');
+const ROSTER_DIR = path.join(process.cwd(), 'teams_rosters');
 const PENDING_FILE = path.join(process.cwd(), 'data', 'removeretires_pending.json');
 
 function loadRosters() {
@@ -13,12 +13,12 @@ function loadRosters() {
   const rosters = [];
   for (const file of files) {
     try {
-      const full = path.join(ROSTER_DIR, file);
-      const data = JSON.parse(fs.readFileSync(full, 'utf8'));
+      const teamName = file.replace('.json', '');
+      const data = readRoster(teamName);
       const roster = Array.isArray(data)
         ? { players: data, picks: [] }
         : { players: data.players || [], picks: data.picks || [] };
-      rosters.push({ file, full, roster });
+      rosters.push({ file, teamName, roster });
     } catch (err) {
       console.error('[removeretires] Failed to read roster:', file, err);
     }
@@ -26,8 +26,8 @@ function loadRosters() {
   return rosters;
 }
 
-function saveRoster(full, roster) {
-  fs.writeFileSync(full, JSON.stringify(roster, null, 2));
+function saveRosterUtil(teamName, roster) {
+  saveRoster(teamName, roster);
 }
 
 function removePlayerAcrossRosters(name, rosters) {
@@ -36,7 +36,7 @@ function removePlayerAcrossRosters(name, rosters) {
     const before = r.roster.players.length;
     r.roster.players = r.roster.players.filter(p => normalizeName(p.name || '') !== target);
     if (r.roster.players.length !== before) {
-      saveRoster(r.full, r.roster);
+      saveRosterUtil(r.teamName, r.roster);
       return r.file.replace('.json', '').replace(/_/g, ' ');
     }
   }
@@ -103,7 +103,7 @@ export async function autocomplete(interaction) {
     await interaction.respond(options);
   } catch (err) {
     console.error('[removeretires autocomplete] Failed:', err);
-    try { await interaction.respond([]); } catch {}
+    try { await interaction.respond([]); } catch { }
   }
 }
 
