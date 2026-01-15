@@ -2,24 +2,22 @@
   "1076243288056664234": {
     "players": {
       "cus_01": {
-        "Malik Jefferson": [
-          "arch2",
-          "arch1",
+        "LaRon Williams": [
+          "arch",
           "ovr",
           "dev"
         ],
-        "Derreck Hayes": [
-          "arch2"
+        "Fred Shepherd Jr": [
+          "arch"
         ],
-        "Tyreke Burnette": [
-          "arch2",
-          "arch1",
+        "Sam Gray": [
+          "arch",
           "ovr"
         ]
       }
     },
     "weeklyPoints": {
-      "year_2025_week_1": 0
+      "year_2025_offseason": 0
     }
   }
 }

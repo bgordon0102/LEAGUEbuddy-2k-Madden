@@ -86,7 +86,8 @@ export async function execute(interaction) {
         retries: 3,
         retryDelayMs: 800,
         guild: interaction.guild,
-        skipMemberFetch: true
+        // fetch members to keep availability accurate right after role change
+        skipMemberFetch: false
       });
     } catch (e) {
       console.warn('[madden-assignteam] available teams pin update skipped:', e?.message || e);

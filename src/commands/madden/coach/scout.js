@@ -6,28 +6,23 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/m
 const SCOUT_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_points.json');
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
-const POINTS_PER_WEEK = 80;
+const LOGO_DIR = path.join(process.cwd(), 'college football logos');
+const POINTS_PER_WEEK = 60;
 const COST_PER_REVEAL = 10;
-const OFFSEASON_POINTS = 200;
+const OFFSEASON_POINTS = 60;
 // Preferred position order for autocomplete (canonical names)
 const POS_ORDER = [
   'QB', 'HB', 'FB',
   'WR', 'TE',
   'LT', 'LG', 'C', 'RG', 'RT',
-  'LE', 'RE', 'DT',
-  'LOLB', 'MLB', 'ROLB',
+  'LEDG', 'REDG', 'DT',
+  'SAM', 'MIKE', 'WILL',
   'CB', 'FS', 'SS',
   'K', 'P'
 ];
 
 function normalizePos(pos) {
-  const p = (pos || '').trim().toUpperCase();
-  if (p === 'REDG' || p === 'RDE') return 'RE';
-  if (p === 'LEDG' || p === 'LDE') return 'LE';
-  if (p === 'SAM' || p === 'ROLB') return 'ROLB';
-  if (p === 'MIKE' || p === 'MLB') return 'MLB';
-  if (p === 'WILL' || p === 'LOLB') return 'LOLB';
-  return p;
+  return (pos || '').trim().toUpperCase();
 }
 
 function safeReadJSON(file, fallback) {
@@ -82,13 +77,22 @@ function formatDev(dev, emojis) {
 }
 
 function nextCategory(unlocked) {
-  const order = ['arch2', 'arch1', 'ovr', 'dev'];
+  const order = ['arch', 'ovr', 'dev'];
   return order.find(cat => !unlocked.includes(cat));
+}
+
+function getSchoolLogo(school) {
+  if (!school) return null;
+  const base = school.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  if (!base) return null;
+  const file = path.join(LOGO_DIR, `${base}.png`);
+  if (fs.existsSync(file)) return { attachment: file, name: `${base}.png` };
+  return null;
 }
 
 export const data = new SlashCommandBuilder()
   .setName('madden-scout')
-  .setDescription('Scout a Madden draft prospect (80 pts/week, 10 pts per reveal).')
+  .setDescription('Scout a Madden draft prospect (60 pts/week, 10 pts per reveal).')
   .addStringOption(o => o.setName('position').setDescription('Position to filter').setRequired(true).setAutocomplete(true))
   .addStringOption(o => o.setName('name').setDescription('Optional name filter').setRequired(false).setAutocomplete(true))
   .setDMPermission(false);
@@ -168,19 +172,21 @@ export async function execute(interaction) {
   const weekKey = isOffseason ? `year_${calendarYear}_offseason` : `year_${calendarYear}_week_${currentWeek}`;
   const defaultPoints = isOffseason ? OFFSEASON_POINTS : POINTS_PER_WEEK;
   if (userData.weeklyPoints[weekKey] === undefined) userData.weeklyPoints[weekKey] = defaultPoints;
-  let pointsLeft = userData.weeklyPoints[weekKey];
+  let pointsLeft = Number(userData.weeklyPoints[weekKey]);
+  if (!Number.isFinite(pointsLeft)) pointsLeft = defaultPoints;
   const unlocked = userData.players[classId]?.[player.name] || [];
   const nextCat = nextCategory(unlocked);
   if (!nextCat) {
     await interaction.reply({ content: 'All info already unlocked for this player.', ephemeral: true });
     return;
   }
-  if (pointsLeft < COST_PER_REVEAL) {
+  const cost = COST_PER_REVEAL;
+  if (pointsLeft < cost) {
     await interaction.reply({ content: `Not enough points. You have ${pointsLeft} left this week.`, ephemeral: true });
     return;
   }
   const newUnlocked = [...unlocked, nextCat];
-  pointsLeft -= COST_PER_REVEAL;
+  pointsLeft -= cost;
   if (!userData.players[classId]) userData.players[classId] = {};
   userData.players[classId][player.name] = newUnlocked;
   userData.weeklyPoints[weekKey] = pointsLeft;
@@ -188,11 +194,10 @@ export async function execute(interaction) {
 
   const devEmojis = safeReadJSON(DEV_EMOJI_PATH, {});
   const fields = [];
-  const order = ['arch2', 'arch1', 'ovr', 'dev'];
+  const order = ['arch', 'ovr', 'dev'];
   order.forEach(cat => {
     if (newUnlocked.includes(cat)) {
-      if (cat === 'arch2') fields.push(`**Archetype 2:** ${player.archetype_2 || 'N/A'}`);
-      if (cat === 'arch1') fields.push(`**Archetype 1:** ${player.archetype_1 || 'N/A'}`);
+      if (cat === 'arch') fields.push(`**Archetype:** ${player.archetype_1 || player.archetype_2 || 'N/A'}`);
       if (cat === 'ovr') fields.push(`**Overall:** ${player.overall ?? 'N/A'}`);
       if (cat === 'dev') fields.push(`**Dev Trait:** ${formatDev(player.dev_trait, devEmojis)}`);
     }
@@ -204,7 +209,7 @@ export async function execute(interaction) {
     .setFooter({ text: `Used 10 pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason' : 'this week'}. Class ${classId.toUpperCase()}` })
     .setColor(0x1e90ff);
   const metaFields = [];
-  const boardPos = player.order ?? player['#'];
+  const boardPos = player.RNK ?? player.rank ?? player.order ?? player['#'];
   metaFields.push({
     name: 'Board Position',
     value: boardPos ? `#${boardPos}` : 'N/A',
@@ -217,10 +222,17 @@ export async function execute(interaction) {
       inline: true
     });
   }
-  if (player.school) metaFields.push({ name: 'School', value: player.school, inline: true });
+  if (player.school) metaFields.push({ name: 'Team', value: player.school, inline: true });
   if (metaFields.length) embed.addFields(metaFields);
 
-  await interaction.reply({ embeds: [embed], ephemeral: true });
+  const logo = getSchoolLogo(player.school);
+  const files = [];
+  if (logo) {
+    files.push({ attachment: logo.attachment, name: logo.name });
+    embed.setImage(`attachment://${logo.name}`);
+  }
+
+  await interaction.reply({ embeds: [embed], files, ephemeral: true });
 }
 
 export default { data, execute, autocomplete };

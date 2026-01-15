@@ -11,22 +11,44 @@ function loadJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
 }
 
-function posWeight(position) {
+function posAdj(position) {
   const map = {
-    QB: 1.25, WR: 1.05, CB: 1.05, REDGE: 1.08, LEDGE: 1.08, DT: 1.02,
-    LT: 1.05, RT: 1.04, LG: 1.0, RG: 1.0, C: 1.0,
-    FS: 1.0, SS: 1.0, MLB: 0.98, WILL: 0.98, SAM: 0.98,
-    HB: 0.95, FB: 0.8, TE: 0.98, K: 0.6, P: 0.6, LS: 0.5,
+    QB: 0.25, WR: 0.05, CB: 0.05, REDGE: 0.08, LEDGE: 0.08, DT: 0.02,
+    LT: 0.05, RT: 0.04, LG: 0, RG: 0, C: 0,
+    FS: 0, SS: 0, MLB: -0.02, WILL: -0.02, SAM: -0.02,
+    HB: -0.05, FB: -0.2, TE: -0.02, K: -0.4, P: -0.4, LS: -0.5,
   };
-  return map[position] || 1;
+  return map[position] || 0;
 }
 
-function devBonus(devTrait) {
+function ageAdj(age) {
+  if (!age) return 0;
+  if (age <= 24) return 0.08;
+  if (age <= 27) return 0.04;
+  if (age <= 29) return 0;
+  if (age <= 32) return -0.04;
+  return -0.08;
+}
+
+function devAdj(devTrait) {
   // 0=Normal,1=Star,2=Superstar,3=XFactor
-  if (devTrait === 3) return 12;
-  if (devTrait === 2) return 8;
-  if (devTrait === 1) return 4;
+  if (devTrait === 3) return 0.28; // X-Factor
+  if (devTrait === 2) return 0.20; // Superstar
+  if (devTrait === 1) return 0.12; // Star
   return 0;
+}
+
+function yearsAdj(yearsLeftRaw) {
+  const years = Number(yearsLeftRaw ?? 0);
+  if (!Number.isFinite(years) || years <= 0) return 0;
+  return Math.min(years, 4) * 0.015;
+}
+
+function capAdj(cap) {
+  const c = Number(cap || 0);
+  if (!Number.isFinite(c) || c <= 0) return 0;
+  // Penalize large cap hits; scaled to ~0.2 at 30M+
+  return -Math.min(c / 150, 0.2);
 }
 
 export function computePlayerValue(p) {
@@ -34,12 +56,19 @@ export function computePlayerValue(p) {
   const ovr = p.overallRating ?? p.playerBestOvr ?? p.ovrRating ?? 0;
   const age = p.age ?? 26;
   const cap = Number(p.contractSalary || 0) + Number(p.contractBonus || 0);
-  const weight = posWeight(p.position);
-  const base = Math.pow(ovr, 1.03) * weight;
-  const dev = devBonus(p.devTrait);
-  const agePenalty = Math.max(0, age - 27) * 1.2;
-  const capPenalty = cap ? Math.min(cap / 12, 10) : 0;
-  const raw = base + dev - agePenalty - capPenalty;
+  const yearsLeft = p.contractYearsLeft ?? p.contractLengthRemaining ?? p.contractLength ?? p.yearsRemaining ?? 0;
+
+  const pos = posAdj(p.position);
+  const ageFactor = ageAdj(age);
+  const dev = devAdj(p.devTrait);
+  const yrs = yearsAdj(yearsLeft);
+  const capHit = capAdj(cap);
+
+  const multiplier = 1.0 + pos + ageFactor + dev + yrs + capHit;
+  const safeMultiplier = Math.max(0.1, multiplier); // prevent negative/zero
+  // Non-linear base to widen gap between elite and low OVR: square distance from 40
+  const base = Math.pow(Math.max(0, ovr - 40), 2) / 10;
+  const raw = base * safeMultiplier;
   return Math.max(1, Math.round(raw * 10) / 10);
 }
 

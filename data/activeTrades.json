@@ -442,5 +442,19 @@
     "guildId": "1255691165265821747",
     "expiresAt": 1768273683395,
     "status": "pending"
+  },
+  "1768355373293": {
+    "tradeId": "1768355373293",
+    "proposerId": "1443035513320636617",
+    "coachBId": "1460735640835719382",
+    "yourTeam": "Raptors",
+    "otherTeam": "Lakers",
+    "assetsSent": "Poeltl\nAs many 2nds as you want",
+    "assetsReceived": "Ayton",
+    "notes": "",
+    "submittedAt": 1768355373294,
+    "guildId": "1255691165265821747",
+    "expiresAt": 1768441773294,
+    "status": "pending"
   }
 }

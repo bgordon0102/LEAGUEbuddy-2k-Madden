@@ -6,6 +6,7 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/m
 const SCOUT_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_points.json');
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
+const LOGO_DIR = path.join(process.cwd(), 'college football logos');
 
 function safeReadJSON(file, fallback) {
   try {
@@ -39,6 +40,15 @@ function formatDev(dev, emojis) {
   if (emojiId) return `<:dev_${dev}:${emojiId}>`;
   const map = { 0: 'Normal', 1: 'Star', 2: 'Superstar', 3: 'X-Factor' };
   return map[dev] || 'Normal';
+}
+
+function getSchoolLogo(school) {
+  if (!school) return null;
+  const base = school.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+  if (!base) return null;
+  const file = path.join(LOGO_DIR, `${base}.png`);
+  if (fs.existsSync(file)) return { attachment: file, name: `${base}.png` };
+  return null;
 }
 
 export const data = new SlashCommandBuilder()
@@ -75,8 +85,8 @@ export async function execute(interaction) {
     const p = Object.values(draftData).find(pl => pl.name === name);
     const parts = [];
     if (!p) return null;
-    if (unlocked.includes('arch2')) parts.push(`Arch2: ${p.archetype_2 || 'N/A'}`);
-    if (unlocked.includes('arch1')) parts.push(`Arch1: ${p.archetype_1 || 'N/A'}`);
+    const hasArch = unlocked.includes('arch') || unlocked.includes('arch1') || unlocked.includes('arch2');
+    if (hasArch) parts.push(`Arch: ${p.archetype_1 || p.archetype_2 || 'N/A'}`);
     if (unlocked.includes('ovr')) parts.push(`OVR: ${p.overall ?? 'N/A'}`);
     if (unlocked.includes('dev')) parts.push(`Dev: ${formatDev(p.dev_trait, devEmojis)}`);
     const meta = [];
@@ -84,7 +94,7 @@ export async function execute(interaction) {
     if (p.year) meta.push(p.year);
     if (p.school) meta.push(p.school);
     if (p.height || p.weight) meta.push(`${p.height || 'N/A'} / ${p.weight ? `${p.weight} lbs` : 'N/A'}`);
-    const boardPos = p.order ?? p['#'];
+    const boardPos = p.RNK ?? p.rank ?? p.order ?? p['#'];
     meta.push(`Board #${boardPos || '?'}`);
     return `**${name}** (${meta.join(' • ')})\n${parts.join(' | ') || 'No info unlocked'}`;
   }).filter(Boolean);
@@ -96,27 +106,44 @@ export async function execute(interaction) {
 
   // Chunk if long
   const chunks = [];
+  const logos = [];
   let current = [];
   let len = 0;
   for (const line of desc) {
     const addLen = line.length + 2;
     if (len + addLen > 3500 && current.length) {
       chunks.push(current);
+      logos.push(null);
       current = [];
       len = 0;
     }
     current.push(line);
     len += addLen;
   }
-  if (current.length) chunks.push(current);
+  if (current.length) {
+    chunks.push(current);
+    logos.push(null);
+  }
 
-  const embeds = chunks.map((lines, idx) => new EmbedBuilder()
-    .setTitle(`Your Scouted Players — ${classId.toUpperCase()}${chunks.length > 1 ? ` (Page ${idx + 1}/${chunks.length})` : ''}`)
-    .setDescription(lines.join('\n\n'))
-    .setColor(0x1e90ff)
-  );
+  const embeds = chunks.map((lines, idx) => {
+    const embed = new EmbedBuilder()
+      .setTitle(`Your Scouted Players — ${classId.toUpperCase()}${chunks.length > 1 ? ` (Page ${idx + 1}/${chunks.length})` : ''}`)
+      .setDescription(lines.join('\n\n'))
+      .setColor(0x1e90ff);
+    // Add a logo for the first entry on this page if available
+    const firstLine = lines[0];
+    const school = firstLine?.split('•').map(s => s.trim()).find(m => m && !m.toLowerCase().startsWith('board #') && m.includes(' '));
+    const logo = school ? getSchoolLogo(school) : null;
+    if (logo) {
+      embed.setImage(`attachment://${logo.name}`);
+      logos[idx] = logo;
+    }
+    return embed;
+  });
 
-  await interaction.reply({ embeds, ephemeral: true });
+  const files = logos.filter(Boolean).map(l => ({ attachment: l.attachment, name: l.name }));
+
+  await interaction.reply({ embeds, files, ephemeral: true });
 }
 
 export default { data, execute };

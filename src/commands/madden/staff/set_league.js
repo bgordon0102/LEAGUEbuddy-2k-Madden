@@ -19,6 +19,11 @@ const PLAYER_CHANGES_FILE = path.join(process.cwd(), 'data', 'madden', 'player_c
 const INJURIES_FILE = path.join(process.cwd(), 'data', 'madden', 'injuries.json');
 const TRANSACTIONS_FILE = path.join(process.cwd(), 'data', 'madden', 'transactions.json');
 const AWARDS_FILE = path.join(process.cwd(), 'data', 'madden', 'awards.json');
+const AWARDS_FILE_ALT = path.join(process.cwd(), 'data', 'madden', 'awards 2.json');
+const PINS_FILE = path.join(process.cwd(), 'data', 'madden', 'pins.json');
+const PINS_AVAILABLE_FILE = path.join(process.cwd(), 'data', 'madden', 'pins_available_teams.json');
+const TRADE_THREADS_FILE = path.join(process.cwd(), 'data', 'madden', 'trade_block_threads.json');
+const RETIRED_PLAYERS_FILE = path.join(process.cwd(), 'data', 'madden', 'retired_players.json');
 
 const PIN_CHANNEL_KEYS = {
   standings: 'Standings',
@@ -69,14 +74,24 @@ async function execute(interaction) {
     // Reset power rankings/history for a clean slate on new league (keep available-teams pin id so it reuses the same message)
     try { fs.existsSync(POWER_RANKS_FILE) && fs.unlinkSync(POWER_RANKS_FILE); } catch { }
     // Reset scouting and trade state so prior season data doesn't leak
-    try { fs.existsSync(SCOUT_POINTS_FILE) && fs.unlinkSync(SCOUT_POINTS_FILE); } catch { }
-    try { fs.existsSync(TRADE_BLOCK_FILE) && fs.unlinkSync(TRADE_BLOCK_FILE); } catch { }
-    try { fs.existsSync(TRADE_COUNTS_FILE) && fs.unlinkSync(TRADE_COUNTS_FILE); } catch { }
-    try { fs.existsSync(ACTIVE_TRADES_FILE) && fs.unlinkSync(ACTIVE_TRADES_FILE); } catch { }
-    try { fs.existsSync(PLAYER_CHANGES_FILE) && fs.unlinkSync(PLAYER_CHANGES_FILE); } catch { }
-    try { fs.existsSync(INJURIES_FILE) && fs.unlinkSync(INJURIES_FILE); } catch { }
-    try { fs.existsSync(TRANSACTIONS_FILE) && fs.unlinkSync(TRANSACTIONS_FILE); } catch { }
-    try { fs.existsSync(AWARDS_FILE) && fs.unlinkSync(AWARDS_FILE); } catch { }
+    const filesToClear = [
+      SCOUT_POINTS_FILE,
+      TRADE_BLOCK_FILE,
+      TRADE_THREADS_FILE,
+      TRADE_COUNTS_FILE,
+      ACTIVE_TRADES_FILE,
+      PLAYER_CHANGES_FILE,
+      INJURIES_FILE,
+      TRANSACTIONS_FILE,
+      AWARDS_FILE,
+      AWARDS_FILE_ALT,
+      PINS_FILE,
+      PINS_AVAILABLE_FILE,
+      RETIRED_PLAYERS_FILE,
+    ];
+    for (const file of filesToClear) {
+      try { fs.existsSync(file) && fs.unlinkSync(file); } catch { /* ignore */ }
+    }
     // Keep existing pin ids so messages continue to update across seasons
     // Recreate baseline trade counts pin with zeros
     try {

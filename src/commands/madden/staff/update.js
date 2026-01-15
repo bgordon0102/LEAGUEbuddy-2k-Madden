@@ -80,12 +80,9 @@ async function execute(interaction) {
     }
     const inPreseason = stageForWeek === Stage.PRESEASON && currentWeekValue < 1;
     const inRegularSeason = stageForWeek === Stage.SEASON && currentWeekValue >= 1 && currentWeekValue <= 18 && !inOffseason && !inPreseason;
-    // Allow updates through regular season; allow Wild Card (week 19) to capture final regular stats; freeze after that
-    const inSeasonWindow = currentWeekValue >= 1 && currentWeekValue <= 18;
-    const isWildcard = currentWeekValue === 19;
-    // If week is unknown but we have weeklyStats data, still allow updates (useful when EA exports omit current week)
-    const hasSeasonData = (snap?.weeklyStats || []).some(w => Number(w.weekIndex ?? -1) >= 0);
-    const allowPinnedUpdates = (!inOffseason && !inPreseason && (inSeasonWindow || isWildcard)) || (!inOffseason && hasSeasonData);
+    const isWildcard = currentWeekValue === 19; // allow one last pull to capture Week 18 data
+    // Update pins during regular season and Wild Card week; freeze afterward
+    const allowPinnedUpdates = (inRegularSeason || isWildcard) && !inOffseason && !inPreseason;
     const effectiveCurrentWeek = currentWeekValue;
 
     // On the first week of a new season (preseason), reset trade counts but keep pins

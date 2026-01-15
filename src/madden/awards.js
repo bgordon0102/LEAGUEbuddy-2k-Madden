@@ -403,7 +403,7 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
 
   const embed = new EmbedBuilder()
     .setTitle(`Weekly Awards — Week ${awardsWeek}${isPlayoffs ? ' (Playoffs)' : ''}`)
-    .setDescription(coachTag ? coachTag : null)
+    .setDescription(null)
     .setColor(0xf1c40f)
     .addFields(
       makeField('AFC Offensive Player of the Week', winners.afc_offense),
@@ -417,7 +417,11 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
     )
     .setTimestamp(new Date());
 
-  await channel.send({ embeds: [embed] }).catch(() => null);
+  await channel.send({
+    content: coachTag || null,
+    embeds: [embed],
+    allowedMentions: coachTag ? { parse: [], roles: [roleMap['Ghost Legacy']] } : { parse: [] },
+  }).catch(() => null);
   awardsStore[leagueId] = { ...leagueStore, [awardsWeek]: winners };
   saveJson(AWARDS_FILE, awardsStore);
 }

@@ -115,8 +115,29 @@ function teamMentions(game, teams, roleMap) {
     teams[game.awayTeamId],
     teams[game.homeTeamId],
   ].filter(Boolean);
-  const ids = names.map(n => roleMap[`${n} Coach`]).filter(Boolean);
-  return ids.map(id => `<@&${id}>`).join(' ');
+
+  const norm = str => (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const entries = Object.entries(roleMap || {})
+    .filter(([name]) => name.toLowerCase().endsWith('coach'))
+    .map(([name, id]) => ({ base: norm(name.replace(/coach$/i, '')), id }));
+
+  const ids = [];
+  for (const n of names) {
+    const target = norm(`${n} coach`);
+    let found = entries.find(e => e.base === target);
+    if (!found) found = entries.find(e => e.base.includes(target) || target.includes(e.base));
+    if (found) ids.push(found.id);
+    else {
+      console.warn('[creategamethreads] Missing coach role for team:', n);
+    }
+  }
+  // Always tag commish/co-commish if available
+  const commishIds = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish']
+    .map(name => roleMap?.[name])
+    .filter(Boolean);
+  ids.push(...commishIds);
+  const text = ids.length ? ids.map(id => `<@&${id}>`).join(' ') : '';
+  return { text, ids };
 }
 
 function pickField(obj, keys) {
@@ -640,7 +661,7 @@ async function execute(interaction) {
           autoArchiveDuration: 10080, // 7 days
           reason: `Game thread for ${weekLabel}`,
         });
-        const mentionText = teamMentions(game, teams, roleMap);
+        const { text: mentionText, ids: mentionIds } = teamMentions(game, teams, roleMap);
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder()
             .setCustomId(`madden_game_complete_${thread.id}`)
@@ -684,11 +705,16 @@ async function execute(interaction) {
         };
         const embed = {
           title: 'Matchup Thread',
-          description: `Welcome${mentionText ? ` ${mentionText}` : ''}!\nUse this thread to coordinate your matchup and mark it complete when done.\n\n${teams[game.awayTeamId] || 'Away'} stats:\n${statLine(game.awayTeamId)}\n\n${teams[game.homeTeamId] || 'Home'} stats:\n${statLine(game.homeTeamId)}\n\nDeadline: <t:${deadline}:R> (<t:${deadline}:f>)`,
+          description: `Welcome!\nUse this thread to coordinate your matchup and mark it complete when done.\n\n${teams[game.awayTeamId] || 'Away'} stats:\n${statLine(game.awayTeamId)}\n\n${teams[game.homeTeamId] || 'Home'} stats:\n${statLine(game.homeTeamId)}\n\nDeadline: <t:${deadline}:R> (<t:${deadline}:f>)`,
           color: 0x00b0f4,
           timestamp: new Date().toISOString(),
         };
-        await thread.send({ embeds: [embed], components: [row] });
+        await thread.send({
+          content: mentionText || null,
+          embeds: [embed],
+          components: [row],
+          allowedMentions: mentionIds?.length ? { roles: mentionIds, parse: [] } : { parse: ['roles'] },
+        });
         created += 1;
       } catch (e) {
         console.warn('[madden-creategamethreads] Failed to create thread', name, e?.message || e);

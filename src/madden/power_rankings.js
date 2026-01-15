@@ -175,17 +175,24 @@ export async function updatePowerRankings(client, leagueId) {
   if (newEntrants.length && channel?.isTextBased()) {
     console.log('[power_rankings] new entries detected:', newEntrants.map(e => e.name));
     const lines = newEntrants.map(e => {
-      const coachTag = e.mention || 'Coach';
       const logo = e.emoji ? `${e.emoji} ` : '';
-      return `${logo}${coachTag} has entered the Top 10!`;
+      return `${logo}${e.name || 'Team'} has entered the Top 10!`;
     });
+    const roleMentions = newEntrants
+      .map(e => (e.mention || '').match(/<@&(\d+)>/))
+      .filter(Boolean)
+      .map(m => m[1]);
     const announce = {
       title: 'New Teams in the Power Rankings',
       description: lines.join('\n'),
       color: 0xffcc00,
       timestamp: new Date().toISOString(),
     };
-    await channel.send({ embeds: [announce] }).catch(() => null);
+    await channel.send({
+      content: roleMentions.length ? roleMentions.map(id => `<@&${id}>`).join(' ') : null,
+      embeds: [announce],
+      allowedMentions: roleMentions.length ? { roles: roleMentions, parse: [] } : { parse: [] },
+    }).catch(() => null);
   }
 }
 
