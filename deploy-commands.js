@@ -33,6 +33,11 @@ async function loadCommandsForDeployment() {
       try {
         const commandModule = await import(fileURL);
         const command = commandModule.default || commandModule;
+        const commandName = command?.data?.name;
+        if (commandName === 'madden-game_stats' || file.toLowerCase().includes('game_stats')) {
+          console.log(`⏭️  Skipping ${label}/${file} (game stats disabled)`);
+          continue;
+        }
         if (command?.skipDeploy) {
           console.log(`⏭️  Skipping ${label}/${file} (skipDeploy=true)`);
           continue;

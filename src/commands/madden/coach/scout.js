@@ -4,12 +4,13 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 
 const SCOUT_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_points.json');
+const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.json');
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
 const LOGO_DIR = path.join(process.cwd(), 'college football logos');
-const POINTS_PER_WEEK = 60;
+const POINTS_PER_WEEK = 60; // regular & postseason
 const COST_PER_REVEAL = 10;
-const OFFSEASON_POINTS = 60;
+const OFFSEASON_POINTS = 300; // full offseason pool
 // Preferred position order for autocomplete (canonical names)
 const POS_ORDER = [
   'QB', 'HB', 'FB',
@@ -35,6 +36,16 @@ function safeReadJSON(file, fallback) {
 
 function saveJSON(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
+}
+
+function appendScoutLog(entry) {
+  let log = [];
+  try {
+    log = JSON.parse(fs.readFileSync(SCOUT_LOG_PATH, 'utf8'));
+    if (!Array.isArray(log)) log = [];
+  } catch { log = []; }
+  log.push(entry);
+  saveJSON(SCOUT_LOG_PATH, log);
 }
 
 function classIdForSeason(calendarYear) {
@@ -92,7 +103,7 @@ function getSchoolLogo(school) {
 
 export const data = new SlashCommandBuilder()
   .setName('madden-scout')
-  .setDescription('Scout a Madden draft prospect (60 pts/week, 10 pts per reveal).')
+  .setDescription('Scout a Madden draft prospect (60 pts/week in season, 300 offseason, 10 pts per reveal).')
   .addStringOption(o => o.setName('position').setDescription('Position to filter').setRequired(true).setAutocomplete(true))
   .addStringOption(o => o.setName('name').setDescription('Optional name filter').setRequired(false).setAutocomplete(true))
   .setDMPermission(false);
@@ -144,8 +155,14 @@ export async function execute(interaction) {
   const snapshot = loadLeagueSnapshot(leagueId);
   const calendarYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear;
   const currentWeek = snapshot?.currentWeek ?? snapshot?.info?.careerHubInfo?.seasonInfo?.displayWeek ?? 0;
-  const stage = snapshot?.stage ?? snapshot?.info?.careerHubInfo?.seasonInfo?.seasonWeekType ?? 0; // 0 preseason, 1 season?
-  const isOffseason = stage === 0;
+  const stage = snapshot?.stage ?? snapshot?.info?.careerHubInfo?.seasonInfo?.seasonWeekType ?? 0; // expected: 0=pre,1=reg,2=post,3=off
+  const isRegularOrPost = stage === 1 || stage === 2;
+  const isOffseason = stage === 3;
+  const scoutingOpen = (isRegularOrPost && currentWeek >= 1) || isOffseason;
+  if (!scoutingOpen) {
+    await interaction.reply({ content: 'Scouting opens after the Week 1 regular-season update and stays open through playoffs and offseason.', ephemeral: true });
+    return;
+  }
 
   const classId = classIdForSeason(calendarYear);
   const draftData = loadDraftClass(classId);
@@ -169,7 +186,7 @@ export async function execute(interaction) {
   const userId = interaction.user.id;
   if (!scoutData[userId]) scoutData[userId] = { players: {}, weeklyPoints: {} };
   const userData = scoutData[userId];
-  const weekKey = isOffseason ? `year_${calendarYear}_offseason` : `year_${calendarYear}_week_${currentWeek}`;
+  const weekKey = isOffseason ? `year_${calendarYear}_offseason_total` : `year_${calendarYear}_week_${currentWeek}`;
   const defaultPoints = isOffseason ? OFFSEASON_POINTS : POINTS_PER_WEEK;
   if (userData.weeklyPoints[weekKey] === undefined) userData.weeklyPoints[weekKey] = defaultPoints;
   let pointsLeft = Number(userData.weeklyPoints[weekKey]);
@@ -191,8 +208,27 @@ export async function execute(interaction) {
   userData.players[classId][player.name] = newUnlocked;
   userData.weeklyPoints[weekKey] = pointsLeft;
   saveJSON(SCOUT_PATH, scoutData);
+  // backend log only
+  appendScoutLog({
+    ts: Date.now(),
+    userId,
+    username: interaction.user?.tag || interaction.user?.username || '',
+    guildId: interaction.guildId || null,
+    classId,
+    player: player.name,
+    position: player.position,
+    school: player.school || null,
+    unlockedCategory: nextCat,
+    weekKey,
+    seasonYear: calendarYear,
+    currentWeek,
+    stage,
+    pointsLeft,
+  });
 
   const devEmojis = safeReadJSON(DEV_EMOJI_PATH, {});
+  const logo = getSchoolLogo(player.school);
+  const hasLogo = Boolean(logo);
   const fields = [];
   const order = ['arch', 'ovr', 'dev'];
   order.forEach(cat => {
@@ -206,10 +242,18 @@ export async function execute(interaction) {
   const embed = new EmbedBuilder()
     .setTitle(`${player.position} ${player.name}${yearLabel}`)
     .setDescription(fields.join('\n') || 'No info unlocked yet.')
-    .setFooter({ text: `Used 10 pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason' : 'this week'}. Class ${classId.toUpperCase()}` })
+    .setFooter({ text: `Used 10 pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason (300 total)' : 'this week (60)'}. Class ${classId.toUpperCase()}` })
     .setColor(0x1e90ff);
   const metaFields = [];
   const boardPos = player.RNK ?? player.rank ?? player.order ?? player['#'];
+  if (player.jersey) {
+    const jerseyNum = player.jersey.toString().replace(/^#+/, '');
+    metaFields.push({
+      name: 'Jersey',
+      value: `#${jerseyNum}`,
+      inline: true
+    });
+  }
   metaFields.push({
     name: 'Board Position',
     value: boardPos ? `#${boardPos}` : 'N/A',
@@ -222,10 +266,9 @@ export async function execute(interaction) {
       inline: true
     });
   }
-  if (player.school) metaFields.push({ name: 'Team', value: player.school, inline: true });
+  if (player.school && !hasLogo) metaFields.push({ name: 'Team', value: player.school, inline: true });
   if (metaFields.length) embed.addFields(metaFields);
 
-  const logo = getSchoolLogo(player.school);
   const files = [];
   if (logo) {
     files.push({ attachment: logo.attachment, name: logo.name });

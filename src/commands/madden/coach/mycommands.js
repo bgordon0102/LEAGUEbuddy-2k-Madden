@@ -57,7 +57,6 @@ async function execute(interaction) {
     .setDescription('Everyday coach tools (brief).')
     .addFields(
       { name: '/madden-mycommands', value: 'Show this menu' },
-      { name: '/madden-game_stats', value: 'View main stats for a game' },
       { name: '/madden-schedule [team]', value: 'View schedule (default your team)' },
       { name: '/madden-standings', value: 'View standings' },
       { name: '/madden-teams', value: 'List teams (with emojis)' },

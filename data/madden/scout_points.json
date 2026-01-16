@@ -6,18 +6,11 @@
           "arch",
           "ovr",
           "dev"
-        ],
-        "Fred Shepherd Jr": [
-          "arch"
-        ],
-        "Sam Gray": [
-          "arch",
-          "ovr"
         ]
       }
     },
     "weeklyPoints": {
-      "year_2025_offseason": 0
+      "year_2025_offseason": 30
     }
   }
 }

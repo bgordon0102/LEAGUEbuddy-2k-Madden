@@ -32,6 +32,8 @@ function formatValueSummary(sendTotal, recvTotal, gap) {
   ].join('\n');
 }
 
+const VALUE_THRESHOLD = 40;
+
 function formatCommitteeValueSummary(trade) {
   const sendTotal = Number(trade.sendTotal);
   const recvTotal = Number(trade.recvTotal);
@@ -41,10 +43,14 @@ function formatCommitteeValueSummary(trade) {
   const headline = net === 0
     ? 'Value gap: even'
     : `Value gap: ${giver || 'One side'} sending ${diff.toFixed(1)} more value`;
+  const thresholdLine = diff <= VALUE_THRESHOLD
+    ? `Value check: correct (gap ${diff.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
+    : `Value check: incorrect (gap ${diff.toFixed(1)} > ${VALUE_THRESHOLD})`;
   return [
     `You send: ${sendTotal.toFixed(1)}`,
     `They send: ${recvTotal.toFixed(1)}`,
     headline,
+    thresholdLine,
   ].join('\n');
 }
 
@@ -166,62 +172,82 @@ export async function execute(interaction) {
     return;
   }
 
-  if (interaction.customId.startsWith('mtrade_c_deny_')) {
-    trade.status = 'denied';
-    trade.closedAt = Date.now();
-    trades[tradeId] = trade;
-    saveActiveTrades(trades);
-    const embed = EmbedBuilder.from(buildEmbed(trade, tradeId, 'denied'))
-      .setDescription(`${channelMentions ? `${channelMentions}\n` : ''}Trade ID: ${tradeId}`);
-    if (deniedId) {
-      const deniedChan = await interaction.client.channels.fetch(deniedId).catch(() => null);
-      if (deniedChan?.isTextBased()) {
-        await deniedChan.send({
-          content: `Trade ID: ${tradeId}`,
-          embeds: [embed],
-          allowedMentions: {
-            parse: [],
-            roles: mentionRoleIds,
-          },
-        }).catch(() => null);
-      }
-    }
-    await dmProposer(interaction.client, trade.proposerId, embed, `Your trade with ${trade.otherTeam} was denied by committee.`);
-    await interaction.editReply({ content: 'Trade denied and logged.' });
+  // Track votes
+  trade.committeeVotes = trade.committeeVotes || { approve: [], deny: [] };
+  const votes = trade.committeeVotes;
+  const voterId = interaction.user.id;
+
+  const hasRole = interaction.member?.roles?.cache?.has(votingRoleId);
+  if (!hasRole) {
+    await interaction.editReply({ content: 'Only Trade Committee members can vote on trades.' });
     return;
   }
 
-  // Approve
-  trade.status = 'approved';
+  const approveVote = interaction.customId.startsWith('mtrade_c_approve_');
+  const denyVote = interaction.customId.startsWith('mtrade_c_deny_');
+
+  // Remove from opposite bucket
+  votes.approve = (votes.approve || []).filter(id => id !== voterId);
+  votes.deny = (votes.deny || []).filter(id => id !== voterId);
+  if (approveVote) votes.approve.push(voterId);
+  if (denyVote) votes.deny.push(voterId);
+
+  const approveCount = votes.approve.length;
+  const denyCount = votes.deny.length;
+  const THRESHOLD = 3;
+
+  let finalized = null;
+  if (approveCount >= THRESHOLD) finalized = 'approved';
+  if (denyCount >= THRESHOLD) finalized = 'denied';
+
+  if (!finalized) {
+    trades[tradeId] = trade;
+    saveActiveTrades(trades);
+    await interaction.editReply({
+      content: `Vote recorded. Approve: ${approveCount}/${THRESHOLD}, Deny: ${denyCount}/${THRESHOLD}. Needs ${THRESHOLD} matching votes to finalize.`,
+    });
+    return;
+  }
+
+  trade.status = finalized;
   trade.closedAt = Date.now();
   trades[tradeId] = trade;
   saveActiveTrades(trades);
-  const embed = EmbedBuilder.from(buildEmbed(trade, tradeId, 'approved'))
+
+  const embed = EmbedBuilder.from(buildEmbed(trade, tradeId, finalized))
     .setDescription(`${channelMentions ? `${channelMentions}\n` : ''}Trade ID: ${tradeId}`);
-  if (approvedId) {
+
+  if (finalized === 'approved' && approvedId) {
     const approvedChan = await interaction.client.channels.fetch(approvedId).catch(() => null);
     if (approvedChan?.isTextBased()) {
       await approvedChan.send({
-        // Mention stays in the embed so the tagged roles still ping without doubling in content
         content: `Trade ID: ${tradeId}`,
         embeds: [embed],
-        allowedMentions: {
-          parse: [],
-          roles: mentionRoleIds,
-        },
-      }).catch((err) => {
-        console.error('Error sending approved trade message:', err);
-      });
+        allowedMentions: { parse: [], roles: mentionRoleIds },
+      }).catch((err) => console.error('Error sending approved trade message:', err));
     }
   }
-  // Update trade counts
-  const counts = incrementTradeCounts(loadTradeCounts(), [trade.yourTeam, trade.otherTeam]);
-  saveTradeCounts(counts);
-  await updateTradeCountsEmbed(interaction.client, channelMap, counts);
+  if (finalized === 'denied' && deniedId) {
+    const deniedChan = await interaction.client.channels.fetch(deniedId).catch(() => null);
+    if (deniedChan?.isTextBased()) {
+      await deniedChan.send({
+        content: `Trade ID: ${tradeId}`,
+        embeds: [embed],
+        allowedMentions: { parse: [], roles: mentionRoleIds },
+      }).catch(() => null);
+    }
+  }
 
-  await dmProposer(interaction.client, trade.proposerId, embed, `Your trade with ${trade.otherTeam} was approved by committee.`);
+  // Update trade counts only on approval
+  if (finalized === 'approved') {
+    const counts = incrementTradeCounts(loadTradeCounts(), [trade.yourTeam, trade.otherTeam]);
+    saveTradeCounts(counts);
+    await updateTradeCountsEmbed(interaction.client, channelMap, counts);
+  }
 
-  await interaction.editReply({ content: 'Trade approved and logged.' });
+  await dmProposer(interaction.client, trade.proposerId, embed, `Your trade with ${trade.otherTeam} was ${finalized} by committee.`);
+
+  await interaction.editReply({ content: `Trade ${finalized} and logged (threshold ${THRESHOLD} votes).` });
 }
 
 export default { customId, execute };

@@ -38,9 +38,9 @@ async function main() {
           [
             'Click the button to open the trade form.',
             'List what you **send** and what you **receive** (players/picks).',
-            'Pick format: use round.pick with year, e.g., `1.26`, `1.26 27`, `2.14 28` (current + next 2 drafts).',
-            'Example send: “WR John Smith (OVR 88), 1.26 27”',
-            'Example receive: “LT Ryan Jones (OVR 85)”',
+            'Pick format: Year + Round only (no pick #). Use 2027 1st–7th and 2028 1st–7th, e.g., “2027 1st Round”, “2027 3rd Round”, “2028 5th Round”.',
+            'Example send: “Broncos: QB Bo Nix, 2027 1st Round, 2027 3rd Round, 2028 1st Round”',
+            'Example receive: “Ravens: QB Lamar Jackson, 2027 5th Round”',
             'Trades lock after Week 8.'
           ].join('\n')
         )

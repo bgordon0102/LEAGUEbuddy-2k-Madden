@@ -18,14 +18,15 @@ function parseTeamAndPlayer(customId) {
     // mtrade:team:rosterId:label
     const team = decodeURIComponent(parts[1] || '');
     const label = decodeURIComponent(parts[3] || '');
-    return { team, player: label };
+    return { team, player: label === ':' ? '' : label };
   }
   // New format: madden_trade_for:team:rosterId:label
   if (customId.includes(':')) {
     const parts = customId.split(':');
     if (parts.length >= 4) {
       const team = decodeURIComponent(parts[1] || '');
-      const label = decodeURIComponent(parts.slice(3).join(':') || '');
+      const labelRaw = decodeURIComponent(parts.slice(3).join(':') || '');
+      const label = labelRaw === ':' ? '' : labelRaw;
       return { team, player: label };
     }
   }
@@ -114,7 +115,7 @@ export async function execute(interaction) {
           .setLabel('Assets You Send')
           .setStyle(TextInputStyle.Paragraph)
           .setRequired(true)
-          .setPlaceholder('e.g., WR J. Smith (OVR 88), 2027 2nd')
+          .setPlaceholder('e.g., QB Bo Nix, 2027 1st Round, 2027 3rd Round, 2028 1st Round')
       ),
       new ActionRowBuilder().addComponents(
         new TextInputBuilder()
@@ -123,7 +124,7 @@ export async function execute(interaction) {
           .setStyle(TextInputStyle.Paragraph)
           .setRequired(true)
           .setValue(player || '')
-          .setPlaceholder('e.g., LT R. Jones (OVR 85)')
+          .setPlaceholder('e.g., QB Lamar Jackson, 2027 5th Round')
       ),
       new ActionRowBuilder().addComponents(
         new TextInputBuilder()

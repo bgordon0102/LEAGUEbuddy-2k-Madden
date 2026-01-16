@@ -19,6 +19,7 @@ import { maybePostDraftGrades } from '../../../madden/draft_grades_auto.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const POWER_RANKS_FILE = path.join(process.cwd(), 'data', 'madden', 'power_ranks.json');
+const SCOUT_POINTS_FILE = path.join(process.cwd(), 'data', 'madden', 'scout_points.json');
 
 const data = new SlashCommandBuilder()
   .setName('madden-weeklyupdate')
@@ -84,6 +85,16 @@ async function execute(interaction) {
     // Update pins during regular season and Wild Card week; freeze afterward
     const allowPinnedUpdates = (inRegularSeason || isWildcard) && !inOffseason && !inPreseason;
     const effectiveCurrentWeek = currentWeekValue;
+
+    // Open/reset scouting at Week 1 of the regular season
+    if (stageForWeek === Stage.SEASON && currentWeekValue === 1) {
+      try {
+        fs.writeFileSync(SCOUT_POINTS_FILE, JSON.stringify({}, null, 2));
+        console.log('[madden-weeklyupdate] Scouting reset/opened for Week 1');
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] Failed to reset scouting points:', e?.message || e);
+      }
+    }
 
     // On the first week of a new season (preseason), reset trade counts but keep pins
     if (inPreseason) {

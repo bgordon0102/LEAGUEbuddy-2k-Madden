@@ -63,13 +63,25 @@ export function computePlayerValue(p) {
   const dev = devAdj(p.devTrait);
   const yrs = yearsAdj(yearsLeft);
   const capHit = capAdj(cap);
+  // Heavier weight for franchise QBs in prime window (ages 32-36) with high OVR/dev
+  let qbPrimeBoost = 0;
+  const isQB = p.position === 'QB';
+  const highOvrQB = isQB && ovr >= 85;
+  const primeAgeQB = isQB && age >= 26 && age <= 32;
+  if (highOvrQB) qbPrimeBoost += 0.08;
+  if (primeAgeQB) qbPrimeBoost += 0.12;
+  if (isQB && p.devTrait >= 2) qbPrimeBoost += 0.06; // SS/X get an extra nudge
 
-  const multiplier = 1.0 + pos + ageFactor + dev + yrs + capHit;
+  const multiplier = 1.0 + pos + ageFactor + dev + yrs + capHit + qbPrimeBoost;
   const safeMultiplier = Math.max(0.1, multiplier); // prevent negative/zero
   // Non-linear base to widen gap between elite and low OVR: square distance from 40
   const base = Math.pow(Math.max(0, ovr - 40), 2) / 10;
   const raw = base * safeMultiplier;
   return Math.max(1, Math.round(raw * 10) / 10);
+}
+
+function normalizeKey(str) {
+  return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function buildValueMap(snapshot) {
@@ -78,47 +90,82 @@ function buildValueMap(snapshot) {
   Object.values(rosters).forEach(r => {
     (r?.rosterInfoList || []).forEach(p => {
       const full = `${p.firstName || ''} ${p.lastName || ''}`.trim().toLowerCase();
+      const normFull = normalizeKey(full);
       const last = (p.lastName || '').toLowerCase();
+      const normLast = normalizeKey(last);
       const val = computePlayerValue(p);
-      map.set(full, { player: p, value: val });
-      if (last) map.set(last, { player: p, value: val });
+      const keys = new Set();
+      if (full) keys.add(full);
+      if (normFull) keys.add(normFull);
+      if (last) keys.add(last);
+      if (normLast) keys.add(normLast);
+      if (p.firstName && p.lastName) {
+        const last = (p.lastName || '').toLowerCase();
+        const initLast = `${p.firstName[0].toLowerCase()} ${last}`;
+        keys.add(initLast);
+        keys.add(normalizeKey(initLast));
+      }
+      keys.forEach(k => map.set(k, { player: p, value: val }));
     });
   });
   return map;
 }
 
 function parsePickValue(label, seasonYear) {
-  // Patterns like "2026 1st", "1.10", "1.10 26", "2.20", "2027 3rd", "1st rounder 2025"
+  // Patterns like "2026 1st", "1.10", "1.10 26", "2.20", "2027 3rd", "1st rounder 2025", "2026 Round 4 Pick 128"
   const trimmed = label.trim();
   let year = seasonYear;
   let round = null;
+  let pickNum = null;
   const dotMatch = /^(\d)\.(\d{1,2})(?:\s+(\d{2,4}))?$/.exec(trimmed);
   if (dotMatch) {
     round = Number(dotMatch[1]);
+    pickNum = Number(dotMatch[2]);
     if (dotMatch[3]) {
       const y = Number(dotMatch[3]);
       year = y < 100 ? 2000 + y : y;
     }
   } else {
-    const regex = /(?:(\d{2,4}))?\s*(\d)(?:st|nd|rd|th)?\s*(?:round|rd)?/i;
-    const m = regex.exec(trimmed);
-    if (!m) return null;
-    if (m[1]) {
-      const y = Number(m[1]);
-      year = y < 100 ? 2000 + y : y;
+    // e.g., "2026 Round 4 Pick 128" or "Round 4 Pick 28"
+    const verbose = /(?:(\d{2,4}))?\s*round\s*(\d)\s*(?:pick)?\s*(\d{1,3})/i.exec(trimmed);
+    if (verbose) {
+      if (verbose[1]) {
+        const y = Number(verbose[1]);
+        year = y < 100 ? 2000 + y : y;
+      }
+      round = Number(verbose[2]);
+      pickNum = Number(verbose[3]);
+    } else {
+      const regex = /(?:(\d{2,4}))?\s*(\d)(?:st|nd|rd|th)?\s*(?:round|rd)?/i;
+      const m = regex.exec(trimmed);
+      if (!m) return null;
+      if (m[1]) {
+        const y = Number(m[1]);
+        year = y < 100 ? 2000 + y : y;
+      }
+      round = Number(m[2]);
     }
-    round = Number(m[2]);
   }
   if (!round || round < 1 || round > 7) return null;
-  const baseChart = { 1: 800, 2: 400, 3: 200, 4: 100, 5: 60, 6: 40, 7: 20 };
-  const base = baseChart[round] || 10;
+  if (pickNum && (pickNum < 1 || pickNum > 256)) return null;
+  // Scaled down to better align with roster player values
+  const baseChart = { 1: 110, 2: 75, 3: 50, 4: 35, 5: 25, 6: 18, 7: 12 };
+  // Use a mid-round baseline since exact pick numbers are not required
+  const base = (baseChart[round] || 8) * 0.9;
   let decay = 1;
-  if (seasonYear && year && year > seasonYear) {
+  if (year && seasonYear) {
     const diff = year - seasonYear;
-    // 0: same year, 1: next year 0.85, 2+: 0.7
-    decay = diff === 1 ? 0.85 : 0.7;
+    decay = diff <= 0 ? 1 : diff === 1 ? 0.9 : 0.8; // 2026 > 2027 > 2028
+  } else if (year) {
+    // Fall back to static ordering if season year is unknown
+    decay = year === 2026 ? 1 : year === 2027 ? 0.9 : 0.8;
   }
-  return Math.max(5, Math.round(base * decay));
+  const value = Math.max(5, Math.round(base * decay));
+  const yearLabel = year ? year : (seasonYear || 'Current');
+  const labelParts = [`Round ${round}`];
+  if (pickNum) labelParts.push(`Pick ${pickNum}`);
+  const normLabel = `${labelParts.join(' ')} (${yearLabel})`;
+  return { value, label: normLabel };
 }
 
 function parseAssets(text, valueMap, seasonYear) {
@@ -126,27 +173,40 @@ function parseAssets(text, valueMap, seasonYear) {
   let total = 0;
   const matched = [];
   const unmatched = [];
+  const posPrefixes = ['qb','hb','rb','wr','te','lt','lg','c','rg','rt','le','re','dt','mlb','olb','cb','fs','ss','k','p','fb','will','sam','mike','ledge','redge'];
   parts.forEach(part => {
-    const key = part.toLowerCase();
+    const raw = part;
+    const key = raw.toLowerCase();
+    const normKey = normalizeKey(raw);
+    const colonSplit = raw.includes(':') ? raw.split(':').pop().trim() : raw;
+    const colonKey = colonSplit.toLowerCase();
+    const normColon = normalizeKey(colonSplit);
+    let stripped = key;
+    const firstToken = key.split(/\s+/)[0];
+    if (posPrefixes.includes(firstToken)) {
+      stripped = key.slice(firstToken.length).trim();
+    }
+    const normStripped = normalizeKey(stripped);
     let entry = null;
     // picks first
     const pickVal = parsePickValue(part, seasonYear);
     if (pickVal) {
-      total += pickVal;
-      matched.push({ label: part, player: null, value: pickVal });
+      total += pickVal.value;
+      matched.push({ label: pickVal.label, player: null, value: pickVal.value });
       return;
     }
     // direct
     if (valueMap.has(key)) entry = valueMap.get(key);
-    else {
-      // fuzzy contains
-      for (const [k, v] of valueMap.entries()) {
-        if (k.includes(key) || key.includes(k)) { entry = v; break; }
-      }
-    }
+    else if (valueMap.has(normKey)) entry = valueMap.get(normKey);
+    else if (valueMap.has(colonKey)) entry = valueMap.get(colonKey);
+    else if (valueMap.has(normColon)) entry = valueMap.get(normColon);
+    else if (valueMap.has(stripped)) entry = valueMap.get(stripped);
+    else if (valueMap.has(normStripped)) entry = valueMap.get(normStripped);
     if (entry) {
       total += entry.value;
-      matched.push({ label: part, player: entry.player, value: entry.value });
+      const p = entry.player;
+      const resolvedLabel = p ? `${p.firstName || ''} ${p.lastName || ''}`.trim() || part : part;
+      matched.push({ label: resolvedLabel, player: entry.player, value: entry.value });
     } else {
       unmatched.push(part);
     }
@@ -211,6 +271,8 @@ function teamDisplay(snapshot, teamName) {
   return t ? (t.displayName || t.nickName || t.cityName) : teamName;
 }
 
+const VALUE_THRESHOLD = 40;
+
 function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
   const youSend = flip ? recvTotal : sendTotal;
   const theySend = flip ? sendTotal : recvTotal;
@@ -218,28 +280,34 @@ function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
   const net = flip ? -netRaw : netRaw;
   const direction = net === 0 ? 'even' : net > 0 ? 'you send more value' : 'they send more value';
   const netLabel = net === 0 ? 'Net: even' : `Net: ${net > 0 ? '+' : ''}${Number(net).toFixed(1)} (${direction})`;
+  const gapAbs = Math.abs(net);
+  const thresholdLine = gapAbs <= VALUE_THRESHOLD
+    ? `Value check: correct (gap ${gapAbs.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
+    : `Value check: incorrect (gap ${gapAbs.toFixed(1)} > ${VALUE_THRESHOLD})`;
   return [
     `You send: ${Number(youSend).toFixed(1)}`,
     `They send: ${Number(theySend).toFixed(1)}`,
     netLabel,
+    thresholdLine,
   ].join('\n');
 }
 
-function buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, notes, valueSummary, hideInstructions = false }) {
+function buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, notes, valueSummary, hideInstructions = false, assetsSentValueLines, assetsReceivedValueLines }) {
   const embed = new EmbedBuilder()
     .setTitle('Trade Proposal')
-    .setDescription(hideInstructions ? null : 'List the exact players/picks going each way. Example send: “WR J. Smith (OVR 88), 2027 2nd” and receive: “LT R. Jones (OVR 85)”. Trades lock after Week 8.')
+    .setDescription(hideInstructions ? null : 'List the exact players/picks going each way. Pick format: Year + Round (no pick #), e.g., “2027 1st Round”, “2027 3rd Round”, “2028 1st Round”. Example send: “QB Bo Nix, 2027 1st Round, 2027 3rd Round, 2028 1st Round”; receive: “QB Lamar Jackson, 2027 5th Round”. Trades lock after Week 8.')
     .addFields(
       { name: 'Your Team', value: yourTeam, inline: true },
       { name: 'Other Team', value: otherTeam, inline: true },
-      { name: 'Assets You Send', value: assetsSent || '—' },
-      { name: 'Assets You Receive', value: assetsReceived || '—' },
+      { name: 'Assets You Send', value: (assetsSentValueLines && assetsSentValueLines.length) ? assetsSentValueLines.join('\n') : (assetsSent || '—') },
+      { name: 'Assets You Receive', value: (assetsReceivedValueLines && assetsReceivedValueLines.length) ? assetsReceivedValueLines.join('\n') : (assetsReceived || '—') },
     )
     .setColor(0x5865f2);
   if (valueSummary) {
     embed.addFields({ name: 'Trade Value Check', value: valueSummary });
   }
   if (notes) embed.addFields({ name: 'Notes', value: notes });
+  // Remove duplicate per-team breakdowns to avoid redundancy
   return embed;
 }
 
@@ -274,6 +342,8 @@ export async function execute(interaction) {
     const sendVal = parseAssets(assetsSent, valueMap, seasonYear);
     const recvVal = parseAssets(assetsReceived, valueMap, seasonYear);
     const gap = sendVal.total - recvVal.total;
+    const sendItems = (sendVal.matched || sendVal.items || []).map(it => ({ name: it.label || it.name || it.asset || 'Asset', value: it.value ?? 0 }));
+    const recvItems = (recvVal.matched || recvVal.items || []).map(it => ({ name: it.label || it.name || it.asset || 'Asset', value: it.value ?? 0 }));
     const valueSummary = formatValueSummary(sendVal.total, recvVal.total, gap, false);
     const unmatched = [...sendVal.unmatched, ...recvVal.unmatched];
 
@@ -288,7 +358,28 @@ export async function execute(interaction) {
       return;
     }
 
-    const embed = buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, notes, valueSummary });
+    const sendLines = sendItems.map(i => `${i.name || 'Asset'} (${Number(i.value || 0).toFixed(1)})`);
+    const recvLines = recvItems.map(i => `${i.name || 'Asset'} (${Number(i.value || 0).toFixed(1)})`);
+
+    const embed = buildTradeEmbed({
+      yourTeam,
+      otherTeam,
+      assetsSent,
+      assetsReceived,
+      notes,
+      valueSummary,
+      hideInstructions: true,
+      assetsSentValueLines: sendLines,
+      assetsReceivedValueLines: recvLines,
+    });
+    const formatItems = (items) => {
+      if (!items?.length) return 'None';
+      return items.map(i => `${i.name || i.label || 'Asset'} (${Number(i.value || 0).toFixed(1)})`).join('\n');
+    };
+    embed.addFields(
+      { name: `${yourTeam} sends (value)`, value: formatItems(sendItems), inline: false },
+      { name: `${otherTeam} sends (value)`, value: formatItems(recvItems), inline: false },
+    );
     const tradeId = `${Date.now()}`;
     const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
     const expiresStamp = `<t:${Math.floor(expiresAt / 1000)}:R>`;
@@ -324,8 +415,10 @@ export async function execute(interaction) {
             assetsSent: assetsReceived,
             assetsReceived: assetsSent,
             notes,
-            valueSummary: formatValueSummary(sendVal.total, recvVal.total, gap, true),
+            valueSummary: formatValueSummary(sendVal.total, recvVal.total, gap, true, recvItems, sendItems),
             hideInstructions: true,
+            assetsSentValueLines: recvLines,
+            assetsReceivedValueLines: sendLines,
           });
         for (const m of role.members.values()) {
           await m.send({
@@ -366,7 +459,11 @@ export async function execute(interaction) {
     };
     saveActiveTrades(active);
 
-    await interaction.editReply({ content: `Trade submitted (ID ${tradeId}).${dmSent ? ' Sent to other coach for approval.' : ''}\n${valueSummary}${unmatched.length ? `\nUnmatched assets (not valued): ${unmatched.join(', ')}` : ''}`, ephemeral: true });
+    await interaction.editReply({
+      content: '',
+      embeds: [embed],
+      ephemeral: true,
+    });
   } catch (e) {
     await interaction.editReply({ content: `Trade submission failed: ${e?.message || e}` });
   }

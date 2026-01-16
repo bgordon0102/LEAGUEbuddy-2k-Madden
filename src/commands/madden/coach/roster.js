@@ -37,7 +37,8 @@ function findTeam(snapshot, name) {
   const teams = snapshot?.teams?.leagueTeamInfoList || [];
   const target = normalize(name);
   const label = (t) => [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim();
-  return teams.find(t => {
+  // Build candidate keys
+  const withCandidates = teams.map(t => {
     const candidates = [
       t.cityName,
       t.displayName || t.nickName,
@@ -45,11 +46,18 @@ function findTeam(snapshot, name) {
       t.teamName,
       t.abbrName,
       label(t),
-    ]
-      .filter(Boolean)
-      .map(normalize);
-    return candidates.some(c => c === target || c.includes(target) || target.includes(c));
+    ].filter(Boolean).map(normalize);
+    return { team: t, candidates };
   });
+  // Exact match first
+  const exact = withCandidates.find(({ candidates }) => candidates.some(c => c === target));
+  if (exact) return exact.team;
+  // Prefix match next
+  const prefix = withCandidates.find(({ candidates }) => candidates.some(c => target.startsWith(c) || c.startsWith(target)));
+  if (prefix) return prefix.team;
+  // Fallback to includes
+  const fuzzy = withCandidates.find(({ candidates }) => candidates.some(c => c.includes(target) || target.includes(c)));
+  return fuzzy?.team;
 }
 
 function chunkLines(lines, maxCount = 12) {
