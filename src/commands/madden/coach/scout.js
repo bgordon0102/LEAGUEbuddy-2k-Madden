@@ -96,8 +96,9 @@ function getSchoolLogo(school) {
   if (!school) return null;
   const base = school.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
   if (!base) return null;
-  const file = path.join(LOGO_DIR, `${base}.png`);
-  if (fs.existsSync(file)) return { attachment: file, name: `${base}.png` };
+  const fileName = `${base.replace(/\s+/g, '_')}.png`;
+  const file = path.join(LOGO_DIR, fileName);
+  if (fs.existsSync(file)) return { attachment: file, name: fileName };
   return null;
 }
 

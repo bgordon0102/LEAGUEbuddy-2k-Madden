@@ -38,8 +38,16 @@ async function execute(interaction) {
         const fetched = await channel.messages.fetch({ limit: 100 });
         const toDelete = fetched.filter(m => !m.pinned);
         if (!toDelete.size) break;
-        const deleted = await channel.bulkDelete(toDelete, true).catch(err => console.error(err));
-        const deletedCount = deleted?.size || 0;
+        let deletedCount = 0;
+        try {
+          const deleted = await channel.bulkDelete(toDelete, true);
+          deletedCount = deleted?.size || 0;
+        } catch (err) {
+          console.warn('[clearmessages] bulkDelete failed, falling back to per-message deletes:', err?.code || err);
+          for (const msg of toDelete.values()) {
+            try { await msg.delete(); deletedCount += 1; } catch { /* ignore */ }
+          }
+        }
         totalDeleted += deletedCount;
         console.log(`[DEBUG] Deleted ${totalDeleted} messages so far...`);
         if (deletedCount === 0) {
@@ -64,9 +72,18 @@ async function execute(interaction) {
         if (deferred) await interaction.editReply({ content: 'No messages available to delete (pins are preserved).' });
         return;
       }
-      const deleted = await channel.bulkDelete(toDelete, true);
-      console.log(`[DEBUG] Deleted ${deleted?.size || toDelete.length} messages (unpinned only).`);
-      if (deferred) await interaction.editReply({ content: `Deleted ${deleted?.size || toDelete.length} unpinned messages. Pinned messages are preserved.` });
+      let deletedCount = 0;
+      try {
+        const deleted = await channel.bulkDelete(toDelete, true);
+        deletedCount = deleted?.size || toDelete.length;
+      } catch (err) {
+        console.warn('[clearmessages] bulkDelete failed, falling back to per-message deletes:', err?.code || err);
+        for (const msg of toDelete) {
+          try { await msg.delete(); deletedCount += 1; } catch { /* ignore */ }
+        }
+      }
+      console.log(`[DEBUG] Deleted ${deletedCount} messages (unpinned only).`);
+      if (deferred) await interaction.editReply({ content: `Deleted ${deletedCount} unpinned messages. Pinned messages are preserved.` });
     }
   } catch (err) {
     console.error('Error deleting messages:', err);

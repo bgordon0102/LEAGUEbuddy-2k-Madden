@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
 import { getPinId } from './pins_store.js'; // unused but kept in case future pinning is desired
+import { computeGradeFromRank } from './top_players.js';
 
 const LEAGUE_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -77,7 +78,7 @@ function isRookie(player) {
   return false;
 }
 
-function gatherWeeklyStats(snapshot, weekIndex) {
+export function gatherWeeklyStats(snapshot, weekIndex) {
   const list = snapshot?.weeklyStats || [];
   const matches = list.filter(w => Number(w.weekIndex) === Number(weekIndex));
   const pickHighestStage = (arr) => {
@@ -336,19 +337,19 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
       nfc_offense: pickWinner(byPlayer, 'NFC'),
       afc_defense: pickDefWinner(byPlayer, 'AFC'),
       nfc_defense: pickDefWinner(byPlayer, 'NFC'),
-      rookie_offense: isPlayoffs ? null : pickWinner(new Map(Array.from(byPlayer).filter(([,p]) => isRookie(p))), null),
-      rookie_defense: isPlayoffs ? null : pickDefWinner(new Map(Array.from(byPlayer).filter(([,p]) => isRookie(p))), null),
+      rookie_offense: isPlayoffs ? null : pickWinner(new Map(Array.from(byPlayer).filter(([, p]) => isRookie(p))), null),
+      rookie_defense: isPlayoffs ? null : pickDefWinner(new Map(Array.from(byPlayer).filter(([, p]) => isRookie(p))), null),
     };
     // Fallbacks if any category didn't resolve
     const all = Array.from(byPlayer.values());
-    const fallbackOff = (arr) => arr.sort((a,b)=> (b.totals?.passYds||b.totals?.rushYds||b.totals?.recYds||0) - (a.totals?.passYds||a.totals?.rushYds||a.totals?.recYds||0))[0];
-    const fallbackDef = (arr) => arr.sort((a,b)=> (b.totals?.defTotalTackles||0) - (a.totals?.defTotalTackles||0))[0];
+    const fallbackOff = (arr) => arr.sort((a, b) => (b.totals?.passYds || b.totals?.rushYds || b.totals?.recYds || 0) - (a.totals?.passYds || a.totals?.rushYds || a.totals?.recYds || 0))[0];
+    const fallbackDef = (arr) => arr.sort((a, b) => (b.totals?.defTotalTackles || 0) - (a.totals?.defTotalTackles || 0))[0];
     if (!winners.afc_offense) winners.afc_offense = fallbackOff(all);
     if (!winners.nfc_offense) winners.nfc_offense = fallbackOff(all);
     if (!winners.afc_defense) winners.afc_defense = fallbackDef(all);
     if (!winners.nfc_defense) winners.nfc_defense = fallbackDef(all);
-    if (!winners.rookie_offense && !isPlayoffs) winners.rookie_offense = fallbackOff(all.filter(p=>isRookie(p)));
-    if (!winners.rookie_defense && !isPlayoffs) winners.rookie_defense = fallbackDef(all.filter(p=>isRookie(p)));
+    if (!winners.rookie_offense && !isPlayoffs) winners.rookie_offense = fallbackOff(all.filter(p => isRookie(p)));
+    if (!winners.rookie_defense && !isPlayoffs) winners.rookie_defense = fallbackDef(all.filter(p => isRookie(p)));
 
     // If rookie still missing, broaden to all weeks in the snapshot and pick best rookie by totals
     if ((!winners.rookie_offense || !winners.rookie_defense) && !isPlayoffs) {
@@ -357,7 +358,7 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
         const mp = mergePlayerStats(wk);
         mp.forEach((val, key) => {
           const existing = agg.get(key) || { ...val, totals: {} };
-          Object.entries(val.totals || {}).forEach(([k,v]) => {
+          Object.entries(val.totals || {}).forEach(([k, v]) => {
             existing.totals[k] = (existing.totals[k] || 0) + (Number(v) || 0);
           });
           agg.set(key, existing);
@@ -369,11 +370,32 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
         p.conference = confMap[p.teamId] || null;
         p.fullName = p.fullName || `${p.firstName || ''} ${p.lastName || ''}`.trim();
       });
-      const rookiesAllWeeks = new Map(Array.from(agg.entries()).filter(([,p]) => isRookie(p)));
+      const rookiesAllWeeks = new Map(Array.from(agg.entries()).filter(([, p]) => isRookie(p)));
       if (!winners.rookie_offense) winners.rookie_offense = pickWinner(rookiesAllWeeks, null);
       if (!winners.rookie_defense) winners.rookie_defense = pickDefWinner(rookiesAllWeeks, null);
     }
   }
+
+  // Build grade map from all scored players (offense/defense)
+  const gradeMap = (() => {
+    const list = [];
+    const idFor = (p) => p?.rosterId ?? `${p?.fullName || ''}-${p?.teamId || p?.teamName || ''}`;
+    const weeklyStats = gatherWeeklyStats(snapshot, targetWeekIdx);
+    const merged = mergePlayerStats(weeklyStats || {});
+    merged.forEach(p => {
+      const pos = (p.position || '').toUpperCase();
+      const isDefense = ['CB', 'FS', 'SS', 'ROLB', 'LOLB', 'MLB', 'LB', 'RE', 'LE', 'DT'].includes(pos);
+      const score = isDefense ? scoreDefense(p) : scoreOffense(p);
+      list.push({ id: idFor(p), score });
+    });
+    list.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    const total = list.length || 1;
+    const map = new Map();
+    list.forEach((p, idx) => {
+      map.set(p.id, computeGradeFromRank(idx + 1, total));
+    });
+    return { map, idFor };
+  })();
 
   const allMissing =
     !winners.afc_offense &&
@@ -390,7 +412,10 @@ export async function updateAwards(client, leagueId, weekOverride = null) {
     if (!p) return { name: label, value: 'N/A', inline: false };
     const mention = coachMention(p.teamName, roleMap);
     const emoji = teamEmoji(p.teamName, emojiMap);
-    const header = `${emoji ? emoji + ' ' : ''}${p.position || ''} ${p.fullName || 'Unknown'} — ${p.teamName}`;
+    const id = gradeMap.idFor(p);
+    const grade = gradeMap.map.get(id);
+    const gradeText = grade ? ` (Grade ${grade.toFixed(1)})` : '';
+    const header = `${emoji ? emoji + ' ' : ''}${p.position || ''} ${p.fullName || 'Unknown'} — ${p.teamName}${gradeText}`;
     const line = formatLine(p);
     return {
       name: label,

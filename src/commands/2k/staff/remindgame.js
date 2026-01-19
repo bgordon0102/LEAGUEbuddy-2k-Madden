@@ -1,87 +1,142 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import fs from 'fs';
+import path from 'path';
+
+const ROLE_MAP_FILE = path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json');
+const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', '2k', '2k_channel_ids.json');
+const STAFF_ROLES = ['Ghost Paradise Commish', 'Ghost Paradise Co-Commish'];
+
+function loadJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
+}
+
+function hasStaffRole(member, roleMap) {
+  return STAFF_ROLES.some(r => {
+    const id = roleMap[r];
+    return id && member.roles.cache.has(id);
+  });
+}
+
+function slug(str) {
+  return (str || '').toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+}
+
+function normalize(name) {
+  if (!name) return name;
+  return name.replace(/-w\d+/i, '').replace(/-/g, ' ').trim();
+}
+
+function buildRoleSlugMap(roleMap) {
+  const m = new Map();
+  for (const [name, id] of Object.entries(roleMap || {})) {
+    if (!name.toLowerCase().endsWith(' coach')) continue;
+    const base = name.replace(/ coach$/i, '');
+    m.set(slug(base), id);
+  }
+  return m;
+}
+
+function findCoachRoleId(rawName, roleMap) {
+  if (!rawName) return null;
+  const base = normalize(rawName);
+  const slugMap = buildRoleSlugMap(roleMap);
+  const baseSlug = slug(base);
+  if (slugMap.has(baseSlug)) return slugMap.get(baseSlug);
+  const direct = roleMap[`${base} Coach`];
+  if (direct) return direct;
+  const target = base.toLowerCase();
+  const matchKey = Object.keys(roleMap).find(k => {
+    const lower = k.toLowerCase();
+    return lower.endsWith(' coach') && (lower.includes(target) || target.includes(lower.replace(' coach', '')));
+  });
+  if (matchKey) return roleMap[matchKey];
+  return null;
+}
+
+async function sendReminderToThread(thread, roleMap, client) {
+  // Skip if already marked complete
+  try {
+    const recent = await thread.messages.fetch({ limit: 20 });
+    const done = recent.some(m => m.author.id === client.user.id && m.embeds.some(e => (e.title || '').toLowerCase().includes('game completed')));
+    if (done) return false;
+  } catch { /* ignore */ }
+
+  const rawName = thread.name;
+  const cleanedName = rawName.replace(/[_-]/g, ' ').replace(/\s+/g, ' ').trim();
+  let team1 = null;
+  let team2 = null;
+  const vsSplit = cleanedName.split(/\s+vs\s+/i);
+  if (vsSplit.length >= 2) {
+    team1 = vsSplit[0].replace(/\s+w(?:k)?\d+$/i, '').trim();
+    team2 = vsSplit[1].replace(/\s+w(?:k)?\d+$/i, '').trim();
+  } else {
+    const matchFallback = rawName.match(/(.+?)[\s\-_]+vs[\s\-_]+(.+?)(?:[\s\-_]+w(?:k)?\d+)?$/i);
+    if (matchFallback) {
+      team1 = matchFallback[1].replace(/[_-]/g, ' ').trim();
+      team2 = matchFallback[2].replace(/[_-]/g, ' ').trim();
+    }
+  }
+  if (!team1 || !team2) return false;
+  const role1 = findCoachRoleId(team1, roleMap);
+  const role2 = findCoachRoleId(team2, roleMap);
+  const mentions = new Set();
+  if (role1) mentions.add(`<@&${role1}>`);
+  if (role2) mentions.add(`<@&${role2}>`);
+  const content = Array.from(mentions).join(' ') || 'Reminder: please play your game!';
+  const embed = {
+    title: 'Game Reminder',
+    description: 'Please complete your game and press "Mark Game Complete" when done.',
+    color: 0x00b0f4,
+  };
+  await thread.send({
+    content,
+    embeds: [embed],
+    allowedMentions: { parse: [], roles: [role1, role2].filter(Boolean) }
+  });
+  return true;
+}
 
 export const data = new SlashCommandBuilder()
-    .setName('2k-remindgame')
-    .setDescription('Send a reminder to play the game in this thread (staff only)')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels);
+  .setName('2k-remindgame')
+  .setDescription('Send reminders to all open 2K game threads (staff only).')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels);
 
 export async function execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
-    try {
-        // Only allow staff
-        const member = await interaction.guild.members.fetch(interaction.user.id);
-        const isStaff = member.permissions.has(PermissionFlagsBits.ManageChannels);
-        if (!isStaff) {
-            await interaction.editReply({ content: 'Only staff can use this command.' });
-            return;
-        }
-        // Get channel and coach roles
-        const channel = interaction.channel;
-        // Robustly parse channel name for team names (handles Cavaliers-vs-Kings-w1, etc)
-        const threadMatch = channel.name.match(/([a-zA-Z ]+)-vs-([a-zA-Z ]+)/);
-        if (!threadMatch) {
-            await interaction.editReply({ content: 'This command can only be used in a game thread.' });
-            return;
-        }
-        // Normalize team names (capitalize, trim, handle abbreviations)
-        function normalizeTeamName(name) {
-            name = name.replace(/-/g, ' ').replace(/\bw\d+$/i, '').trim();
-            // Special handling for Clippers
-            if (/^clippers$/i.test(name) || /^lac$/i.test(name)) return 'Los Angeles Clippers';
-            // Map abbreviations to full names
-            const abbrToFull = {
-                ATL: 'Atlanta Hawks', BOS: 'Boston Celtics', BKN: 'Brooklyn Nets', CHA: 'Charlotte Hornets', CHI: 'Chicago Bulls', CLE: 'Cleveland Cavaliers', DAL: 'Dallas Mavericks', DEN: 'Denver Nuggets', DET: 'Detroit Pistons', GSW: 'Golden State Warriors', HOU: 'Houston Rockets', IND: 'Indiana Pacers', LAC: 'Los Angeles Clippers', LAL: 'Los Angeles Lakers', MEM: 'Memphis Grizzlies', MIA: 'Miami Heat', MIL: 'Milwaukee Bucks', MIN: 'Minnesota Timberwolves', NOP: 'New Orleans Pelicans', NYK: 'New York Knicks', OKC: 'Oklahoma City Thunder', ORL: 'Orlando Magic', PHI: 'Philadelphia 76ers', PHX: 'Phoenix Suns', POR: 'Portland Trail Blazers', SAC: 'Sacramento Kings', SAS: 'San Antonio Spurs', TOR: 'Toronto Raptors', UTA: 'Utah Jazz', WAS: 'Washington Wizards'
-            };
-            let upper = name.toUpperCase();
-            if (abbrToFull[upper]) return abbrToFull[upper];
-            // Try to match by partial name
-            for (const full of Object.values(abbrToFull)) {
-                if (full.toUpperCase().includes(upper)) return full;
-            }
-            // Capitalize each word
-            return name.replace(/\b\w/g, c => c.toUpperCase());
-        }
-        const team1Raw = threadMatch[1].trim();
-        const team2Raw = threadMatch[2].trim();
-        const team1Full = normalizeTeamName(team1Raw);
-        const team2Full = normalizeTeamName(team2Raw);
-        let coachRoleMap = {};
-        try {
-            const guildId = process.env.DISCORD_GUILD_ID;
-            let coachRoleMapFile = './data/coachRoleMap.json';
-            if (guildId === '1415452215044473036') {
-                coachRoleMapFile = './data/coachRoleMap.main.json';
-            } else if (guildId === '1407111281147641976') {
-                coachRoleMapFile = './data/coachRoleMap.dev.json';
-            }
-            coachRoleMap = JSON.parse(fs.readFileSync(coachRoleMapFile, 'utf8'));
-        } catch { }
-        const team1RoleId = coachRoleMap[team1Full];
-        const team2RoleId = coachRoleMap[team2Full];
-        // Calculate deadline (24 hours from channel creation)
-        const deadline = Math.floor(channel.createdTimestamp / 1000) + 24 * 3600;
-        let content = '';
-        if (team1RoleId && team2RoleId) {
-            content += `Reminder: <@&${team1RoleId}> <@&${team2RoleId}> please play your game!\n`;
-        } else if (team1RoleId) {
-            content += `Reminder: <@&${team1RoleId}> please play your game!\n`;
-            console.log(`[remindgame] Missing team2RoleId for ${team2Full}`);
-        } else if (team2RoleId) {
-            content += `Reminder: <@&${team2RoleId}> please play your game!\n`;
-            console.log(`[remindgame] Missing team1RoleId for ${team1Full}`);
-        } else {
-            content += `Reminder: Coaches, please play your game!\n`;
-            console.log(`[remindgame] Missing both coach role IDs for ${team1Full} and ${team2Full}`);
-        }
-        content += `:alarm_clock: **Score must be submitted within <t:${deadline}:R> (<t:${deadline}:f>)**`;
-        // Send a visible message tagging coaches in the channel
-        await channel.send({ content });
-        await interaction.editReply({ content: 'Reminder sent to channel.' });
-    } catch (err) {
-        console.error('Error in remindgame:', err);
-        await interaction.editReply({ content: 'Error sending reminder.' });
+  await interaction.deferReply({ ephemeral: true });
+  try {
+    const roleMap = loadJson(ROLE_MAP_FILE);
+    const channelMap = loadJson(CHANNEL_MAP_FILE);
+    const member = await interaction.guild.members.fetch(interaction.user.id);
+    if (!hasStaffRole(member, roleMap)) {
+      await interaction.editReply({ content: 'Only Ghost Paradise Commish/Co-Commish can use this command.' });
+      return;
     }
+
+    const gameThreadsChannelId = channelMap['Game threads'];
+    const parent = gameThreadsChannelId
+      ? (interaction.guild.channels.cache.get(gameThreadsChannelId) || await interaction.guild.channels.fetch(gameThreadsChannelId).catch(() => null))
+      : null;
+    if (!parent || !parent.threads) {
+      await interaction.editReply({ content: 'Game threads channel not configured or accessible.' });
+      return;
+    }
+
+    const active = await parent.threads.fetchActive();
+    const archived = await parent.threads.fetchArchived({ limit: 50 }).catch(() => ({ threads: [] }));
+    const threads = [...active.threads.values(), ...(archived.threads ? archived.threads.values() : [])];
+
+    let sent = 0;
+    for (const thread of threads) {
+      if (!/vs/i.test(thread.name)) continue;
+      const didSend = await sendReminderToThread(thread, roleMap, interaction.client);
+      if (didSend) sent++;
+    }
+
+    await interaction.editReply({ content: sent ? `Reminders sent to ${sent} open game thread(s).` : 'No open game threads needed reminders.' });
+  } catch (err) {
+    console.error('Error in 2k-remindgame:', err);
+    await interaction.editReply({ content: 'Error sending reminders.' });
+  }
 }
 
 export default { data, execute };

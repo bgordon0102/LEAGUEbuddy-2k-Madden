@@ -8,17 +8,20 @@ const PICK_OPTIONS = Array.from({ length: 32 }, (_, i) => String(i + 1));
 function computePickValue(year, round, pick, seasonYear) {
   const r = Number(round);
   if (!r || r < 1 || r > 7) return null;
-  // Scaled down to align with adjusted trade values
-  const baseChart = { 1: 110, 2: 75, 3: 50, 4: 35, 5: 25, 6: 18, 7: 12 };
-  const base = (baseChart[r] || 8) * 0.9; // mid-round baseline (no exact pick required)
+  // Normalize short years
+  const normalizedYear = year < 100 ? 2000 + year : year;
+  // Scaled heavier for top picks, with pick-number weighting
+  const baseChart = { 1: 260, 2: 190, 3: 135, 4: 100, 5: 70, 6: 50, 7: 35 };
+  const base = (baseChart[r] || 10) * 0.9; // mid-round baseline
   let decay = 1;
-  if (year && seasonYear) {
-    const diff = year - seasonYear;
-    decay = diff <= 0 ? 1 : diff === 1 ? 0.9 : 0.8; // 2026 > 2027 > 2028
-  } else if (year) {
-    decay = year === 2026 ? 1 : year === 2027 ? 0.9 : 0.8;
+  if (normalizedYear && seasonYear) {
+    const diff = normalizedYear - seasonYear;
+    decay = diff <= 0 ? 1 : diff === 1 ? 0.85 : 0.7; // 2026 > 2027 > 2028 with larger drop
+  } else if (normalizedYear) {
+    decay = normalizedYear === 2026 ? 1 : normalizedYear === 2027 ? 0.85 : 0.7;
   }
-  return Math.max(5, Math.round(base * decay));
+  const pickWeight = pick ? Math.max(0.2, Math.pow((33 - Number(pick)) / 32, 6.8)) : 1;
+  return Math.max(5, Math.round(base * decay * pickWeight));
 }
 
 export const data = new SlashCommandBuilder()

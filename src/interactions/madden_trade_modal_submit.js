@@ -148,19 +148,22 @@ function parsePickValue(label, seasonYear) {
   }
   if (!round || round < 1 || round > 7) return null;
   if (pickNum && (pickNum < 1 || pickNum > 256)) return null;
-  // Scaled down to better align with roster player values
-  const baseChart = { 1: 110, 2: 75, 3: 50, 4: 35, 5: 25, 6: 18, 7: 12 };
-  // Use a mid-round baseline since exact pick numbers are not required
-  const base = (baseChart[round] || 8) * 0.9;
+  // Scaled to align with roster values; heavier top picks
+  const baseChart = { 1: 260, 2: 190, 3: 135, 4: 100, 5: 70, 6: 50, 7: 35 };
+  const base = (baseChart[round] || 10) * 0.9;
   let decay = 1;
   if (year && seasonYear) {
     const diff = year - seasonYear;
-    decay = diff <= 0 ? 1 : diff === 1 ? 0.9 : 0.8; // 2026 > 2027 > 2028
+    // Drop future years sharply: at least ~20+ points on top picks year over year
+    decay = diff <= 0 ? 1 : diff === 1 ? 0.85 : 0.7;
   } else if (year) {
-    // Fall back to static ordering if season year is unknown
-    decay = year === 2026 ? 1 : year === 2027 ? 0.9 : 0.8;
+    decay = year === 2026 ? 1 : year === 2027 ? 0.85 : 0.7;
   }
-  const value = Math.max(5, Math.round(base * decay));
+  // Pick weighting: earlier picks much higher; exponential drop with floor
+  const pickWeight = pickNum
+    ? Math.max(0.2, Math.pow((33 - Number(pickNum)) / 32, 6.8))
+    : 1;
+  const value = Math.max(5, Math.round(base * decay * pickWeight));
   const yearLabel = year ? year : (seasonYear || 'Current');
   const labelParts = [`Round ${round}`];
   if (pickNum) labelParts.push(`Pick ${pickNum}`);

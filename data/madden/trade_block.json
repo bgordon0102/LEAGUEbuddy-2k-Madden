@@ -1,140 +1,24 @@
 {
-  "775553027": [
-    {
-      "rosterId": 553386583,
-      "name": "Gabe Davis",
-      "position": "WR",
-      "ovr": 73,
-      "age": 26,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461535931281702942",
-      "threadId": "1460483209161609391"
-    },
-    {
-      "rosterId": 553388315,
-      "name": "Curtis Samuel",
-      "position": "WR",
-      "ovr": 74,
-      "age": 29,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461535990370930934",
-      "threadId": "1460483209161609391"
-    },
-    {
-      "rosterId": 553388854,
-      "name": "Tre'Davious White",
-      "position": "CB",
-      "ovr": 76,
-      "age": 30,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461536101868114072",
-      "threadId": "1460483209161609391"
-    },
-    {
-      "rosterId": 553388127,
-      "name": "Jordan Poyer",
-      "position": "SS",
-      "ovr": 76,
-      "age": 34,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461536336514383955",
-      "threadId": "1460483209161609391"
-    },
-    {
-      "rosterId": 553388331,
-      "name": "Darnell Savage",
-      "position": "FS",
-      "ovr": 73,
-      "age": 28,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461537471337730090",
-      "threadId": "1460483209161609391"
-    }
-  ],
   "775553040": [
     {
-      "rosterId": 553386305,
-      "name": "A.J. Brown",
-      "position": "WR",
-      "ovr": 89,
-      "age": 28,
-      "dev": "<:dev_2:1460377399089958942>",
-      "messageId": "1461545065515319500",
+      "rosterId": 553386636,
+      "name": "Landon Dickerson",
+      "position": "LG",
+      "ovr": 85,
+      "age": 26,
+      "dev": "<:dev_1:1460377266017145071>",
+      "messageId": "1462548541946859671",
       "threadId": "1460483256066506856"
     },
     {
-      "rosterId": 553387201,
-      "name": "Sam Howell",
-      "position": "QB",
-      "ovr": 66,
-      "age": 24,
-      "dev": "<:dev_0:1460377231179382814>",
-      "messageId": "1461547135953797257",
-      "threadId": "1460483256066506856"
-    },
-    {
-      "rosterId": 553387738,
-      "name": "Tanner McKee",
-      "position": "QB",
-      "ovr": 64,
-      "age": 25,
-      "dev": "<:dev_0:1460377231179382814>",
-      "messageId": "1461547192237162621",
-      "threadId": "1460483256066506856"
-    }
-  ],
-  "775553049": [
-    {
-      "rosterId": 553386663,
-      "name": "Romeo Doubs",
-      "position": "WR",
-      "ovr": 78,
-      "age": 25,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461541072256765984",
-      "threadId": "1460483291298926709"
-    }
-  ],
-  "775553054": [
-    {
-      "rosterId": 553387185,
-      "name": "DeAndre Hopkins",
-      "position": "WR",
-      "ovr": 80,
-      "age": 33,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461540522400289019",
-      "threadId": "1460483300962472009"
-    },
-    {
-      "rosterId": 553387581,
-      "name": "Isaiah Likely",
-      "position": "TE",
-      "ovr": 75,
-      "age": 25,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461540623185084489",
-      "threadId": "1460483300962472009"
-    },
-    {
-      "rosterId": 553387218,
-      "name": "Marlon Humphrey",
+      "rosterId": 553386411,
+      "name": "Michael Carter II",
       "position": "CB",
-      "ovr": 87,
-      "age": 29,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461540874134622411",
-      "threadId": "1460483300962472009"
-    },
-    {
-      "rosterId": 553386095,
-      "name": "Chidobe Awuzie",
-      "position": "CB",
-      "ovr": 83,
-      "age": 30,
-      "dev": "<:dev_1:1460377266017145071>",
-      "messageId": "1461541026035535977",
-      "threadId": "1460483300962472009"
+      "ovr": 77,
+      "age": 26,
+      "dev": "<:dev_0:1460377231179382814>",
+      "messageId": "1462548651250286602",
+      "threadId": "1460483256066506856"
     }
   ]
 }

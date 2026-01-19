@@ -1,8 +1,34 @@
 {
-  "1076243288056664234": {
+  "422227963292155904": {
     "players": {
       "cus_01": {
-        "LaRon Williams": [
+        "Ian Okumuringa": [
+          "arch",
+          "ovr"
+        ],
+        "Jerquis Grant": [
+          "arch",
+          "ovr"
+        ],
+        "Jonosch Heinrich": [
+          "arch",
+          "ovr"
+        ]
+      }
+    },
+    "weeklyPoints": {
+      "year_2025_week_2": 0
+    }
+  },
+  "472219952472915969": {
+    "players": {
+      "cus_01": {
+        "McKinley Jennings": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Kaden Reed": [
           "arch",
           "ovr",
           "dev"
@@ -10,7 +36,7 @@
       }
     },
     "weeklyPoints": {
-      "year_2025_offseason": 30
+      "year_2025_week_2": 0
     }
   }
 }

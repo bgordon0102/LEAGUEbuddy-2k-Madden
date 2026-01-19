@@ -1,42 +1,9 @@
-// Role name to ID mapping for reliable assignment
-const ROLE_ID_MAP = {
-    "Ghost Paradise": "1460733464721490108",
-    "Ghost Paradise Commish": "1460734128935665817",
-    "Ghost Paradise Co-Commish": "1460734222238220326",
-    "Ghost Paradise Trade Committee": "1460734289015603355",
-    "76ers Coach": "1460734581325172807",
-    "Bucks Coach": "1460734654901653525",
-    "Bulls Coach": "1460734780600619193",
-    "Cavaliers Coach": "1460734885667934373",
-    "Celtics Coach": "1460734967934877902",
-    "Clippers Coach": "1460735025455829225",
-    "Grizzlies Coach": "1460735084566155555",
-    "Hawks Coach": "1460735211137532059",
-    "Heat Coach": "1460735288174313534",
-    "Hornets Coach": "1460735355568525413",
-    "Jazz Coach": "1460735407531626791",
-    "Kings Coach": "1460735481128947823",
-    "Knicks Coach": "1460735531271848180",
-    "Lakers Coach": "1460735640835719382",
-    "Magic Coach": "1460735694761754698",
-    "Mavericks Coach": "1460735750319378585",
-    "Nets Coach": "1460735822742425732",
-    "Nuggets Coach": "1460735894276542484",
-    "Pacers Coach": "1460735962719191183",
-    "Pelicans Coach": "1460736030029385790",
-    "Pistons Coach": "1460736087499604180",
-    "Raptors Coach": "1460736152788144398",
-    "Rockets Coach": "1460736215178285209",
-    "Spurs Coach": "1460736265682026779",
-    "Suns Coach": "1460736336150528094",
-    "Thunder Coach": "1460736393465696300",
-    "Timberwolves Coach": "1460736451473051739",
-    "Trail Blazers Coach": "1460736507206697081",
-    "Warriors Coach": "1460736566103244808",
-    "Wizards Coach": "1460736622390935562"
-};
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { updateAvailable2KTeamsPin } from '../../../2k/available_teams.js';
+import fs from 'fs';
+import path from 'path';
+
+const ROLE_MAP_FILE = path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json');
 
 const NBA_TEAMS = [
     'Hawks', 'Celtics', 'Nets', 'Hornets', 'Bulls', 'Cavaliers', 'Mavericks', 'Nuggets', 'Pistons',
@@ -105,8 +72,14 @@ export async function execute(interaction) {
         await replyMethod('User not found in this server.');
         return;
     }
+    let roleMap = {};
+    try {
+        roleMap = JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8'));
+    } catch (e) {
+        console.error('[2k-assignrole] Failed to read role map:', e);
+    }
     // Use role ID mapping for assignment
-    const roleId1 = ROLE_ID_MAP[roleName1];
+    const roleId1 = roleMap[roleName1];
     const role1 = roleId1 ? interaction.guild.roles.cache.get(roleId1) : null;
     if (!role1) {
         await replyMethod(`Role "${roleName1}" not found.`);
@@ -114,7 +87,7 @@ export async function execute(interaction) {
     }
     let role2 = null;
     if (roleName2) {
-        const roleId2 = ROLE_ID_MAP[roleName2];
+        const roleId2 = roleMap[roleName2];
         role2 = roleId2 ? interaction.guild.roles.cache.get(roleId2) : null;
         if (!role2) {
             await replyMethod(`Role "${roleName2}" not found.`);

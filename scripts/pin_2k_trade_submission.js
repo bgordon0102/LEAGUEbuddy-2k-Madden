@@ -28,10 +28,11 @@ async function main() {
                         '• Click the button below and fill out the form.',
                         '• Both coaches must approve the trade via DM.',
                         '• Approved trades are sent to the committee for final review.',
+                        '• Include full pick details (Year + Round + Pick), e.g., “2026 Round 1 Pick 5”.',
                         '',
                         '💡 **Example:**',
-                        'Team A sends: Player X, 1st Round Pick',
-                        'Team B sends: Player Y, 2nd Round Pick',
+                        'Team A sends: Player X, 2026 Round 1 Pick 5',
+                        'Team B sends: Player Y, 2026 Round 2 Pick 18',
                         '',
                         'Trades require approval from both coaches and the committee.'
                     ].join('\n')

@@ -1,4 +1,6 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
 
 console.log('[set_game_info] File loaded and ready');
 
@@ -7,6 +9,26 @@ export const customId = /^set_game_info_/;
 
 // Modal submit handler id
 export const customId_modal_set_game_info = /^set_game_info_modal_/;
+
+const ROLE_MAP_FILE = path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json');
+
+function loadRoleMap() {
+  try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
+}
+
+async function resolveCommishRoles(interaction, roleMap) {
+  const ids = [roleMap['Ghost Paradise Commish'], roleMap['Ghost Paradise Co-Commish']].filter(Boolean);
+  if (ids.length) return ids;
+  try {
+    const guild = interaction.guild;
+    if (!guild) return ids;
+    const commishRoles = guild.roles.cache.filter(r => /commish/i.test(r.name) && /paradise/i.test(r.name));
+    if (commishRoles.size) return Array.from(commishRoles.keys());
+  } catch {
+    // ignore lookup errors
+  }
+  return ids;
+}
 
 // Handles the modal submit for setting game info in a thread
 export async function execute_modal_set_game_info(interaction) {
@@ -88,6 +110,21 @@ export async function execute_modal_set_game_info(interaction) {
     });
     await message.edit({ content, components });
     await interaction.reply({ content: 'Game info set. Mark Game Complete is now available.', flags: 64 });
+
+    // Notify Paradise commish roles in the thread (2K flow)
+    try {
+      const roleMap = loadRoleMap();
+      const commishIds = await resolveCommishRoles(interaction, roleMap);
+      if (interaction.channel?.isTextBased()) {
+        const mentionContent = commishIds.length ? commishIds.map(id => `<@&${id}>`).join(' ') : '';
+        await interaction.channel.send({
+          content: mentionContent ? `${mentionContent} Game info is set.` : 'Game info is set.',
+          allowedMentions: { roles: commishIds, parse: [] }
+        }).catch(() => null);
+      }
+    } catch (notifyErr) {
+      console.error('[set_game_info][modal_submit] Failed to notify commish roles:', notifyErr);
+    }
   } catch (err) {
     console.error('[set_game_info][modal_submit] Uncaught error:', err, {
       threadId: interaction?.customId,
