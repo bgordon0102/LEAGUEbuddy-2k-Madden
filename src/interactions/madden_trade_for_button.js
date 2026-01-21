@@ -1,8 +1,10 @@
-import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
+import { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
 import { canTrade } from '../utils/madden_trade_utils.js';
+import { saveTradeDraft } from '../utils/trade_draft_store.js';
+import { buildButtons } from './trade_builder_add_assets.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 
@@ -86,57 +88,99 @@ export async function execute(interaction) {
     return;
   }
   const snapshot = loadLeagueSnapshot(leagueId);
-  const { team, player } = parseTeamAndPlayer(interaction.customId);
-  const yourTeam = getCoachTeamFromRoles(interaction, snapshot) || '';
+  const { team: otherTeamInit } = parseTeamAndPlayer(interaction.customId);
+  const yourTeamName = getCoachTeamFromRoles(interaction, snapshot) || '';
+  const teams = snapshot?.teams?.leagueTeamInfoList || [];
+  const matchTeam = (name) => {
+    const target = (name || '').toLowerCase();
+    return teams.find(t => {
+      const cands = [
+        t.displayName,
+        t.nickName,
+        t.abbrName,
+        t.cityName,
+      ].map(x => (x || '').toLowerCase());
+      return cands.includes(target) || cands.some(c => c && target && (c.includes(target) || target.includes(c)));
+    });
+  };
+  const optionsAll = teams.map(t => ({
+    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+    value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
+  }));
+  const optionsAFC = teams.filter(t => (t.divName || '').toUpperCase().includes('AFC')).map(t => ({
+    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+    value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
+  }));
+  const optionsNFC = teams.filter(t => (t.divName || '').toUpperCase().includes('NFC')).map(t => ({
+    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+    value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
+  }));
+  const limitOptions = (opts, keepValue) => {
+    if (opts.length <= 25) return opts;
+    const keep = opts.find(o => o.value === String(keepValue));
+    const others = opts.filter(o => o.value !== String(keepValue));
+    const trimmed = others.slice(0, 24);
+    return keep ? [keep, ...trimmed] : opts.slice(0, 25);
+  };
 
-  const modal = new ModalBuilder()
-    .setCustomId('madden_trade_modal_submit')
-    .setTitle('Propose Trade')
-    .addComponents(
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId('yourTeam')
-          .setLabel('Your Team')
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setValue(yourTeam || '')
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId('otherTeam')
-          .setLabel('Other Team')
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setValue(team || '')
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId('assetsSent')
-          .setLabel('Assets You Send')
-          .setStyle(TextInputStyle.Paragraph)
-          .setRequired(true)
-          .setPlaceholder('e.g., QB Bo Nix, 2027 1st Round, 2027 3rd Round, 2028 1st Round')
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId('assetsReceived')
-          .setLabel('Assets You Receive')
-          .setStyle(TextInputStyle.Paragraph)
-          .setRequired(true)
-          .setValue(player || '')
-          .setPlaceholder('e.g., QB Lamar Jackson, 2027 5th Round')
-      ),
-      new ActionRowBuilder().addComponents(
-        new TextInputBuilder()
-          .setCustomId('notes')
-          .setLabel('Notes')
-          .setStyle(TextInputStyle.Paragraph)
-          .setRequired(false)
-          .setPlaceholder('Optional context: cap reasons, depth, future picks, etc.')
-      ),
-    );
+  const yourTeamId = matchTeam(yourTeamName)?.teamId || null;
+  const otherTeamId = matchTeam(otherTeamInit)?.teamId || null;
+  const draftId = `builder_${interaction.user.id}_${Date.now()}`;
+  saveTradeDraft(draftId, {
+    draftId,
+    userId: interaction.user.id,
+    guildId: interaction.guildId,
+    leagueId,
+    yourTeamId,
+    otherTeamId,
+    yourTeamName: yourTeamName || null,
+    otherTeamName: otherTeamInit || null,
+    assets: { your: [], other: [] },
+  });
 
-  await interaction.showModal(modal);
+  const components = [
+    new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(`trade_builder_team_yours|${draftId}`)
+        .setPlaceholder(yourTeamName ? `Your team: ${yourTeamName}` : 'Select your team')
+        .setDisabled(yourTeamId ? true : false)
+        .addOptions(
+          yourTeamId
+            ? [{
+              label: yourTeamName || 'Your team',
+              value: String(yourTeamId),
+            }]
+            : limitOptions(optionsAll, yourTeamId)
+        )
+    ),
+    new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(`trade_builder_team_other_afc|${draftId}`)
+        .setPlaceholder('Select other team (AFC)')
+        .addOptions(limitOptions(optionsAFC))
+    ),
+    new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(`trade_builder_team_other_nfc|${draftId}`)
+        .setPlaceholder('Select other team (NFC)')
+        .addOptions(limitOptions(optionsNFC))
+    ),
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`trade_builder_team_search_other|${draftId}`)
+        .setLabel('Type other team')
+        .setStyle(ButtonStyle.Secondary)
+    ),
+  ];
+  if (yourTeamId && otherTeamId) {
+    components.push(...buildButtons(draftId));
+  }
+
+  await interaction.reply({
+    content: `Trade Builder\nYou: ${yourTeamName || '—'}\nOther: ${otherTeamInit || '—'}\nSelect both teams, then add assets to see live values.`,
+    components,
+    ephemeral: true,
+  });
 }
 
 export default { customId, execute };

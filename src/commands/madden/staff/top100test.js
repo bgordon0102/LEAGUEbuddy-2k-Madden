@@ -1,22 +1,49 @@
 import { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { resolveLeagueIdWithConfig } from '../../../madden/madden_data.js';
 import { loadLeagueSnapshot, currentWeek } from '../../../madden/madden_data.js';
-import { computeWeeklyList } from '../../../madden/top_players.js';
-import { EmbedBuilder } from 'discord.js';
+import { computeWeeklyList, computeSeasonTop100FromHistory } from '../../../madden/top_players.js';
+import { EmbedBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 
 const DEFAULT_CHANNEL_ID = '1462629502864851069';
+const SEASON_FILE = path.join(process.cwd(), 'data', 'madden', 'top_players.json');
 
 export const data = new SlashCommandBuilder()
   .setName('madden-top100test')
   .setDescription('Post the current Top 100 snapshot (test) to the staff channel.')
-  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
+  .addStringOption(opt =>
+    opt.setName('scope')
+      .setDescription('Show a specific week or season list')
+      .addChoices(
+        { name: 'Week', value: 'week' },
+        { name: 'Season (end of year)', value: 'season' }
+      )
+  )
+  .addIntegerOption(opt =>
+    opt.setName('week')
+      .setDescription('Week number (for weekly scope)')
+      .setMinValue(1)
+  );
 
 export async function execute(interaction, options = {}) {
   // If this is a button interaction, use update, else use reply
   const isButton = interaction.isButton && interaction.isButton();
   if (!isButton) await interaction.deferReply({ ephemeral: true });
+  const parseButtonState = () => {
+    const id = interaction.customId || '';
+    if (!id.startsWith('madden_top100test')) return {};
+    const parts = id.split('|');
+    if (parts.length < 4) return {};
+    const scope = parts[1];
+    const weekStr = parts[2];
+    const pageStr = parts[3];
+    const week = weekStr === 'null' ? null : Number(weekStr);
+    const page = Number(pageStr);
+    return { scope, week, page };
+  };
+  const parsed = isButton ? parseButtonState() : {};
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
     if (!isButton) await interaction.editReply('No league configured. Run /madden-set-league first.');
@@ -32,17 +59,109 @@ export async function execute(interaction, options = {}) {
     else await interaction.update({ content: 'Could not load league data.', components: [], embeds: [] });
     return;
   }
-  const week = currentWeek(snapshot);
-  let allPlayers = computeWeeklyList(snapshot, week - 1);
+  const scope = parsed.scope || interaction.options?.getString?.('scope') || options.scope || 'week';
+  const weekOpt = parsed.week ?? interaction.options?.getInteger?.('week') ?? options.week;
+  // Convert user-facing week number (1-based) to 0-based index for file lookups
+  const week = scope === 'week'
+    ? Math.max(0, (weekOpt != null ? weekOpt - 1 : currentWeek(snapshot) - 1))
+    : null;
+
+  let allPlayers;
+  if (scope === 'season') {
+    try {
+      const data = JSON.parse(fs.readFileSync(SEASON_FILE, 'utf8'));
+      const leagueBlob = data?.[leagueId] || data; // tolerate legacy shape
+      allPlayers = Array.isArray(leagueBlob?.seasonTop100)
+        ? leagueBlob.seasonTop100
+        : Array.isArray(leagueBlob?.top100)
+          ? leagueBlob.top100
+          : Array.isArray(data)
+            ? data
+            : [];
+    } catch {
+      allPlayers = [];
+    }
+    // Fallback: compute from history if not saved yet
+    if (!allPlayers.length) {
+      try {
+        allPlayers = computeSeasonTop100FromHistory(leagueId);
+      } catch {
+        allPlayers = [];
+      }
+    }
+    if (!allPlayers.length) {
+      const msg = 'No season Top 100 saved yet. Run the season exporter first.';
+      if (!isButton) await interaction.editReply(msg); else await interaction.update({ content: msg, components: [], embeds: [] });
+      return;
+    }
+  } else {
+    const historyDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId));
+    const file = path.join(historyDir, `week-${week}.json`);
+    const allFile = path.join(historyDir, `week-${week}-all.json`);
+    let loaded = [];
+    try {
+      const data = JSON.parse(fs.readFileSync(allFile, 'utf8'));
+      if (Array.isArray(data?.players)) loaded = data.players;
+    } catch {}
+    if (!loaded.length) {
+      try {
+        const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+        if (Array.isArray(data?.top100)) loaded = data.top100;
+      } catch {}
+    }
+    if (!loaded.length) {
+      loaded = computeWeeklyList(snapshot, week);
+    }
+    allPlayers = loaded;
+  }
   if (!allPlayers.length) {
     if (!isButton) await interaction.editReply('No player stats found for the latest week.');
     else await interaction.update({ content: 'No player stats found for the latest week.', components: [], embeds: [] });
     return;
   }
+  // Ensure sorted by grade desc for display, then trim to 100
+  allPlayers = allPlayers
+    .slice()
+    .sort((a, b) => (Number(b.grade || 0) - Number(a.grade || 0)) || 0);
+  // Build select menu of available weeks if scope=week
+  let components = [];
+  if (scope === 'week') {
+    const historyDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId));
+    let weekFiles = [];
+    try {
+      weekFiles = fs.readdirSync(historyDir).filter(f => /^week-\\d+-all\\.json$/.test(f));
+    } catch {}
+    const weekChoices = weekFiles
+      .map(f => Number(f.replace(/\\D/g, '')))
+      .filter(n => Number.isFinite(n))
+      .sort((a, b) => b - a) // desc
+      .slice(0, 25);
+    if (weekChoices.length) {
+      const menu = new StringSelectMenuBuilder()
+        .setCustomId('madden_top100test_week_select')
+        .setPlaceholder('Select week')
+        .addOptions(weekChoices.map(w => new StringSelectMenuOptionBuilder().setLabel(`Week ${w + 1}`).setValue(String(w))));
+      components = [
+        new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId('madden_top100test_prev')
+            .setLabel('Prev')
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(page === 1),
+          new ButtonBuilder()
+            .setCustomId('madden_top100test_next')
+            .setLabel('Next')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(page === totalPages),
+          menu
+        )
+      ];
+    }
+  }
   // Only show the top 100
   allPlayers = allPlayers.slice(0, 100);
   // Accept page override from options (for button handlers)
-  let page = options.page || 1;
+  let page = parsed.page || options.page || 1;
   const perPage = 10;
   const totalPages = Math.ceil(allPlayers.length / perPage);
   if (page < 1) page = 1;
@@ -82,6 +201,11 @@ export async function execute(interaction, options = {}) {
     return team;
   };
 
+  const makeButtonId = (action, targetPage) => {
+    const w = scope === 'week' ? week : 'null';
+    return `madden_top100test_${action}|${scope}|${w}|${targetPage}`;
+  };
+
   const getPageEmbed = (pageNum) => {
     const start = (pageNum - 1) * perPage;
     const slice = allPlayers.slice(start, start + perPage);
@@ -90,28 +214,33 @@ export async function execute(interaction, options = {}) {
       const emoji = getTeamEmoji(normalizedTeam);
       // Log for debugging
       if (!emoji) console.log(`[EMOJI DEBUG] No emoji for team:`, p.team, 'normalized as', normalizedTeam);
-      const grade = p.grade != null ? Number(p.grade).toFixed(2) : 'N/A';
+      // Show seasonGrade when scope=season; otherwise use weekly grade
+      const gradeValue = scope === 'season'
+        ? (p.seasonGrade != null ? p.seasonGrade : (p.avgGrade != null ? p.avgGrade : p.grade))
+        : p.grade;
+      const grade = gradeValue != null ? Number(gradeValue).toFixed(2) : 'N/A';
       const pos = p.displayPos || p.position || 'UNK';
       return `${start + idx + 1}. ${emoji} ${pos} - ${p.name} | Grade: ${grade}`;
     });
     // Map leagueId to display name (hardcoded for now)
     let leagueDisplayName = leagueId === '16594549' ? 'Ghost Legacy' : leagueId;
+    const titleScope = scope === 'season' ? 'Season' : `Week ${week + 1}`;
     return {
       embeds: [
         new EmbedBuilder()
-          .setTitle(`Madden Player Grades — Week ${week}`)
+          .setTitle(`Madden Player Grades — ${titleScope}`)
           .setDescription(lines.join('\n') || 'No players.')
           .setFooter({ text: `Page ${pageNum}/${totalPages} • League ${leagueDisplayName}` })
       ],
-      components: [
+      components: components.length ? components : [
         new ActionRowBuilder().addComponents(
           new ButtonBuilder()
-            .setCustomId('madden_top100test_prev')
+            .setCustomId(makeButtonId('prev', pageNum - 1))
             .setLabel('Prev')
             .setStyle(ButtonStyle.Secondary)
             .setDisabled(pageNum === 1),
           new ButtonBuilder()
-            .setCustomId('madden_top100test_next')
+            .setCustomId(makeButtonId('next', pageNum + 1))
             .setLabel('Next')
             .setStyle(ButtonStyle.Primary)
             .setDisabled(pageNum === totalPages)

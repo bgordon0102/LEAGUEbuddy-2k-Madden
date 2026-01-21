@@ -37,6 +37,18 @@ export function saveTradeCounts(data) {
   fs.writeFileSync(TRADE_COUNTS_FILE, JSON.stringify(data ?? {}, null, 2));
 }
 
+export function computeApprovedTradeCounts(trades) {
+  const counts = {};
+  Object.values(trades || {}).forEach(tr => {
+    if (tr?.status !== 'approved') return;
+    [tr.yourTeam, tr.otherTeam].forEach(t => {
+      if (!t) return;
+      counts[t] = (counts[t] || 0) + 1;
+    });
+  });
+  return counts;
+}
+
 export function incrementTradeCounts(counts, teams) {
   teams.forEach(t => {
     counts[t] = (counts[t] || 0) + 1;

@@ -104,7 +104,12 @@ export async function autocomplete(interaction) {
   const options = roleChoices(roleMap)
     .filter(r => r.name.toLowerCase().includes(focused))
     .slice(0, 25);
-  await interaction.respond(options);
+  try {
+    await interaction.respond(options);
+  } catch (err) {
+    // Ignore stale/unknown interaction errors; they occur if the client cancels the autocomplete
+    console.warn('[madden-assignrole autocomplete] respond failed:', err?.message || err);
+  }
 }
 
 export default { data, execute, autocomplete };

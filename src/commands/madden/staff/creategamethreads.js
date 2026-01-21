@@ -119,13 +119,23 @@ function teamMentions(game, teams, roleMap) {
   const norm = str => (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const entries = Object.entries(roleMap || {})
     .filter(([name]) => name.toLowerCase().endsWith('coach'))
-    .map(([name, id]) => ({ base: norm(name.replace(/coach$/i, '')), id }));
+    .map(([name, id]) => {
+      const base = norm(name.replace(/coach$/i, ''));
+      const mascot = norm(name.replace(/ coach$/i, '').split(/\s+/).pop());
+      return { base, mascot, id };
+    });
 
   const ids = [];
   for (const n of names) {
     const target = norm(`${n} coach`);
-    let found = entries.find(e => e.base === target);
-    if (!found) found = entries.find(e => e.base.includes(target) || target.includes(e.base));
+    const mascotTarget = norm(n.split(/\s+/).pop());
+    let found = entries.find(e =>
+      e.base === target ||
+      e.base === mascotTarget ||
+      target.includes(e.base) ||
+      e.base.includes(target) ||
+      mascotTarget === e.mascot
+    );
     if (found) ids.push(found.id);
     else {
       console.warn('[creategamethreads] Missing coach role for team:', n);

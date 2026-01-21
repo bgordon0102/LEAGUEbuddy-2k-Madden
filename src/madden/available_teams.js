@@ -43,7 +43,10 @@ function formatAssignments(guild, roles) {
     const role = guild.roles.cache.get(r.roleId);
     if (!role) return { team: r.team, value: 'Open' };
     const members = [...role.members.values()];
-    const names = members.length ? members.map(m => `<@${m.id}>`).join(', ') : 'Open';
+    // Show coach names without raw mention IDs to avoid ugly formatting
+    const names = members.length
+      ? members.map(m => m.displayName || m.user?.username || m.user?.tag || m.id).join(', ')
+      : 'Open';
     const emojiId = emojiMap[r.team];
     const emoji = emojiId ? `<:team_${r.team.toLowerCase()}:${emojiId}> ` : '';
     return { team: `${emoji}${r.team}`, value: names, rawTeam: r.team };

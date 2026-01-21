@@ -2,7 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { canTrade, loadActiveTrades, saveActiveTrades, loadTradeCounts } from '../utils/madden_trade_utils.js';
+import { canTrade, loadTradeCounts } from '../utils/madden_trade_utils.js';
+import { saveTradeDraft } from '../utils/trade_draft_store.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -13,28 +14,33 @@ function loadJson(file) {
 
 function posAdj(position) {
   const map = {
-    QB: 0.25, WR: 0.05, CB: 0.05, REDGE: 0.08, LEDGE: 0.08, DT: 0.02,
-    LT: 0.05, RT: 0.04, LG: 0, RG: 0, C: 0,
-    FS: 0, SS: 0, MLB: -0.02, WILL: -0.02, SAM: -0.02,
-    HB: -0.05, FB: -0.2, TE: -0.02, K: -0.4, P: -0.4, LS: -0.5,
+    QB: 0.35, WR: 0.08, CB: 0.08, REDGE: 0.10, LEDGE: 0.10, DT: 0.05,
+    LT: 0.08, RT: 0.06, LG: 0.02, RG: 0.02, C: 0.02,
+    FS: 0.02, SS: 0.02, MLB: -0.04, WILL: -0.04, SAM: -0.04,
+    HB: -0.03, FB: -0.2, TE: -0.01, K: -0.45, P: -0.45, LS: -0.55,
   };
   return map[position] || 0;
 }
 
 function ageAdj(age) {
   if (!age) return 0;
-  if (age <= 24) return 0.08;
-  if (age <= 27) return 0.04;
-  if (age <= 29) return 0;
-  if (age <= 32) return -0.04;
-  return -0.08;
+  if (age <= 23) return 0.24;
+  if (age <= 25) return 0.17;
+  if (age <= 27) return 0.07;
+  if (age <= 29) return -0.10;
+  if (age <= 31) return -0.16;
+  if (age <= 33) return -0.24;
+  if (age <= 34) return -0.30;
+  if (age <= 35) return -0.38;
+  if (age <= 36) return -0.45;
+  return -0.50;
 }
 
 function devAdj(devTrait) {
   // 0=Normal,1=Star,2=Superstar,3=XFactor
-  if (devTrait === 3) return 0.28; // X-Factor
-  if (devTrait === 2) return 0.20; // Superstar
-  if (devTrait === 1) return 0.12; // Star
+  if (devTrait === 3) return 0.45; // X-Factor
+  if (devTrait === 2) return 0.30; // Superstar
+  if (devTrait === 1) return 0.18; // Star
   return 0;
 }
 
@@ -57,27 +63,93 @@ export function computePlayerValue(p) {
   const age = p.age ?? 26;
   const cap = Number(p.contractSalary || 0) + Number(p.contractBonus || 0);
   const yearsLeft = p.contractYearsLeft ?? p.contractLengthRemaining ?? p.contractLength ?? p.yearsRemaining ?? 0;
+  const attr = (keys) => {
+    for (const k of keys) {
+      if (p[k] != null) return Number(p[k]) || 0;
+    }
+    return 0;
+  };
+  const spd = attr(['speedRating', 'spd', 'speed']);
+  const acc = attr(['accelerationRating', 'acc', 'acceleration']);
+  const agi = attr(['agilityRating', 'agi', 'agility']);
+  const str = attr(['strengthRating', 'str', 'strength']);
+  const athAvg = (spd + acc + agi) / 3 || 0;
+  const athBoost = Math.max(-0.12, Math.min(0.30, (athAvg - 80) / 35)); // slightly steeper spread
+  const isOffSkill = ['QB', 'HB', 'RB', 'WR', 'TE', 'FB'].includes(p.position);
+  const isDB = ['CB', 'FS', 'SS'].includes(p.position);
+  const isEdge = ['REDGE', 'LEDGE', 'EDGE', 'ROLB', 'LOLB', 'RE', 'LE'].includes(p.position);
+  const isDT = ['DT', 'IDL', 'DI'].includes(p.position);
+  const isOL = ['LT', 'LG', 'C', 'RG', 'RT'].includes(p.position);
+  const passBlock = attr(['passBlockRating', 'pbk']);
+  const runBlock = attr(['runBlockRating', 'rbk']);
+  const blockBoost = isOL ? Math.max(0, (passBlock + runBlock) / 2 - 75) / 60 : 0;
+  const rushMove = attr(['finesseMovesRating', 'fmv']) + attr(['powerMovesRating', 'pmv']);
+  const passRushBoost = (isEdge || isDT) ? Math.max(0, (rushMove / 2 - 75) / 40) : 0;
+  const cover = attr(['manCoverageRating', 'pressCoverageRating', 'zoneCoverageRating', 'mcv', 'zcv']);
+  const coverBoost = isDB ? Math.max(0, (cover - 75) / 45) : 0;
 
   const pos = posAdj(p.position);
   const ageFactor = ageAdj(age);
   const dev = devAdj(p.devTrait);
   const yrs = yearsAdj(yearsLeft);
   const capHit = capAdj(cap);
-  // Heavier weight for franchise QBs in prime window (ages 32-36) with high OVR/dev
+  // Heavier weight for franchise QBs in prime window (ages 26-32) with high OVR/dev
   let qbPrimeBoost = 0;
   const isQB = p.position === 'QB';
   const highOvrQB = isQB && ovr >= 85;
   const primeAgeQB = isQB && age >= 26 && age <= 32;
-  if (highOvrQB) qbPrimeBoost += 0.08;
-  if (primeAgeQB) qbPrimeBoost += 0.12;
-  if (isQB && p.devTrait >= 2) qbPrimeBoost += 0.06; // SS/X get an extra nudge
+  if (highOvrQB) qbPrimeBoost += 0.12;
+  if (primeAgeQB) qbPrimeBoost += 0.15;
+  if (isQB && p.devTrait >= 2) qbPrimeBoost += 0.08; // SS/X get an extra nudge
+  // Young upside boost for any position
+  let youthUpside = 0;
+  if (age <= 24 && ovr >= 80) youthUpside += 0.18;
+  if (age <= 26 && ovr >= 85) youthUpside += 0.13;
+  // Young franchise QB bonus and athletic boost
+  if (isQB) {
+    if (age <= 25 && ovr >= 82) youthUpside += 0.22;
+    if (age <= 27 && ovr >= 85) youthUpside += 0.15;
+    if (p.devTrait >= 2) youthUpside += 0.08;
+    const qbAth = Math.max(0, ((spd + acc) / 2) - 80) / 40; // mobile QB bump slightly larger
+    qbPrimeBoost += qbAth;
+  }
+  // Veteran decay for high OVR past prime
+  let vetDrag = 0;
+  if (age >= 30 && ovr >= 88) vetDrag -= 0.18;
+  if (age >= 32 && ovr >= 85) vetDrag -= 0.24;
+  if (age >= 34 && ovr >= 82) vetDrag -= 0.32;
+  if (age >= 35 && ovr >= 80) vetDrag -= 0.40;
 
-  const multiplier = 1.0 + pos + ageFactor + dev + yrs + capHit + qbPrimeBoost;
-  const safeMultiplier = Math.max(0.1, multiplier); // prevent negative/zero
-  // Non-linear base to widen gap between elite and low OVR: square distance from 40
+  const multiplier = 1.0
+    + pos
+    + ageFactor
+    + dev
+    + yrs
+    + capHit
+    + qbPrimeBoost
+    + youthUpside
+    + vetDrag
+    + (athBoost * (isOffSkill || isDB || isEdge ? 1.1 : 0.6))
+    + blockBoost
+    + passRushBoost
+    + coverBoost;
+  const safeMultiplier = Math.max(0.2, multiplier); // prevent negative/zero
+  // Non-linear base to widen gap between elite and low OVR
   const base = Math.pow(Math.max(0, ovr - 40), 2) / 10;
-  const raw = base * safeMultiplier;
-  return Math.max(1, Math.round(raw * 10) / 10);
+  // Global spread to raise ceiling and widen separation
+  let value = base * safeMultiplier * 1.2; // boost overall range
+  if (ovr >= 96) value *= 1.12;
+  if (ovr >= 98) value *= 1.08;
+  // Floor elite QBs: 94+ → 500+, 90–93 → 400+
+  if (p.position === 'QB') {
+    if (ovr >= 94 && value < 500) value = 500;
+    else if (ovr >= 90 && value < 400) value = 400;
+  }
+  // Elite veteran floor: keep high-OVR vets from cratering
+  if (ovr >= 95 && age >= 34 && value < 250) {
+    value = 250 + (ovr - 95) * 12; // 95 -> 250, 99 -> 298
+  }
+  return Math.max(1, Math.round(value * 10) / 10);
 }
 
 function normalizeKey(str) {
@@ -172,7 +244,10 @@ function parsePickValue(label, seasonYear) {
 }
 
 function parseAssets(text, valueMap, seasonYear) {
-  const parts = (text || '').split(',').map(t => t.trim()).filter(Boolean);
+  const parts = (text || '')
+    .split(/[\n,]+/)
+    .map(t => t.trim())
+    .filter(Boolean);
   let total = 0;
   const matched = [];
   const unmatched = [];
@@ -281,8 +356,6 @@ function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
   const theySend = flip ? sendTotal : recvTotal;
   const netRaw = typeof gap === 'number' ? gap : (Number(sendTotal) - Number(recvTotal));
   const net = flip ? -netRaw : netRaw;
-  const direction = net === 0 ? 'even' : net > 0 ? 'you send more value' : 'they send more value';
-  const netLabel = net === 0 ? 'Net: even' : `Net: ${net > 0 ? '+' : ''}${Number(net).toFixed(1)} (${direction})`;
   const gapAbs = Math.abs(net);
   const thresholdLine = gapAbs <= VALUE_THRESHOLD
     ? `Value check: correct (gap ${gapAbs.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
@@ -290,31 +363,33 @@ function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
   return [
     `You send: ${Number(youSend).toFixed(1)}`,
     `They send: ${Number(theySend).toFixed(1)}`,
-    netLabel,
     thresholdLine,
   ].join('\n');
 }
 
 function buildTradeEmbed({ yourTeam, otherTeam, assetsSent, assetsReceived, notes, valueSummary, hideInstructions = false, assetsSentValueLines, assetsReceivedValueLines }) {
+  const safeString = (v) => (typeof v === 'string' && v.length ? v : (v != null ? String(v) : '—'));
+  const safeArray = (arr) => Array.isArray(arr) ? arr.filter(Boolean) : [];
   const embed = new EmbedBuilder()
     .setTitle('Trade Proposal')
     .setDescription(hideInstructions ? null : 'List the exact players/picks going each way. Pick format: Year + Round (no pick #), e.g., “2027 1st Round”, “2027 3rd Round”, “2028 1st Round”. Example send: “QB Bo Nix, 2027 1st Round, 2027 3rd Round, 2028 1st Round”; receive: “QB Lamar Jackson, 2027 5th Round”. Trades lock after Week 8.')
     .addFields(
-      { name: 'Your Team', value: yourTeam, inline: true },
-      { name: 'Other Team', value: otherTeam, inline: true },
-      { name: 'Assets You Send', value: (assetsSentValueLines && assetsSentValueLines.length) ? assetsSentValueLines.join('\n') : (assetsSent || '—') },
-      { name: 'Assets You Receive', value: (assetsReceivedValueLines && assetsReceivedValueLines.length) ? assetsReceivedValueLines.join('\n') : (assetsReceived || '—') },
+      { name: 'Your Team', value: safeString(yourTeam), inline: true },
+      { name: 'Other Team', value: safeString(otherTeam), inline: true },
+      { name: 'Assets You Send', value: safeArray(assetsSentValueLines).length ? safeArray(assetsSentValueLines).join('\n') : safeString(assetsSent) },
+      { name: 'Assets You Receive', value: safeArray(assetsReceivedValueLines).length ? safeArray(assetsReceivedValueLines).join('\n') : safeString(assetsReceived) },
     )
     .setColor(0x5865f2);
   if (valueSummary) {
-    embed.addFields({ name: 'Trade Value Check', value: valueSummary });
+    embed.addFields({ name: 'Trade Value Check', value: safeString(valueSummary) });
   }
-  if (notes) embed.addFields({ name: 'Notes', value: notes });
+  if (notes) embed.addFields({ name: 'Notes', value: safeString(notes) });
   // Remove duplicate per-team breakdowns to avoid redundancy
   return embed;
 }
 
 export const customId = 'madden_trade_modal_submit';
+export { parseAssets, buildValueMap, buildTradeEmbed, formatValueSummary, parsePickValue };
 
 export async function execute(interaction) {
   if (!interaction.isModalSubmit() || interaction.customId !== customId) return;
@@ -383,88 +458,43 @@ export async function execute(interaction) {
       { name: `${yourTeam} sends (value)`, value: formatItems(sendItems), inline: false },
       { name: `${otherTeam} sends (value)`, value: formatItems(recvItems), inline: false },
     );
-    const tradeId = `${Date.now()}`;
-    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-    const expiresStamp = `<t:${Math.floor(expiresAt / 1000)}:R>`;
-
-    // Prepare DM buttons (Coach B approval)
-    const approveBtn = new ButtonBuilder().setCustomId(`mtrade_b_approve_${tradeId}`).setLabel('Approve').setStyle(ButtonStyle.Success);
-    const denyBtn = new ButtonBuilder().setCustomId(`mtrade_b_deny_${tradeId}`).setLabel('Deny').setStyle(ButtonStyle.Danger);
-    const row = new ActionRowBuilder().addComponents(approveBtn, denyBtn);
-
-    // DM other coach
-    let otherRoleId = resolveTeamRoleId(otherTeam, snapshot, roleMap);
-    let dmSent = false;
-    if (interaction.guild) {
-      // Fallback: try to find role by fuzzy name if map missed
-      if (!otherRoleId) {
-        const target = (otherTeam || '').toLowerCase();
-        const found = interaction.guild.roles.cache.find(r => r.name.toLowerCase().includes(target));
-        if (found) otherRoleId = found.id;
-      }
-
-      if (otherRoleId) {
-        let role = await interaction.guild.roles.fetch(otherRoleId).catch(() => null);
-        // If no cached members, try fetching guild members to populate
-        if (role && role.members.size === 0) {
-          await interaction.guild.members.fetch().catch(() => null);
-          role = await interaction.guild.roles.fetch(otherRoleId).catch(() => role);
-        }
-        if (role) {
-          // Build a swapped embed for the recipient so perspective is correct
-          const recipientEmbed = buildTradeEmbed({
-            yourTeam: otherTeam,
-            otherTeam: yourTeam,
-            assetsSent: assetsReceived,
-            assetsReceived: assetsSent,
-            notes,
-            valueSummary: formatValueSummary(sendVal.total, recvVal.total, gap, true, recvItems, sendItems),
-            hideInstructions: true,
-            assetsSentValueLines: recvLines,
-            assetsReceivedValueLines: sendLines,
-          });
-        for (const m of role.members.values()) {
-          await m.send({
-            embeds: [recipientEmbed],
-            components: [row],
-            content: `Trade ID: ${tradeId}. Please approve/deny within 24h (expires ${expiresStamp}).`,
-          }).catch(() => null);
-          dmSent = true;
-        }
-      }
-    }
-    }
-
-    if (!dmSent) {
-      await interaction.editReply({ content: `Trade submitted (ID ${tradeId}), but I couldn't DM the other coach (no matching role members found).${unmatched.length ? ` Unmatched assets: ${unmatched.join(', ')}` : ''}`, ephemeral: true });
-      return;
-    }
-
-    // Persist active trade
-    const active = loadActiveTrades();
-    active[tradeId] = {
-      tradeId,
+    // Build an ephemeral preview draft (no DM/finalize yet)
+    const draftId = `draft_${interaction.user.id}_${Date.now()}`;
+    saveTradeDraft(draftId, {
+      draftId,
+      userId: interaction.user.id,
+      guildId: interaction.guildId,
+      yourTeamRaw,
+      otherTeamRaw,
       yourTeam,
       otherTeam,
       assetsSent,
       assetsReceived,
       notes,
-      sendTotal: sendVal.total,
-      recvTotal: recvVal.total,
-      valueGap: gap,
+      sendVal,
+      recvVal,
+      sendItems,
+      recvItems,
+      gap,
+      seasonYear,
       unmatched,
-      status: 'awaiting_coach_b',
-      createdAt: Date.now(),
-      expiresAt,
-      proposerId: interaction.user.id,
-      otherRoleId,
-      guildId: interaction.guildId,
-    };
-    saveActiveTrades(active);
+      savedAt: Date.now(),
+    });
+
+    const modifyBtn = new ButtonBuilder()
+      .setCustomId(`madden_trade_preview_modify|${draftId}`)
+      .setLabel('Modify Deal')
+      .setStyle(ButtonStyle.Secondary);
+    const submitBtn = new ButtonBuilder()
+      .setCustomId(`madden_trade_preview_submit|${draftId}`)
+      .setLabel('Check Value')
+      .setStyle(ButtonStyle.Primary);
+    const previewRow = new ActionRowBuilder().addComponents(modifyBtn, submitBtn);
 
     await interaction.editReply({
-      content: '',
+      content: 'Preview — use Modify to adjust or Check Value to run the value check and send for approval.',
       embeds: [embed],
+      components: [previewRow],
       ephemeral: true,
     });
   } catch (e) {

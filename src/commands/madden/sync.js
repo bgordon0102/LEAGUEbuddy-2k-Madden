@@ -29,6 +29,45 @@ async function ensureDir() {
   await fs.mkdir(prevDir, { recursive: true });
 }
 
+// Aggregate per-player totals across all stat buckets for a single week.
+// This mirrors the shape used by awards/top100 so downstream consumers can rely
+// on a single rolled-up object per player.
+function buildPlayerTotals(week) {
+  const agg = new Map();
+  const add = (list, fields) => {
+    (list || []).forEach(p => {
+      const id = p.rosterId || `${p.fullName || ''}-${p.teamId || ''}`.trim();
+      if (!id) return;
+      const cur = agg.get(id) || {
+        rosterId: p.rosterId,
+        teamId: p.teamId,
+        fullName: p.fullName,
+        position: p.position,
+        scheduleId: p.scheduleId,
+        weekIndex: p.weekIndex,
+        seasonIndex: p.seasonIndex,
+        stageIndex: p.stageIndex,
+        totals: {},
+      };
+      fields.forEach(f => {
+        const val = Number(p[f] ?? 0);
+        cur.totals[f] = (cur.totals[f] || 0) + (Number.isFinite(val) ? val : 0);
+      });
+      agg.set(id, cur);
+    });
+  };
+  add(week?.passing?.playerPassingStatInfoList, ['passAtt', 'passComp', 'passYds', 'passTDs', 'passInts', 'passSacks']);
+  add(week?.rushing?.playerRushingStatInfoList, ['rushAtt', 'rushYds', 'rushTDs', 'fumbles']);
+  add(week?.receiving?.playerReceivingStatInfoList, ['recCatches', 'recYds', 'recTDs']);
+  add(week?.defense?.playerDefensiveStatInfoList, [
+    'defTotalTackles', 'defSoloTackles', 'defSacks', 'defTacklesForLoss', 'defInts',
+    'defForcedFumbles', 'defRecoveredFumbles', 'defPassDeflections', 'defTDs'
+  ]);
+  add(week?.kicking?.playerKickingStatInfoList, ['fgMade', 'fgAtt', 'xpMade', 'xpAtt', 'kickPts']);
+  add(week?.punting?.playerPuntingStatInfoList, ['pntAtt', 'pntYds', 'pntInside20']);
+  return Array.from(agg.values());
+}
+
 async function loadTokens() {
   const dbTokens = loadTokensDb();
   if (dbTokens && dbTokens.accessToken && dbTokens.refreshToken) return dbTokens;
@@ -300,7 +339,12 @@ export async function runSync(leagueId, provider, options = {}) {
       return Array.from(byKey.values()).map(w => {
         // update completeness flag using current data
         const complete = isWeekComplete(w);
-        return { ...w, isIncomplete: !complete, playerCount: countPlayers(w) };
+        return {
+          ...w,
+          isIncomplete: !complete,
+          playerCount: countPlayers(w),
+          playerTotals: buildPlayerTotals(w),
+        };
       }).sort((a, b) => (a.stage - b.stage) || (a.weekIndex - b.weekIndex));
     })();
 

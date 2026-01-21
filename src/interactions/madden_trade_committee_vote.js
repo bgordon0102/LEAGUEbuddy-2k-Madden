@@ -6,8 +6,8 @@ import {
   saveActiveTrades,
   loadTradeCounts,
   saveTradeCounts,
-  incrementTradeCounts,
   updateTradeCountsEmbed,
+  computeApprovedTradeCounts,
 } from '../utils/madden_trade_utils.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -103,24 +103,30 @@ async function dmProposer(client, userId, embed, statusText) {
   } catch { /* ignore DM failures */ }
 }
 
+function normalizeTeam(s) {
+  return (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 function teamRoleMention(teamName, roleMap) {
   if (!teamName) return '';
-  const target = (teamName || '').toLowerCase();
+  const target = normalizeTeam(teamName);
+  const mascot = normalizeTeam(teamName.split(/\s+/).pop());
   for (const [key, val] of Object.entries(roleMap)) {
     if (!key.endsWith(' Coach')) continue;
-    const base = key.replace(/ Coach$/, '').toLowerCase();
-    if (base === target) return `<@&${val}>`;
+    const base = normalizeTeam(key.replace(/ Coach$/, ''));
+    if (base === target || base === mascot || target.includes(base) || base.includes(target)) return `<@&${val}>`;
   }
   return '';
 }
 
 function teamRoleId(teamName, roleMap) {
   if (!teamName) return null;
-  const target = (teamName || '').toLowerCase();
+  const target = normalizeTeam(teamName);
+  const mascot = normalizeTeam(teamName.split(/\s+/).pop());
   for (const [key, val] of Object.entries(roleMap)) {
     if (!key.endsWith(' Coach')) continue;
-    const base = key.replace(/ Coach$/, '').toLowerCase();
-    if (base === target) return val;
+    const base = normalizeTeam(key.replace(/ Coach$/, ''));
+    if (base === target || base === mascot || target.includes(base) || base.includes(target)) return val;
   }
   return null;
 }
@@ -238,9 +244,9 @@ export async function execute(interaction) {
     }
   }
 
-  // Update trade counts only on approval
+  // Update trade counts only on approval (recompute from all approved trades)
   if (finalized === 'approved') {
-    const counts = incrementTradeCounts(loadTradeCounts(), [trade.yourTeam, trade.otherTeam]);
+    const counts = computeApprovedTradeCounts(loadActiveTrades());
     saveTradeCounts(counts);
     await updateTradeCountsEmbed(interaction.client, channelMap, counts);
   }

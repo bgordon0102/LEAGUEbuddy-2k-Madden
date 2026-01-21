@@ -36,12 +36,11 @@ async function main() {
         .setTitle('Submit a Trade')
         .setDescription(
           [
-            'Click the button to open the trade form.',
-            'List what you **send** and what you **receive** (players/picks).',
-            'Pick format: Year + Round only (no pick #). Use 2027 1st–7th and 2028 1st–7th, e.g., “2027 1st Round”, “2027 3rd Round”, “2028 5th Round”.',
-            'Example send: “Broncos: QB Bo Nix, 2027 1st Round, 2027 3rd Round, 2028 1st Round”',
-            'Example receive: “Ravens: QB Lamar Jackson, 2027 5th Round”',
-            'Trades lock after Week 8.'
+            'Use Trade Builder to propose your deal:',
+            '• Your team is auto-detected. Pick the other team (AFC/NFC dropdown or “Type other team”).',
+            '• Add assets via Offense / Defense / ST+picks menus, or use “Search” to find a specific player.',
+            '• Review live totals in the embed. When ready, hit Submit to send for approval.',
+            'Trades lock after Week 8.',
           ].join('\n')
         )
         .setColor(0x00ae86);

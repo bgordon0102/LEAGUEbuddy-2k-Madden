@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { computePlayerValue } from '../../../interactions/madden_trade_modal_submit.js';
 
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 
@@ -26,60 +27,6 @@ function heightToFeetInches(h) {
   const ft = Math.floor(inches / 12);
   const rem = inches % 12;
   return `${ft}'${rem}"`;
-}
-
-// Trade value: VALUE = OVERALL * (1.0 + POSITION + AGE + DEV TRAIT + YEARS LEFT + CAP HIT)
-function posAdj(position) {
-  const map = {
-    QB: 0.25, WR: 0.05, CB: 0.05, REDGE: 0.08, LEDGE: 0.08, DT: 0.02,
-    LT: 0.05, RT: 0.04, LG: 0, RG: 0, C: 0,
-    FS: 0, SS: 0, MLB: -0.02, WILL: -0.02, SAM: -0.02,
-    HB: -0.05, FB: -0.2, TE: -0.02, K: -0.4, P: -0.4, LS: -0.5,
-  };
-  return map[position] || 0;
-}
-function ageAdj(age) {
-  if (!age) return 0;
-  if (age <= 24) return 0.08;
-  if (age <= 27) return 0.04;
-  if (age <= 29) return 0;
-  if (age <= 32) return -0.04;
-  return -0.08;
-}
-function devAdj(devTrait) {
-  if (devTrait === 3) return 0.28;
-  if (devTrait === 2) return 0.20;
-  if (devTrait === 1) return 0.12;
-  return 0;
-}
-function yearsAdj(yearsLeftRaw) {
-  const years = Number(yearsLeftRaw ?? 0);
-  if (!Number.isFinite(years) || years <= 0) return 0;
-  return Math.min(years, 4) * 0.015;
-}
-function capAdj(cap) {
-  const c = Number(cap || 0);
-  if (!Number.isFinite(c) || c <= 0) return 0;
-  return -Math.min(c / 150, 0.2);
-}
-function computePlayerValue(p) {
-  if (!p) return 0;
-  const ovr = p.overallRating ?? p.playerBestOvr ?? p.ovrRating ?? 0;
-  const age = p.age ?? 26;
-  const cap = Number(p.contractSalary || 0) + Number(p.contractBonus || 0);
-  const yearsLeft = p.contractYearsLeft ?? p.contractLengthRemaining ?? p.contractLength ?? p.yearsRemaining ?? p.desiredLength ?? 0;
-
-  const pos = posAdj(p.position);
-  const ageFactor = ageAdj(age);
-  const dev = devAdj(p.devTrait);
-  const yrs = yearsAdj(yearsLeft);
-  const capHit = capAdj(cap);
-
-  const multiplier = 1.0 + pos + ageFactor + dev + yrs + capHit;
-  const safeMultiplier = Math.max(0.1, multiplier);
-  const base = Math.pow(Math.max(0, ovr - 40), 2) / 10;
-  const raw = base * safeMultiplier;
-  return Math.max(1, Math.round(raw * 10) / 10);
 }
 
 export const data = new SlashCommandBuilder()

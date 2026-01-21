@@ -76,12 +76,16 @@ function saveRanks(map) {
 
 function teamRoleMention(teamName, roleMap) {
   if (!teamName) return null;
-  const target = teamName.toLowerCase();
-  const mascot = target.split(/\s+/).pop();
+  const normalize = (s) => (s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/ers$/, 'ers'); // keep 49ers style intact
+  const target = normalize(teamName);
+  const mascot = normalize(teamName.split(/\s+/).pop());
   for (const [key, val] of Object.entries(roleMap)) {
     if (!key.endsWith(' Coach')) continue;
-    const base = key.replace(/ Coach$/, '').toLowerCase();
-    if (base === target || (mascot && base === mascot) || target.includes(base)) {
+    const base = normalize(key.replace(/ Coach$/, ''));
+    if (base === target || (mascot && base === mascot) || target.includes(base) || base.includes(target)) {
       return `<@&${val}>`;
     }
   }
