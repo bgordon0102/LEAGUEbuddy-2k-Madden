@@ -21,12 +21,20 @@ export const data = new SlashCommandBuilder()
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
 const TOTAL_WEEKS = 29;
-// Updated dedicated channel for weekly game threads
-const DEDICATED_CHANNEL_ID = '1428417230000885830';
-// Channel for global advance announcements
-const ANNOUNCE_CHANNEL_ID = '1425555647167987792';
-const PHASE_ANNOUNCE_CHANNEL_ID = '1425555647167987792';
-const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
+
+const DEFAULT_CONFIG = {
+    dedicatedChannelId: '1428417230000885830',
+    announceChannelId: '1425555647167987792',
+    phaseAnnounceChannelId: '1425555647167987792',
+    leagueRoleId: '1460733464721490108',
+    deadlineHours: 24,
+};
+
+function loadAdvanceConfig(dataManager) {
+    const cfg = dataManager.readData('config');
+    const userCfg = cfg?.advanceweek || {};
+    return { ...DEFAULT_CONFIG, ...userCfg };
+}
 
 function loadCoachRoleMap() {
     try {
@@ -74,7 +82,7 @@ function findCoachRoleId(teamName, coachRoleMap) {
     return contains ? contains.id : null;
 }
 
-async function sendInitialWelcome(thread, teamA, teamB) {
+async function sendInitialWelcome(thread, teamA, teamB, deadlineHours) {
     const coachRoleMap = loadCoachRoleMap();
     const teamARole = findCoachRoleId(teamA, coachRoleMap);
     const teamBRole = findCoachRoleId(teamB, coachRoleMap);
@@ -83,7 +91,8 @@ async function sendInitialWelcome(thread, teamA, teamB) {
     if (teamARole) mentions.push(`<@&${teamARole}>`);
     if (teamBRole) mentions.push(`<@&${teamBRole}>`);
     const coachMentions = mentions.join(' ') || `${teamA} Coach & ${teamB} Coach`;
-    const deadline = Math.floor((Date.now() + 24 * 60 * 60 * 1000) / 1000); // UNIX seconds
+    const hours = Number.isFinite(deadlineHours) ? deadlineHours : DEFAULT_CONFIG.deadlineHours;
+    const deadline = Math.floor((Date.now() + hours * 60 * 60 * 1000) / 1000); // UNIX seconds
     const welcomeMsg = `Welcome ${coachMentions}!\nUse this thread to coordinate your matchup. Share availability and confirm tip-off here.\n\nSet the in-game date using the button below so staff can sim if needed.\n\n**In-game date:** _not set (tap Set Game Info)_\n\nDeadline: <t:${deadline}:F> (<t:${deadline}:R>)`;
     // Debug logging
     console.log(`[sendInitialWelcome] Attempting to send welcome message to thread: ${thread.name}`);
@@ -112,6 +121,7 @@ export async function execute(interaction) {
         return;
     }
     const dataManager = new DataManager();
+    const advanceCfg = loadAdvanceConfig(dataManager);
     let season = dataManager.readData('season') || { currentWeek: 1, seasonNo: 1 };
     let weekNum = interaction.options.getInteger('week');
     const startPlayoffs = interaction.options.getBoolean('startplayoffs') === true;
@@ -126,10 +136,10 @@ export async function execute(interaction) {
             await interaction.editReply({ content: `Season moved to playoffs (currentWeek ${season.currentWeek}). Progression and scouting are locked; trades and re-signing remain locked until offseason.` });
             // Announce phase change
             try {
-                const announceChannel = await interaction.client.channels.fetch(PHASE_ANNOUNCE_CHANNEL_ID).catch(() => null);
+                const announceChannel = await interaction.client.channels.fetch(advanceCfg.phaseAnnounceChannelId).catch(() => null);
                 if (announceChannel && announceChannel.isTextBased()) {
                     await announceChannel.send({
-                        content: `<@&${GHOST_PARADISE_ROLE_ID}> Playoffs have begun! Progression/scouting locked; trades/re-signing stay locked until offseason.`,
+                        content: `<@&${advanceCfg.leagueRoleId}> Playoffs have begun! Progression/scouting locked; trades/re-signing stay locked until offseason.`,
                     });
                 }
             } catch (err) {
@@ -148,10 +158,10 @@ export async function execute(interaction) {
         if (writeSuccess) {
             await interaction.editReply({ content: 'Season moved to offseason. Trades and re-signing are open; progression and scouting are locked until the new season starts or draft merge completes.' });
             try {
-                const announceChannel = await interaction.client.channels.fetch(PHASE_ANNOUNCE_CHANNEL_ID).catch(() => null);
+                const announceChannel = await interaction.client.channels.fetch(advanceCfg.phaseAnnounceChannelId).catch(() => null);
                 if (announceChannel && announceChannel.isTextBased()) {
                     await announceChannel.send({
-                        content: `<@&${GHOST_PARADISE_ROLE_ID}> Offseason has begun! Trades and re-signing are open; progression/scouting locked until the new season or after draft merge.`,
+                        content: `<@&${advanceCfg.leagueRoleId}> Offseason has begun! Trades and re-signing are open; progression/scouting locked until the new season or after draft merge.`,
                     });
                 }
             } catch (err) {
@@ -173,12 +183,12 @@ export async function execute(interaction) {
     // Try to fetch the dedicated channel (use fetch to ensure latest and handle uncached channels)
     let dedicatedChannel = null;
     try {
-        dedicatedChannel = await guild.channels.fetch(DEDICATED_CHANNEL_ID);
+        dedicatedChannel = await guild.channels.fetch(advanceCfg.dedicatedChannelId);
     } catch (err) {
         console.error('[advanceweek] Failed to fetch dedicated channel:', err);
     }
     if (!dedicatedChannel) {
-        await interaction.editReply({ content: `❌ Dedicated channel not found or bot lacks access. Check DISCORD_GUILD_ID, DEDICATED_CHANNEL_ID, and bot permissions.` });
+        await interaction.editReply({ content: `❌ Dedicated channel not found or bot lacks access. Check DISCORD_GUILD_ID and config.advanceweek.dedicatedChannelId.` });
         return;
     }
     // Ensure channel supports threads
@@ -187,16 +197,34 @@ export async function execute(interaction) {
         return;
     }
     let createdThreads = [];
-    // Load gameInfo.json once
-    let gameInfo = {};
-    try {
-        gameInfo = JSON.parse(fs.readFileSync('./data/gameInfo.json', 'utf8'));
-    } catch (err) { gameInfo = {}; }
+    // Load gameInfo.json once and prepare per-week tracking for idempotency
+    const gameInfo = dataManager.readData('gameInfo') || {};
+    gameInfo.weekThreads = gameInfo.weekThreads || {};
+    const weekThreads = gameInfo.weekThreads[weekNum] || {};
+
+    const slugTeam = (team) => {
+        const base = team?.abbreviation || team?.name || 'team';
+        return base.toString().trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'team';
+    };
     for (const matchup of matchups) {
         // Use short team names for thread names to match coach role naming
-        const team1Short = matchup.team1.name.replace('Milwaukee ', '').replace('Portland ', '').replace('Los Angeles ', '').replace('Golden State ', '').replace('New York ', '').replace('San Antonio ', '').replace('Oklahoma City ', '').replace('Charlotte ', '').replace('Philadelphia ', '').replace('Minnesota ', '').replace('Cleveland ', '').replace('Indiana ', '').replace('Sacramento ', '').replace('Toronto ', '').replace('New Orleans ', '').replace('Washington ', '').replace('Atlanta ', '').replace('Brooklyn ', '').replace('Chicago ', '').replace('Dallas ', '').replace('Denver ', '').replace('Detroit ', '').replace('Houston ', '').replace('LA ', '').replace('Memphis ', '').replace('Miami ', '').replace('Orlando ', '').replace('Phoenix ', '').replace('Utah ', '').replace('Boston ', '').replace('Clippers', 'Clippers').replace('Lakers', 'Lakers').replace('Trail Blazers', 'Trail Blazers').replace('Thunder', 'Thunder').replace('Spurs', 'Spurs').replace('Jazz', 'Jazz').replace('Wizards', 'Wizards').replace('Raptors', 'Raptors').replace('Kings', 'Kings').replace('Suns', 'Suns').replace('Magic', 'Magic').replace('Heat', 'Heat').replace('Grizzlies', 'Grizzlies').replace('Bucks', 'Bucks').replace('Mavericks', 'Mavericks').replace('Nuggets', 'Nuggets').replace('Pistons', 'Pistons').replace('Rockets', 'Rockets').replace('Pacers', 'Pacers').replace('Cavaliers', 'Cavaliers').replace('Timberwolves', 'Timberwolves').replace('76ers', '76ers').replace('Hornets', 'Hornets').replace('Bulls', 'Bulls').replace('Nets', 'Nets').replace('Hawks', 'Hawks').replace('Celtics', 'Celtics');
-        const team2Short = matchup.team2.name.replace('Milwaukee ', '').replace('Portland ', '').replace('Los Angeles ', '').replace('Golden State ', '').replace('New York ', '').replace('San Antonio ', '').replace('Oklahoma City ', '').replace('Charlotte ', '').replace('Philadelphia ', '').replace('Minnesota ', '').replace('Cleveland ', '').replace('Indiana ', '').replace('Sacramento ', '').replace('Toronto ', '').replace('New Orleans ', '').replace('Washington ', '').replace('Atlanta ', '').replace('Brooklyn ', '').replace('Chicago ', '').replace('Dallas ', '').replace('Denver ', '').replace('Detroit ', '').replace('Houston ', '').replace('LA ', '').replace('Memphis ', '').replace('Miami ', '').replace('Orlando ', '').replace('Phoenix ', '').replace('Utah ', '').replace('Boston ', '').replace('Clippers', 'Clippers').replace('Lakers', 'Lakers').replace('Trail Blazers', 'Trail Blazers').replace('Thunder', 'Thunder').replace('Spurs', 'Spurs').replace('Jazz', 'Jazz').replace('Wizards', 'Wizards').replace('Raptors', 'Raptors').replace('Kings', 'Kings').replace('Suns', 'Suns').replace('Magic', 'Magic').replace('Heat', 'Heat').replace('Grizzlies', 'Grizzlies').replace('Bucks', 'Bucks').replace('Mavericks', 'Mavericks').replace('Nuggets', 'Nuggets').replace('Pistons', 'Pistons').replace('Rockets', 'Rockets').replace('Pacers', 'Pacers').replace('Cavaliers', 'Cavaliers').replace('Timberwolves', 'Timberwolves').replace('76ers', '76ers').replace('Hornets', 'Hornets').replace('Bulls', 'Bulls').replace('Nets', 'Nets').replace('Hawks', 'Hawks').replace('Celtics', 'Celtics');
+        const team1Short = slugTeam(matchup.team1);
+        const team2Short = slugTeam(matchup.team2);
         const threadName = `${team1Short}-vs-${team2Short}-w${weekNum}`;
+
+        // Idempotency: skip if we already created a thread for this matchup and it still exists
+        const existingThreadId = weekThreads[matchup.id];
+        if (existingThreadId) {
+            try {
+                const existing = await interaction.client.channels.fetch(existingThreadId);
+                if (existing) {
+                    createdThreads.push(threadName);
+                    continue;
+                }
+            } catch (err) {
+                console.warn(`[advanceweek] Stored thread ${existingThreadId} missing, recreating for ${threadName}`);
+            }
+        }
         try {
             const thread = await dedicatedChannel.threads.create({
                 name: threadName,
@@ -204,11 +232,14 @@ export async function execute(interaction) {
                 reason: `Game thread for ${threadName} (Week ${weekNum})`
             });
             createdThreads.push(threadName);
-            await sendInitialWelcome(thread, matchup.team1.name, matchup.team2.name);
+            weekThreads[matchup.id] = thread.id;
+            await sendInitialWelcome(thread, matchup.team1.name, matchup.team2.name, advanceCfg.deadlineHours);
         } catch (err) {
             console.error(`[advanceweek] Error creating thread:`, err);
         }
     }
+    gameInfo.weekThreads[weekNum] = weekThreads;
+    dataManager.writeData('gameInfo', gameInfo);
     season.currentWeek = weekNum;
     const writeSuccess = dataManager.writeData('season', season);
     if (writeSuccess) {
@@ -218,11 +249,12 @@ export async function execute(interaction) {
     }
     // Send global announcement with countdown to next advance
     try {
-        const announceChannel = await guild.channels.fetch(ANNOUNCE_CHANNEL_ID);
+        const announceChannel = await guild.channels.fetch(advanceCfg.announceChannelId);
         if (announceChannel) {
-            const deadline = Math.floor((Date.now() + 24 * 60 * 60 * 1000) / 1000);
+            const hours = Number.isFinite(advanceCfg.deadlineHours) ? advanceCfg.deadlineHours : DEFAULT_CONFIG.deadlineHours;
+            const deadline = Math.floor((Date.now() + hours * 60 * 60 * 1000) / 1000);
             await announceChannel.send({
-                content: `<@&1460733464721490108> Week ${weekNum} threads created. Deadline to play/tag staff: <t:${deadline}:F> (<t:${deadline}:R>).`
+                content: `<@&${advanceCfg.leagueRoleId}> Week ${weekNum} threads created. Deadline to play/tag staff: <t:${deadline}:F> (<t:${deadline}:R>).`
             });
         }
     } catch (err) {

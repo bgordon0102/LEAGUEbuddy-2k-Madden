@@ -23,12 +23,7 @@ import {
   deleteTradeDraft,
 } from '../utils/trade_draft_store.js';
 
-const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
-
-function loadChannelMap() {
-  try { return JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8')); } catch { return {}; }
-}
 
 function loadRoleMap() {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
@@ -103,9 +98,23 @@ export async function execute(interaction) {
     const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear || draft.seasonYear;
 
     // Prefer structured assets from the builder if available
+    const pickValFromStruct = (item) => {
+      const yr = item.year;
+      const rnd = item.round;
+      const pk = item.pickNum;
+      if (!yr || !rnd) return null;
+      const currentYear = seasonYear || new Date().getFullYear();
+      if (pk && yr === currentYear) {
+        return parsePickValue(`${yr} Round ${rnd} Pick ${pk}`, seasonYear)?.value ?? null;
+      }
+      const parsed = parsePickValue(`${yr} Round ${rnd}`, seasonYear);
+      return parsed?.value ?? null;
+    };
     const toLabel = (item) => {
       if (!item) return 'Asset';
       if (item.type === 'pick') {
+        if (item.pickNum) return `${item.year || seasonYear || ''} Round ${item.round} Pick ${item.pickNum}`;
+        if (item.year && item.round) return `${item.year} Round ${item.round}`;
         const parsed = parsePickValue(item.raw, seasonYear);
         return parsed?.label || item.raw || 'Pick';
       }
@@ -114,22 +123,53 @@ export async function execute(interaction) {
     const toLine = (item, valueMap) => {
       if (!item) return null;
       const label = toLabel(item);
-      const entry = item.type === 'player' ? valueMap.get((item.key || '').toLowerCase()) : null;
-      const val = item.value ?? entry?.value ?? 0;
+      let val = null;
+      if (item.type === 'player') {
+        val = item.value ?? valueMap.get((item.key || '').toLowerCase())?.value ?? null;
+      } else if (item.type === 'pick') {
+        val = pickValFromStruct(item);
+        if (val == null) val = parsePickValue(item.raw, seasonYear)?.value ?? null;
+      }
+      val = val == null ? 0 : val;
       return `${label} (${item.pos || ''}) — ${Number(val).toFixed(1)}`.replace(/\(\s*\)/, '').trim();
     };
     let assetsSent = draft.assetsSent || '';
     let assetsReceived = draft.assetsReceived || '';
     let assetsSentValueLines = [];
     let assetsReceivedValueLines = [];
+    let sendVal = 0;
+    let recvVal = 0;
+    let unmatched = [];
+    let sendUnmatched = [];
+    let recvUnmatched = [];
+
     if (draft.assets?.your || draft.assets?.other) {
       const yourArr = draft.assets?.your || [];
       const theirArr = draft.assets?.other || [];
+      const pickVal = (item) => {
+        const fromStruct = pickValFromStruct(item);
+        if (fromStruct != null) return fromStruct;
+        const parsed = parsePickValue(item.raw, seasonYear);
+        return parsed?.value || 0;
+      };
       assetsSentValueLines = yourArr.map(i => toLine(i, valueMap)).filter(Boolean);
       assetsReceivedValueLines = theirArr.map(i => toLine(i, valueMap)).filter(Boolean);
       assetsSent = yourArr.map(i => toLabel(i)).join(', ');
       assetsReceived = theirArr.map(i => toLabel(i)).join(', ');
+      sendVal = yourArr.reduce((sum, i) => sum + (i.type === 'player' ? (valueMap.get((i.key || '').toLowerCase())?.value || 0) : pickVal(i)), 0);
+      recvVal = theirArr.reduce((sum, i) => sum + (i.type === 'player' ? (valueMap.get((i.key || '').toLowerCase())?.value || 0) : pickVal(i)), 0);
+    } else {
+      const parsedSend = parseAssets(assetsSent, valueMap, seasonYear);
+      const parsedRecv = parseAssets(assetsReceived, valueMap, seasonYear);
+      sendVal = Number(parsedSend.total || 0);
+      recvVal = Number(parsedRecv.total || 0);
+      assetsSentValueLines = parsedSend.matched.map(i => `${i.label} (${Number(i.value || 0).toFixed(1)})`);
+      assetsReceivedValueLines = parsedRecv.matched.map(i => `${i.label} (${Number(i.value || 0).toFixed(1)})`);
+      sendUnmatched = parsedSend.unmatched || [];
+      recvUnmatched = parsedRecv.unmatched || [];
+      unmatched = [...sendUnmatched, ...recvUnmatched];
     }
+
     const notes = draft.notes || '';
 
     // Team trade cap check (5 max per season)
@@ -139,10 +179,6 @@ export async function execute(interaction) {
       return;
     }
 
-    const sendParsed = parseAssets(assetsSent, valueMap, seasonYear);
-    const recvParsed = parseAssets(assetsReceived, valueMap, seasonYear);
-    const sendVal = Number(sendParsed.total || 0);
-    const recvVal = Number(recvParsed.total || 0);
     const gap = sendVal - recvVal;
     const valueSummary = formatValueSummary(sendVal, recvVal, gap, false);
 
@@ -154,17 +190,11 @@ export async function execute(interaction) {
       notes,
       valueSummary,
       hideInstructions: true,
-      assetsSentValueLines: assetsSentValueLines.length ? assetsSentValueLines : sendParsed.matched.map(i => `${i.label} (${Number(i.value || 0).toFixed(1)})`),
-      assetsReceivedValueLines: assetsReceivedValueLines.length ? assetsReceivedValueLines : recvParsed.matched.map(i => `${i.label} (${Number(i.value || 0).toFixed(1)})`),
+      assetsSentValueLines,
+      assetsReceivedValueLines,
     });
-    if (sendParsed.unmatched?.length || recvParsed.unmatched?.length) {
-      embed.addFields({
-        name: 'Unmatched assets',
-        value: [
-          sendParsed.unmatched?.length ? `You send (unmatched): ${sendParsed.unmatched.join(', ')}` : null,
-          recvParsed.unmatched?.length ? `They send (unmatched): ${recvParsed.unmatched.join(', ')}` : null,
-        ].filter(Boolean).join('\n'),
-      });
+    if (unmatched.length) {
+      embed.addFields({ name: 'Unmatched assets', value: unmatched.join(', ') });
     }
 
     // Store trade
@@ -179,8 +209,8 @@ export async function execute(interaction) {
       sendTotal: sendVal,
       recvTotal: recvVal,
       valueGap: gap,
-      unmatchedSend: sendParsed.unmatched || [],
-      unmatchedRecv: recvParsed.unmatched || [],
+      unmatchedSend: sendUnmatched,
+      unmatchedRecv: recvUnmatched,
       createdBy: interaction.user.id,
       createdAt: Date.now(),
       status: 'awaiting_coach_b',
@@ -196,37 +226,50 @@ export async function execute(interaction) {
     const rowCoach = buildDecisionButtons(tradeId, true);
     let dmSent = false;
     let dmTargets = [];
+    let dmError = null;
     if (guild && coachId) {
       const members = [];
+      // try direct user id
       const memberById = await guild.members.fetch(coachId).catch(() => null);
       if (memberById && memberById.user.id !== interaction.user.id) members.push(memberById);
+
+      // try role
       if (!memberById) {
         const role = await guild.roles.fetch(coachId).catch(() => null);
         if (role) {
+          // ensure member cache is warm
+          if (role.members.size === 0) {
+            try { await guild.members.fetch(); } catch {}
+          }
           role.members.forEach(m => {
             if (m.user.id !== interaction.user.id) members.push(m);
           });
         }
       }
+
       for (const m of members) {
         try {
           await m.user.send({ content: `Trade proposal: ${yourTeam} ↔ ${otherTeam}`, embeds: [embed], components: [rowCoach] });
           dmSent = true;
           dmTargets.push(m.user.tag);
         } catch (e) {
-          // ignore DM failures
+          dmError = e;
         }
       }
     }
-    // also DM initiating coach with the proposal for reference
+    // also DM initiating coach with the proposal for reference (no action buttons)
     try {
       const me = await interaction.client.users.fetch(interaction.user.id);
-      await me.send({ content: `You submitted trade ${tradeId}: ${yourTeam} ↔ ${otherTeam}`, embeds: [embed], components: [rowCoach] });
+      await me.send({ content: `You submitted trade ${tradeId}: ${yourTeam} ↔ ${otherTeam}. Waiting on the other coach to approve/deny.`, embeds: [embed], components: [] });
       dmTargets.push(me.tag);
     } catch {}
 
+    const dmNote = dmSent
+      ? ` DM sent to: ${dmTargets.join(', ')}`
+      : ' DM failed to send to the other coach. Please notify them manually or check team-to-role mapping.';
+
     await interaction.editReply({
-      content: `Trade recorded as ${tradeId}. Sent for approval.${dmSent ? ` DM sent to: ${dmTargets.join(', ')}` : ''}`,
+      content: `Trade recorded as ${tradeId}. Sent for approval.${dmNote}`,
       embeds: [embed],
       components: [],
     });

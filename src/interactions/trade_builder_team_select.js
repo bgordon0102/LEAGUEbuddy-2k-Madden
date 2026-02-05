@@ -56,7 +56,9 @@ export async function execute(interaction) {
   draft.otherTeam = draft.otherTeamName || draft.otherTeamId || draft.otherTeam;
   saveTradeDraft(draftId, draft);
 
-  const components = [
+  const components = [];
+
+  components.push(
     new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId(`trade_builder_team_yours|${draftId}`)
@@ -68,37 +70,42 @@ export async function execute(interaction) {
               label: draft.yourTeamName || 'Your team',
               value: String(draft.yourTeamId),
             }]
-            : optionsAll
+            : limitOptions(optionsAll, draft.yourTeamId)
         )
-    ),
+    )
+  );
+
+  components.push(
     new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId(`trade_builder_team_other_afc|${draftId}`)
         .setPlaceholder('Select other team (AFC)')
-        .addOptions(optionsAFC)
-    ),
+        .addOptions(limitOptions(optionsAFC))
+    )
+  );
+
+  components.push(
     new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
         .setCustomId(`trade_builder_team_other_nfc|${draftId}`)
         .setPlaceholder('Select other team (NFC)')
-        .addOptions(optionsNFC)
-    ),
-  ];
-
-  let typeRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`trade_builder_team_search_other|${draftId}`)
-      .setLabel('Type other team')
-      .setStyle(ButtonStyle.Secondary)
+        .addOptions(limitOptions(optionsNFC))
+    )
   );
-  components.push(typeRow);
+
+  components.push(
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`trade_builder_team_search_other|${draftId}`)
+        .setLabel('Type other team')
+        .setStyle(ButtonStyle.Secondary)
+    )
+  );
 
   if (draft.yourTeamId && draft.otherTeamId) {
-    // when adding builder buttons, drop the type-row if needed to stay <=5 components
     components.push(...buildButtons(draftId));
-    if (components.length > 5) {
-      components.splice(3, 1); // remove the type-row
-    }
+    // keep at most 5 rows to satisfy Discord limits
+    components.splice(5);
   }
 
   const embed = new EmbedBuilder()

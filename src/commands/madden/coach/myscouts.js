@@ -31,8 +31,15 @@ function findClassFile(classId) {
 
 function loadDraftClass(classId) {
   const file = findClassFile(classId);
-  if (!file) return null;
-  return safeReadJSON(file, null);
+  if (!file) return { data: null, resolvedId: classId };
+  const data = safeReadJSON(file, null);
+  const resolvedId = (() => {
+    const base = path.basename(file).toLowerCase();
+    const match = base.match(/cus[_ -]?(\d+)/);
+    if (match) return `cus_${String(match[1]).padStart(2, '0')}`;
+    return classId;
+  })();
+  return { data, resolvedId };
 }
 
 function formatDev(dev, emojis) {
@@ -65,9 +72,10 @@ export async function execute(interaction) {
   const snapshot = loadLeagueSnapshot(leagueId);
   const calendarYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear;
   const classId = classIdForSeason(calendarYear);
-  const draftData = loadDraftClass(classId);
+  const { data: draftData, resolvedId: resolvedClassId } = loadDraftClass(classId);
+  const classKey = resolvedClassId || classId;
   if (!draftData) {
-    await interaction.reply({ content: `Draft class ${classId} not found. Add a JSON under data/draft_classes/madden.`, ephemeral: true });
+    await interaction.reply({ content: `Draft class ${classKey} not found. Add a JSON under data/draft_classes/madden.`, ephemeral: true });
     return;
   }
 
@@ -75,13 +83,14 @@ export async function execute(interaction) {
   const devEmojis = safeReadJSON(DEV_EMOJI_PATH, {});
   const userId = interaction.user.id;
   const userData = scoutData[userId];
-  if (!userData || !userData.players || !userData.players[classId]) {
+  const playersByClass = userData && userData.players && (userData.players[classKey] || userData.players[classId]);
+  if (!playersByClass) {
     await interaction.reply({ content: 'You have not scouted any players yet this season.', ephemeral: true });
     return;
   }
 
-  const entries = Object.entries(userData.players[classId]);
-  const desc = entries.map(([name, unlocked]) => {
+  const entries = Object.entries(playersByClass);
+  const items = entries.map(([name, unlocked]) => {
     const p = Object.values(draftData).find(pl => pl.name === name);
     const parts = [];
     if (!p) return null;
@@ -100,8 +109,18 @@ export async function execute(interaction) {
     if (p.height || p.weight) meta.push(`${p.height || 'N/A'} / ${p.weight ? `${p.weight} lbs` : 'N/A'}`);
     const boardPos = p.RNK ?? p.rank ?? p.order ?? p['#'];
     meta.push(`Board #${boardPos || '?'}`);
-    return `**${name}** (${meta.join(' • ')})\n${parts.join(' | ') || 'No info unlocked'}`;
+    const line = `**${name}** (${meta.join(' • ')})\n${parts.join(' | ') || 'No info unlocked'}`;
+    const boardNum = Number(boardPos);
+    const boardKey = Number.isFinite(boardNum) ? boardNum : Infinity;
+    return { line, boardKey, name };
   }).filter(Boolean);
+
+  // Sort by board position, then name
+  items.sort((a, b) => {
+    if (a.boardKey !== b.boardKey) return a.boardKey - b.boardKey;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+  const desc = items.map(i => i.line);
 
   if (!desc.length) {
     await interaction.reply({ content: 'You have not scouted any players yet this season.', ephemeral: true });
@@ -131,7 +150,7 @@ export async function execute(interaction) {
 
   const embeds = chunks.map((lines, idx) => {
     const embed = new EmbedBuilder()
-      .setTitle(`Your Scouted Players — ${classId.toUpperCase()}${chunks.length > 1 ? ` (Page ${idx + 1}/${chunks.length})` : ''}`)
+      .setTitle(`Your Scouted Players — ${classKey.toUpperCase()}${chunks.length > 1 ? ` (Page ${idx + 1}/${chunks.length})` : ''}`)
       .setDescription(lines.join('\n\n'))
       .setColor(0x1e90ff);
     // Add a logo for the first entry on this page if available

@@ -22,6 +22,10 @@ const STAFF_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.
 const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
 const STAFF_REVIEW_CHANNEL_ID = '1455151770383814666';
 const PENDING_FILE = path.join(process.cwd(), 'data', 'inseason_fa_pending.json');
+// Role names that are allowed to approve/deny in-season free agents
+const APPROVER_ROLE_NAMES = ['Paradise Commish', 'Paradise Co-Commish', 'League Buddy', 'LEAGUEbuddy Admin'];
+// Prefix used to tag the coach who submitted an offer (falls back to the user if the role is missing)
+const COACH_TAG_PREFIX = 'Coach:';
 
 function readCoachRoleMap() {
   try {
@@ -39,18 +43,24 @@ function readStaffRoles() {
   }
 }
 
-function getStaffMention() {
+function getStaffMention(guild) {
   const map = readStaffRoles();
-  const ALLOWED = ['Paradise Commish', 'Paradise Co-Commish'];
   const ids = Array.from(
     new Set(
       Object.entries(map || {})
-        .filter(([name]) => ALLOWED.includes(name))
+        .filter(([name]) => APPROVER_ROLE_NAMES.includes(name))
         .map(([, id]) => id)
         .filter(Boolean)
     )
   );
-  return ids.length ? ids.map(id => `<@&${id}>`).join(' ') : '';
+  const validIds = guild?.roles?.cache ? ids.filter(id => guild.roles.cache.has(id)) : ids;
+  return validIds.length ? validIds.map(id => `<@&${id}>`).join(' ') : '';
+}
+
+function getCoachMention(guild, team, coachMap) {
+  const roleId = coachMap?.[team];
+  const validRole = roleId && guild?.roles?.cache?.has(roleId);
+  return validRole ? `<@&${roleId}>` : null;
 }
 
 function readPending() {
@@ -304,7 +314,10 @@ async function handleModalSubmit(interaction) {
         // already sent
         return;
       }
-      const msg = await reviewChannel.send({ content: getStaffMention(), embeds: [embed], components: [buttons] });
+      const coachMention = getCoachMention(reviewChannel.guild, team, coachMap) || `<@${interaction.user.id}>`;
+      const staffMention = getStaffMention(reviewChannel.guild);
+      const content = [staffMention, `${COACH_TAG_PREFIX} ${coachMention}`].filter(Boolean).join(' | ');
+      const msg = await reviewChannel.send({ content, embeds: [embed], components: [buttons] });
       if (latest[requestId]) {
         latest[requestId].staffMessageId = msg.id;
         writePending(latest);
@@ -356,9 +369,8 @@ async function handleApproval(interaction, approve) {
   // Gate to commish/co-commish only
   try {
     const staffMap = JSON.parse(fs.readFileSync(STAFF_ROLE_MAP_PATH, 'utf8'));
-    const allowedRoles = ['Paradise Commish', 'Paradise Co-Commish'];
     const allowedIds = Object.entries(staffMap || {})
-      .filter(([name]) => allowedRoles.includes(name))
+      .filter(([name]) => APPROVER_ROLE_NAMES.includes(name))
       .map(([, rid]) => rid)
       .filter(Boolean);
     const memberRoles = interaction.member?.roles?.cache;

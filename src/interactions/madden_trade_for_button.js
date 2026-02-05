@@ -172,7 +172,10 @@ export async function execute(interaction) {
         .setStyle(ButtonStyle.Secondary)
     ),
   ];
+  // Respect Discord 5-row limit. When both teams are already known, drop team selectors
+  // and show only the action buttons.
   if (yourTeamId && otherTeamId) {
+    components.length = 0;
     components.push(...buildButtons(draftId));
   }
 

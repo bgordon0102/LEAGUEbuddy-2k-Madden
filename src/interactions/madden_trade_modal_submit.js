@@ -184,12 +184,16 @@ function buildValueMap(snapshot) {
 }
 
 function parsePickValue(label, seasonYear) {
-  // Patterns like "2026 1st", "1.10", "1.10 26", "2.20", "2027 3rd", "1st rounder 2025", "2026 Round 4 Pick 128"
-  const trimmed = label.trim();
-  let year = seasonYear;
+  // Flexible parse: allow "2026 Round 1 Pick 5", "Round 1 Pick 5", "1.05", "1st", etc.
+  const trimmed = (label || '').trim();
+  if (!trimmed) return null;
+  const season = seasonYear || new Date().getFullYear();
+  let year = season;
   let round = null;
   let pickNum = null;
-  const dotMatch = /^(\d)\.(\d{1,2})(?:\s+(\d{2,4}))?$/.exec(trimmed);
+
+  // try dot notation first: 1.10 (round.pick) optional year
+  const dotMatch = /^(\d{1,2})\.(\d{1,2})(?:\s+(\d{2,4}))?$/i.exec(trimmed);
   if (dotMatch) {
     round = Number(dotMatch[1]);
     pickNum = Number(dotMatch[2]);
@@ -198,49 +202,60 @@ function parsePickValue(label, seasonYear) {
       year = y < 100 ? 2000 + y : y;
     }
   } else {
-    // e.g., "2026 Round 4 Pick 128" or "Round 4 Pick 28"
-    const verbose = /(?:(\d{2,4}))?\s*round\s*(\d)\s*(?:pick)?\s*(\d{1,3})/i.exec(trimmed);
-    if (verbose) {
-      if (verbose[1]) {
-        const y = Number(verbose[1]);
-        year = y < 100 ? 2000 + y : y;
+    const nums = (trimmed.match(/\d+/g) || []).map(n => Number(n));
+    if (nums.length >= 3) {
+      year = nums[0] >= 100 ? nums[0] : season;
+      round = nums[1];
+      pickNum = nums[2];
+    } else if (nums.length === 2) {
+      if (nums[0] >= 100) {
+        year = nums[0];
+        round = nums[1];
+      } else {
+        round = nums[0];
+        pickNum = nums[1];
       }
-      round = Number(verbose[2]);
-      pickNum = Number(verbose[3]);
-    } else {
-      const regex = /(?:(\d{2,4}))?\s*(\d)(?:st|nd|rd|th)?\s*(?:round|rd)?/i;
-      const m = regex.exec(trimmed);
-      if (!m) return null;
-      if (m[1]) {
-        const y = Number(m[1]);
-        year = y < 100 ? 2000 + y : y;
-      }
-      round = Number(m[2]);
+    } else if (nums.length === 1) {
+      round = nums[0];
     }
   }
+
   if (!round || round < 1 || round > 7) return null;
-  if (pickNum && (pickNum < 1 || pickNum > 256)) return null;
-  // Scaled to align with roster values; heavier top picks
-  const baseChart = { 1: 260, 2: 190, 3: 135, 4: 100, 5: 70, 6: 50, 7: 35 };
-  const base = (baseChart[round] || 10) * 0.9;
-  let decay = 1;
-  if (year && seasonYear) {
-    const diff = year - seasonYear;
-    // Drop future years sharply: at least ~20+ points on top picks year over year
-    decay = diff <= 0 ? 1 : diff === 1 ? 0.85 : 0.7;
-  } else if (year) {
-    decay = year === 2026 ? 1 : year === 2027 ? 0.85 : 0.7;
+  if (!year) year = season;
+  // derive pickNum midpoint if missing
+  if (!pickNum || pickNum < 1) {
+    const start = (round - 1) * 32 + 1;
+    const end = round * 32;
+    pickNum = Math.floor((start + end) / 2);
   }
-  // Pick weighting: earlier picks much higher; exponential drop with floor
-  const pickWeight = pickNum
-    ? Math.max(0.2, Math.pow((33 - Number(pickNum)) / 32, 6.8))
-    : 1;
-  const value = Math.max(5, Math.round(base * decay * pickWeight));
-  const yearLabel = year ? year : (seasonYear || 'Current');
-  const labelParts = [`Round ${round}`];
-  if (pickNum) labelParts.push(`Pick ${pickNum}`);
-  const normLabel = `${labelParts.join(' ')} (${yearLabel})`;
-  return { value, label: normLabel };
+  const pickValueCurve = currentPickValue(round, pickNum);
+  const floorMap = { 1: 150, 2: 110, 3: 85, 4: 65, 5: 50, 6: 35, 7: 25 };
+  const floor = floorMap[round] || 10;
+  let value;
+  let labelPick = pickNum;
+  const isFuture = year > season;
+  if (isFuture) {
+    const futureBaseChart = { 1: 300, 2: 200, 3: 150, 4: 110, 5: 80, 6: 60, 7: 40 };
+    const baseFuture = futureBaseChart[round] || floor;
+    const diff = year - season;
+    const futureDecay = diff === 1 ? 0.85 : 0.7;
+    value = Math.max(5, Math.round(baseFuture * futureDecay));
+    if (round === 1 && diff === 1 && value < 250) value = 250;
+    if (round === 1 && diff >= 2 && value < 200) value = 200;
+    labelPick = null;
+  } else {
+    value = Math.max(floor, pickValueCurve);
+  }
+  const yearLabel = year ? year : season;
+  const normLabel = `Round ${round}${labelPick ? ` Pick ${labelPick}` : ''} (${yearLabel})`;
+  return {
+    value: Math.max(5, Math.round(value)),
+    label: normLabel,
+    year,
+    round,
+    pickNum: labelPick,
+    isFuture,
+  };
 }
 
 function parseAssets(text, valueMap, seasonYear) {
@@ -350,6 +365,31 @@ function teamDisplay(snapshot, teamName) {
 }
 
 const VALUE_THRESHOLD = 40;
+
+function currentPickValue(round, pickNum) {
+  const r = Number(round);
+  const p = Math.min(32, Math.max(1, Number(pickNum) || 1));
+  if (r === 1) {
+    if (p === 1) return 400;
+    if (p === 2) return 350;
+    if (p === 3) return 300;
+    const start = 280;
+    const end = 150;
+    const t = (p - 4) / (32 - 4);
+    return start + (end - start) * t;
+  }
+  const curves = {
+    2: { start: 170, end: 120 },
+    3: { start: 125, end: 85 },
+    4: { start: 95, end: 65 },
+    5: { start: 70, end: 45 },
+    6: { start: 50, end: 30 },
+    7: { start: 32, end: 18 },
+  };
+  const curve = curves[r] || { start: 20, end: 10 };
+  const t = (p - 1) / 31;
+  return curve.start + (curve.end - curve.start) * t;
+}
 
 function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
   const youSend = flip ? recvTotal : sendTotal;

@@ -40,7 +40,15 @@
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/Joel-Embiid-2K-Rating.png",
       "ovr": "89",
       "prior_to_nba": "Kansas",
-      "nationality": "Cameroon  / United States"
+      "nationality": "Cameroon  / United States",
+      "progression": [
+        {
+          "skillSet": "Interior Defense",
+          "attributeUpgrades": "+4 IDEF (84->88)\n+2 Block (82->84)",
+          "date": "2026-01-27T03:06:10.715Z",
+          "submittedBy": "1126312455111458849"
+        }
+      ]
     },
     {
       "name": "Paul George",
@@ -54,7 +62,15 @@
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/Paul-George-2K-Rating.png",
       "ovr": "83",
       "prior_to_nba": "Fresno State",
-      "nationality": "United States"
+      "nationality": "United States",
+      "progression": [
+        {
+          "skillSet": "Driving",
+          "attributeUpgrades": "+4 SPD/BALL (79->83)\n+2 Driving Layup (82->84)",
+          "date": "2026-01-22T18:18:37.463Z",
+          "submittedBy": "1126312455111458849"
+        }
+      ]
     },
     {
       "name": "VJ Edgecombe",

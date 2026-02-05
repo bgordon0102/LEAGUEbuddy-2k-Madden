@@ -928,14 +928,19 @@ function computeWeeklyList(snapshot, weekIndex) {
   const nonOl = rawList.filter(p => !olSet.has(p.position));
   olEntries.sort((a, b) => (b.score || 0) - (a.score || 0));
   const olTop = olEntries.slice(0, 3).map((p, idx) => {
-    const capped = Math.max(30, Math.min(75, (p.score || 0)));
-    return { ...p, score: capped - idx * 1.5 }; // slight spread within top3
+    // Let elite OL carry real weight: top OL can sit in low-mid 90s, next two taper down.
+    const caps = [95, 92, 88];
+    const capped = Math.min(caps[idx] || 85, Math.max(60, (p.score || 0)));
+    return { ...p, score: capped - idx * 1.0 };
   });
-  const olRest = olEntries.slice(3).map(p => ({ ...p, score: 20 })); // force low so grades stay sub-90
+  const olRest = olEntries.slice(3).map(p => {
+    return { ...p, score: Math.max(55, Math.min(80, p.score || 0)) };
+  }); // keep viable mid/upper-80 potential
   const combined = [...nonOl, ...olTop, ...olRest];
   combined.forEach(p => {
     if (olSet.has(p.position)) {
-      p.score = Math.max(20, Math.min(75, p.score));
+      // Keep OL scores in a competitive but bounded window
+      p.score = Math.max(55, Math.min(95, p.score));
     }
   });
   rawList.length = 0;
@@ -1002,22 +1007,65 @@ function computeWeeklyList(snapshot, weekIndex) {
     const clamped = Math.min(99.9, boosted);
     return { ...p, grade: Number(clamped.toFixed(1)) };
   });
-  // OL-specific caps: only 1 OL can be 95+, up to 3 OL can be 90-94.9
+  // Give top OL a guaranteed ceiling so they can compete in 90+ band
+  const olBoostMap = new Map();
+  prelimAdjusted
+    .filter(p => olSet.has((p.position || '').toUpperCase()))
+    .sort((a, b) => (b.grade || 0) - (a.grade || 0))
+    .forEach((p, idx) => {
+      let target = null;
+      if (idx === 0) target = 95;
+      else if (idx === 1) target = 92;
+      else if (idx < 5) target = 88;
+      if (target !== null && (p.grade || 0) < target) {
+        olBoostMap.set(p.id, target);
+      }
+    });
+  const prelimAdjustedBoosted = prelimAdjusted.map(p => {
+    if (olBoostMap.has(p.id)) {
+      const tgt = olBoostMap.get(p.id);
+      return { ...p, grade: Math.min(99.9, Math.max(p.grade || 0, tgt)) };
+    }
+    return p;
+  });
+
+  // Anti-flood: keep OL competitive but balanced across the top ranks
+  (() => {
+    const olSetLocal = new Set(['LT', 'LG', 'C', 'RG', 'RT']);
+    // Gentle taper for OL grades above 93
+    prelimAdjustedBoosted.forEach(p => {
+      if (!olSetLocal.has((p.position || '').toUpperCase())) return;
+      if ((p.grade || 0) > 94) p.grade = 94;
+      else if ((p.grade || 0) > 92) p.grade = Number((92 + (p.grade - 92) * 0.6).toFixed(2)); // soften 92-94 band
+    });
+    // Enforce top-rank OL limits: max 2 in top 15, max 4 in top 30
+    const sorted = [...prelimAdjustedBoosted].sort((a, b) => (b.grade || 0) - (a.grade || 0));
+    const olInTop15 = sorted.slice(0, 15).filter(p => olSetLocal.has((p.position || '').toUpperCase()));
+    if (olInTop15.length > 2) {
+      olInTop15.slice(2).forEach(p => { p.grade = Math.min(p.grade || 0, 88.5); });
+    }
+    const olInTop30 = sorted.slice(0, 30).filter(p => olSetLocal.has((p.position || '').toUpperCase()));
+    if (olInTop30.length > 4) {
+      olInTop30.slice(4).forEach(p => { p.grade = Math.min(p.grade || 0, 86.5); });
+    }
+  })();
+
+  // OL-specific caps: allow up to 2 OL in 95+ and up to 4 OL in 90-94.9 so elite lines can surface
   const olSetFinal = olSet;
-  const olSorted = prelimAdjusted.filter(p => olSetFinal.has(p.position)).sort((a, b) => (b.grade || 0) - (a.grade || 0));
+  const olSorted = prelimAdjustedBoosted.filter(p => olSetFinal.has(p.position)).sort((a, b) => (b.grade || 0) - (a.grade || 0));
   let ol95 = 0;
   let ol90 = 0;
   const adjust = new Map();
   olSorted.forEach(p => {
     if ((p.grade || 0) >= 95) {
-      if (ol95 < 1) {
+      if (ol95 < 2) {
         ol95 += 1;
         adjust.set(p.id, p.grade);
       } else {
         adjust.set(p.id, Math.min(89.9, p.grade));
       }
     } else if ((p.grade || 0) >= 90) {
-      if (ol90 < 3) {
+      if (ol90 < 4) {
         ol90 += 1;
         adjust.set(p.id, p.grade);
       } else {
@@ -1026,7 +1074,7 @@ function computeWeeklyList(snapshot, weekIndex) {
     }
   });
   // QB presence: ensure 1-3 QBs in 90+; cap extras
-  const qbSorted = prelimAdjusted.filter(p => (p.position || '').toUpperCase() === 'QB').sort((a, b) => (b.grade || 0) - (a.grade || 0));
+  const qbSorted = prelimAdjustedBoosted.filter(p => (p.position || '').toUpperCase() === 'QB').sort((a, b) => (b.grade || 0) - (a.grade || 0));
   const qbBands = [
     { min: 95.0, max: 96.9, needMin: 1, needMax: 2 },
     { min: 90.0, max: 94.9, needMin: 2, needMax: 3 },
@@ -1063,7 +1111,7 @@ function computeWeeklyList(snapshot, weekIndex) {
 
   // Defender caps by band
   const defPositions = DEF_POSITIONS;
-  const defSorted = prelimAdjusted.filter(p => defPositions.has((p.position || '').toUpperCase())).sort((a, b) => (b.grade || 0) - (a.grade || 0));
+  const defSorted = prelimAdjustedBoosted.filter(p => defPositions.has((p.position || '').toUpperCase())).sort((a, b) => (b.grade || 0) - (a.grade || 0));
   const defBands = [
     { min: 95.0, max: 99.9, needMin: 1, needMax: 2 },
     { min: 90.0, max: 94.9, needMin: 2, needMax: 5 },
@@ -1184,7 +1232,8 @@ function computeWeeklyList(snapshot, weekIndex) {
     { min: 76.0, max: 76.9, minCount: 5, maxCount: 8, teamCap: 3 }
   ];
   const defPositionsSet100 = DEF_POSITIONS;
-  const defenders = prelimAdjusted.filter(p => defPositionsSet100.has((p.position || '').toUpperCase()));
+  const baseList = prelimAdjustedBoosted;
+  const defenders = baseList.filter(p => defPositionsSet100.has((p.position || '').toUpperCase()));
   const defPool = defenders.slice().sort((a, b) => (b.grade || 0) - (a.grade || 0));
   const usedDef = new Set();
   const teamBandCountsDef = Array(defBandSpecs.length).fill(0).map(() => new Map());
@@ -1231,7 +1280,7 @@ function computeWeeklyList(snapshot, weekIndex) {
     }
   }
   // Fill rest of top 100 with best non-defenders
-  const nonDefenders = prelimAdjusted.filter(p => !defPositionsSet100.has((p.position || '').toUpperCase()));
+  const nonDefenders = baseList.filter(p => !defPositionsSet100.has((p.position || '').toUpperCase()));
   const fillCount = 100 - selectedDefenders.length;
   const rest = nonDefenders.sort((a, b) => (b.grade || 0) - (a.grade || 0)).slice(0, fillCount);
   // Combine and sort by grade for final output
@@ -1316,10 +1365,17 @@ function computeWeeklyList(snapshot, weekIndex) {
     return `${prefix}-${name}-${pos}-${idx}`;
   };
 
-  const candidatePool = prelimAdjusted
+  const candidatePool = baseList
     .slice()
     .map((p, idx) => ({ ...p, id: ensureId(p, idx, 'cand') }))
     .sort((a, b) => (b.grade || 0) - (a.grade || 0));
+  // Hard-lift top OL so at least one cracks the high bands
+  const olBoostTargetsTop = [97, 95, 92];
+  candidatePool
+    .filter(p => ['LT', 'LG', 'C', 'RG', 'RT'].includes((p.position || '').toUpperCase()))
+    .slice(0, olBoostTargetsTop.length)
+    .forEach((p, i) => { p.grade = Math.max(p.grade || 0, olBoostTargetsTop[i]); });
+  candidatePool.sort((a, b) => (b.grade || 0) - (a.grade || 0));
 
   // Edge preference helpers
   const isEdgePrimary = (pos) => {
@@ -1364,6 +1420,16 @@ function computeWeeklyList(snapshot, weekIndex) {
   const selected = [];
   const used = new Set();
   let specialTaken = 0;
+
+  // Pre-seed with top OL so they don't get edged out by other groups
+  const olSeed = (globalGroupPools.get('OL') || []).slice(0, 3);
+  const olSeedTargets = [95, 92, 88];
+  olSeed.forEach((p, idx) => {
+    if (selected.length >= 100) return;
+    if (used.has(p.id)) return;
+    selected.push({ ...p, grade: Math.max(p.grade || 0, olSeedTargets[idx] || 88) });
+    used.add(p.id);
+  });
 
   bandConfigs.forEach((band) => {
     const groupEntries = Object.entries(band.groups);
@@ -1427,6 +1493,30 @@ function computeWeeklyList(snapshot, weekIndex) {
   let finalTop100 = selected
     .sort((a, b) => (b.grade || 0) - (a.grade || 0))
     .slice(0, 100);
+
+  // Hard guarantee: ensure at least 3 OL make the final 100 with strong grades
+  const ensureTopOlPresence = () => {
+    const currentOl = finalTop100.filter(p => posGroup(p.position) === 'OL');
+    if (currentOl.length >= 3) return;
+    const bestOlPool = candidatePool.filter(p => posGroup(p.position) === 'OL');
+    bestOlPool.sort((a, b) => (b.grade || 0) - (a.grade || 0));
+    const targets = [97, 95, 92, 90];
+    for (let i = 0; i < bestOlPool.length && currentOl.length < 3; i++) {
+      const ol = { ...bestOlPool[i], grade: Math.max(bestOlPool[i].grade || 0, targets[currentOl.length] || 90) };
+      // Replace the lowest non-OL
+      const idxSwap = finalTop100
+        .map((p, idx) => ({ p, idx }))
+        .filter(entry => posGroup(entry.p.position) !== 'OL')
+        .sort((a, b) => (a.p.grade || 0) - (b.p.grade || 0))
+        [0]?.idx;
+      if (idxSwap === undefined) break;
+      finalTop100.splice(idxSwap, 1, ol);
+      currentOl.push(ol);
+    }
+    // Resort after insertion
+    finalTop100 = finalTop100.sort((a, b) => (b.grade || 0) - (a.grade || 0)).slice(0, 100);
+  };
+  ensureTopOlPresence();
 
   // Post-pass: ensure each band/group meets minimums by swapping lowest eligible out
   const bandForGrade = (g) => bandConfigs.find(b => (g || 0) >= b.min && (g || 0) <= b.max);
@@ -1582,8 +1672,96 @@ function computeWeeklyList(snapshot, weekIndex) {
 
   const afterOverall = enforceOverallQuotas(finalTop100);
 
+  // OL band caps and per-team limits
+  const olBandCaps = [
+    { min: 95.0, max: 99.9, minCount: 0, maxCount: 2, teamCap: 1 },
+    { min: 90.0, max: 94.9, minCount: 1, maxCount: 2, teamCap: 1 },
+    { min: 85.1, max: 89.9, minCount: 1, maxCount: 3, teamCap: 1 },
+    { min: 80.0, max: 85.0, minCount: 2, maxCount: 4, teamCap: 2 },
+    { min: 79.0, max: 79.9, minCount: 2, maxCount: 5, teamCap: 2 },
+    { min: 78.0, max: 78.9, minCount: 3, maxCount: 6, teamCap: 2 },
+    { min: 77.0, max: 77.9, minCount: 3, maxCount: 7, teamCap: 2 },
+    { min: 76.0, max: 76.9, minCount: 5, maxCount: 8, teamCap: 2 }
+  ];
+
+  const enforceOlBands = (list) => {
+    let result = [...list];
+    const used = new Set(result.map(p => p.id));
+    const poolOL = candidatePool
+      .filter(p => !used.has(p.id) && posGroup(p.position) === 'OL')
+      .sort((a, b) => (b.grade || 0) - (a.grade || 0));
+
+    const removals = new Set();
+
+    olBandCaps.forEach(band => {
+      let bandOL = result
+        .map((p, idx) => ({ p, idx }))
+        .filter(({ p }) => posGroup(p.position) === 'OL' && (p.grade || 0) >= band.min && (p.grade || 0) <= band.max)
+        .sort((a, b) => (b.p.grade || 0) - (a.p.grade || 0));
+
+      // enforce team cap within the band
+      const kept = [];
+      const teamCounts = new Map();
+      bandOL.forEach(item => {
+        const team = item.p.teamId || item.p.team || 'unk';
+        const cur = teamCounts.get(team) || 0;
+        if (cur >= (band.teamCap ?? Infinity)) {
+          removals.add(item.p.id);
+          return;
+        }
+        teamCounts.set(team, cur + 1);
+        kept.push(item);
+      });
+      bandOL = kept;
+
+      // trim if above max
+      if (band.maxCount != null && bandOL.length > band.maxCount) {
+        bandOL.slice(band.maxCount).forEach(item => removals.add(item.p.id));
+        bandOL = bandOL.slice(0, band.maxCount);
+      }
+
+      // add if below min
+      let need = Math.max(0, (band.minCount || 0) - bandOL.length);
+      while (need > 0 && poolOL.length) {
+        const cand = poolOL.shift();
+        const team = cand.teamId || cand.team || 'unk';
+        const cur = bandOL.filter(it => (it.p.teamId || it.p.team || 'unk') === team).length;
+        if (cur >= (band.teamCap ?? Infinity)) continue;
+        const adjusted = { ...cand };
+        if ((adjusted.grade || 0) < band.min) adjusted.grade = band.min + 0.05;
+        if ((adjusted.grade || 0) > band.max) adjusted.grade = band.max - 0.05;
+        result.push(adjusted);
+        used.add(adjusted.id);
+        bandOL.push({ p: adjusted });
+        need--;
+      }
+    });
+
+    if (removals.size) {
+      result = result.filter(p => !removals.has(p.id));
+    }
+
+    // backfill to 100 with best remaining
+    if (result.length < 100) {
+      const refillPool = candidatePool
+        .filter(p => !used.has(p.id))
+        .sort((a, b) => (b.grade || 0) - (a.grade || 0));
+      for (const p of refillPool) {
+        if (result.length >= 100) break;
+        result.push(p);
+        used.add(p.id);
+      }
+    }
+
+    result.sort((a, b) => (b.grade || 0) - (a.grade || 0));
+    return result.slice(0, 100);
+  };
+
+  const afterOlBands = enforceOlBands(afterOverall);
+
   // Team caps per band (grade tiers)
   const teamBandCaps = [
+    // Global team caps (non-OL)
     { min: 95.0, max: 99.9, cap: 1 },
     { min: 90.0, max: 94.9, cap: 3 },
     { min: 85.1, max: 89.9, cap: 3 },
@@ -1649,7 +1827,7 @@ function computeWeeklyList(snapshot, weekIndex) {
     return kept.slice(0, 100);
   };
 
-  const withTeamCaps = applyTeamCaps(afterOverall);
+  const withTeamCaps = applyTeamCaps(afterOlBands);
   // Final band enforcement to match global OVR scale
   const banded = applyBanding(withTeamCaps, bandDefs);
   // Within each band, spread by small offsets to avoid identical grades (0.01 steps)
@@ -2178,10 +2356,34 @@ function computeWeeklyList(snapshot, weekIndex) {
     });
   }
 
-  // Capture full graded list before trimming to Top 100
-  const allPlayersGraded = gradedAllPlayers;
+  // Capture full graded list (all players, fully adjusted) before trimming to Top 100.
+  // Also append any rostered players who had zero stats this week so every player is present.
+  const seenIds = new Set(prelimAdjustedBoosted.map(p => p.rosterId || p.id));
+  const allPlayersGraded = [...prelimAdjustedBoosted];
+  rosterLookup.forEach((pl, rid) => {
+    if (seenIds.has(rid)) return;
+    const teamName = teamNameMap(snapshot)[pl.teamId] || 'Unknown Team';
+    const conf = conferenceMap(snapshot)[pl.teamId] || 'Unknown';
+    allPlayersGraded.push({
+      id: rid,
+      rosterId: rid,
+      name: pl.fullName || 'Unknown Player',
+      position: pl.position || 'UNK',
+      displayPos: pl.position || 'UNK',
+      teamId: pl.teamId,
+      team: teamName,
+      conference: conf,
+      totals: {},
+      statLine: 'No stats',
+      grade: 60,
+      score: 0,
+      yearsPro: pl.yearsPro,
+      isRookie: pl.isRookie,
+      winPct: 0.5
+    });
+  });
 
-  // Persist full graded list for the week (all players) using final spread grades
+  // Persist full graded list for the week (all players) using final adjusted grades
   if (snapshot?.leagueId) {
     try { saveWeeklyAll(snapshot.leagueId, weekIndex, allPlayersGraded); } catch {}
   }

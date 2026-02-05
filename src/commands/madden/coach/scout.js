@@ -65,8 +65,15 @@ function findClassFile(classId) {
 
 function loadDraftClass(classId) {
   const file = findClassFile(classId);
-  if (!file) return null;
-  return safeReadJSON(file, null);
+  if (!file) return { data: null, resolvedId: classId };
+  const data = safeReadJSON(file, null);
+  const resolvedId = (() => {
+    const base = path.basename(file).toLowerCase();
+    const match = base.match(/cus[_ -]?(\d+)/);
+    if (match) return `cus_${String(match[1]).padStart(2, '0')}`;
+    return classId;
+  })();
+  return { data, resolvedId };
 }
 
 function uniqPositions(draftData) {
@@ -115,7 +122,7 @@ export async function autocomplete(interaction) {
   const snapshot = leagueId ? loadLeagueSnapshot(leagueId) : null;
   const calendarYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear;
   const classId = classIdForSeason(calendarYear);
-  const draftData = loadDraftClass(classId);
+  const { data: draftData, resolvedId: resolvedClassId } = loadDraftClass(classId);
   const focusedOpt = interaction.options.getFocused(true);
   const focusedVal = focusedOpt?.value?.toLowerCase() || '';
 
@@ -166,9 +173,10 @@ export async function execute(interaction) {
   }
 
   const classId = classIdForSeason(calendarYear);
-  const draftData = loadDraftClass(classId);
+  const { data: draftData, resolvedId: resolvedClassId } = loadDraftClass(classId);
+  const classKey = resolvedClassId || classId;
   if (!draftData) {
-    await interaction.reply({ content: `Draft class ${classId} not found. Add a JSON under data/draft_classes/madden.`, ephemeral: true });
+    await interaction.reply({ content: `Draft class ${classKey} not found. Add a JSON under data/draft_classes/madden.`, ephemeral: true });
     return;
   }
 
@@ -192,7 +200,7 @@ export async function execute(interaction) {
   if (userData.weeklyPoints[weekKey] === undefined) userData.weeklyPoints[weekKey] = defaultPoints;
   let pointsLeft = Number(userData.weeklyPoints[weekKey]);
   if (!Number.isFinite(pointsLeft)) pointsLeft = defaultPoints;
-  const unlocked = userData.players[classId]?.[player.name] || [];
+  const unlocked = userData.players[classKey]?.[player.name] || [];
   const nextCat = nextCategory(unlocked);
   if (!nextCat) {
     await interaction.reply({ content: 'All info already unlocked for this player.', ephemeral: true });
@@ -205,8 +213,8 @@ export async function execute(interaction) {
   }
   const newUnlocked = [...unlocked, nextCat];
   pointsLeft -= cost;
-  if (!userData.players[classId]) userData.players[classId] = {};
-  userData.players[classId][player.name] = newUnlocked;
+  if (!userData.players[classKey]) userData.players[classKey] = {};
+  userData.players[classKey][player.name] = newUnlocked;
   userData.weeklyPoints[weekKey] = pointsLeft;
   saveJSON(SCOUT_PATH, scoutData);
   // backend log only

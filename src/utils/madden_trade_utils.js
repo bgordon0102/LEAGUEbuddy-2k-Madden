@@ -20,7 +20,15 @@ export function canTrade(leagueId) {
 }
 
 export function loadActiveTrades() {
-  try { return JSON.parse(fs.readFileSync(ACTIVE_TRADES_FILE, 'utf8')); } catch { return {}; }
+  try {
+    const raw = fs.readFileSync(ACTIVE_TRADES_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    // Ensure the file exists so we persist across restarts
+    fs.mkdirSync(path.dirname(ACTIVE_TRADES_FILE), { recursive: true });
+    fs.writeFileSync(ACTIVE_TRADES_FILE, JSON.stringify({}, null, 2));
+    return {};
+  }
 }
 
 export function saveActiveTrades(data) {
@@ -29,7 +37,14 @@ export function saveActiveTrades(data) {
 }
 
 export function loadTradeCounts() {
-  try { return JSON.parse(fs.readFileSync(TRADE_COUNTS_FILE, 'utf8')); } catch { return {}; }
+  try {
+    const raw = fs.readFileSync(TRADE_COUNTS_FILE, 'utf8');
+    return JSON.parse(raw);
+  } catch {
+    fs.mkdirSync(path.dirname(TRADE_COUNTS_FILE), { recursive: true });
+    fs.writeFileSync(TRADE_COUNTS_FILE, JSON.stringify({}, null, 2));
+    return {};
+  }
 }
 
 export function saveTradeCounts(data) {
