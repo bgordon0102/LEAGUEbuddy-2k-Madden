@@ -2,8 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { canTrade, loadTradeCounts } from '../utils/madden_trade_utils.js';
-import { saveTradeDraft } from '../utils/trade_draft_store.js';
+import { canTrade, loadTradeCounts } from '../shared/madden_trade_utils.js';
+import { saveTradeDraft } from '../shared/trade_draft_store.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -266,7 +266,7 @@ function parseAssets(text, valueMap, seasonYear) {
   let total = 0;
   const matched = [];
   const unmatched = [];
-  const posPrefixes = ['qb','hb','rb','wr','te','lt','lg','c','rg','rt','le','re','dt','mlb','olb','cb','fs','ss','k','p','fb','will','sam','mike','ledge','redge'];
+  const posPrefixes = ['qb', 'hb', 'rb', 'wr', 'te', 'lt', 'lg', 'c', 'rg', 'rt', 'le', 're', 'dt', 'mlb', 'olb', 'cb', 'fs', 'ss', 'k', 'p', 'fb', 'will', 'sam', 'mike', 'ledge', 'redge'];
   parts.forEach(part => {
     const raw = part;
     const key = raw.toLowerCase();

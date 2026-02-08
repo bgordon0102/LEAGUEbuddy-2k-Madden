@@ -1,5 +1,5 @@
 import { SnallabotProvider } from './providers/SnallabotProvider.js';
-import { runSync } from '../commands/madden/sync.js';
+import { runSync } from './sync.js';
 import { getLeagueForGuild } from './madden_config.js';
 
 const ENABLED = (process.env.MADDEN_AUTO_SYNC_ENABLED ?? 'false').toLowerCase() === 'true';

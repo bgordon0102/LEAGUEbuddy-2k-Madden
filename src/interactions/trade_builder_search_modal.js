@@ -1,6 +1,6 @@
 import { ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { getTradeDraft } from '../utils/trade_draft_store.js';
+import { getTradeDraft } from '../shared/trade_draft_store.js';
 import { rosterForTeam, buildButtons } from './trade_builder_add_assets.js';
 
 export const customId = /^trade_builder_search_modal\|(yours|other)\|/;

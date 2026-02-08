@@ -2,8 +2,8 @@ import { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle }
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { canTrade } from '../utils/madden_trade_utils.js';
-import { saveTradeDraft } from '../utils/trade_draft_store.js';
+import { canTrade } from '../shared/madden_trade_utils.js';
+import { saveTradeDraft } from '../shared/trade_draft_store.js';
 import { buildButtons } from './trade_builder_add_assets.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');

@@ -93,8 +93,13 @@ export function startLocalSidecar() {
     res.end(JSON.stringify({ ok: false, error: 'not found' }));
   });
 
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`[madden-sidecar] Listening on http://localhost:${PORT}`);
+  server.on('error', (err) => {
+    console.error(`[madden-sidecar] Failed to listen on http://127.0.0.1:${PORT}: ${err?.message || err}`);
+  });
+
+  // Use loopback to avoid sandbox restrictions on binding to all interfaces
+  server.listen(PORT, '127.0.0.1', () => {
+    console.log(`[madden-sidecar] Listening on http://127.0.0.1:${PORT}`);
   });
   return server;
 }

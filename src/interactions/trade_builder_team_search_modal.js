@@ -1,5 +1,5 @@
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { getTradeDraft, saveTradeDraft } from '../utils/trade_draft_store.js';
+import { getTradeDraft, saveTradeDraft } from '../shared/trade_draft_store.js';
 import { buildButtons } from './trade_builder_add_assets.js';
 import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
 

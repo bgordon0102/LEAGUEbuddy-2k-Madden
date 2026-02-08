@@ -1,5 +1,5 @@
 import { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from 'discord.js';
-import { getTradeDraft } from '../utils/trade_draft_store.js';
+import { getTradeDraft } from '../shared/trade_draft_store.js';
 
 export const customId = /^trade_builder_search\|(yours|other)\|/;
 

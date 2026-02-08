@@ -6,7 +6,7 @@ import {
   loadTradeCounts,
   loadActiveTrades,
   saveActiveTrades,
-} from '../utils/madden_trade_utils.js';
+} from '../shared/madden_trade_utils.js';
 import {
   resolveLeagueIdWithConfig,
   loadLeagueSnapshot,
@@ -21,7 +21,7 @@ import {
 import {
   getTradeDraft,
   deleteTradeDraft,
-} from '../utils/trade_draft_store.js';
+} from '../shared/trade_draft_store.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 
@@ -239,7 +239,7 @@ export async function execute(interaction) {
         if (role) {
           // ensure member cache is warm
           if (role.members.size === 0) {
-            try { await guild.members.fetch(); } catch {}
+            try { await guild.members.fetch(); } catch { }
           }
           role.members.forEach(m => {
             if (m.user.id !== interaction.user.id) members.push(m);
@@ -262,7 +262,7 @@ export async function execute(interaction) {
       const me = await interaction.client.users.fetch(interaction.user.id);
       await me.send({ content: `You submitted trade ${tradeId}: ${yourTeam} ↔ ${otherTeam}. Waiting on the other coach to approve/deny.`, embeds: [embed], components: [] });
       dmTargets.push(me.tag);
-    } catch {}
+    } catch { }
 
     const dmNote = dmSent
       ? ` DM sent to: ${dmTargets.join(', ')}`

@@ -8,7 +8,7 @@ import {
   saveTradeCounts,
   updateTradeCountsEmbed,
   computeApprovedTradeCounts,
-} from '../utils/madden_trade_utils.js';
+} from '../shared/madden_trade_utils.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');

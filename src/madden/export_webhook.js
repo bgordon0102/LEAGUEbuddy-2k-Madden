@@ -70,7 +70,15 @@ export function startExportWebhook() {
     res.end('Not found');
   });
 
-  server.listen(EXPORT_PORT, '0.0.0.0', () => {
-    console.log(`[madden-export] Listening on http://localhost:${EXPORT_PORT}/madden/export`);
+  // Avoid crashing the bot if binding fails in sandboxed environments
+  server.on('error', (err) => {
+    console.error(`[madden-export] Failed to listen on http://127.0.0.1:${EXPORT_PORT}: ${err?.message || err}`);
   });
+
+  // Bind to localhost only; 0.0.0.0 can be blocked by sandbox policies
+  server.listen(EXPORT_PORT, '127.0.0.1', () => {
+    console.log(`[madden-export] Listening on http://127.0.0.1:${EXPORT_PORT}/madden/export`);
+  });
+
+  return server;
 }

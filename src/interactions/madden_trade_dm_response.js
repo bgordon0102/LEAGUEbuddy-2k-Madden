@@ -8,7 +8,7 @@ import {
   saveTradeCounts,
   incrementTradeCounts,
   updateTradeCountsEmbed,
-} from '../utils/madden_trade_utils.js';
+} from '../shared/madden_trade_utils.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
@@ -153,7 +153,7 @@ export async function execute(interaction) {
       try {
         const userA = await interaction.client.users.fetch(trade.proposerId);
         await userA.send({ embeds: [embed], content: 'Your trade was denied by the other coach.' }).catch(() => null);
-      } catch {}
+      } catch { }
     }
     await deletePendingMessage(interaction.client, channelMap, trade);
     await interaction.editReply({ content: 'Trade denied and proposer notified.' });
@@ -169,7 +169,7 @@ export async function execute(interaction) {
       try {
         const userA = await interaction.client.users.fetch(trade.proposerId);
         await userA.send({ content: 'Your trade was blocked because one of the teams has already made 5 trades this season.' }).catch(() => null);
-      } catch {}
+      } catch { }
     }
     return;
   }
@@ -233,7 +233,7 @@ export async function execute(interaction) {
     try {
       const userA = await interaction.client.users.fetch(trade.proposerId);
       await userA.send({ content: `Your trade with ${trade.otherTeam} was approved by the other coach and sent to committee.`, embeds: [embed] }).catch(() => null);
-    } catch {}
+    } catch { }
   }
   await interaction.editReply({ content: 'Trade approved by other coach and sent to committee.' });
 }

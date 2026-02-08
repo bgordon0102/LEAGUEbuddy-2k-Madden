@@ -202,13 +202,19 @@ async function loadCommands() {
     ['madden', 'coach'],
     ['madden', 'staff'],
   ];
+  const roots = [
+    join(process.cwd(), 'src', 'commands'),
+    join(process.cwd(), 'src'),
+  ];
+
   for (const parts of commandFolders) {
-    const commandsPath = join(process.cwd(), 'src', 'commands', ...parts);
-    const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-    for (const file of commandFiles) {
-      const filePath = join(commandsPath, file);
-      const fileURL = pathToFileURL(filePath).href;
-      try {
+    for (const root of roots) {
+      const commandsPath = join(root, ...parts);
+      if (!fs.existsSync(commandsPath)) continue;
+      const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+      for (const file of commandFiles) {
+        const filePath = join(commandsPath, file);
+        const fileURL = pathToFileURL(filePath).href;
         try {
           const commandModule = await import(fileURL);
           const cmd = commandModule.default;
@@ -218,8 +224,6 @@ async function loadCommands() {
         } catch (err) {
           console.error(`❌ Error importing ${file}:`, err);
         }
-      } catch (err) {
-        console.error(`❌ Failed to load command ${file}:`, err);
       }
     }
   }

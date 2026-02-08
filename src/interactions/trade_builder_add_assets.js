@@ -11,7 +11,7 @@ import {
 } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
 import { computePlayerValue, buildValueMap, parsePickValue } from './madden_trade_modal_submit.js';
-import { getTradeDraft, saveTradeDraft } from '../utils/trade_draft_store.js';
+import { getTradeDraft, saveTradeDraft } from '../shared/trade_draft_store.js';
 
 const MENU_CUSTOM_ID = /^trade_builder_select_assets\|(yours|other)\|/;
 const ADD_CUSTOM_ID = /^trade_builder_add\|(yours|other)\|/;
@@ -103,9 +103,9 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
     || snapshot?.info?.calendarYear
     || new Date().getFullYear();
 
-  const offensePos = new Set(['QB','HB','RB','FB','WR','TE','LT','LG','C','RG','RT']);
-  const defensePos = new Set(['LE','RE','DL','DT','EDGE','REDGE','LEDGE','OLB','ROLB','LOLB','MLB','MIKE','WILL','SAM','CB','FS','SS','DB']);
-  const specialPos = new Set(['K','P','LS']);
+  const offensePos = new Set(['QB', 'HB', 'RB', 'FB', 'WR', 'TE', 'LT', 'LG', 'C', 'RG', 'RT']);
+  const defensePos = new Set(['LE', 'RE', 'DL', 'DT', 'EDGE', 'REDGE', 'LEDGE', 'OLB', 'ROLB', 'LOLB', 'MLB', 'MIKE', 'WILL', 'SAM', 'CB', 'FS', 'SS', 'DB']);
+  const specialPos = new Set(['K', 'P', 'LS']);
 
   const buckets = [
     { key: 'off', label: 'Offense', items: [] },
@@ -132,13 +132,13 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
   const pickBuckets = pickOptions(year);
   const futurePickRow = pickBuckets.future.slice(0, 25).length
     ? new ActionRowBuilder().addComponents(
-        new StringSelectMenuBuilder()
-          .setCustomId(`trade_builder_select_assets|${side}|${draftId}|picks_future|0`)
-          .setPlaceholder(`Add ${side === 'yours' ? 'your' : 'their'} future picks`)
-          .setMinValues(1)
-          .setMaxValues(Math.min(5, pickBuckets.future.slice(0, 25).length))
-          .addOptions(pickBuckets.future.slice(0, 25))
-      )
+      new StringSelectMenuBuilder()
+        .setCustomId(`trade_builder_select_assets|${side}|${draftId}|picks_future|0`)
+        .setPlaceholder(`Add ${side === 'yours' ? 'your' : 'their'} future picks`)
+        .setMinValues(1)
+        .setMaxValues(Math.min(5, pickBuckets.future.slice(0, 25).length))
+        .addOptions(pickBuckets.future.slice(0, 25))
+    )
     : null;
 
   // Limit player buckets to top 25 to avoid extra pages; keep single row per category
@@ -316,7 +316,7 @@ export async function execute(interaction) {
     return;
   }
   if (ADD_CUSTOM_ID.test(interaction.customId)) {
-    const [ , side, draftId ] = interaction.customId.split('|');
+    const [, side, draftId] = interaction.customId.split('|');
     const draft = getTradeDraft(draftId);
     if (!draft || !draft[side === 'yours' ? 'yourTeamId' : 'otherTeamId']) {
       await interaction.reply({ content: 'Select both teams first.', ephemeral: true });
@@ -336,7 +336,7 @@ export async function execute(interaction) {
     return;
   }
   if (MENU_CUSTOM_ID.test(interaction.customId)) {
-    const [ , side, draftId ] = interaction.customId.split('|');
+    const [, side, draftId] = interaction.customId.split('|');
     const draft = getTradeDraft(draftId);
     if (!draft) {
       await interaction.reply({ content: 'Trade builder expired. Start again.', ephemeral: true });

@@ -1,6 +1,6 @@
 import { ButtonInteraction } from 'discord.js';
 import { loadLeagueSnapshot } from '../madden/madden_data.js';
-import { buildRosterEmbeds } from '../commands/madden/coach/roster.js';
+import { buildRosterEmbeds } from '../madden/coach/roster.js';
 
 export const customId = /^madden_roster_page_(\d+)_([0-9]+)_([0-9]+)$/;
 

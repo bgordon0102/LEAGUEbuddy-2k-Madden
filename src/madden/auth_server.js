@@ -82,8 +82,15 @@ export function startAuthServer() {
     res.end('Not found');
   });
 
+  // Log and swallow listen errors so the bot doesn't crash if the port is blocked
+  server.on('error', (err) => {
+    console.error(`[madden-auth] Failed to listen on http://127.0.0.1:${PORT}: ${err?.message || err}`);
+  });
+
   // Bind to localhost to avoid sandbox/permission issues on 0.0.0.0
   server.listen(PORT, "127.0.0.1", () => {
     console.log(`[madden-auth] Listening on http://127.0.0.1:${PORT}/madden/auth`);
   });
+
+  return server;
 }

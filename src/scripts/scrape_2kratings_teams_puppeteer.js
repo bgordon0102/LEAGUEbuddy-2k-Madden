@@ -1,9 +1,14 @@
 // Scrape team details and rosters from 2kratings.com using Puppeteer
 // Usage: node scripts/scrape_2kratings_teams_puppeteer.js
+
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import fs from 'fs';
 import path from 'path';
+
+
+// Import Spotrac yearly contract scraper (ESM)
+import { scrapeBasketballReferenceContracts, TEAM_CODES } from '../2k/spotrac_yearly_scraper.js';
 
 const TEAM_LINKS_FILE = './data/teamLinks.json';
 const OUTPUT_DIR = './teams_rosters';
@@ -516,7 +521,43 @@ async function main() {
     const label = isFreeAgency ? 'free agency' : 'team';
     console.log(`[DEBUG] Scraping team: ${team.name} (${team.url})`);
     const details = await scrapeTeamPage(team.url, { label });
-    const outPath = `${OUTPUT_DIR}/${team.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
+
+
+
+    // Always scrape Basketball Reference contracts for NBA teams (not free agency)
+    let bbrContracts = [];
+    if (!isFreeAgency && TEAM_CODES[team.name]) {
+        try {
+            console.log(`[DEBUG] Scraping Basketball Reference contracts for: ${team.name}`);
+            bbrContracts = await scrapeBasketballReferenceContracts(team.name);
+            console.log(`[DEBUG] Basketball Reference contracts found: ${bbrContracts.length}`);
+        } catch (err) {
+            console.log(`[ERROR] Basketball Reference contract scrape failed for ${team.name}:`, err.message);
+        }
+    } else {
+        console.log(`[DEBUG] Skipping Basketball Reference contracts for: ${team.name}`);
+    }
+
+    // Fuzzy name matching for contract embedding
+    if (details.players && Array.isArray(details.players) && bbrContracts && Array.isArray(bbrContracts)) {
+        console.log('[DEBUG] Basketball Reference contract player names:');
+        bbrContracts.forEach(c => console.log('  -', c.player));
+        console.log('[DEBUG] Roster player names:');
+        details.players.forEach(p => console.log('  -', p.name));
+        for (const player of details.players) {
+            let match = bbrContracts.find(c => {
+                if (!c.player) return false;
+                return c.player.trim().toLowerCase() === player.name.trim().toLowerCase();
+            });
+            if (match && match.contractYears && match.contractYears.length > 0) {
+                player.contractYears = match.contractYears;
+            }
+        }
+    }
+
+    // Save to data/2k/teams_rosters/{team}.json
+    const outPath = path.join('data', '2k', 'teams_rosters', `${team.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
+    fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, JSON.stringify(details, null, 2));
     console.log(`[DEBUG] Saved: ${outPath}`);
     console.log("Main complete");

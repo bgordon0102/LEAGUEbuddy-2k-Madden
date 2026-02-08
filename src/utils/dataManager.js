@@ -1,33 +1,40 @@
 import fs from 'fs';
 import path from 'path';
 
+// Simple JSON file helper used across the bot
 export class DataManager {
-  constructor(basePath = './data') {
-    this.basePath = path.resolve(basePath);
+  constructor(baseDir = path.join(process.cwd(), 'data')) {
+    this.baseDir = baseDir;
   }
 
-  pathFor(name) {
-    return path.join(this.basePath, `${name}.json`);
+  filePath(key) {
+    const safeKey = `${key}`.replace(/[^a-zA-Z0-9-_]/g, '');
+    return path.join(this.baseDir, `${safeKey}.json`);
   }
 
-  readData(name) {
-    const file = this.pathFor(name);
-    if (!fs.existsSync(file)) return null;
+  readData(key, defaultValue = null) {
+    const file = this.filePath(key);
     try {
-      return JSON.parse(fs.readFileSync(file, 'utf-8'));
-    } catch {
-      return null;
+      if (!fs.existsSync(file)) return defaultValue;
+      const contents = fs.readFileSync(file, 'utf-8');
+      return JSON.parse(contents);
+    } catch (err) {
+      console.error(`[DataManager] Failed to read ${file}:`, err);
+      return defaultValue;
     }
   }
 
-  writeData(name, data) {
+  writeData(key, data) {
+    const file = this.filePath(key);
     try {
-      fs.mkdirSync(this.basePath, { recursive: true });
-      fs.writeFileSync(this.pathFor(name), JSON.stringify(data, null, 2));
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf-8');
       return true;
-    } catch (e) {
-      console.error(`[DataManager] Failed to write ${name}:`, e);
+    } catch (err) {
+      console.error(`[DataManager] Failed to write ${file}:`, err);
       return false;
     }
   }
 }
+
+export default DataManager;

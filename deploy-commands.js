@@ -19,37 +19,55 @@ async function loadCommandsForDeployment() {
     ['madden', 'staff'],
   ];
 
+  const roots = [
+    join(__dirname, 'src', 'commands'),
+    join(__dirname, 'src'),
+  ];
+  const loadedNames = new Set();
+
   for (const parts of commandFolders) {
-    const commandsPath = join(__dirname, 'src', 'commands', ...parts);
-    const commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-    const label = parts.join('/');
-    console.log(`📂 Loading ${label} commands...`);
-
-    for (const file of commandFiles) {
-      const filePath = join(commandsPath, file);
-      const fileURL = pathToFileURL(filePath).href;
-
+    for (const root of roots) {
+      const commandsPath = join(root, ...parts);
+      let commandFiles;
       try {
-        const commandModule = await import(fileURL);
-        const command = commandModule.default || commandModule;
-        const commandName = command?.data?.name;
-        if (commandName === 'madden-game_stats' || file.toLowerCase().includes('game_stats')) {
-          console.log(`⏭️  Skipping ${label}/${file} (game stats disabled)`);
-          continue;
-        }
-        if (command?.skipDeploy) {
-          console.log(`⏭️  Skipping ${label}/${file} (skipDeploy=true)`);
-          continue;
-        }
-        if (command && 'data' in command) {
+        commandFiles = readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+      } catch {
+        continue; // path may not exist in this layout
+      }
+
+      const label = parts.join('/');
+      console.log(`📂 Loading ${label} commands from ${commandsPath}...`);
+
+      for (const file of commandFiles) {
+        const filePath = join(commandsPath, file);
+        const fileURL = pathToFileURL(filePath).href;
+
+        try {
+          const commandModule = await import(fileURL);
+          const command = commandModule.default || commandModule;
+          const commandName = command?.data?.name;
+          if (!commandName) {
+            console.log(`⚠️  Command at ${label}/${file} missing name/data; skipping.`);
+            continue;
+          }
+          if (loadedNames.has(commandName)) {
+            console.log(`⏭️  Skipping duplicate command ${commandName} from ${label}/${file}`);
+            continue;
+          }
+          if (commandName === 'madden-game_stats' || file.toLowerCase().includes('game_stats')) {
+            console.log(`⏭️  Skipping ${label}/${file} (game stats disabled)`);
+            continue;
+          }
+          if (command?.skipDeploy) {
+            console.log(`⏭️  Skipping ${label}/${file} (skipDeploy=true)`);
+            continue;
+          }
           commands.push(command.data.toJSON());
-          console.log(`✅ Loaded ${label}/${file}`);
-        } else {
-          console.log(`⚠️  Command at ${label}/${file} is missing required "data" property.`);
+          loadedNames.add(commandName);
+          console.log(`✅ Loaded ${commandName} (${label}/${file})`);
+        } catch (error) {
+          console.error(`❌ Error loading command ${label}/${file}:`, error);
         }
-      } catch (error) {
-        console.error(`❌ Error loading command ${label}/${file}:`, error);
       }
     }
   }

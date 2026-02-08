@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { loadJson, saveJson } from '../utils/json.js';
+import { loadJson, saveJson } from '../shared/json.js';
 import { gatherWeeklyStats } from './awards.js';
 
 const TOP_FILE = path.join(process.cwd(), 'data', 'madden', 'top_players.json');
@@ -27,16 +27,16 @@ function buildRichestPlayerEntries(snapshot) {
       if (!id) return;
       const candidate = liftMetadata(p);
       if (!candidate) return;
-    const richness = Object.keys(candidate).length;
-    const stage = Number(p.stage ?? p.stageIndex ?? 0);
-    const wk = Number(p.weekIndex ?? 0);
-    const score = richness * 1000 + stage * 10 + wk; // prefer more fields, then higher stage, then later week
-    const existing = best.get(id);
-    const existingRichness = existing ? Object.keys(existing).length : 0;
-    const existingScore = existing
+      const richness = Object.keys(candidate).length;
+      const stage = Number(p.stage ?? p.stageIndex ?? 0);
+      const wk = Number(p.weekIndex ?? 0);
+      const score = richness * 1000 + stage * 10 + wk; // prefer more fields, then higher stage, then later week
+      const existing = best.get(id);
+      const existingRichness = existing ? Object.keys(existing).length : 0;
+      const existingScore = existing
         ? existingRichness * 1000
-          + Number(existing.stage ?? existing.stageIndex ?? 0) * 10
-          + Number(existing.weekIndex ?? 0)
+        + Number(existing.stage ?? existing.stageIndex ?? 0) * 10
+        + Number(existing.weekIndex ?? 0)
         : -1;
       if (!existing || score > existingScore) {
         best.set(id, candidate);
@@ -246,21 +246,21 @@ function scoreOffense(p) {
     // Heavier QB scaling: reward volume/TDs, punish turnover-heavy or low-output games
     const yardBand =
       yds >= 350 ? 1.35 :
-      yds >= 320 ? 1.25 :
-      yds >= 280 ? 1.15 :
-      yds >= 240 ? 1.05 :
-      yds >= 200 ? 0.9 :
-      yds >= 150 ? 0.7 : 0.55;
+        yds >= 320 ? 1.25 :
+          yds >= 280 ? 1.15 :
+            yds >= 240 ? 1.05 :
+              yds >= 200 ? 0.9 :
+                yds >= 150 ? 0.7 : 0.55;
     const tdBand =
       tds >= 4 ? 1.35 :
-      tds === 3 ? 1.2 :
-      tds === 2 ? 1.05 :
-      tds === 1 ? 0.9 : 0.7;
+        tds === 3 ? 1.2 :
+          tds === 2 ? 1.05 :
+            tds === 1 ? 0.9 : 0.7;
     const intBand =
       ints >= 4 ? 0.35 :
-      ints === 3 ? 0.5 :
-      ints === 2 ? 0.7 :
-      ints === 1 ? 0.9 : 1.05; // slight bonus for clean game
+        ints === 3 ? 0.5 :
+          ints === 2 ? 0.7 :
+            ints === 1 ? 0.9 : 1.05; // slight bonus for clean game
     base = base * yardBand * tdBand * intBand - ints * 4;
     // QB rushing bonuses
     if (rYds >= 80) base += 12;
@@ -1508,7 +1508,7 @@ function computeWeeklyList(snapshot, weekIndex) {
         .map((p, idx) => ({ p, idx }))
         .filter(entry => posGroup(entry.p.position) !== 'OL')
         .sort((a, b) => (a.p.grade || 0) - (b.p.grade || 0))
-        [0]?.idx;
+      [0]?.idx;
       if (idxSwap === undefined) break;
       finalTop100.splice(idxSwap, 1, ol);
       currentOl.push(ol);
@@ -2385,7 +2385,7 @@ function computeWeeklyList(snapshot, weekIndex) {
 
   // Persist full graded list for the week (all players) using final adjusted grades
   if (snapshot?.leagueId) {
-    try { saveWeeklyAll(snapshot.leagueId, weekIndex, allPlayersGraded); } catch {}
+    try { saveWeeklyAll(snapshot.leagueId, weekIndex, allPlayersGraded); } catch { }
   }
 
   // Return trimmed Top 100 for callers

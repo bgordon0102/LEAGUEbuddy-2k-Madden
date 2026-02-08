@@ -1,6 +1,9 @@
 import https from 'https';
 import { constants, randomBytes, createHash } from 'crypto';
 import { Buffer } from 'buffer';
+import fs from 'fs';
+import path from 'path';
+import { saveTokens as saveTokensDb } from './madden_db.js';
 import { CLIENT_ID, CLIENT_SECRET, AUTH_SOURCE, LeagueData, Stage, BLAZE_SERVICE, BLAZE_PRODUCT_NAME, MACHINE_KEY, YEAR, getServiceVariantsForConsole } from './ea_constants.js';
 
 // Create an agent that allows EA's legacy SSL
@@ -8,6 +11,28 @@ const agent = new https.Agent({
   rejectUnauthorized: false,
   secureOptions: constants.SSL_OP_LEGACY_SERVER_CONNECT,
 });
+
+const TOKEN_FILE = path.join(process.cwd(), 'data', 'madden', 'tokens.json');
+
+function persistTokens(token) {
+  try {
+    fs.mkdirSync(path.dirname(TOKEN_FILE), { recursive: true });
+    const serializable = {
+      accessToken: token.accessToken,
+      refreshToken: token.refreshToken,
+      expiry: token.expiry ? Number(token.expiry) : null,
+      console: token.console,
+      blazeId: token.blazeId,
+      gameYear: token.gameYear || YEAR,
+      serviceOverride: token.serviceOverride,
+      productOverride: token.productOverride,
+    };
+    fs.writeFileSync(TOKEN_FILE, JSON.stringify(serializable, null, 2));
+    saveTokensDb(serializable);
+  } catch (e) {
+    console.warn('[ea_client] persistTokens failed:', e?.message || e);
+  }
+}
 
 // TokenInformation / SessionInformation shapes (JS version)
 // token: { accessToken, refreshToken, expiry: Date, console: 'ps5'|'xbsx'|..., blazeId }
@@ -44,13 +69,18 @@ async function refreshToken(token) {
     throw new Error(`Error refreshing tokens, response from EA ${JSON.stringify(newToken)}`);
   }
   const newExpiry = new Date(Date.now() + newToken.expires_in * 1000);
-  return {
+  const refreshed = {
     accessToken: newToken.access_token,
     refreshToken: newToken.refresh_token,
     expiry: newExpiry,
     console: token.console,
     blazeId: `${token.blazeId}`,
+    serviceOverride: token.serviceOverride,
+    productOverride: token.productOverride,
+    gameYear: token.gameYear || YEAR,
   };
+  persistTokens(refreshed);
+  return refreshed;
 }
 
 async function retrieveBlazeSession(token) {
@@ -199,6 +229,7 @@ export async function createEAClientFromEnv(env) {
     blazeId: env.EA_BLAZE_ID || '0',
     serviceOverride: env.EA_SERVICE_OVERRIDE,
     productOverride: env.EA_PRODUCT_OVERRIDE,
+    gameYear: env.EA_GAME_YEAR || YEAR,
   };
   if (!token.accessToken || !token.refreshToken) {
     throw new Error('Missing EA_ACCESS_TOKEN or EA_REFRESH_TOKEN in environment');
