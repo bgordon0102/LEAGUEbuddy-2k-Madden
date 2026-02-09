@@ -248,17 +248,25 @@ async function scrapeTeamPage(url, { label = 'team' } = {}) {
                     let yearsInNBA = getByLabel('year(s) in the nba:').replace(/^year\(s\) in the nba:\s*/i, '');
                     let prior_to_nba = getByLabel('prior to  nba:').replace(/^prior to\s*nba:\s*/i, '') || getByLabel('prior to nba:').replace(/^prior to\s*nba:\s*/i, '');
                     let nationality = getByLabel('nationality:').replace(/^nationality:\s*/i, '');
-
                     let imgUrl = '';
-                    const ogImg = document.querySelector('meta[property="og:image"]');
-                    if (ogImg && ogImg.content) imgUrl = ogImg.content;
+                    // 1. Try profile-photo first
+                    const profileImg = document.querySelector('img.profile-photo');
+                    if (profileImg && profileImg.src) imgUrl = profileImg.src;
+                    // 2. Try 2K-Photo or 2K-Rating if not found
                     if (!imgUrl) {
-                        const img = document.querySelector('img.profile-photo, img[src*="2K-Photo"], img[src*="2K-Rating"]');
-                        if (img) imgUrl = img.src;
+                        const img = document.querySelector('img[src*="2K-Photo"], img[src*="2K-Rating"]');
+                        if (img && img.src) imgUrl = img.src;
                     }
+                    // 3. Try og:image meta tag if still not found
+                    if (!imgUrl) {
+                        const ogImg = document.querySelector('meta[property="og:image"]');
+                        if (ogImg && ogImg.content) imgUrl = ogImg.content;
+                    }
+                    // 4. Fallback: search for image with player name in src
                     if (!imgUrl) {
                         const imgs = Array.from(document.querySelectorAll('img'));
-                        const foundImg = imgs.find(im => im.src && im.src.toLowerCase().includes(playerName.toLowerCase().replace(/\s/g, '-')));
+                        const normalizedName = playerName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                        const foundImg = imgs.find(im => im.src && im.src.toLowerCase().includes(normalizedName));
                         if (foundImg) imgUrl = foundImg.src;
                     }
                     // Avoid generic site logo
