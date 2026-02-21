@@ -3,11 +3,12 @@ import fs from "fs";
 import path from "path";
 import { ButtonInteraction, EmbedBuilder } from "discord.js";
 import { canTrade, getSeasonState } from "../utils/seasonUtils.js";
+import { get2kRostersDir } from "../shared/rosterUtils.js";
 
 export const customId = "trade_submit_button";
 
 function loadAllRosters() {
-    const rostersDir = path.join(process.cwd(), "data/teams_rosters");
+    const rostersDir = get2kRostersDir();
     const files = fs.readdirSync(rostersDir).filter(f => f.endsWith('.json'));
     let all = {};
     for (const file of files) {
@@ -17,7 +18,7 @@ function loadAllRosters() {
     return all;
 }
 function saveRoster(teamFile, rosterArr) {
-    const rostersDir = path.join(process.cwd(), "data/teams_rosters");
+    const rostersDir = get2kRostersDir();
     fs.writeFileSync(path.join(rostersDir, teamFile), JSON.stringify(rosterArr, null, 2));
 }
 function parseTradeMessage(msg) {
@@ -37,6 +38,21 @@ function parseTradeMessage(msg) {
 
 export async function execute(interaction) {
     if (!(interaction instanceof ButtonInteraction)) return;
+    // Redirect the legacy trade button to the new cross‑league Trade Builder.
+    // We force 2K mode here so NBA coaches always get roster-backed selections.
+    try {
+        const { execute: startBuilder } = await import('./trade_builder_start.js');
+        const synthetic = {
+            ...interaction,
+            customId: 'trade_builder_start_2k',
+            isButton: () => true,
+        };
+        await startBuilder(synthetic);
+        return;
+    } catch (err) {
+        console.error('[trade_submit_button] failed to launch trade builder, falling back to legacy modal', err);
+        // If the builder fails, continue to legacy flow below.
+    }
     if (!canTrade()) {
         const state = getSeasonState();
         await interaction.reply({

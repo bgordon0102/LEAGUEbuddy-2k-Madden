@@ -1,43 +1,65 @@
-import { ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } from 'discord.js';
+import fs from 'fs';
+import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { saveTradeDraft } from '../utils/trade_draft_store.js';
+import { saveTradeDraft, deleteDraftsForUser } from '../utils/trade_draft_store.js';
+import { normalizeName } from '../shared/rosterUtils.js';
+import { resolveTeamNameForRoster } from '../shared/rosterUtils.js';
 
-export const customId = 'trade_builder_start';
+export const customId = /^trade_builder_start(?:_2k)?$/;
+
+async function safeReply(interaction, payload) {
+  try {
+    return await interaction.reply(payload);
+  } catch (err) {
+    if ([10062, 40060, 50027].includes(err?.code) && interaction.channel?.isTextBased()) {
+      return interaction.channel.send(
+        typeof payload === 'string'
+          ? payload
+          : { ...payload, content: payload.content || 'Trade builder interaction expired. Please press Start Trade Builder again.', components: payload.components || [] }
+      ).catch(() => {});
+    }
+    throw err;
+  }
+}
 
 export async function execute(interaction) {
-  if (!interaction.isButton() || interaction.customId !== customId) return;
-  const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
-  if (!leagueId) {
-    await interaction.reply({ content: 'No league configured. Run /madden-set-league first.', ephemeral: true });
-    return;
+  if (!interaction.isButton()) return;
+  if (!customId.test(interaction.customId)) return;
+  const forceMode2k = interaction.customId.endsWith('_2k');
+  const leagueId = forceMode2k ? null : resolveLeagueIdWithConfig(interaction.guildId);
+
+  // ---------- NBA (2K) fallback ----------
+  const east = [
+    'Atlanta Hawks','Boston Celtics','Brooklyn Nets','Charlotte Hornets','Chicago Bulls',
+    'Cleveland Cavaliers','Detroit Pistons','Indiana Pacers','Miami Heat','Milwaukee Bucks',
+    'New York Knicks','Orlando Magic','Philadelphia 76ers','Toronto Raptors','Washington Wizards'
+  ];
+  const west = [
+    'Dallas Mavericks','Denver Nuggets','Golden State Warriors','Houston Rockets','Los Angeles Clippers',
+    'Los Angeles Lakers','Memphis Grizzlies','Minnesota Timberwolves','New Orleans Pelicans','Oklahoma City Thunder',
+    'Phoenix Suns','Portland Trail Blazers','Sacramento Kings','San Antonio Spurs','Utah Jazz'
+  ];
+  const nbaTeams = [...east, ...west];
+
+  const coachMapPath = path.join(process.cwd(), 'data/coachRoleMap.json');
+  let coachMap = {};
+  try { coachMap = JSON.parse(fs.readFileSync(coachMapPath, 'utf8')); } catch {}
+  const userRoleIds = interaction.member?.roles?.cache ? Array.from(interaction.member.roles.cache.keys()) : [];
+  const roleToTeam = Object.entries(coachMap).reduce((acc,[team,roleId]) => { acc[roleId]=team; return acc; }, {});
+  const detectedTeamRaw = userRoleIds.map(id => roleToTeam[id]).find(Boolean) || null;
+  const detectedTeam = detectedTeamRaw ? resolveTeamNameForRoster(detectedTeamRaw) : null;
+
+  // Try Madden first; if not configured or empty snapshot, switch to NBA mode
+  let snapshot = null;
+  let mode = forceMode2k ? '2k' : 'madden';
+  if (!forceMode2k && leagueId) {
+    try { snapshot = loadLeagueSnapshot(leagueId); } catch { snapshot = null; }
+    const teams = snapshot?.teams?.leagueTeamInfoList || [];
+    if (!teams.length) mode = '2k';
+  } else {
+    mode = '2k';
   }
-  let snapshot;
-  try {
-    snapshot = loadLeagueSnapshot(leagueId);
-  } catch {
-    snapshot = null;
-  }
-  const teams = snapshot?.teams?.leagueTeamInfoList || [];
-  if (!teams.length) {
-    await interaction.reply({ content: 'Could not load league teams. Run weekly update first.', ephemeral: true });
-    return;
-  }
-  const optionsAll = teams.map(t => ({
-    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
-    value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
-  }));
-  const optionsAFC = teams
-    .filter(t => (t.divName || '').toUpperCase().includes('AFC'))
-    .map(t => ({
-      label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
-      value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
-    }));
-  const optionsNFC = teams
-    .filter(t => (t.divName || '').toUpperCase().includes('NFC'))
-    .map(t => ({
-      label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
-      value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
-    }));
 
   const limitOptions = (opts, keepValue) => {
     if (opts.length <= 25) return opts;
@@ -48,52 +70,120 @@ export async function execute(interaction) {
   };
 
   const draftId = `builder_${interaction.user.id}_${Date.now()}`;
-  saveTradeDraft(draftId, {
-    draftId,
-    userId: interaction.user.id,
-    guildId: interaction.guildId,
-    leagueId,
-    yourTeamId: null,
-    otherTeamId: null,
-    assets: { your: [], other: [] },
-  });
+  // Clear stale drafts for this user to avoid reusing old team selections
+  deleteDraftsForUser(interaction.user.id);
+  // Pull current NBA season year (season.json) for pick parsing
+  let seasonYear = null;
+  try {
+    const seasonPath = path.join(process.cwd(), 'data', 'season.json');
+    if (fs.existsSync(seasonPath)) {
+      const s = JSON.parse(fs.readFileSync(seasonPath, 'utf8'));
+      if (s.seasonYear) {
+        seasonYear = Number(s.seasonYear);
+      } else if (s.seasonNo) {
+        // Our NBA seasons are labeled so seasonNo:1 corresponds to the 2025-26 season,
+        // meaning draft picks are in the calendar year 2026.
+        const baseStartYear = 2025;
+        seasonYear = baseStartYear + Number(s.seasonNo); // season 1 -> 2026, season 2 -> 2027, etc.
+      }
+    }
+  } catch { /* ignore */ }
+  if (!seasonYear) {
+    seasonYear = new Date().getFullYear();
+  }
 
-  const rows = [
-    new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder()
-        .setCustomId(`trade_builder_team_yours|${draftId}`)
-        .setPlaceholder('Your team')
-        .setDisabled(draft.yourTeamId ? true : false)
-        .addOptions(
-          draft.yourTeamId
-            ? [{
-              label: teams.find(t => String(t.teamId ?? t.teamIndex) === String(draft.yourTeamId))?.displayName || 'Your team',
-              value: String(draft.yourTeamId),
-            }]
-            : limitOptions(optionsAll)
-        )
-    ),
-    new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder()
-        .setCustomId(`trade_builder_team_other_afc|${draftId}`)
-        .setPlaceholder('Select other team (AFC)')
-        .addOptions(limitOptions(optionsAFC))
-    ),
-    new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder()
-        .setCustomId(`trade_builder_team_other_nfc|${draftId}`)
-        .setPlaceholder('Select other team (NFC)')
-        .addOptions(limitOptions(optionsNFC))
-    ),
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`trade_builder_team_search_other|${draftId}`)
-        .setLabel('Type other team')
-        .setStyle(ButtonStyle.Secondary)
-    ),
-  ];
+  if (mode === 'madden') {
+    saveTradeDraft(draftId, {
+      draftId,
+      userId: interaction.user.id,
+      guildId: interaction.guildId,
+      leagueId,
+      mode: 'madden',
+      yourTeamId: null,
+      otherTeamId: null,
+      assets: { your: [], other: [] },
+    });
+  } else {
+    saveTradeDraft(draftId, {
+      draftId,
+      userId: interaction.user.id,
+      guildId: interaction.guildId,
+      mode: '2k',
+      yourTeamName: detectedTeam,
+      yourTeamId: detectedTeam || null,
+      otherTeamName: null,
+      seasonYear,
+      assets: { your: [], other: [] },
+    });
+  }
 
-  await interaction.reply({
+  let rows;
+  if (mode === 'madden') {
+    const optionsAll = teams.map(t => ({
+      label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+      value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
+    }));
+    const optionsAFC = teams
+      .filter(t => (t.divName || '').toUpperCase().includes('AFC'))
+      .map(t => ({
+        label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+        value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
+      }));
+    const optionsNFC = teams
+      .filter(t => (t.divName || '').toUpperCase().includes('NFC'))
+      .map(t => ({
+        label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+        value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
+      }));
+    rows = [
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_team_yours|${draftId}`)
+          .setPlaceholder('Your team')
+          .addOptions(limitOptions(optionsAll))
+      ),
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_team_other_afc|${draftId}`)
+          .setPlaceholder('Select other team (AFC)')
+          .addOptions(limitOptions(optionsAFC))
+      ),
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_team_other_nfc|${draftId}`)
+          .setPlaceholder('Select other team (NFC)')
+          .addOptions(limitOptions(optionsNFC))
+      ),
+    ];
+  } else {
+    const toOption = name => ({ label: name, value: name });
+    const optionsEast = east.map(toOption);
+    const optionsWest = west.map(toOption);
+    rows = [
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_team_yours|${draftId}`)
+          .setPlaceholder(detectedTeam ? `Your team: ${detectedTeam}` : 'Your team')
+          // Allow override even if a coach role auto-detected the wrong team
+          .setDisabled(false)
+          .addOptions(detectedTeam ? [toOption(detectedTeam)] : nbaTeams.map(toOption).slice(0,25))
+      ),
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_team_other_afc|${draftId}`)
+          .setPlaceholder('Select other team (East)')
+          .addOptions(optionsEast.slice(0,25))
+      ),
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_team_other_nfc|${draftId}`)
+          .setPlaceholder('Select other team (West)')
+          .addOptions(optionsWest.slice(0,25))
+      ),
+    ];
+  }
+
+  await safeReply(interaction, {
     content: 'Select teams to start building the trade.',
     components: rows,
     ephemeral: true,

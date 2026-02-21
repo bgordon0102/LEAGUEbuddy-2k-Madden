@@ -13,7 +13,7 @@ export function canTrade(leagueId) {
   try {
     const snapshot = loadLeagueSnapshot(leagueId);
     const wk = snapshot?.currentWeek ?? snapshot?.info?.careerHubInfo?.seasonInfo?.seasonWeek ?? 1;
-    return Number(wk) < 9; // lock starting Week 9
+    return Number(wk) < 13; // lock starting Week 13
   } catch {
     return true;
   }

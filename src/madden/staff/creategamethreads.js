@@ -11,6 +11,19 @@ function loadJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
 }
 
+async function safeEditReply(interaction, payload) {
+  try {
+    await interaction.editReply(payload);
+  } catch (err) {
+    // If the interaction webhook token is invalid/expired or unknown, fall back to channel send.
+    if ([50027, 10015, 10062].includes(err?.code) && interaction.channel?.isTextBased()) {
+      await interaction.channel.send(typeof payload === 'string' ? payload : { ...payload, ephemeral: false });
+      return;
+    }
+    throw err;
+  }
+}
+
 function normalizeName(name) {
   if (!name) return name;
   const lower = name.toLowerCase();
@@ -136,6 +149,20 @@ function teamMentions(game, teams, roleMap) {
       e.base.includes(target) ||
       mascotTarget === e.mascot
     );
+    if (!found) {
+      // Hard alias for teams that often drop mascot in schedule feeds
+      const aliasMap = {
+        'sanfrancisco49ers': '49ers coach',
+        'sf49ers': '49ers coach',
+        '49ers': '49ers coach',
+        'niners': '49ers coach',
+      };
+      const aliasKey = target.replace('coach', '') || mascotTarget;
+      const desired = aliasMap[aliasKey];
+      if (desired) {
+        found = entries.find(e => e.base === norm(desired.replace(/coach$/i, '')));
+      }
+    }
     if (found) ids.push(found.id);
     else {
       console.warn('[creategamethreads] Missing coach role for team:', n);
@@ -515,13 +542,13 @@ async function execute(interaction) {
   const channelMap = loadJson(CHANNEL_MAP_FILE);
   const member = await interaction.guild.members.fetch(interaction.user.id);
   if (!hasStaffRole(member, roleMap)) {
-    await interaction.editReply({ content: 'Only Ghost Legacy Commish/Co-Commish can use this command.' });
+    await safeEditReply(interaction, { content: 'Only Ghost Legacy Commish/Co-Commish can use this command.' });
     return;
   }
 
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
-    await interaction.editReply({ content: 'No league set. Run /madden-set-league first.' });
+    await safeEditReply(interaction, { content: 'No league set. Run /madden-set-league first.' });
     return;
   }
 
@@ -624,17 +651,17 @@ async function execute(interaction) {
 
     if (!gamesFinal.length) {
       const avail = allGames.map(g => `stage ${g.stageIndex ?? g.stage ?? '?'} wk ${g.weekIndex ?? g.seasonWeek ?? '?'}`).slice(0, 20).join(', ');
-      await interaction.editReply({ content: `No games found for ${playoffRound ? playoffRound : `week ${wkNumeric}`} in the snapshot. Available schedule entries: ${avail || 'none'}` });
+      await safeEditReply(interaction, { content: `No games found for ${playoffRound ? playoffRound : `week ${wkNumeric}`} in the snapshot. Available schedule entries: ${avail || 'none'}` });
       return;
     }
     const threadsChannelId = channelMap['Game threads'];
     if (!threadsChannelId) {
-      await interaction.editReply({ content: 'Game threads channel ID not set.' });
+      await safeEditReply(interaction, { content: 'Game threads channel ID not set.' });
       return;
     }
     const channel = await interaction.client.channels.fetch(threadsChannelId).catch(() => null);
     if (!channel || !channel.isTextBased()) {
-      await interaction.editReply({ content: 'Game threads channel not found or not text-based.' });
+      await safeEditReply(interaction, { content: 'Game threads channel not found or not text-based.' });
       return;
     }
     const teams = teamMap(snapshot);
@@ -749,9 +776,9 @@ async function execute(interaction) {
     } catch (e) {
       console.warn('[madden-creategamethreads] Failed to post announcement:', e?.message || e);
     }
-    await interaction.editReply({ content: `Created ${created}/${gamesFinal.length} game threads for ${playoffRound ? playoffRound : `week ${wkNumeric}`}.` });
+    await safeEditReply(interaction, { content: `Created ${created}/${gamesFinal.length} game threads for ${playoffRound ? playoffRound : `week ${wkNumeric}`}.` });
   } catch (err) {
-    await interaction.editReply({ content: `Failed to create game threads: ${err.message || err}` });
+    await safeEditReply(interaction, { content: `Failed to create game threads: ${err.message || err}` });
   }
 }
 

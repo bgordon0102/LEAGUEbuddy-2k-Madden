@@ -71,7 +71,12 @@ export async function execute(interaction) {
       return;
     }
 
-    const threadName = `${round.replace(/\\s+/g, '-')}-${team1}-vs-${team2}`.toLowerCase();
+    const toTitle = (s) => (s || '').replace(/\\b\\w/g, c => c.toUpperCase());
+    const mascot = (team) => {
+      const parts = (team || '').split(/\s+/);
+      return parts.length ? parts[parts.length - 1] : team;
+    };
+    const threadName = `${mascot(team1)} vs ${mascot(team2)} - ${toTitle(round)}`;
     const thread = await channel.threads.create({
       name: threadName,
       autoArchiveDuration: 10080, // 7 days
@@ -159,6 +164,9 @@ export async function autocomplete(interaction) {
     'Oklahoma City Thunder', 'Orlando Magic', 'Philadelphia 76ers', 'Phoenix Suns', 'Portland Trail Blazers',
     'Sacramento Kings', 'San Antonio Spurs', 'Toronto Raptors', 'Utah Jazz', 'Washington Wizards'
   ];
+  const normalize = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const fallbackNorm = new Map(fallbackTeams.map(t => [normalize(t), t]));
+
   let coachTeams = [];
   try {
     const coachRoleMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', 'coachRoleMap.json'), 'utf8'));
@@ -166,8 +174,14 @@ export async function autocomplete(interaction) {
   } catch (err) {
     console.error('[playoffthread autocomplete] Failed to read coachRoleMap.json:', err);
   }
-  // Combine and de-dupe
-  const combined = Array.from(new Set([...coachTeams, ...fallbackTeams]));
+  // Strip trailing "Coach" and only keep entries that match the 30 NBA teams
+  const coachTeamsNormalized = coachTeams
+    .map(name => name.replace(/\s+coach$/i, '').trim())
+    .map(name => fallbackNorm.get(normalize(name)))
+    .filter(Boolean);
+
+  // Combine and de-dupe (only NBA teams)
+  const combined = Array.from(new Set([...fallbackTeams, ...coachTeamsNormalized]));
   const filtered = combined
     .filter(name => name.toLowerCase().includes(focused))
     .slice(0, 25)

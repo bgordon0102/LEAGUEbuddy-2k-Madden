@@ -77,7 +77,10 @@ function findPlayerDataAcrossRosters(targetName) {
   // free agency roster first
   const fa = readRoster('free agency');
   const sources = [];
-  if (fa?.roster?.players) sources.push({ roster: fa.roster.players, team: 'free agency' });
+  if (Array.isArray(fa)) sources.push({ roster: fa, team: 'free agency' });
+  else if (Array.isArray(fa?.players)) sources.push({ roster: fa.players, team: 'free agency' });
+  else if (Array.isArray(fa?.roster)) sources.push({ roster: fa.roster, team: 'free agency' });
+  else if (Array.isArray(fa?.roster?.players)) sources.push({ roster: fa.roster.players, team: 'free agency' });
   try {
     const dir = path.join(process.cwd(), 'data', 'teams_rosters');
     const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
@@ -470,12 +473,18 @@ async function handleStaffPick(interaction) {
   }
 
   // Move player to team
-  const rosterData = readRoster(team);
-  if (!rosterData) {
+  let roster = readRoster(team);
+  if (!roster) {
     await interaction.editReply({ content: `Roster not found for ${team}.` });
     return;
   }
-  const { rosterPath, roster } = rosterData;
+  // Normalize roster shape to array
+  roster = Array.isArray(roster) ? roster : (Array.isArray(roster?.players) ? roster.players : []);
+  if (!Array.isArray(roster)) {
+    await interaction.editReply({ content: `Roster format invalid for ${team}.` });
+    return;
+  }
+
   const found = findPlayerDataAcrossRosters(entry.player);
   const payload = {
     ...(found?.player || {}),
@@ -484,9 +493,9 @@ async function handleStaffPick(interaction) {
     lastUpdatedBy: interaction.user.id,
     lastUpdatedAt: new Date().toISOString(),
   };
-  upsertPlayer(roster, payload.name, payload);
-  removePlayerFromOtherRostersFuzzy(payload.name, rosterPath);
-  saveRoster(rosterPath, roster);
+  upsertPlayer(roster, payload);
+  removePlayerFromOtherRostersFuzzy(payload.name);
+  saveRoster(team, roster);
 
   entry.status = 'signed';
   entry.signedTeam = team;

@@ -1,7 +1,7 @@
 // ...existing code...
 
 
-import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,7 +17,10 @@ const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 const coachRoleMapPath = path.join(__dirname, '../../../data/coachRoleMap.json');
 import { readRoster } from '../../utils/rosterUtils.js';
 const tradeBlockPath = path.join(__dirname, '../../../data/tradeblock.json');
+const teamsRostersPath = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
+const teamsJsonPath = path.join(process.cwd(), 'data', 'teams.json');
 const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
+const TRADE_BLOCK_CHANNEL_ID = process.env.TRADE_BLOCK_CHANNEL_ID_2K || '1432507364468068412';
 
 function computeSeasonAge(birthdate) {
     if (!birthdate) return '';
@@ -41,6 +44,7 @@ function getCoachTeamFromRoles(interaction) {
     // Find a role ending in 'Coach' and map to team
     const roles = interaction.member?.roles?.cache;
     if (!roles) return null;
+    // First, try the role name pattern (legacy)
     for (const [roleId, role] of roles) {
         if (role.name.endsWith('Coach')) {
             // Map role name to team file name
@@ -82,13 +86,35 @@ function getCoachTeamFromRoles(interaction) {
             return teamMap[base] || null;
         }
     }
+    // Fallback: use coachRoleMap.json (roleId -> team name like "Phoenix Suns Coach")
+    try {
+        const coachMap = JSON.parse(fs.readFileSync(coachRoleMapPath, 'utf8'));
+        const roleIdToTeam = Object.entries(coachMap || {}).reduce((acc, [teamName, rid]) => {
+            if (rid) acc[rid] = teamName;
+            return acc;
+        }, {});
+        for (const [rid] of roles) {
+            const teamNameWithCoach = roleIdToTeam[rid];
+            if (teamNameWithCoach) {
+                const base = teamNameWithCoach.replace(/\\s*Coach$/i, '').trim();
+                return base.replace(/\s+/g, '_');
+            }
+        }
+    } catch { /* ignore */ }
     return null;
 }
 
 function getTeamPlayers(team) {
     const data = readRoster(team);
-    if (!data || !data.roster || !Array.isArray(data.roster.players)) return [];
-    return data.roster.players.map(p => p.name);
+    // Support legacy shapes: array, { players: [] }, or { roster: { players: [] } }
+    const playersArr = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.players)
+          ? data.players
+          : Array.isArray(data?.roster?.players)
+            ? data.roster.players
+            : [];
+    return playersArr.map(p => p.name).filter(Boolean);
 }
 
 function getTradeBlock() {
@@ -135,6 +161,68 @@ async function postTradeBlockEmbed(interaction, team, players) {
     } else {
         // fallback to current channel if not found
         await interaction.channel.send({ embeds: [embed] });
+    }
+}
+
+function buildTeamSlugs(teamName) {
+    const raw = (teamName || '').trim();
+    const noSpace = raw.replace(/\s+/g, '').toLowerCase();
+    const base = raw.replace(/_/g, ' ');
+    let abbr = '';
+    try {
+        const teams = JSON.parse(fs.readFileSync(teamsJsonPath, 'utf8'));
+        const hit = teams.find(t => (t.name || '').toLowerCase() === raw.toLowerCase());
+        abbr = (hit?.abbreviation || '').toLowerCase();
+    } catch { /* ignore */ }
+    return new Set([
+        raw.toLowerCase(),
+        base.toLowerCase(),
+        noSpace,
+        noSpace.replace(/tradeblock/gi, ''),
+        abbr,
+    ].filter(Boolean));
+}
+
+async function getOrCreateTeamThread(channel, teamName) {
+    if (!channel || !channel.isTextBased()) return null;
+    if (channel.isThread()) return channel;
+
+    const slugs = buildTeamSlugs(teamName);
+    const matchThread = (t) => {
+        const name = (t?.name || '').toLowerCase().replace(/[\s_]/g, '');
+        return Array.from(slugs).some(s => s && (name.includes(s) || s.includes(name)));
+    };
+
+    try {
+        // Gather active + archived threads once
+        const active = await channel.threads?.fetchActive?.().catch(() => null);
+        const archived = await channel.threads?.fetchArchived?.().catch(() => null);
+        const candidates = [
+            ...(active?.threads?.values?.() || []),
+            ...(archived?.threads?.values?.() || []),
+        ];
+        let thread = candidates.find(matchThread) || null;
+
+        // Create if missing (Forum vs TextChannel)
+        if (!thread) {
+            if (channel.type === ChannelType.GuildForum) {
+                thread = await channel.threads.create({
+                    name: `${teamName} Trade Block`,
+                    message: { content: `Trade block thread for ${teamName}` },
+                    reason: `Trade block thread for ${teamName}`,
+                }).catch(() => null);
+            } else {
+                thread = await channel.threads.create({
+                    name: `${teamName} Trade Block`,
+                    autoArchiveDuration: 10080, // 7 days
+                    reason: `Trade block thread for ${teamName}`,
+                }).catch(() => null);
+            }
+        }
+        return thread || null;
+    } catch (err) {
+        console.error('[tradeblock] thread fetch/create failed', err);
+        return null;
     }
 }
 
@@ -258,9 +346,9 @@ export default {
             tradeBlock[team].push(player);
             saveTradeBlock(tradeBlock);
 
-            // Post a player-specific embed to the trade block channel
-            const tradeBlockChannelId = '1432507364468068412';
-            const channel = interaction.client.channels.cache.get(tradeBlockChannelId);
+            // Post a player-specific embed to the team thread in trade block channel
+            const tradeBlockChannelId = TRADE_BLOCK_CHANNEL_ID;
+            const channel = interaction.client.channels.cache.get(tradeBlockChannelId) || await interaction.client.channels.fetch(tradeBlockChannelId).catch(() => null);
             // Find player info from roster file
             const teamFile = path.join(teamsRostersPath, `${team}.json`);
             let position = '';
@@ -280,7 +368,7 @@ export default {
             }
             const embed = {
                 title: `${player} added to the ${team.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} trade block!`,
-                description: `<@&${GHOST_PARADISE_ROLE_ID}>\nPosition: ${position || 'N/A'}${ovr ? `\nOVR: ${ovr}` : ''}${age ? `\nAge: ${age}` : ''}`,
+                description: `Position: ${position || 'N/A'}${ovr ? `\nOVR: ${ovr}` : ''}${age ? `\nAge: ${age}` : ''}`,
                 color: 0x00AE86,
                 thumbnail: thumbnailUrl ? { url: thumbnailUrl } : undefined
             };
@@ -290,15 +378,11 @@ export default {
                     .setLabel('Trade For')
                     .setStyle(ButtonStyle.Primary)
             );
-            let sentMsg;
-            if (channel) {
-                sentMsg = await channel.send({ embeds: [embed], components: [tradeButtonRow] });
-            } else {
-                sentMsg = await interaction.channel.send({ embeds: [embed], components: [tradeButtonRow] });
-            }
+            const target = channel ? await getOrCreateTeamThread(channel, team.replace(/_/g, ' ')) : interaction.channel;
+            const sentMsg = await target.send({ content: `<@&${GHOST_PARADISE_ROLE_ID}>`, embeds: [embed], components: [tradeButtonRow] });
             // Store message ID for later removal
             tradeBlockMessages[team] = tradeBlockMessages[team] || {};
-            tradeBlockMessages[team][player] = sentMsg.id;
+            tradeBlockMessages[team][player] = { messageId: sentMsg.id, threadId: target?.id || null };
             saveTradeBlockMessages(tradeBlockMessages);
 
             return interaction.reply({ content: `${player} added to your trade block.`, ephemeral: true });
@@ -310,12 +394,16 @@ export default {
             saveTradeBlock(tradeBlock);
 
             // Remove the player-specific embed message
-            const tradeBlockChannelId = '1432507364468068412';
-            const channel = interaction.client.channels.cache.get(tradeBlockChannelId);
-            const msgId = tradeBlockMessages[team]?.[player];
-            if (channel && msgId) {
+            const tradeBlockChannelId = TRADE_BLOCK_CHANNEL_ID;
+            const channel = interaction.client.channels.cache.get(tradeBlockChannelId) || await interaction.client.channels.fetch(tradeBlockChannelId).catch(() => null);
+            const msgRef = tradeBlockMessages[team]?.[player];
+            const msgId = msgRef?.messageId || msgRef;
+            const threadId = msgRef?.threadId;
+            const thread = threadId ? await (channel?.threads?.fetch(threadId).catch(()=>null)) : null;
+            const target = thread || channel;
+            if (target && msgId) {
                 try {
-                    const msg = await channel.messages.fetch(msgId);
+                    const msg = await target.messages.fetch(msgId);
                     await msg.delete();
                 } catch (err) {
                     // Message may have already been deleted

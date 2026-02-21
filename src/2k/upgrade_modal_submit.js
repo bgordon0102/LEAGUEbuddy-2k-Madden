@@ -24,7 +24,7 @@ export async function execute(interaction) {
 
     // Load roster
     const fileName = teamName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() + ".json";
-    const rosterPath = path.join(process.cwd(), "data/teams_rosters", fileName);
+    const rosterPath = path.join(process.cwd(), "data/2k/teams_rosters", fileName);
     if (!fs.existsSync(rosterPath)) {
         await interaction.reply({ content: "Roster file not found.", ephemeral: true });
         return;

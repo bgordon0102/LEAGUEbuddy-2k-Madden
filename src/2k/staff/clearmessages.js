@@ -14,7 +14,7 @@ async function execute(interaction) {
   console.log('[DEBUG] clearmessages.js execute called');
   let deferred = false;
   try {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: 64 }); // ephemeral
     deferred = true;
   } catch (err) {
     if (err?.code === 10062 || err?.code === 40060) return;

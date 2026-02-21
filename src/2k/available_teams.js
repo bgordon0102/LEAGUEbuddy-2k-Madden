@@ -37,7 +37,10 @@ function formatAssignments(guild, roles) {
         const role = guild.roles.cache.get(r.roleId);
         if (!role) return { team: r.team, value: 'Open' };
         const members = [...role.members.values()];
-        const names = members.length ? members.map(m => `<@${m.id}>`).join(', ') : 'Open';
+        // Show coach names plainly to avoid raw mention IDs showing up in embeds
+        const names = members.length
+            ? members.map(m => m.displayName || m.user?.username || m.user?.tag || m.id).join(', ')
+            : 'Open';
         const emojiId = emojiMap[r.team];
         // Fix: replace spaces with underscores in emoji name
         const emoji = emojiId ? `<:team_${r.team.toLowerCase().replace(/\s+/g, '_')}:${emojiId}> ` : '';

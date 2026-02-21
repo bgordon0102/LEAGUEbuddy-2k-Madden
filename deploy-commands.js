@@ -19,8 +19,8 @@ async function loadCommandsForDeployment() {
     ['madden', 'staff'],
   ];
 
+  // Only scan the canonical command locations under src/
   const roots = [
-    join(__dirname, 'src', 'commands'),
     join(__dirname, 'src'),
   ];
   const loadedNames = new Set();
@@ -46,10 +46,7 @@ async function loadCommandsForDeployment() {
           const commandModule = await import(fileURL);
           const command = commandModule.default || commandModule;
           const commandName = command?.data?.name;
-          if (!commandName) {
-            console.log(`⚠️  Command at ${label}/${file} missing name/data; skipping.`);
-            continue;
-          }
+          if (!commandName) continue; // ignore non-command helpers
           if (loadedNames.has(commandName)) {
             console.log(`⏭️  Skipping duplicate command ${commandName} from ${label}/${file}`);
             continue;

@@ -126,7 +126,9 @@ client.on('interactionCreate', async interaction => {
 
   // Improved logging for other interaction types
   if (interaction.isButton()) {
+    console.log(`[INTERACTION] Button pressed: customId=${interaction.customId}, user=${interaction.user?.id}, channel=${interaction.channel?.id}, thread=${interaction.channel?.isThread ? interaction.channel.id : 'N/A'}`);
   } else if (interaction.isStringSelectMenu()) {
+    console.log(`[INTERACTION] StringSelectMenu used: customId=${interaction.customId}, user=${interaction.user?.id}`);
   } else if (interaction.isAutocomplete()) {
     // Handle trade and progression buttons, and generic interaction handlers as before
   }
@@ -202,8 +204,8 @@ async function loadCommands() {
     ['madden', 'coach'],
     ['madden', 'staff'],
   ];
+  // Only scan the primary command directories (old src/commands stubs are ignored)
   const roots = [
-    join(process.cwd(), 'src', 'commands'),
     join(process.cwd(), 'src'),
   ];
 

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -59,45 +59,55 @@ export async function execute(interaction) {
             await interaction.editReply({ content: 'No players found in this big board.' });
             return;
         }
-        const playerLines = allPlayers.map((player, index) => {
-            const pos = player.position_1 || player.position || '';
-            const name = player.name || '';
-            const team = player.team || player.college || '';
-            return `${index + 1}: ${pos} ${name} - ${team}`;
-        });
-        // Create select menus for groups of 15 players each
-        const numMenus = Math.ceil(allPlayers.length / 15);
-        const components = [];
-        for (let i = 0; i < numMenus; i++) {
-            const startIdx = i * 15;
-            const boardPlayers = allPlayers.slice(startIdx, startIdx + 15);
-            if (boardPlayers.length === 0) continue;
-            let customId = `bigboard_select_${i + 1}`;
+        const cappedPlayers = allPlayers.slice(0, 60); // 4 pages * 15
+        const PAGE_SIZE = 15;
+        const totalPages = Math.max(1, Math.ceil(cappedPlayers.length / PAGE_SIZE));
+
+        const buildPage = (pageIdx) => {
+            const startIdx = pageIdx * PAGE_SIZE;
+            const boardPlayers = cappedPlayers.slice(startIdx, startIdx + PAGE_SIZE);
+            const lines = boardPlayers.map((player, idx) => {
+                const pos = player.position_1 || player.position || '';
+                const name = player.name || '';
+                const team = player.team || player.college || '';
+                return `${startIdx + idx + 1}: ${pos} ${name} - ${team}`;
+            });
+            const embed = new EmbedBuilder()
+                .setTitle(`📋 Big Board (Page ${pageIdx + 1}/${totalPages})`)
+                .setColor(0x1f8b4c)
+                .setDescription(lines.join('\n') || 'No players on this page.')
+                .setThumbnail('https://cdn.discordapp.com/icons/1153432333259530240/leaguebuddy_logo.png');
+
             const selectOptions = boardPlayers.map((player, idx) => ({
                 label: `${startIdx + idx + 1}. ${player.name}`,
                 description: `${player.position_1 || player.position} - ${player.team || player.college}`,
                 value: player.name
             }));
             const selectMenu = new StringSelectMenuBuilder()
-                .setCustomId(customId)
+                .setCustomId(`2k_bigboard_select_${pageIdx}`)
                 .setPlaceholder(`Select a player (${startIdx + 1}-${startIdx + boardPlayers.length})`)
                 .addOptions(selectOptions)
                 .setMinValues(1)
                 .setMaxValues(1);
-            const row = new ActionRowBuilder().addComponents(selectMenu);
-            components.push(row);
-        }
-        // Truncate description to Discord's limit
-        const MAX_EMBED_DESCRIPTION = 4096;
-        const descriptionText = Array.isArray(playerLines) && playerLines.length
-            ? playerLines.join('\n').slice(0, MAX_EMBED_DESCRIPTION)
-            : 'No players available';
-        const embed = new EmbedBuilder()
-            .setTitle('📋 Big Board')
-            .setColor(0x1f8b4c)
-            .setDescription(descriptionText)
-            .setThumbnail('https://cdn.discordapp.com/icons/1153432333259530240/leaguebuddy_logo.png');
-        await interaction.editReply({ embeds: [embed], components });
+            const selectRow = new ActionRowBuilder().addComponents(selectMenu);
+
+            const navRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`2k_bigboard_page_${pageIdx}`)
+                    .setLabel('Prev')
+                    .setStyle(ButtonStyle.Secondary)
+                    .setDisabled(pageIdx <= 0),
+                new ButtonBuilder()
+                    .setCustomId(`2k_bigboard_page_${pageIdx + 2}`)
+                    .setLabel('Next')
+                    .setStyle(ButtonStyle.Primary)
+                    .setDisabled(pageIdx >= totalPages - 1)
+            );
+            return { embed, rows: [selectRow, navRow] };
+        };
+
+        const first = buildPage(0);
+        await interaction.editReply({ embeds: [first.embed], components: first.rows });
     } catch (err) {
         console.error('bigboard.js error:', err && err.stack ? err.stack : err);
         await interaction.editReply({ content: 'Error loading big board.' });

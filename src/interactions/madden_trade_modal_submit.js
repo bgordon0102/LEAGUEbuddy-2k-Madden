@@ -149,7 +149,9 @@ export function computePlayerValue(p) {
   if (ovr >= 95 && age >= 34 && value < 250) {
     value = 250 + (ovr - 95) * 12; // 95 -> 250, 99 -> 298
   }
-  return Math.max(1, Math.round(value * 10) / 10);
+  // Clamp to global bounds to align with cross-sport scale
+  value = Math.min(1000, value);
+  return Math.max(40, Math.round(value * 10) / 10);
 }
 
 function normalizeKey(str) {
@@ -364,7 +366,7 @@ function teamDisplay(snapshot, teamName) {
   return t ? (t.displayName || t.nickName || t.cityName) : teamName;
 }
 
-const VALUE_THRESHOLD = 40;
+const VALUE_THRESHOLD = 50;
 
 function currentPickValue(round, pickNum) {
   const r = Number(round);
@@ -398,8 +400,8 @@ function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
   const net = flip ? -netRaw : netRaw;
   const gapAbs = Math.abs(net);
   const thresholdLine = gapAbs <= VALUE_THRESHOLD
-    ? `Value check: correct (gap ${gapAbs.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
-    : `Value check: incorrect (gap ${gapAbs.toFixed(1)} > ${VALUE_THRESHOLD})`;
+    ? `Value check: within limit (gap ${gapAbs.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
+    : `Value check: exceeds limit (gap ${gapAbs.toFixed(1)} > ${VALUE_THRESHOLD})`;
   return [
     `You send: ${Number(youSend).toFixed(1)}`,
     `They send: ${Number(theySend).toFixed(1)}`,
@@ -439,7 +441,7 @@ export async function execute(interaction) {
     return;
   }
   if (!canTrade(leagueId)) {
-    await interaction.reply({ content: 'Trades are locked starting Week 9. Try again next season.', ephemeral: true });
+    await interaction.reply({ content: 'Trades are locked starting Week 13. Try again next season.', ephemeral: true });
     return;
   }
   try {

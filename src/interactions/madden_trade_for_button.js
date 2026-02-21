@@ -1,4 +1,4 @@
-import { ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
@@ -84,7 +84,7 @@ export async function execute(interaction) {
     return;
   }
   if (!canTrade(leagueId)) {
-    await interaction.reply({ content: 'Trades are locked starting Week 9. Try again next season.', ephemeral: true });
+    await interaction.reply({ content: 'Trades are locked starting Week 13. Try again next season.', ephemeral: true });
     return;
   }
   const snapshot = loadLeagueSnapshot(leagueId);
@@ -164,12 +164,6 @@ export async function execute(interaction) {
         .setCustomId(`trade_builder_team_other_nfc|${draftId}`)
         .setPlaceholder('Select other team (NFC)')
         .addOptions(limitOptions(optionsNFC))
-    ),
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`trade_builder_team_search_other|${draftId}`)
-        .setLabel('Type other team')
-        .setStyle(ButtonStyle.Secondary)
     ),
   ];
   // Respect Discord 5-row limit. When both teams are already known, drop team selectors

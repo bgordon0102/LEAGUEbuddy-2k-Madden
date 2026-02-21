@@ -29,12 +29,13 @@ function getTeamFromMemberRoles(member) {
 export const customId = /^trade_for/;
 
 export async function execute(interaction) {
+  console.log('[DEBUG] trade_for_button handler called', { customId: interaction.customId, user: interaction.user?.id, interactionId: interaction.id });
   if (!interaction.isButton()) return;
   if (!canTrade()) {
     const state = getSeasonState();
     await interaction.reply({
       content: `Trades are open Weeks 1-15 and in the offseason. Locked Weeks 16-29 and during playoffs. Current week: ${state.currentWeek}, phase: ${state.phase}.`,
-      ephemeral: true
+      flags: 64
     });
     return;
   }
@@ -59,7 +60,7 @@ export async function execute(interaction) {
     otherTeam = otherTeamRaw.replace(/_/g, ' ');
   }
   if (!otherTeam || !playerName) {
-    await interaction.reply({ content: 'Could not parse trade target. Please try again.', ephemeral: true });
+    await interaction.reply({ content: 'Could not parse trade target. Please try again.', flags: 64 });
     return;
   }
 
@@ -118,3 +119,4 @@ export async function execute(interaction) {
 }
 
 export default { customId, execute };
+console.log('[DEBUG] trade_for_button handler registered:', { customId });

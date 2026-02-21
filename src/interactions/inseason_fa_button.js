@@ -114,11 +114,15 @@ function computeSeasonAge(birthdate) {
 
 function loadFreeAgents() {
   const fa = readRoster('free agency');
-  const players = Array.isArray(fa?.roster)
-    ? fa.roster
-    : Array.isArray(fa?.roster?.players)
-      ? fa.roster.players
-      : [];
+  const players = Array.isArray(fa)
+    ? fa
+    : Array.isArray(fa?.players)
+      ? fa.players
+      : Array.isArray(fa?.roster)
+        ? fa.roster
+        : Array.isArray(fa?.roster?.players)
+          ? fa.roster.players
+          : [];
   return players.map(p => ({
     name: p.name,
     position: p.position || p.position_1 || '',
@@ -161,27 +165,46 @@ export async function execute(interaction) {
       await interaction.editReply({ content: 'No free agents available.', components: [] });
       return;
     }
-    // Top 25 by OVR (desc), fallback 0
-    const options = faPlayers
-      .sort((a, b) => (parseFloat(b.ovr) || 0) - (parseFloat(a.ovr) || 0) || a.name.localeCompare(b.name))
-      .slice(0, 25)
-      .map(p => ({
-        label: `${p.name}${p.position ? ` (${p.position})` : ''}${p.ovr ? ` OVR ${p.ovr}` : ''}`,
-        value: normalizeName(p.name),
-      }));
-    const menu = new StringSelectMenuBuilder()
-      .setCustomId('inseason_fa_select')
-      .setPlaceholder('Select a free agent')
-      .addOptions(options);
-    const row = new ActionRowBuilder().addComponents(menu);
+    const sorted = faPlayers.sort(
+      (a, b) => (parseFloat(b.ovr) || 0) - (parseFloat(a.ovr) || 0) || a.name.localeCompare(b.name)
+    );
+
+    const toOption = (p) => ({
+      label: `${p.name}${p.position ? ` (${p.position})` : ''}${p.ovr ? ` OVR ${p.ovr}` : ''}`,
+      value: normalizeName(p.name),
+    });
+
+    const firstOptions = sorted.slice(0, 25).map(toOption);
+    const remainingOptions = sorted.slice(25, 50).map(toOption); // Discord select max 25
+
+    const rows = [];
+    rows.push(
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId('inseason_fa_select')
+          .setPlaceholder('Top free agents')
+          .addOptions(firstOptions)
+      )
+    );
+    if (remainingOptions.length) {
+      rows.push(
+        new ActionRowBuilder().addComponents(
+          new StringSelectMenuBuilder()
+            .setCustomId('inseason_fa_select_more')
+            .setPlaceholder('More free agents')
+            .addOptions(remainingOptions)
+        )
+      );
+    }
+
     await interaction.editReply({
-      content: 'Select a free agent to sign. (List limited to first 25; contact staff if missing.)',
-      components: [row],
+      content: 'Select a free agent to sign.',
+      components: rows,
     });
     return;
   }
 
-  if (interaction.customId === 'inseason_fa_select') {
+  if (interaction.customId === 'inseason_fa_select' || interaction.customId === 'inseason_fa_select_more') {
     // No defer here; showModal must be first response
     const selected = interaction.values[0];
     const faPlayers = loadFreeAgents();

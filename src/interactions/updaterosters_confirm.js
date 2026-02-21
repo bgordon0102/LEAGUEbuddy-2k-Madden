@@ -37,10 +37,54 @@ function writePending(data) {
   fs.writeFileSync(PENDING_FILE, JSON.stringify(data ?? {}, null, 2));
 }
 
+function rosterFileCandidates(team) {
+  const cleaned = normalizeName(team);
+  const variants = new Set();
+  const add = (s) => variants.add(s.replace(/_+/g, '_').replace(/^_+|_+$/g, ''));
+  add(cleaned);
+  add(cleaned.replace(/\s+/g, '_'));
+  add(cleaned.replace(/[^A-Za-z0-9]+/g, '_'));
+  add(cleaned.replace(/&/g, 'and').replace(/[^A-Za-z0-9]+/g, '_'));
+  return [...variants].filter(Boolean);
+}
+
+function resolveTeamKey(team) {
+  const dirs = [
+    path.join(process.cwd(), 'data', '2k', 'teams_rosters'),
+    path.join(process.cwd(), 'data', 'teams_rosters'),
+  ];
+  const candidates = rosterFileCandidates(team).map(n => `${n}.json`);
+  for (const dir of dirs) {
+    if (!fs.existsSync(dir)) continue;
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+    const lower = files.map(f => f.toLowerCase());
+    const found = candidates.find(c => lower.includes(c.toLowerCase()));
+    if (found) return found.replace(/\.json$/i, '');
+  }
+  // fallback to normalized name
+  return rosterFileCandidates(team)[0] || team;
+}
+
+function loadRoster(team) {
+  const raw = readRoster(team);
+  if (!raw) return null;
+  const key = resolveTeamKey(team);
+  if (raw?.roster && Array.isArray(raw.roster.players)) {
+    return { roster: raw.roster, rosterPath: key };
+  }
+  if (Array.isArray(raw?.players)) {
+    return { roster: { players: raw.players, picks: raw.picks || [] }, rosterPath: key };
+  }
+  if (Array.isArray(raw)) {
+    return { roster: { players: raw, picks: [] }, rosterPath: key };
+  }
+  return null;
+}
+
 function applySignings(entries, actorId) {
   const results = { applied: [], missing: [] };
   for (const entry of entries) {
-    const data = readRoster(entry.team);
+    const data = loadRoster(entry.team);
     if (!data) {
       results.missing.push(`${entry.team} (roster not found)`);
       continue;
@@ -53,8 +97,8 @@ function applySignings(entries, actorId) {
       lastUpdatedBy: actorId,
       lastUpdatedAt: new Date().toISOString(),
     };
-    upsertPlayer(roster, entry.player, payload);
-    removePlayerFromOtherRostersFuzzy(entry.player, rosterPath);
+    upsertPlayer(roster.players, payload);
+    removePlayerFromOtherRostersFuzzy(entry.player);
     saveRoster(rosterPath, roster);
     results.applied.push(`${entry.player} -> ${entry.team}`);
   }
@@ -63,13 +107,13 @@ function applySignings(entries, actorId) {
 
 function applyWaives(entries, actorId) {
   const results = { waived: [], missing: [] };
-  const faData = readRoster('free agency');
+  const faData = loadRoster('free agency');
   if (!faData) {
     results.missing.push('free agency roster not found');
     return results;
   }
   for (const entry of entries) {
-    const teamData = readRoster(entry.team);
+    const teamData = loadRoster(entry.team);
     if (!teamData) {
       results.missing.push(`${entry.team} (roster not found)`);
       continue;
@@ -97,8 +141,8 @@ function applyWaives(entries, actorId) {
       lastUpdatedBy: actorId,
       lastUpdatedAt: new Date().toISOString(),
     };
-    upsertPlayer(faData.roster, entry.player, payload);
-    removePlayerFromOtherRostersFuzzy(entry.player, faData.rosterPath);
+    upsertPlayer(faData.roster.players, payload);
+    removePlayerFromOtherRostersFuzzy(entry.player);
     saveRoster(faData.rosterPath, faData.roster);
     results.waived.push(`${entry.player} -> free agency (from ${entry.team})`);
   }
@@ -134,21 +178,21 @@ function moveAssets(source, dest, assets, actorId, results) {
       lastUpdatedBy: actorId,
       lastUpdatedAt: now,
     };
-    upsertPlayer(dest.roster, asset.name, payload);
-    removePlayerFromOtherRostersFuzzy(asset.name, dest.rosterPath);
+    upsertPlayer(dest.roster.players, payload);
+    removePlayerFromOtherRostersFuzzy(asset.name);
     results.moves.push(`${asset.name}: ${source.name} -> ${dest.name}`);
   }
 }
 
 function applyTrades(entries, actorId) {
   const results = { moves: [], missing: [], note: '' };
-  if (entries.length !== 2) {
-    results.note = `Trade apply supports exactly 2 teams; detected ${entries.length}. No changes applied.`;
+  if (entries.length < 2) {
+    results.note = `Need two sides for a trade; detected ${entries.length}.`;
     return results;
   }
   const [a, b] = entries;
-  const rosterA = readRoster(a.team);
-  const rosterB = readRoster(b.team);
+  const rosterA = loadRoster(a.team);
+  const rosterB = loadRoster(b.team);
   if (!rosterA) results.missing.push(`${a.team} roster not found`);
   if (!rosterB) results.missing.push(`${b.team} roster not found`);
   if (!rosterA || !rosterB) return results;
@@ -191,7 +235,18 @@ export async function execute(interaction) {
   }
 
   let results;
-  if (entry.type === 'sign') {
+  if (entry.type === 'auto') {
+    const signRes = applySignings(entry.entries.sign || [], interaction.user.id);
+    const waiveRes = applyWaives(entry.entries.waive || [], interaction.user.id);
+    const tradeRes = applyTrades(entry.entries.trade || [], interaction.user.id);
+    results = {
+      applied: signRes.applied,
+      waived: waiveRes.waived,
+      moves: tradeRes.moves,
+      missing: [...(signRes.missing||[]), ...(waiveRes.missing||[]), ...(tradeRes.missing||[])],
+      note: tradeRes.note,
+    };
+  } else if (entry.type === 'sign') {
     results = applySignings(entry.entries, interaction.user.id);
   } else if (entry.type === 'waive') {
     results = applyWaives(entry.entries, interaction.user.id);

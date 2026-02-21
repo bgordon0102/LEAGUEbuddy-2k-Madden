@@ -31,7 +31,8 @@ export async function execute(interaction) {
             return;
         }
         const currentWeek = seasonState.currentWeek ?? 0;
-        if (seasonState.phase === 'regular' && currentWeek < 1) {
+        // Allow scouting from Week 1 onward (and also if currentWeek is 0 right after season start)
+        if (seasonState.phase === 'regular' && currentWeek < 0) {
             const msg = 'Big board and scouting features unlock in Week 1.';
             await interaction.editReply({ content: msg });
             return;
@@ -142,7 +143,7 @@ export async function handleScoutSelect(interaction, menuIndex) {
         return;
     }
     const currentWeek = seasonState.currentWeek ?? 0;
-    if (seasonState.phase === 'regular' && currentWeek < 1) {
+    if (seasonState.phase === 'regular' && currentWeek < 0) {
         await interaction.editReply({ content: 'Scouting features unlock in Week 1. Only the recruit board is available during preseason.' });
         return;
     }

@@ -81,7 +81,7 @@ export async function execute(interaction) {
     return;
   }
   if (!canTrade(leagueId)) {
-    await interaction.reply({ content: 'Trades are locked starting Week 9. Try again next season.', ephemeral: true });
+    await interaction.reply({ content: 'Trades are locked starting Week 13. Try again next season.', ephemeral: true });
     return;
   }
 

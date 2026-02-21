@@ -2,8 +2,20 @@
 import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
 import fs from "fs";
 import path from "path";
-import { readRoster } from "../../utils/rosterUtils.js";
-import { normalizeName } from "../../utils/rosterUtils.js";
+import { readRoster, normalizeName, computePlayerValue2k, computePickValue2k, deriveAge, get2kRostersDir } from "../../utils/rosterUtils.js";
+const teamEmojisPath = path.join(process.cwd(), "data", "2k", "team_emojis.json");
+let teamEmojis = {};
+try { teamEmojis = JSON.parse(fs.readFileSync(teamEmojisPath, "utf8")); } catch { teamEmojis = {}; }
+
+function findTeamEmoji(teamName) {
+    if (!teamName) return null;
+    const mascot = teamName.trim().split(/\s+/).pop().toLowerCase();
+    const matchKey = Object.keys(teamEmojis).find(k => k.toLowerCase() === mascot);
+    if (!matchKey) return null;
+    const emojiId = teamEmojis[matchKey];
+    const emojiName = matchKey.replace(/\s+/g, '');
+    return `<:${emojiName}:${emojiId}>`;
+}
 
 const data = new SlashCommandBuilder()
     .setName("2k-roster")
@@ -20,7 +32,7 @@ async function autocomplete(interaction) {
     try {
         console.log('[DEBUG] roster autocomplete called');
         const focusedValue = interaction.options.getFocused() || "";
-        const rostersDir = path.join(process.cwd(), "teams_rosters");
+        const rostersDir = get2kRostersDir();
         let teams = [];
         if (fs.existsSync(rostersDir)) {
             teams = fs.readdirSync(rostersDir)
@@ -111,16 +123,49 @@ async function execute(interaction) {
         // Format roster for embed and build action rows for each player
         const lines = [];
         for (const player of sortedRoster) {
-            lines.push(`**${player.name}** | ${player.position} | OVR: ${player.ovr}`);
+            const val = computePlayerValue2k(player);
+            const age = deriveAge(player);
+            lines.push(`**${player.name}** | ${player.position} | Age: ${age} | OVR: ${player.ovr} | Val: ${val.toFixed(1)}`);
         }
-        // Group and format picks by year for embed
+        // Group and format picks by year for embed, including pick values
+        function parsePick(pickStr) {
+            const yearMatch = pickStr.match(/(20\d{2})/);
+            const roundMatch = pickStr.match(/\b(1st|2nd|first|second)\b/i);
+            const pickNumMatch = pickStr.match(/#?(\d{1,2})/);
+            const year = yearMatch ? Number(yearMatch[1]) : null;
+            const round = roundMatch ? (roundMatch[1].toLowerCase().startsWith('1') ? 1 : 2) : null;
+            const pickNum = pickNumMatch ? Number(pickNumMatch[1]) : null;
+            return { year, round, pickNum };
+        }
+        function getSeasonYear() {
+            try {
+                const fs = require('fs');
+                const path = require('path');
+                const seasonPath = path.join(process.cwd(), 'data', 'season.json');
+                if (fs.existsSync(seasonPath)) {
+                    const s = JSON.parse(fs.readFileSync(seasonPath, 'utf8'));
+                    if (s.seasonYear) return Number(s.seasonYear);
+                    if (s.seasonNo) return 2025 + Number(s.seasonNo); // season 1 -> 2026
+                }
+            } catch {
+                /* ignore */
+            }
+            return new Date().getFullYear();
+        }
+        const seasonYear = getSeasonYear();
+
         function formatPicksByYear(picks, teamName) {
             const grouped = {};
             for (const pick of picks) {
                 let pickStr = typeof pick === 'string' ? pick : pick.pick || '';
-                let yearMatch = pickStr.match(/\d{4}/);
-                let year = yearMatch ? yearMatch[0] : 'Other';
+                const { year, round, pickNum } = parsePick(pickStr);
+                const displayYear = year || 'Other';
                 let line = pickStr;
+                const storedVal = (typeof pick === 'object' && pick.value != null) ? Number(pick.value) : null;
+                if (year && round) {
+                    const val = storedVal ?? computePickValue2k(year, round, pickNum, seasonYear);
+                    line += ` (Val: ${val.toFixed(0)})`;
+                }
                 if (typeof pick === 'object') {
                     if (pick.protection && pick.protection !== 'unprotected') {
                         line += ` (${pick.protection} protected)`;
@@ -129,8 +174,8 @@ async function execute(interaction) {
                         line += ` (from ${pick.originalTeam})`;
                     }
                 }
-                if (!grouped[year]) grouped[year] = [];
-                grouped[year].push(line);
+                if (!grouped[displayYear]) grouped[displayYear] = [];
+                grouped[displayYear].push(line);
             }
             let result = '';
             Object.keys(grouped).sort().forEach(year => {
@@ -141,8 +186,11 @@ async function execute(interaction) {
         }
         let pickLines = teamPicks.length ? formatPicksByYear(teamPicks, team) : '';
 
+        const emoji = findTeamEmoji(team);
+        const title = `${emoji ? `${emoji} ` : ''}Roster for ${team}`;
+
         const embed = new EmbedBuilder()
-            .setTitle(`Roster for ${team}`)
+            .setTitle(title)
             .setDescription(lines.join("\n\n").slice(0, 4000) || "No players found.")
             .setColor(0x1E90FF);
         embed.addFields({

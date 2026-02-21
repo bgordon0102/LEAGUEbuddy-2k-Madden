@@ -24,7 +24,7 @@ export async function execute(interaction) {
     let playerOvr = "";
     if (teamName) {
         const fileName = teamName.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() + ".json";
-        const rosterPath = path.join(process.cwd(), "data/teams_rosters", fileName);
+        const rosterPath = path.join(process.cwd(), "data/2k/teams_rosters", fileName);
         if (fs.existsSync(rosterPath)) {
             const roster = JSON.parse(fs.readFileSync(rosterPath, "utf8"));
             const players = Array.isArray(roster) ? roster : roster.players || [];

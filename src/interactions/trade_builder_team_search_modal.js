@@ -4,6 +4,22 @@ import { buildButtons } from './trade_builder_add_assets.js';
 import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
 
 export const customId = /^trade_builder_team_search_modal\|/;
+const EAST = [
+  'Atlanta Hawks','Boston Celtics','Brooklyn Nets','Charlotte Hornets','Chicago Bulls',
+  'Cleveland Cavaliers','Detroit Pistons','Indiana Pacers','Miami Heat','Milwaukee Bucks',
+  'New York Knicks','Orlando Magic','Philadelphia 76ers','Toronto Raptors','Washington Wizards'
+];
+const WEST = [
+  'Dallas Mavericks','Denver Nuggets','Golden State Warriors','Houston Rockets','Los Angeles Clippers',
+  'Los Angeles Lakers','Memphis Grizzlies','Minnesota Timberwolves','New Orleans Pelicans','Oklahoma City Thunder',
+  'Phoenix Suns','Portland Trail Blazers','Sacramento Kings','San Antonio Spurs','Utah Jazz'
+];
+
+function commonPrefixLen(a, b) {
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  return i;
+}
 
 export async function execute(interaction) {
   if (!interaction.isModalSubmit() || !customId.test(interaction.customId)) return;
@@ -14,6 +30,78 @@ export async function execute(interaction) {
     return;
   }
   const query = (interaction.fields.getTextInputValue('team_query') || '').toLowerCase().trim();
+  if (draft.mode === '2k') {
+    const all = [...EAST, ...WEST];
+    const aliases = {
+      'okc': 'Oklahoma City Thunder',
+      'thunder': 'Oklahoma City Thunder',
+      'oklahoma': 'Oklahoma City Thunder',
+      'oklahomacity': 'Oklahoma City Thunder',
+      'atl': 'Atlanta Hawks',
+      'hawks': 'Atlanta Hawks',
+    };
+    const aliasHit = aliases[query.replace(/\s+/g, '')];
+    const scored = all
+      .map(t => {
+        const name = t.toLowerCase();
+        const parts = name.split(/\s+/);
+        const exact = name === query;
+        const starts = name.startsWith(query) || parts.some(p => p.startsWith(query));
+        const contains = name.includes(query);
+        // Higher score for exact > startswith > contains; longer overlap helps disambiguate
+        const overlap = query ? Math.max(...parts.map(p => commonPrefixLen(p, query)), 0) : 0;
+        const score = exact ? 3 : starts ? 2 : contains ? 1 : 0;
+        return { team: t, score: score * 10 + overlap };
+      })
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score);
+    const match = aliasHit || scored[0]?.team;
+    if (!match) {
+      await interaction.reply({ content: 'No team matched that search.', ephemeral: true });
+      return;
+    }
+    draft.otherTeamName = match;
+    draft.otherTeamId = match;
+    draft.otherTeam = match;
+    saveTradeDraft(draftId, draft);
+
+    const embed = new EmbedBuilder()
+      .setTitle('Trade Builder')
+      .setDescription('Select both teams, then add assets to see live values.')
+      .addFields(
+        { name: 'You', value: draft.yourTeamName || '—', inline: true },
+        { name: 'Other', value: draft.otherTeamName || '—', inline: true },
+      )
+      .setColor(0x5865f2);
+
+    const components = [
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_team_yours|${draftId}`)
+          .setPlaceholder(draft.yourTeamName ? `Your team: ${draft.yourTeamName}` : 'Select your team')
+          .addOptions((draft.yourTeamName ? [draft.yourTeamName] : all).slice(0,25).map(t => ({ label: t, value: t })))
+      ),
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_team_other_afc|${draftId}`)
+          .setPlaceholder('Select other team (East)')
+          .addOptions(EAST.map(t => ({ label: t, value: t })).slice(0,25))
+      ),
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_team_other_nfc|${draftId}`)
+          .setPlaceholder('Select other team (West)')
+          .addOptions(WEST.map(t => ({ label: t, value: t })).slice(0,25))
+      ),
+    ];
+    if (draft.yourTeamName && draft.otherTeamName) {
+      components.push(...buildButtons(draftId));
+      components.splice(5);
+    }
+    await interaction.reply({ embeds: [embed], components, ephemeral: true });
+    return;
+  }
+
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
     await interaction.reply({ content: 'No league configured.', ephemeral: true });

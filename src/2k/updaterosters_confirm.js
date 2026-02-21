@@ -112,11 +112,23 @@ function moveAssets(source, dest, assets, actorId, results) {
   const now = new Date().toISOString();
   for (const asset of assets) {
     if (asset.type === 'pick') {
-      const idx = source.roster.picks.findIndex(p => p === asset.value);
-      if (idx !== -1) source.roster.picks.splice(idx, 1);
-      dest.roster.picks = dest.roster.picks || [];
-      dest.roster.picks.push(asset.value);
-      results.moves.push(`Pick ${asset.value}: ${source.name} -> ${dest.name}`);
+      // Find pick by value or label, move full object
+      let idx = source.roster.picks.findIndex(p => {
+        if (typeof p === 'string') return p === asset.value;
+        return p.value === asset.value || p.label === asset.value || p.pick === asset.value;
+      });
+      if (idx !== -1) {
+        const originalPick = source.roster.picks[idx];
+        source.roster.picks.splice(idx, 1);
+        dest.roster.picks = dest.roster.picks || [];
+        dest.roster.picks.push(originalPick);
+        results.moves.push(`Pick ${asset.value}: ${source.name} -> ${dest.name}`);
+      } else {
+        // If not found, fallback to pushing value
+        dest.roster.picks = dest.roster.picks || [];
+        dest.roster.picks.push(asset.value);
+        results.moves.push(`Pick ${asset.value} (not found as object): ${source.name} -> ${dest.name}`);
+      }
       continue;
     }
     // player

@@ -110,7 +110,7 @@ export async function execute(interaction) {
             );
         if (trade.notes) embed.addFields({ name: "Notes", value: trade.notes });
         embed.setColor(0x5865F2);
-        const committeeRoleId = "1428100787225235526";
+        const committeeRoleId = "1460734289015603355";
         const approveBtn = new ButtonBuilder().setCustomId(`committee_approve_${tradeId}`).setLabel("Approve").setStyle(ButtonStyle.Success);
         const denyBtn = new ButtonBuilder().setCustomId(`committee_deny_${tradeId}`).setLabel("Deny").setStyle(ButtonStyle.Danger);
         const row = new ActionRowBuilder().addComponents(approveBtn, denyBtn);
@@ -132,23 +132,15 @@ export async function execute(interaction) {
         }
         // Robust DM logic for Coach B (handle role IDs)
         let notifiedB = false;
-        // Try user ID first
-        try {
-            const userB = await interaction.client.users.fetch(trade.coachBId, { force: true });
-            console.log(`[DM Attempt] Notifying Coach B (ID: ${trade.coachBId}) for team ${trade.otherTeam}`);
-            await userB.send({ content: `Your trade proposal with ${trade.yourTeam} was approved and sent to committee for voting.` });
-            notifiedB = true;
-        } catch (err) {
-            console.error(`[DM Error] Could not DM Coach B (ID may be role):`, err);
-        }
         // If coachBId is a role, DM members with that role in the guild
-        if (!notifiedB && trade.guildId) {
+        if (trade.guildId) {
             try {
                 const guild = await interaction.client.guilds.fetch(trade.guildId);
                 const role = await guild.roles.fetch(trade.coachBId).catch(() => null);
                 if (role) {
-                    const members = role.members;
-                    for (const member of members.values()) {
+                    // hydrate
+                    try { await guild.members.fetch(); } catch {}
+                    for (const member of role.members.values()) {
                         if (member.user.id === trade.proposerId) continue; // don’t DM proposer
                         try {
                             await member.user.send({ content: `Your trade proposal with ${trade.yourTeam} was approved and sent to committee for voting.` });
@@ -160,6 +152,17 @@ export async function execute(interaction) {
                 }
             } catch (err) {
                 console.error('[DM Error] Could not resolve role members for Coach B:', err);
+            }
+        }
+        // Fallback: treat coachBId as user id
+        if (!notifiedB) {
+            try {
+                const userB = await interaction.client.users.fetch(trade.coachBId, { force: true });
+                console.log(`[DM Attempt] Notifying Coach B (ID: ${trade.coachBId}) for team ${trade.otherTeam}`);
+                await userB.send({ content: `Your trade proposal with ${trade.yourTeam} was approved and sent to committee for voting.` });
+                notifiedB = true;
+            } catch (err) {
+                console.error(`[DM Error] Could not DM Coach B (ID):`, err);
             }
         }
         await interaction.editReply({ content: "Trade sent to committee for voting.", components: [] });

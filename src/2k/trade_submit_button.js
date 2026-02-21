@@ -1,13 +1,14 @@
 // src/interactions/trade_submit_button.js
 import fs from "fs";
 import path from "path";
+import { get2kRostersDir } from "../shared/rosterUtils.js";
 import { ButtonInteraction, EmbedBuilder } from "discord.js";
 import { canTrade, getSeasonState } from "../utils/seasonUtils.js";
 
 export const customId = "trade_submit_button";
 
 function loadAllRosters() {
-    const rostersDir = path.join(process.cwd(), "data/teams_rosters");
+    const rostersDir = get2kRostersDir();
     const files = fs.readdirSync(rostersDir).filter(f => f.endsWith('.json'));
     let all = {};
     for (const file of files) {
@@ -17,7 +18,7 @@ function loadAllRosters() {
     return all;
 }
 function saveRoster(teamFile, rosterArr) {
-    const rostersDir = path.join(process.cwd(), "data/teams_rosters");
+    const rostersDir = get2kRostersDir();
     fs.writeFileSync(path.join(rostersDir, teamFile), JSON.stringify(rosterArr, null, 2));
 }
 function parseTradeMessage(msg) {
@@ -36,21 +37,28 @@ function parseTradeMessage(msg) {
 }
 
 export async function execute(interaction) {
-    if (!(interaction instanceof ButtonInteraction)) return;
-    if (!canTrade()) {
-        const state = getSeasonState();
-        await interaction.reply({
-            content: `Trades are open Weeks 1-15 and in the offseason. Locked Weeks 16-29 and during playoffs. Current week: ${state.currentWeek}, phase: ${state.phase}.`,
-            ephemeral: true
-        });
+    if (!(interaction instanceof ButtonInteraction)) {
+        console.log('[DEBUG] trade_submit_button.js: Interaction is not a ButtonInteraction:', interaction.customId);
         return;
     }
-    // Open a modal for trade entry
-    const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = await import('discord.js');
+    console.log('[DEBUG] trade_submit_button.js: Handler triggered for customId:', interaction.customId, 'user:', interaction.user?.id);
+
+    // For 2K, redirect the button to the new Trade Builder flow
     const startTime = Date.now();
-    const modal = new ModalBuilder()
-        .setCustomId('trade_modal_submit')
-        .setTitle('Submit Trade Proposal');
+    console.log('[DEBUG] trade_submit_button.js: Starting Trade Builder redirect at', startTime);
+    await interaction.deferReply({ ephemeral: true });
+    // Reuse trade_builder_start logic by emitting a synthetic interaction update
+    const { execute: startBuilder } = await import('./trade_builder_start.js');
+    // Spoof a button with customId trade_builder_start so the handler runs
+    const fake = {
+        ...interaction,
+        customId: 'trade_builder_start_2k',
+        isButton: () => true,
+    };
+    console.log('[DEBUG] trade_submit_button.js: Calling trade_builder_start handler with spoofed interaction.');
+    await startBuilder(fake);
+    console.log('[DEBUG] trade_submit_button.js: trade_builder_start handler finished. Time elapsed:', Date.now() - startTime, 'ms');
+    return;
 
 
     // Synchronously detect user's team before building modal (NBA coach roles only)

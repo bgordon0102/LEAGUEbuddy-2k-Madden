@@ -32,7 +32,7 @@ function formatValueSummary(sendTotal, recvTotal, gap) {
   ].join('\n');
 }
 
-const VALUE_THRESHOLD = 40;
+const VALUE_THRESHOLD = 50;
 
 function formatCommitteeValueSummary(trade) {
   const sendTotal = Number(trade.sendTotal);
@@ -44,8 +44,8 @@ function formatCommitteeValueSummary(trade) {
     ? 'Value gap: even'
     : `Value gap: ${giver || 'One side'} sending ${diff.toFixed(1)} more value`;
   const thresholdLine = diff <= VALUE_THRESHOLD
-    ? `Value check: correct (gap ${diff.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
-    : `Value check: incorrect (gap ${diff.toFixed(1)} > ${VALUE_THRESHOLD})`;
+    ? `Value check: within limit (gap ${diff.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
+    : `Value check: exceeds limit (gap ${diff.toFixed(1)} > ${VALUE_THRESHOLD})`;
   return [
     `You send: ${sendTotal.toFixed(1)}`,
     `They send: ${recvTotal.toFixed(1)}`,

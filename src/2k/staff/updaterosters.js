@@ -141,32 +141,51 @@ function parseTradeLine(line) {
   const lower = line.toLowerCase();
   if (!lower.includes('trade')) return null;
   if (lower.includes('hire') || lower.includes('fire')) return null;
-  const match = line.match(/^(.*?)\s+trade[: ]\s*(.+)$/i);
+  // Pattern: TeamA trade: ... TeamB trade: ...
+  const match = line.match(/^(.*?)\s+trade:\s*(.+?)(?:\s+([A-Za-z .]+?)\s+trade:\s*(.+))?$/i);
   if (!match) return null;
-  const team = match[1].trim();
-  const assetsText = match[2].trim();
-  const assets = assetsText.split(/\s*\/\s*/).map(classifyAsset).filter(Boolean);
-  if (!assets.length) return null;
-  return { type: 'trade', team, assets, raw: line };
+  const teamA = match[1].trim();
+  const assetsA = (match[2] || '').split(/\s*\/\s*/).map(classifyAsset).filter(Boolean);
+  const teamB = match[3]?.trim();
+  const assetsB = teamB ? (match[4] || '').split(/\s*\/\s*/).map(classifyAsset).filter(Boolean) : [];
+  const entries = [];
+  if (assetsA.length) entries.push({ type: 'trade', team: teamA, assets: assetsA, raw: line });
+  if (teamB && assetsB.length) entries.push({ type: 'trade', team: teamB, assets: assetsB, raw: line });
+  return entries.length ? entries : null;
 }
 
 function parseByType(type, lines) {
-  if (type === 'sign') return lines.map(parseSignLine).filter(Boolean);
-  if (type === 'waive') return lines.map(parseWaiveLine).filter(Boolean);
-  if (type === 'trade') return lines.map(parseTradeLine).filter(Boolean);
-  return [];
+  const out = [];
+  if (type === 'sign' || type === 'auto') out.push(...lines.map(parseSignLine).filter(Boolean));
+  if (type === 'waive' || type === 'auto') out.push(...lines.map(parseWaiveLine).filter(Boolean));
+  if (type === 'trade' || type === 'auto') {
+    for (const l of lines) {
+      const parsed = parseTradeLine(l);
+      if (parsed) out.push(...parsed);
+    }
+  }
+  return out;
 }
 
 function getRosterCached(cache, team) {
   if (cache[team]) return cache[team];
   const data = readRoster(team);
-  cache[team] = data;
-  return data;
+  let normalized = null;
+  if (data?.roster && Array.isArray(data.roster.players)) {
+    normalized = { roster: data.roster, rosterPath: data.rosterPath || team };
+  } else if (Array.isArray(data?.players)) {
+    normalized = { roster: { players: data.players, picks: data.picks || [] }, rosterPath: team };
+  } else if (Array.isArray(data)) {
+    normalized = { roster: { players: data, picks: [] }, rosterPath: team };
+  }
+  cache[team] = normalized;
+  return normalized;
 }
 
-function findPlayer(roster, name) {
+function findPlayer(rosterObj, name) {
+  if (!rosterObj?.players) return null;
   const norm = normalizeName(name);
-  return roster.players?.find(p => normalizeName(p.name || '') === norm);
+  return rosterObj.players.find(p => normalizeName(p.name || '') === norm);
 }
 
 function buildWarnings(type, entries, rosterCache) {
@@ -218,6 +237,7 @@ export const data = new SlashCommandBuilder()
         { name: 'Signing', value: 'sign' },
         { name: 'Waive', value: 'waive' },
         { name: 'Trade', value: 'trade' },
+        { name: 'Auto (mixed)', value: 'auto' },
       ))
   .addAttachmentOption(option =>
     option.setName('image')
@@ -290,34 +310,54 @@ export async function processAndSummarize(interaction, type, attachmentUrl) {
     const rosterCache = {};
     const parsed = parseByType(type, lines);
     if (!parsed.length) {
-      await interaction.editReply({ content: 'No transactions detected. Make sure the screenshot only contains the selected type.' });
+      await interaction.editReply({ content: 'No transactions detected. Make sure the screenshot contains the selected type.' });
       return;
     }
-    const validEntries = parsed.filter(e => getRosterCached(rosterCache, e.team));
-    const invalidTeams = parsed.filter(e => !getRosterCached(rosterCache, e.team)).map(e => e.team);
-    if (!validEntries.length) {
+
+    const groups = { sign: [], waive: [], trade: [] };
+    parsed.forEach(e => { if (e.type && groups[e.type]) groups[e.type].push(e); });
+
+    const valid = { sign: [], waive: [], trade: [] };
+    const invalidTeams = new Set();
+    ['sign','waive','trade'].forEach(k => {
+      groups[k].forEach(e => {
+        if (getRosterCached(rosterCache, e.team)) valid[k].push(e);
+        else invalidTeams.add(e.team);
+      });
+    });
+    const totalValid = valid.sign.length + valid.waive.length + valid.trade.length;
+    if (!totalValid) {
       await interaction.editReply({ content: 'No transactions matched known team rosters. Check team names in the screenshot.' });
       return;
     }
-    const warnings = buildWarnings(type, validEntries, rosterCache);
+
+    const warnings = [
+      ...buildWarnings('sign', valid.sign, rosterCache),
+      ...buildWarnings('waive', valid.waive, rosterCache),
+      ...buildWarnings('trade', valid.trade, rosterCache),
+    ];
 
     const pending = readPending();
     const id = `${Date.now()}`;
     pending[id] = {
       id,
       type,
-      entries: validEntries,
+      entries: valid,
       requester: interaction.user.id,
       createdAt: new Date().toISOString(),
     };
     writePending(pending);
 
-    const summaryLines = validEntries.slice(0, 15).map(e => e.raw || `${e.team}: ${e.player || ''}`);
+    const summaryLines = [];
+    if (valid.sign.length) summaryLines.push(`Signings (${valid.sign.length}):`, ...valid.sign.slice(0,5).map(e=>e.raw));
+    if (valid.waive.length) summaryLines.push(`Waives (${valid.waive.length}):`, ...valid.waive.slice(0,5).map(e=>e.raw));
+    if (valid.trade.length) summaryLines.push(`Trades (${valid.trade.length}):`, ...valid.trade.slice(0,5).map(e=>e.raw));
+
     await interaction.editReply({
       content: [
-        `Detected ${validEntries.length} ${type}(s) with known rosters.`,
-        summaryLines.join('\n') + (validEntries.length > 15 ? '\n...' : ''),
-        invalidTeams.length ? `Ignored (unknown team): ${[...new Set(invalidTeams)].join(', ')}` : null,
+        `Detected ${totalValid} transaction(s) (sign: ${valid.sign.length}, waive: ${valid.waive.length}, trade entries: ${valid.trade.length}).`,
+        summaryLines.join('\n') + ((valid.sign.length+valid.waive.length+valid.trade.length)>15 ? '\n...' : ''),
+        invalidTeams.size ? `Ignored (unknown team): ${Array.from(invalidTeams).join(', ')}` : null,
         warnings.length ? `Already done / issues:\n${warnings.slice(0, 10).join('\n')}${warnings.length > 10 ? '\n...' : ''}` : null,
         'Confirm to apply to rosters.',
       ].filter(Boolean).join('\n'),

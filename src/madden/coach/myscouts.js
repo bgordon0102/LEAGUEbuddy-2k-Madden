@@ -4,6 +4,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 
 const SCOUT_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_points.json');
+const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.json');
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
 const LOGO_DIR = path.join(process.cwd(), 'college football logos');
@@ -49,6 +50,26 @@ function formatDev(dev, emojis) {
   return map[dev] || 'Normal';
 }
 
+function hydrateFromLog(userId, classKey) {
+  try {
+    const log = JSON.parse(fs.readFileSync(SCOUT_LOG_PATH, 'utf8'));
+    if (!Array.isArray(log)) return null;
+    const userEntries = log.filter(e => e.userId === userId && (e.classId === classKey || e.classId === classKey.toUpperCase()));
+    if (!userEntries.length) return null;
+    const out = {};
+    for (const entry of userEntries) {
+      const name = entry.player;
+      const cat = entry.unlockedCategory;
+      if (!name || !cat) continue;
+      if (!out[name]) out[name] = [];
+      if (!out[name].includes(cat)) out[name].push(cat);
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
 function getSchoolLogo(school) {
   if (!school) return null;
   const base = school.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
@@ -83,7 +104,30 @@ export async function execute(interaction) {
   const devEmojis = safeReadJSON(DEV_EMOJI_PATH, {});
   const userId = interaction.user.id;
   const userData = scoutData[userId];
-  const playersByClass = userData && userData.players && (userData.players[classKey] || userData.players[classId]);
+
+  // Try current class first, then fall back to the most recent class the user has entries for.
+  let playersByClass = userData && userData.players && (userData.players[classKey] || userData.players[classId]);
+  if (!playersByClass && userData?.players) {
+    const classes = Object.keys(userData.players);
+    if (classes.length) {
+      // Pick the latest class ID (lexicographically works with cus_XX)
+      const latest = classes.sort().pop();
+      playersByClass = userData.players[latest];
+    }
+  }
+  // Hydrate from scout log if still empty
+  if (!playersByClass) {
+    const fromLog = hydrateFromLog(userId, classKey);
+    if (fromLog && Object.keys(fromLog).length) {
+      if (!scoutData[userId]) scoutData[userId] = { players: {}, weeklyPoints: {} };
+      if (!scoutData[userId].players) scoutData[userId].players = {};
+      scoutData[userId].players[classKey] = fromLog;
+      playersByClass = fromLog;
+      // persist backfill
+      fs.writeFileSync(SCOUT_PATH, JSON.stringify(scoutData, null, 2));
+    }
+  }
+
   if (!playersByClass) {
     await interaction.reply({ content: 'You have not scouted any players yet this season.', ephemeral: true });
     return;

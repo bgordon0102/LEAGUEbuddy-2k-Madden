@@ -547,6 +547,14 @@ async function main() {
     }
 
     // Fuzzy name matching for contract embedding
+    // Helper to normalize names: remove accents, lowercase, remove non-alphanum
+    function normalizeName(name) {
+        return name
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .replace(/[^a-z0-9]/g, '');
+    }
     if (details.players && Array.isArray(details.players) && bbrContracts && Array.isArray(bbrContracts)) {
         console.log('[DEBUG] Basketball Reference contract player names:');
         bbrContracts.forEach(c => console.log('  -', c.player));
@@ -555,7 +563,7 @@ async function main() {
         for (const player of details.players) {
             let match = bbrContracts.find(c => {
                 if (!c.player) return false;
-                return c.player.trim().toLowerCase() === player.name.trim().toLowerCase();
+                return normalizeName(c.player) === normalizeName(player.name);
             });
             if (match && match.contractYears && match.contractYears.length > 0) {
                 player.contractYears = match.contractYears;

@@ -21,7 +21,7 @@ function loadRoleMap() {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
 }
 
-const VALUE_THRESHOLD = 40;
+const VALUE_THRESHOLD = 50;
 
 function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
   const youSend = flip ? recvTotal : sendTotal;
@@ -32,8 +32,8 @@ function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
   const netLabel = net === 0 ? 'Net: even' : `Net: ${net > 0 ? '+' : ''}${Number(net).toFixed(1)} (${direction})`;
   const gapAbs = Math.abs(net);
   const thresholdLine = gapAbs <= VALUE_THRESHOLD
-    ? `Value check: correct (gap ${gapAbs.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
-    : `Value check: incorrect (gap ${gapAbs.toFixed(1)} > ${VALUE_THRESHOLD})`;
+    ? `Value check: within limit (gap ${gapAbs.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
+    : `Value check: exceeds limit (gap ${gapAbs.toFixed(1)} > ${VALUE_THRESHOLD})`;
   return [
     `You send: ${Number(youSend).toFixed(1)}`,
     `They send: ${Number(theySend).toFixed(1)}`,

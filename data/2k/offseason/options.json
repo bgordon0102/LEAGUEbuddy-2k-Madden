@@ -1,0 +1,1467 @@
+{
+  "seasonNo": 2,
+  "seasonYear": 2026,
+  "generatedAt": "2026-02-11T20:30:14.962Z",
+  "options": [
+    {
+      "player": "Dyson Daniels",
+      "team": "Atlanta Hawks",
+      "salary": 7707709,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Zaccharie Risacher",
+      "team": "Atlanta Hawks",
+      "salary": 13826040,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jonathan Kuminga",
+      "team": "Atlanta Hawks",
+      "salary": 24300000,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Asa Newell",
+      "team": "Atlanta Hawks",
+      "salary": 3560880,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Mouhamed Gueye",
+      "team": "Atlanta Hawks",
+      "salary": 2406205,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Nikola Djurisic",
+      "team": "Atlanta Hawks",
+      "salary": 2525901,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Neemias Queta",
+      "team": "Boston Celtics",
+      "salary": 2667944,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jordan Walsh",
+      "team": "Boston Celtics",
+      "salary": 2406205,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Baylor Scheierman",
+      "team": "Boston Celtics",
+      "salary": 2744040,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Noah Clowney",
+      "team": "Brooklyn Nets",
+      "salary": 3398640,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ziaire Williams",
+      "team": "Brooklyn Nets",
+      "salary": 6250000,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Danny Wolf",
+      "team": "Brooklyn Nets",
+      "salary": 3081840,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ochai Agbaji",
+      "team": "Brooklyn Nets",
+      "salary": 6383525,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Josh Minott",
+      "team": "Brooklyn Nets",
+      "salary": 2584539,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jalen Wilson",
+      "team": "Brooklyn Nets",
+      "salary": 2221677,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ben Saraf",
+      "team": "Brooklyn Nets",
+      "salary": 3172920,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Drake Powell",
+      "team": "Brooklyn Nets",
+      "salary": 3709320,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Brandon Miller",
+      "team": "Charlotte Hornets",
+      "salary": 11968800,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Kon Knueppel",
+      "team": "Charlotte Hornets",
+      "salary": 11017560,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Tre Mann",
+      "team": "Charlotte Hornets",
+      "salary": 8000000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Malaki Branham",
+      "team": "Charlotte Hornets",
+      "salary": 4962033,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Liam McNeeley",
+      "team": "Charlotte Hornets",
+      "salary": 3040320,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Matas Buzelis",
+      "team": "Chicago Bulls",
+      "salary": 5715360,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Tre Jones",
+      "team": "Chicago Bulls",
+      "salary": 8000000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jaden Ivey",
+      "team": "Chicago Bulls",
+      "salary": 10107163,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Noa Essengue",
+      "team": "Chicago Bulls",
+      "salary": 5972760,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Rob Dillingham",
+      "team": "Chicago Bulls",
+      "salary": 6889320,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Leonard Miller",
+      "team": "Chicago Bulls",
+      "salary": 2406205,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Cooper Flagg",
+      "team": "Dallas Mavericks",
+      "salary": 15208680,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Dereck Lively II",
+      "team": "Dallas Mavericks",
+      "salary": 5253360,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "AJ Johnson",
+      "team": "Dallas Mavericks",
+      "salary": 3237120,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Peyton Watson",
+      "team": "Denver Nuggets",
+      "salary": 4356476,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Christian Braun",
+      "team": "Denver Nuggets",
+      "salary": 4921797,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Julian Strawther",
+      "team": "Denver Nuggets",
+      "salary": 2674200,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jalen Pickett",
+      "team": "Denver Nuggets",
+      "salary": 2406205,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jalen Duren",
+      "team": "Detroit Pistons",
+      "salary": 6483144,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ausar Thompson",
+      "team": "Detroit Pistons",
+      "salary": 8775000,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Isaiah Stewart",
+      "team": "Detroit Pistons",
+      "salary": 15000000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ron Holland",
+      "team": "Detroit Pistons",
+      "salary": 9069600,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Marcus Sasser",
+      "team": "Detroit Pistons",
+      "salary": 2886720,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Isaac Jones",
+      "team": "Detroit Pistons",
+      "salary": 1955377,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Bobi Klintman",
+      "team": "Detroit Pistons",
+      "salary": 2486995,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Brandin Podziemski",
+      "team": "Golden State Warriors",
+      "salary": 3687960,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Quinten Post",
+      "team": "Golden State Warriors",
+      "salary": 1955377,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Gui Santos",
+      "team": "Golden State Warriors",
+      "salary": 2221677,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Amen Thompson",
+      "team": "Houston Rockets",
+      "salary": 9690600,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Tari Eason",
+      "team": "Houston Rockets",
+      "salary": 5675766,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jabari Smith Jr.",
+      "team": "Houston Rockets",
+      "salary": 12350392,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Reed Sheppard",
+      "team": "Houston Rockets",
+      "salary": 11108880,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jarace Walker",
+      "team": "Indiana Pacers",
+      "salary": 6665520,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ben Sheppard",
+      "team": "Indiana Pacers",
+      "salary": 2790720,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Johnny Furphy",
+      "team": "Indiana Pacers",
+      "salary": 2486995,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Tony Bradley",
+      "team": "Indiana Pacers",
+      "salary": 2940876,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Kobe Brown",
+      "team": "Indiana Pacers",
+      "salary": 2654880,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Bennedict Mathurin",
+      "team": "Los Angeles Clippers",
+      "salary": 9187573,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Nicolas Batum",
+      "team": "Los Angeles Clippers",
+      "salary": 5881680,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Brook Lopez",
+      "team": "Los Angeles Clippers",
+      "salary": 9187500,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Cam Christie",
+      "team": "Los Angeles Clippers",
+      "salary": 2486995,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Dalton Knecht",
+      "team": "Los Angeles Lakers",
+      "salary": 4201080,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Adou Thiero",
+      "team": "Los Angeles Lakers",
+      "salary": 2525901,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Zach Edey",
+      "team": "Memphis Grizzlies",
+      "salary": 6332760,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Santi Aldama",
+      "team": "Memphis Grizzlies",
+      "salary": 17007043,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Cedric Coward",
+      "team": "Memphis Grizzlies",
+      "salary": 6286920,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Taylor Hendricks",
+      "team": "Memphis Grizzlies",
+      "salary": 6127080,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jaime Jaquez Jr.",
+      "team": "Miami Heat",
+      "salary": 3861600,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Pelle Larsson",
+      "team": "Miami Heat",
+      "salary": 2296271,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Dru Smith",
+      "team": "Miami Heat",
+      "salary": 2934742,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Keshad Johnson",
+      "team": "Miami Heat",
+      "salary": 1955377,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ousmane Dieng",
+      "team": "Milwaukee Bucks",
+      "salary": 6670882,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Andre Jackson Jr.",
+      "team": "Milwaukee Bucks",
+      "salary": 2406205,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Terrence Shannon Jr.",
+      "team": "Minnesota Timberwolves",
+      "salary": 2801640,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Julian Phillips",
+      "team": "Minnesota Timberwolves",
+      "salary": 2406205,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Joan Beringer",
+      "team": "Minnesota Timberwolves",
+      "salary": 4621200,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Derik Queen",
+      "team": "New Orleans Pelicans",
+      "salary": 5673840,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jeremiah Fears",
+      "team": "New Orleans Pelicans",
+      "salary": 8271960,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Yves Missi",
+      "team": "New Orleans Pelicans",
+      "salary": 3512760,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Kevon Looney",
+      "team": "New Orleans Pelicans",
+      "salary": 8000000,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jordan Hawkins",
+      "team": "New Orleans Pelicans",
+      "salary": 4741320,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Josh Hart",
+      "team": "New York Knicks",
+      "salary": 22375280,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Tyler Kolek",
+      "team": "New York Knicks",
+      "salary": 2486995,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ariel Hukporti",
+      "team": "New York Knicks",
+      "salary": 1955377,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Pacome Dadiet",
+      "team": "New York Knicks",
+      "salary": 2983680,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Chet Holmgren",
+      "team": "Oklahoma City Thunder",
+      "salary": 13731368,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jalen Williams",
+      "team": "Oklahoma City Thunder",
+      "salary": 6580997,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Isaiah Hartenstein",
+      "team": "Oklahoma City Thunder",
+      "salary": 28500000,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ajay Mitchell",
+      "team": "Oklahoma City Thunder",
+      "salary": 2850000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Luguentz Dort",
+      "team": "Oklahoma City Thunder",
+      "salary": 18222222,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Isaiah Joe",
+      "team": "Oklahoma City Thunder",
+      "salary": 11323006,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Cason Wallace",
+      "team": "Oklahoma City Thunder",
+      "salary": 5820240,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jaylin Williams",
+      "team": "Oklahoma City Thunder",
+      "salary": 7774648,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Kenrich Williams",
+      "team": "Oklahoma City Thunder",
+      "salary": 7163000,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jared McCain",
+      "team": "Oklahoma City Thunder",
+      "salary": 4422600,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Thomas Sorber",
+      "team": "Oklahoma City Thunder",
+      "salary": 5120400,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Paolo Banchero",
+      "team": "Orlando Magic",
+      "salary": 15334769,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Anthony Black",
+      "team": "Orlando Magic",
+      "salary": 7970280,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Tristan da Silva",
+      "team": "Orlando Magic",
+      "salary": 3991200,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jase Richardson",
+      "team": "Orlando Magic",
+      "salary": 3282000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jett Howard",
+      "team": "Orlando Magic",
+      "salary": 5529720,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "VJ Edgecombe",
+      "team": "Philadelphia 76ers",
+      "salary": 12219720,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Trendon Watford",
+      "team": "Philadelphia 76ers",
+      "salary": 2801346,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Adem Bona",
+      "team": "Philadelphia 76ers",
+      "salary": 2486995,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Justin Edwards",
+      "team": "Philadelphia 76ers",
+      "salary": 2616754,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Mark Williams",
+      "team": "Phoenix Suns",
+      "salary": 6276531,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jordan Goodwin",
+      "team": "Phoenix Suns",
+      "salary": 2349578,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ryan Dunn",
+      "team": "Phoenix Suns",
+      "salary": 2784240,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Oso Ighodaro",
+      "team": "Phoenix Suns",
+      "salary": 2486995,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Khaman Maluach",
+      "team": "Phoenix Suns",
+      "salary": 6617160,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Shaedon Sharpe",
+      "team": "Portland Trail Blazers",
+      "salary": 8399983,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Donovan Clingan",
+      "team": "Portland Trail Blazers",
+      "salary": 7519920,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Scoot Henderson",
+      "team": "Portland Trail Blazers",
+      "salary": 10748040,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Vit Krejci",
+      "team": "Portland Trail Blazers",
+      "salary": 3005085,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Kris Murray",
+      "team": "Portland Trail Blazers",
+      "salary": 3132000,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Rayan Rupert",
+      "team": "Portland Trail Blazers",
+      "salary": 2221677,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Yang Hansen",
+      "team": "Portland Trail Blazers",
+      "salary": 4864920,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Keegan Murray",
+      "team": "Sacramento Kings",
+      "salary": 11144093,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Maxime Raynaud",
+      "team": "Sacramento Kings",
+      "salary": 2525901,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Nique Clifford",
+      "team": "Sacramento Kings",
+      "salary": 3418800,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Devin Carter",
+      "team": "Sacramento Kings",
+      "salary": 5158080,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Victor Wembanyama",
+      "team": "San Antonio Spurs",
+      "salary": 13376880,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Stephon Castle",
+      "team": "San Antonio Spurs",
+      "salary": 10015920,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Dylan Harper",
+      "team": "San Antonio Spurs",
+      "salary": 13607760,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Julian Champagnie",
+      "team": "San Antonio Spurs",
+      "salary": 3000000,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jeremy Sochan",
+      "team": "San Antonio Spurs",
+      "salary": 7096231,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Carter Bryant",
+      "team": "San Antonio Spurs",
+      "salary": 5390640,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Collin Murray-Boyles",
+      "team": "Toronto Raptors",
+      "salary": 6966000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Gradey Dick",
+      "team": "Toronto Raptors",
+      "salary": 4990560,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jamal Shead",
+      "team": "Toronto Raptors",
+      "salary": 2296271,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jonathan Mogbo",
+      "team": "Toronto Raptors",
+      "salary": 2296271,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Trayce Jackson-Davis",
+      "team": "Toronto Raptors",
+      "salary": 2406205,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Keyonte George",
+      "team": "Utah Jazz",
+      "salary": 4278960,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Walker Kessler",
+      "team": "Utah Jazz",
+      "salary": 4878938,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Brice Sensabaugh",
+      "team": "Utah Jazz",
+      "salary": 2693760,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Isaiah Collier",
+      "team": "Utah Jazz",
+      "salary": 2763960,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Ace Bailey",
+      "team": "Utah Jazz",
+      "salary": 9976560,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Kyle Filipowski",
+      "team": "Utah Jazz",
+      "salary": 3000000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Svi Mykhailiuk",
+      "team": "Utah Jazz",
+      "salary": 4025000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Cody Williams",
+      "team": "Utah Jazz",
+      "salary": 6015600,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Vince Williams Jr.",
+      "team": "Utah Jazz",
+      "salary": 2489752,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "KyShawn George",
+      "team": "Washington Wizards",
+      "salary": 3108000,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Tre Johnson",
+      "team": "Washington Wizards",
+      "salary": 9061680,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Bilal Coulibaly",
+      "team": "Washington Wizards",
+      "salary": 7275600,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Justin Champagnie",
+      "team": "Washington Wizards",
+      "salary": 3005085,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Bub Carrington",
+      "team": "Washington Wizards",
+      "salary": 4900560,
+      "year": 2026,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Cam Whitmore",
+      "team": "Washington Wizards",
+      "salary": 3539760,
+      "year": 2025,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Will Riley",
+      "team": "Washington Wizards",
+      "salary": 3864000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    },
+    {
+      "player": "Jaden Hardy",
+      "team": "Washington Wizards",
+      "salary": 6000000,
+      "year": 2027,
+      "type": "team",
+      "status": "pending",
+      "decidedBy": null,
+      "decidedAt": null
+    }
+  ]
+}

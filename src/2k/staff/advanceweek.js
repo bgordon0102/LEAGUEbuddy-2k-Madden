@@ -1,22 +1,15 @@
 import { SlashCommandBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import { DataManager } from '../../utils/dataManager.js';
+import { resolveTeamNameForRoster } from '../../utils/rosterUtils.js';
 // Removed score submitting, pin, welcome, button, modal, OCR, and result logic for rebuild
 import fs from 'fs';
 
 export const data = new SlashCommandBuilder()
-    .setName('2k-advanceweek')
-    .setDescription('Advance the current week by 1, or specify a week to advance to')
+    .setName('2k-creategamethreads')
+    .setDescription('Create weekly game threads (advance week) for NBA 2K')
     .addIntegerOption(option =>
         option.setName('week')
             .setDescription('The week number to advance to (optional)')
-            .setRequired(false))
-    .addBooleanOption(option =>
-        option.setName('startplayoffs')
-            .setDescription('Jump to playoffs phase now')
-            .setRequired(false))
-    .addBooleanOption(option =>
-        option.setName('startoffseason')
-            .setDescription('Jump to offseason now')
             .setRequired(false))
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
 
@@ -27,13 +20,23 @@ const DEFAULT_CONFIG = {
     announceChannelId: '1425555647167987792',
     phaseAnnounceChannelId: '1425555647167987792',
     leagueRoleId: '1460733464721490108',
-    deadlineHours: 24,
+    deadlineHours: 48,
 };
 
 function loadAdvanceConfig(dataManager) {
     const cfg = dataManager.readData('config');
     const userCfg = cfg?.advanceweek || {};
-    return { ...DEFAULT_CONFIG, ...userCfg };
+    return { ...DEFAULT_CONFIG, ...userCfg, deadlineHours: 48 };
+}
+
+function mascotOnly(name) {
+    const n = (name || '').trim();
+    if (!n) return 'Team';
+    if (/trail\s*blazers/i.test(n)) return 'Trail Blazers';
+    if (/timberwolves/i.test(n)) return 'Timberwolves';
+    if (/76ers|seventy\s*sixers/i.test(n)) return '76ers';
+    const parts = n.split(/\s+/);
+    return parts[parts.length - 1] || n;
 }
 
 function loadCoachRoleMap() {
@@ -124,54 +127,6 @@ export async function execute(interaction) {
     const advanceCfg = loadAdvanceConfig(dataManager);
     let season = dataManager.readData('season') || { currentWeek: 1, seasonNo: 1 };
     let weekNum = interaction.options.getInteger('week');
-    const startPlayoffs = interaction.options.getBoolean('startplayoffs') === true;
-    const startOffseason = interaction.options.getBoolean('startoffseason') === true;
-
-    if (startPlayoffs) {
-        season.phase = 'playoffs';
-        const playoffStart = season.playoffStartWeek ?? TOTAL_WEEKS + 1;
-        season.currentWeek = playoffStart;
-        const writeSuccess = dataManager.writeData('season', season);
-        if (writeSuccess) {
-            await interaction.editReply({ content: `Season moved to playoffs (currentWeek ${season.currentWeek}). Progression and scouting are locked; trades and re-signing remain locked until offseason.` });
-            // Announce phase change
-            try {
-                const announceChannel = await interaction.client.channels.fetch(advanceCfg.phaseAnnounceChannelId).catch(() => null);
-                if (announceChannel && announceChannel.isTextBased()) {
-                    await announceChannel.send({
-                        content: `<@&${advanceCfg.leagueRoleId}> Playoffs have begun! Progression/scouting locked; trades/re-signing stay locked until offseason.`,
-                    });
-                }
-            } catch (err) {
-                console.error('[advanceweek] Failed to send playoffs announcement:', err);
-            }
-        } else {
-            await interaction.editReply({ content: 'Failed to update season data for playoffs.' });
-        }
-        return;
-    }
-    if (startOffseason) {
-        season.phase = 'offseason';
-        // Set to the configured offseason start week (default 31) so week-based gating works
-        season.currentWeek = season.offseasonStartWeek || 31;
-        const writeSuccess = dataManager.writeData('season', season);
-        if (writeSuccess) {
-            await interaction.editReply({ content: 'Season moved to offseason. Trades and re-signing are open; progression and scouting are locked until the new season starts or draft merge completes.' });
-            try {
-                const announceChannel = await interaction.client.channels.fetch(advanceCfg.phaseAnnounceChannelId).catch(() => null);
-                if (announceChannel && announceChannel.isTextBased()) {
-                    await announceChannel.send({
-                        content: `<@&${advanceCfg.leagueRoleId}> Offseason has begun! Trades and re-signing are open; progression/scouting locked until the new season or after draft merge.`,
-                    });
-                }
-            } catch (err) {
-                console.error('[advanceweek] Failed to send offseason announcement:', err);
-            }
-        } else {
-            await interaction.editReply({ content: 'Failed to update season data for offseason.' });
-        }
-        return;
-    }
     if (!weekNum) weekNum = (season.currentWeek || 1) + 1;
     if (weekNum < 1 || weekNum > TOTAL_WEEKS) {
         await interaction.editReply({ content: `Invalid week number. Must be between 1 and ${TOTAL_WEEKS}.` });
@@ -202,15 +157,27 @@ export async function execute(interaction) {
     gameInfo.weekThreads = gameInfo.weekThreads || {};
     const weekThreads = gameInfo.weekThreads[weekNum] || {};
 
-    const slugTeam = (team) => {
-        const base = team?.abbreviation || team?.name || 'team';
-        return base.toString().trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'team';
+    const buildThreadName = (m) => {
+        const t1Full = resolveTeamNameForRoster(m.team1?.name || m.team1?.abbreviation || 'Team1');
+        const t2Full = resolveTeamNameForRoster(m.team2?.name || m.team2?.abbreviation || 'Team2');
+        const t1 = mascotOnly(t1Full);
+        const t2 = mascotOnly(t2Full);
+        return `${t1} vs ${t2} - W${weekNum}`;
     };
+    const teamsUsed = new Set();
     for (const matchup of matchups) {
-        // Use short team names for thread names to match coach role naming
-        const team1Short = slugTeam(matchup.team1);
-        const team2Short = slugTeam(matchup.team2);
-        const threadName = `${team1Short}-vs-${team2Short}-w${weekNum}`;
+        matchup.team1.name = resolveTeamNameForRoster(matchup.team1.name || matchup.team1.abbreviation);
+        matchup.team2.name = resolveTeamNameForRoster(matchup.team2.name || matchup.team2.abbreviation);
+
+        // Skip duplicate appearances in the same week (bad schedule data safeguard)
+        if (teamsUsed.has(matchup.team1.name) || teamsUsed.has(matchup.team2.name)) {
+            console.warn(`[advanceweek] Skipping duplicate matchup for week ${weekNum}: ${matchup.team1.name} vs ${matchup.team2.name}`);
+            continue;
+        }
+        teamsUsed.add(matchup.team1.name);
+        teamsUsed.add(matchup.team2.name);
+
+        const threadName = buildThreadName(matchup);
 
         // Idempotency: skip if we already created a thread for this matchup and it still exists
         const existingThreadId = weekThreads[matchup.id];

@@ -1,3 +1,9 @@
+// Calculate approve/deny counts for logging and replies
+const votesArr = Object.values(entry.votes);
+const approveCount = votesArr.filter(v => v === 'approve').length;
+const denyCount = votesArr.filter(v => v === 'deny').length;
+// Calculate approve/deny counts for logging and replies
+// ...existing code...
 import { ButtonInteraction, EmbedBuilder } from "discord.js";
 import fs from "fs";
 import path from "path";
@@ -5,6 +11,7 @@ import path from "path";
 export const customId = /^committee_(approve|deny)_/;
 // Handles committee voting for trade proposals
 export async function execute(interaction) {
+    console.log('[DEBUG] trade_committee_vote handler called', { customId: interaction.customId, messageId: interaction.message?.id, interactionId: interaction.id });
     const APPROVED_CHANNEL_ID = "1425555422063890443";
     const DENIED_CHANNEL_ID = "1425567560241254520";
     const STAFF_ROLE_MAP_PATH = path.join(process.cwd(), "data/staffRoleMap.main.json");
@@ -102,35 +109,28 @@ export async function execute(interaction) {
     }
     let entry = pendingTrades[messageId];
     if (!entry) {
+        console.log('[DEBUG] Early return: No entry found for messageId', { messageId });
         await interaction.reply({ content: "Trade not found for this committee vote.", flags: 64 });
         return;
     }
     // Prevent voting if trade is already approved or denied
     if (entry.trade.status === 'approved' || entry.trade.status === 'denied') {
-        await interaction.reply({ content: 'This trade has already been ' + entry.trade.status + ' and can no longer be voted on.', flags: 64 });
+        // Trade already finalized, ignore further votes
         return;
     }
-    // Log the vote for this user
+    // Log the vote for this user and finalize immediately for 2K
     entry.votes = entry.votes || {};
+    let finalized = false;
     if (interaction.customId.startsWith('committee_approve_')) {
         entry.votes[interaction.user.id] = 'approve';
-    } else if (interaction.customId.startsWith('committee_deny_')) {
-        entry.votes[interaction.user.id] = 'deny';
-    }
-    // Count votes
-    const votesArr = Object.values(entry.votes);
-    const approveCount = votesArr.filter(v => v === 'approve').length;
-    const denyCount = votesArr.filter(v => v === 'deny').length;
-    let finalized = false;
-    // Threshold to finalize: 3 votes (approve or deny)
-    const THRESHOLD = 3;
-    if (approveCount >= THRESHOLD) {
         entry.trade.status = 'approved';
         finalized = true;
-    } else if (denyCount >= THRESHOLD) {
+    } else if (interaction.customId.startsWith('committee_deny_')) {
+        entry.votes[interaction.user.id] = 'deny';
         entry.trade.status = 'denied';
         finalized = true;
     }
+    console.log('[DEBUG] Vote count', { approveCount, denyCount, finalized, tradeStatus: entry.trade.status });
     pendingTrades[messageId] = entry;
     try {
         fs.writeFileSync(pendingPath, JSON.stringify(pendingTrades, null, 2));
@@ -139,12 +139,14 @@ export async function execute(interaction) {
     }
     const trade = entry.trade;
     if (!trade) {
+        console.log('[DEBUG] Early return: No trade object found', { entry });
         await interaction.reply({ content: "Trade details not found for this committee vote.", flags: 64 });
         return;
     }
 
     // Prepare embed for notification
-    const notifyRoleId = "1460733464721490108";
+    const notifyRoleId = getCommitteeRoleId();
+    const GHOST_PARADISE_ROLE_ID = "1460733464721490108";
     const embed = new EmbedBuilder()
         .setTitle(trade.status === 'approved' ? "Trade Approved" : trade.status === 'denied' ? "Trade Denied" : "Trade Committee Vote Required")
         .addFields(
@@ -158,9 +160,22 @@ export async function execute(interaction) {
 
     // Only update rosters/picks and post to correct channel based on trade status
     if (finalized && trade.status === 'approved') {
+        console.log('[DEBUG] Trade approval block reached', { trade });
+        console.log('[DEBUG] Entering roster update block for approved trade:', {
+            messageId,
+            yourTeam: trade.yourTeam,
+            otherTeam: trade.otherTeam,
+            assetsSent: trade.assetsSent,
+            assetsReceived: trade.assetsReceived,
+            sentPicks: trade.picks || trade.picksSent,
+            receivedPicks: trade.picksTo || trade.picksReceived
+        });
         // Roster update logic
-        const teamAFile = path.join(process.cwd(), 'data/teams_rosters', teamToFile(trade.yourTeam));
-        const teamBFile = path.join(process.cwd(), 'data/teams_rosters', teamToFile(trade.otherTeam));
+        // ...existing code...
+        // Roster update logic
+        const rosterDir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
+        const teamAFile = path.join(rosterDir, teamToFile(trade.yourTeam));
+        const teamBFile = path.join(rosterDir, teamToFile(trade.otherTeam));
         const coachRoleA = getCoachRole(trade.yourTeam);
         const coachRoleB = getCoachRole(trade.otherTeam);
         let teamARoster, teamBRoster;
@@ -172,7 +187,6 @@ export async function execute(interaction) {
             await interaction.reply({ content: 'Trade approved but roster files missing/corrupt; manual fix required.', flags: 64 });
             return;
         }
-        // Normalize roster shapes
         if (Array.isArray(teamARoster)) teamARoster = { players: teamARoster, picks: [] };
         if (Array.isArray(teamBRoster)) teamBRoster = { players: teamBRoster, picks: [] };
         teamARoster.players = Array.isArray(teamARoster.players) ? teamARoster.players : [];
@@ -196,54 +210,107 @@ export async function execute(interaction) {
                 }
             }
         }
-
         // Move picks
         function movePicks(pickNames, fromRoster, toRoster, fromTeamName) {
-            for (const pick of pickNames) {
-                // Find pick index (match ignoring protection)
-                const basePick = pick.replace(/\s*\(.*\)/, '');
-                const idx = fromRoster.picks.findIndex(p => {
-                    if (typeof p === 'string') {
-                        return p.replace(/\s*\(.*\)/, '') === basePick;
-                    } else if (p && typeof p.pick === 'string') {
-                        return p.pick.replace(/\s*\(.*\)/, '') === basePick;
-                    }
-                    return false;
-                });
-                if (idx !== -1) {
-                    // Determine if pick is 1st or 2nd round
-                    const isFirst = /1st/i.test(basePick);
-                    const isSecond = /2nd/i.test(basePick);
-                    let protection = null;
-                    const protectionMatch = pick.match(/top ?(3|5|10)|lottery/i);
-                    let newPickObj = {
-                        pick: basePick,
-                        originalTeam: fromTeamName,
-                    };
-                    // Only allow protections for 1st round picks
-                    if (isFirst && protectionMatch) {
-                        protection = protectionMatch[0].toLowerCase();
-                        newPickObj.protection = protection;
-                    }
-                    // Do not allow protections for 2nd round picks
-                    toRoster.picks.push(newPickObj);
-                    fromRoster.picks.splice(idx, 1);
+            function parsePick(val) {
+                let str = typeof val === 'string' ? val : val.pick || val.label || '';
+                // Remove (Val: ...) annotation for matching
+                str = str.replace(/\(val: [^)]+\)/gi, '').toLowerCase();
+                const yearMatch = str.match(/(20\d{2})/);
+                const year = yearMatch ? Number(yearMatch[1]) : null;
+                let round = null;
+                // Accept multiple formats: '2026 1st', '2026 Round 1', '2026 First', etc.
+                if (/1st|first|round 1/.test(str)) round = 1;
+                else if (/2nd|second|round 2/.test(str)) round = 2;
+                else if (/3rd|third|round 3/.test(str)) round = 3;
+                else if (/4th|fourth|round 4/.test(str)) round = 4;
+                else {
+                    const roundMatch = str.match(/round\s*(\d)/);
+                    if (roundMatch) round = Number(roundMatch[1]);
                 }
+                // Extract protection annotation if present
+                const protectionMatch = str.match(/\(([^)]+protected[^)]*)\)/);
+                const protection = protectionMatch ? protectionMatch[1] : null;
+                return { year, round, protection, raw: val };
+            }
+            for (const pick of pickNames) {
+                const tradePick = parsePick(pick);
+                console.log('[movePicks][TRADE PICK PARSED]', { pick, tradePick });
+                if (!tradePick.year || !tradePick.round) {
+                    console.log('[movePicks][INVALID TRADE PICK]', { pick, tradePick });
+                    continue;
+                }
+                let idx = -1;
+                for (let i = 0; i < fromRoster.picks.length; i++) {
+                    const rosterPick = parsePick(fromRoster.picks[i]);
+                    console.log('[movePicks][COMPARE]', {
+                        rosterPickRaw: fromRoster.picks[i],
+                        rosterPick,
+                        tradePick,
+                        matchYear: rosterPick.year === tradePick.year,
+                        matchRound: rosterPick.round === tradePick.round,
+                        protection: rosterPick.protection,
+                        skip: !!rosterPick.protection
+                    });
+                    // Prevent moving picks that already have protection annotation
+                    if (rosterPick.year === tradePick.year && rosterPick.round === tradePick.round && !rosterPick.protection) {
+                        idx = i;
+                        break;
+                    }
+                }
+                if (idx === -1) {
+                    console.log('[movePicks][MISS]', {
+                        pick,
+                        tradePick,
+                        fromRosterPicks: fromRoster.picks.map(p => parsePick(p)),
+                        fromRosterRaw: fromRoster.picks,
+                        reason: 'No matching pick found or pick has protection annotation.'
+                    });
+                    continue;
+                }
+                let movedPick = fromRoster.picks[idx];
+                // If the traded pick has protection, annotate it for the receiving roster
+                if (tradePick.protection) {
+                    // Format: "2027 1st (lottery protected)"
+                    const basePick = movedPick.replace(/\(([^)]+protected[^)]*)\)/, '').trim();
+                    movedPick = `${basePick} (${tradePick.protection})`;
+                }
+                console.log('[movePicks][MOVE]', {
+                    movedPick,
+                    fromTeam: fromTeamName,
+                    toRosterBefore: [...toRoster.picks],
+                    fromRosterBefore: [...fromRoster.picks]
+                });
+                toRoster.picks.push(movedPick);
+                fromRoster.picks.splice(idx, 1);
+                console.log('[movePicks][AFTER MOVE]', {
+                    toRosterAfter: [...toRoster.picks],
+                    fromRosterAfter: [...fromRoster.picks]
+                });
             }
         }
-
-        // Extract picks from asset string
+        // Robust pick extraction from trade object
         function extractPicks(assetStr) {
-            return assetStr.split(',').map(s => s.trim()).filter(s => {
-                return s.match(/\d{4}|20\d{2} ?(1st|2nd)( |$|\(|top|lottery|unprotected|protected)/i);
-            });
+            if (!assetStr) return [];
+            // Only allow picks that do NOT already have protection annotation
+            return assetStr.split(/[,\n]/)
+                .map(s => s.trim())
+                .filter(s => s.match(/20\d{2}/))
+                .filter(s => !s.match(/\(([^)]+protected[^)]*)\)/));
         }
-
         // Move assets
         const sentPlayers = trade.players || trade.assetsSent.split(',').map(s => s.trim()).filter(s => s && !s.match(/pick/i));
         const receivedPlayers = trade.playersTo || trade.assetsReceived.split(',').map(s => s.trim()).filter(s => s && !s.match(/pick/i));
-        const sentPicks = trade.picks || extractPicks(trade.assetsSent);
-        const receivedPicks = trade.picksTo || extractPicks(trade.assetsReceived);
+        // Robust pick extraction
+        const sentPicks = trade.picks || trade.picksSent || extractPicks(trade.assetsSent);
+        const receivedPicks = trade.picksTo || trade.picksReceived || extractPicks(trade.assetsReceived);
+        console.log('[DEBUG] Calling movePicks', {
+            sentPicks,
+            receivedPicks,
+            teamARosterPicks: teamARoster.picks,
+            teamBRosterPicks: teamBRoster.picks,
+            tradeObj: trade
+        });
         movePlayers(sentPlayers, teamARoster, teamBRoster);
         movePlayers(receivedPlayers, teamBRoster, teamARoster);
         movePicks(sentPicks, teamARoster, teamBRoster, trade.yourTeam);
@@ -254,8 +321,6 @@ export async function execute(interaction) {
         } catch (err) {
             console.error('Failed to write updated rosters:', err);
         }
-        // Post to approved channel
-        let approvedChannel, userA;
         try {
             approvedChannel = await interaction.client.channels.fetch(APPROVED_CHANNEL_ID);
         } catch (err) {
@@ -263,9 +328,10 @@ export async function execute(interaction) {
         }
         if (approvedChannel) {
             try {
+                const tagLine = `${GHOST_PARADISE_ROLE_ID ? `<@&${GHOST_PARADISE_ROLE_ID}> ` : ''}${coachRoleA ? `<@&${coachRoleA}>` : ''}${coachRoleB ? ` <@&${coachRoleB}>` : ''}`;
                 await approvedChannel.send({
-                  content: `<@&${notifyRoleId}>${coachRoleA ? ` <@&${coachRoleA}>` : ''}${coachRoleB ? ` <@&${coachRoleB}>` : ''}`,
-                  embeds: [embed],
+                    content: tagLine || null,
+                    embeds: [embed],
                 });
             } catch (err) {
                 console.error('Failed to send approved trade message:', err);
@@ -287,7 +353,9 @@ export async function execute(interaction) {
         }
         if (deniedChannel) {
             try {
-                await deniedChannel.send({ content: `<@&${notifyRoleId}>`, embeds: [embed] });
+                // Only tag Ghost Paradise role if trade is denied
+                const tagLine = GHOST_PARADISE_ROLE_ID ? `<@&${GHOST_PARADISE_ROLE_ID}>` : null;
+                await deniedChannel.send({ content: tagLine, embeds: [embed] });
             } catch (err) {
                 console.error('Failed to send denied trade message:', err);
             }

@@ -8,6 +8,8 @@ const TOP_FILE = path.join(process.cwd(), 'data', 'madden', 'top_players.json');
 const TOP_HISTORY_DIR = path.join(process.cwd(), 'data', 'madden', 'top_players_history');
 const DEFAULT_POST_CHANNEL = '1462629502864851069';
 const AWARDS_FILE = path.join(process.cwd(), 'data', 'madden', 'awards.json');
+const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
+const TEAM_EMOJIS = loadJson(TEAM_EMOJIS_FILE, {});
 
 function buildRichestPlayerEntries(snapshot) {
   const best = new Map();
@@ -1284,9 +1286,35 @@ function computeWeeklyList(snapshot, weekIndex) {
   const fillCount = 100 - selectedDefenders.length;
   const rest = nonDefenders.sort((a, b) => (b.grade || 0) - (a.grade || 0)).slice(0, fillCount);
   // Combine and sort by grade for final output
-  const forcedTop100 = [...selectedDefenders, ...rest]
+  let forcedTop100 = [...selectedDefenders, ...rest]
     .sort((a, b) => (b.grade || 0) - (a.grade || 0))
     .slice(0, 100);
+
+  // Ensure a baseline linebacker presence across the full Top 100
+  const MIN_LB = 10;
+  const isLB = (p) => posGroup(p.position) === 'LB';
+  let lbCount = forcedTop100.filter(isLB).length;
+  if (lbCount < MIN_LB) {
+    // Candidates: best remaining LBs not already selected
+    const selectedIds = new Set(forcedTop100.map(p => p.id));
+    const lbCandidates = baseList
+      .filter(p => isLB(p) && !selectedIds.has(p.id))
+      .sort((a, b) => (b.grade || 0) - (a.grade || 0));
+
+    while (lbCount < MIN_LB && lbCandidates.length) {
+      const lb = lbCandidates.shift();
+      // Replace the lowest-ranked non-LB
+      const replaceIdx = forcedTop100.map((p, i) => ({ i, p }))
+        .filter(({ p }) => !isLB(p))
+        .sort((a, b) => (a.p.grade || 0) - (b.p.grade || 0))[0]?.i;
+      if (replaceIdx === undefined) break;
+      forcedTop100[replaceIdx] = lb;
+      lbCount++;
+    }
+    forcedTop100 = forcedTop100
+      .sort((a, b) => (b.grade || 0) - (a.grade || 0))
+      .slice(0, 100);
+  }
 
   // --- Top 100 positional quotas by band ---
   const posGroup = (posRaw) => {
@@ -1318,7 +1346,7 @@ function computeWeeklyList(snapshot, weekIndex) {
         WR: { min: 3, max: 5 },
         OL: { min: 3, max: 5 },
         EDG: { min: 2, max: 4 },
-        LB: { min: 2, max: 4 },
+        LB: { min: 3, max: 5 },
         CB: { min: 2, max: 4 },
         S: { min: 2, max: 4 },
         SPECIAL: { min: 0, max: 0 }
@@ -1334,7 +1362,7 @@ function computeWeeklyList(snapshot, weekIndex) {
         WR: { min: 3, max: 5 },
         OL: { min: 3, max: 5 },
         EDG: { min: 3, max: 5 },
-        LB: { min: 3, max: 5 },
+        LB: { min: 4, max: 7 },
         CB: { min: 3, max: 5 },
         S: { min: 3, max: 5 },
         SPECIAL: { min: 1, max: 2 }
@@ -1350,7 +1378,7 @@ function computeWeeklyList(snapshot, weekIndex) {
         WR: { min: 5, max: 8 },
         OL: { min: 5, max: 8 },
         EDG: { min: 5, max: 8 },
-        LB: { min: 5, max: 8 },
+        LB: { min: 6, max: 9 },
         CB: { min: 5, max: 8 },
         S: { min: 5, max: 8 },
         SPECIAL: { min: 1, max: 3 }
@@ -1490,8 +1518,17 @@ function computeWeeklyList(snapshot, weekIndex) {
     }
   }
 
+  const rankGrade = (p) => {
+    let g = p.grade || 0;
+    const pg = posGroup(p.position);
+    if (pg === 'LB') g += 8;            // lift linebackers
+    else if (pg === 'OL') g -= 2;       // slightly suppress OL dominance
+    else if (pg === 'SPECIAL') g -= 5;  // specialists downweight
+    return g;
+  };
+
   let finalTop100 = selected
-    .sort((a, b) => (b.grade || 0) - (a.grade || 0))
+    .sort((a, b) => rankGrade(b) - rankGrade(a))
     .slice(0, 100);
 
   // Hard guarantee: ensure at least 3 OL make the final 100 with strong grades
@@ -1514,9 +1551,62 @@ function computeWeeklyList(snapshot, weekIndex) {
       currentOl.push(ol);
     }
     // Resort after insertion
-    finalTop100 = finalTop100.sort((a, b) => (b.grade || 0) - (a.grade || 0)).slice(0, 100);
+    finalTop100 = finalTop100.sort((a, b) => rankGrade(b) - rankGrade(a)).slice(0, 100);
   };
   ensureTopOlPresence();
+
+  // Guarantee LB presence and distribution: at least 12 LBs overall, and 6 in the top 30
+  const ensureLinebackers = () => {
+    const MIN_LB_TOTAL = 12;
+    const MIN_LB_TOP30 = 6;
+    const selectedIds = new Set(finalTop100.map(p => p.id));
+
+    // Add LBs overall if needed
+    let lbCount = finalTop100.filter(isLB).length;
+    if (lbCount < MIN_LB_TOTAL) {
+      const lbPool = candidatePool
+        .filter(p => isLB(p) && !selectedIds.has(p.id))
+        .sort((a, b) => rankGrade(b) - rankGrade(a));
+      while (lbCount < MIN_LB_TOTAL && lbPool.length) {
+        const lb = lbPool.shift();
+        const replaceIdx = finalTop100
+          .map((p, idx) => ({ p, idx }))
+          .filter(entry => !isLB(entry.p))
+          .sort((a, b) => rankGrade(a.p) - rankGrade(b.p))[0]?.idx;
+        if (replaceIdx === undefined) break;
+        finalTop100.splice(replaceIdx, 1, lb);
+        selectedIds.add(lb.id);
+        lbCount++;
+      }
+      finalTop100 = finalTop100.sort((a, b) => rankGrade(b) - rankGrade(a)).slice(0, 100);
+    }
+
+    // Ensure LB presence in top 30
+    let lbTop30 = finalTop100.slice(0, 30).filter(isLB).length;
+    if (lbTop30 < MIN_LB_TOP30) {
+      const lbPoolTop = [
+        ...finalTop100.slice(30).filter(isLB),
+        ...candidatePool.filter(p => isLB(p) && !selectedIds.has(p.id))
+      ].sort((a, b) => rankGrade(b) - rankGrade(a));
+
+      const nonLbTop30 = finalTop100
+        .slice(0, 30)
+        .map((p, idx) => ({ p, idx }))
+        .filter(entry => !isLB(entry.p))
+        .sort((a, b) => rankGrade(a.p) - rankGrade(b.p));
+
+      let i = 0, j = 0;
+      while (lbTop30 < MIN_LB_TOP30 && i < lbPoolTop.length && j < nonLbTop30.length) {
+        const lb = lbPoolTop[i++];
+        const replaceIdx = nonLbTop30[j++].idx;
+        finalTop100[replaceIdx] = lb;
+        selectedIds.add(lb.id);
+        lbTop30++;
+      }
+      finalTop100 = finalTop100.sort((a, b) => rankGrade(b) - rankGrade(a)).slice(0, 100);
+    }
+  };
+  ensureLinebackers();
 
   // Post-pass: ensure each band/group meets minimums by swapping lowest eligible out
   const bandForGrade = (g) => bandConfigs.find(b => (g || 0) >= b.min && (g || 0) <= b.max);
@@ -2609,9 +2699,22 @@ function buildPageEmbed(list, page, leagueId) {
   const safePage = Math.min(Math.max(1, page), totalPages);
   const start = (safePage - 1) * perPage;
   const slice = list.slice(start, start + perPage);
+
+  const teamEmoji = (team) => {
+    if (!team) return '';
+    const mascot = team.trim().split(/\s+/).pop();
+    const id = TEAM_EMOJIS[mascot];
+    if (!id) return '';
+    const emojiName = mascot.replace(/[^A-Za-z0-9]/g, '');
+    return `<:${emojiName}:${id}>`;
+  };
+
   const lines = slice.map((p, idx) => {
     const rank = start + idx + 1;
-    return `${rank}. ${p.name} (${p.position}, ${p.team}) — ${p.score.toFixed(1)}`;
+    const gradeRaw = p.seasonGrade ?? p.grade ?? p.weeklyGrade ?? p.score ?? 0;
+    const grade = Number(gradeRaw).toFixed(1);
+    const em = teamEmoji(p.team);
+    return `${rank}. ${p.name} (${p.position}, ${p.team}) ${em ? em + ' ' : ''}— ${grade}`;
   });
   const embed = new EmbedBuilder()
     .setTitle('NFL Top 100')

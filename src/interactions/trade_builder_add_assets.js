@@ -12,6 +12,9 @@ import {
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
 import { computePlayerValue, buildValueMap, parsePickValue } from './madden_trade_modal_submit.js';
 import { getTradeDraft, saveTradeDraft } from '../shared/trade_draft_store.js';
+import { readRoster, normalizeName, resolveTeamNameForRoster, computePlayerValue2k, computePickValue2k, parsePickValue2k } from '../shared/rosterUtils.js';
+import fs from 'fs';
+import path from 'path';
 
 const MENU_CUSTOM_ID = /^trade_builder_select_assets\|(yours|other)\|/;
 const ADD_CUSTOM_ID = /^trade_builder_add\|(yours|other)\|/;
@@ -92,6 +95,7 @@ function pickOptions(currentYear) {
 }
 
 function buildAssetSelectRows(side, draftId, snapshot, teamId) {
+  // Madden path (default)
   const roster = rosterForTeam(snapshot, teamId)
     .slice()
     .sort((a, b) => {
@@ -169,6 +173,7 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
 }
 
 function summarizeAssets(draft, valueMap, seasonYear) {
+  // Madden path (default)
   const currentPickValue = (round, pickNum) => {
     const r = Number(round);
     const p = Math.min(32, Math.max(1, Number(pickNum) || 1));
@@ -250,24 +255,187 @@ function summarizeAssets(draft, valueMap, seasonYear) {
   };
 }
 
+// ---------- NBA (2K) helpers ----------
+function rosterForTeam2k(teamName) {
+  const resolved = resolveTeamNameForRoster(teamName);
+  const data = readRoster(resolved);
+  if (Array.isArray(data)) return { players: data, picks: [] };
+  return {
+    players: Array.isArray(data?.players) ? data.players : [],
+    picks: Array.isArray(data?.picks) ? data.picks : [],
+  };
+}
+
+function buildAssetSelectRows2k(side, draftId, teamName) {
+  const draft = getTradeDraft(draftId);
+  const seasonYear = draft?.seasonYear || new Date().getFullYear();
+  const { players } = rosterForTeam2k(teamName);
+  // Generate pick options: 2026-2030 1st/2nd; protections (top3/5/10/lottery) only for next 3 seasons
+  const baseYear = seasonYear;
+  const yearsFirst = [baseYear, baseYear + 1, baseYear + 2, baseYear + 3, baseYear + 4];
+  const yearsProtected = [baseYear, baseYear + 1, baseYear + 2];
+  const protectionTags = ['top 3 protected', 'top 5 protected', 'top 10 protected', 'lottery protected'];
+  const picks = [];
+  yearsFirst.forEach(y => {
+    picks.push(`${y} Round 1`);
+    protectionTags.forEach(tag => {
+      if (yearsProtected.includes(y)) picks.push(`${y} Round 1 (${tag})`);
+    });
+    picks.push(`${y} Round 2`);
+  });
+  if (!players.length && !picks.length) return [];
+  const buckets = [
+    { key: 'guards', label: 'Guards', items: [] },
+    { key: 'wings', label: 'Wings/Forwards', items: [] },
+    { key: 'bigs', label: 'Bigs', items: [] },
+  ];
+  players
+    .slice()
+    .sort((a,b)=> (Number(b.ovr||0)) - (Number(a.ovr||0)))
+    .forEach(p => {
+      const pos = (p.position || '').toUpperCase();
+      const val = computePlayerValue2k(p);
+      const desc = `${p.position || 'UNK'} | OVR ${p.ovr || '??'} | Val ${val}`;
+      const opt = new StringSelectMenuOptionBuilder()
+        .setLabel((p.name || 'Player').slice(0,90))
+        .setDescription(desc.slice(0,100))
+        .setValue(`player:${p.name}`);
+      if (pos.includes('G')) buckets[0].items.push(opt);
+      else if (pos.includes('F')) buckets[1].items.push(opt);
+      else buckets[2].items.push(opt);
+    });
+
+  const rows = buckets
+    .map(b => b.items.slice(0,25))
+    .filter(arr => arr.length)
+    .map((opts, idx) =>
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_select_assets|${side}|${draftId}|${buckets[idx].key}|0`)
+          .setPlaceholder(`Add ${side==='yours'?'your':'their'} ${buckets[idx].label}`)
+          .setMinValues(1)
+          .setMaxValues(Math.min(5, opts.length))
+          .addOptions(opts)
+      )
+    );
+
+  if (picks.length) {
+    const pickOpts = picks.slice(0,25).map(p => ({
+      label: p,
+      value: `pick:${p}`
+    }));
+    rows.push(
+      new ActionRowBuilder().addComponents(
+        new StringSelectMenuBuilder()
+          .setCustomId(`trade_builder_select_assets|${side}|${draftId}|picks|0`)
+          .setPlaceholder(`Add ${side==='yours'?'your':'their'} picks`)
+          .setMinValues(1)
+          .setMaxValues(Math.min(5, pickOpts.length))
+          .addOptions(pickOpts)
+      )
+    );
+  }
+  // Discord max 5 rows
+  return rows.slice(0,5);
+}
+
+function summarizeAssets2k(draft) {
+  const summarize = (arr) => {
+    let total = 0;
+    const lines = [];
+    arr.forEach(item => {
+      if (item.type === 'player') {
+        const val = computePlayerValue2k(item);
+        total += val;
+        lines.push(`${item.label} (${item.pos || 'UNK'}) — ${val.toFixed(1)}`);
+      } else if (item.type === 'pick') {
+        const raw = item.raw || '';
+        const parsed = parsePickValue2k(raw, draft.seasonYear);
+        const val = item.value ?? parsed?.value ?? 0;
+        const label = parsed?.label || raw || 'Pick';
+        total += val;
+        lines.push(`${label} — ${val.toFixed(1)}`);
+      }
+    });
+    return { total, lines };
+  };
+  return {
+    your: summarize(draft.assets?.your || []),
+    other: summarize(draft.assets?.other || []),
+  };
+}
+
 export function buildButtons(draftId) {
-  return [
+  const draft = getTradeDraft(draftId);
+  const is2k = draft?.mode === '2k';
+  let allowManualCurrentPick = true;
+  if (is2k) {
+    // Only allow manual pick entry in the offseason when draft order is known
+    try {
+      const seasonPath = path.join(process.cwd(), 'data', 'season.json');
+      if (fs.existsSync(seasonPath)) {
+        const season = JSON.parse(fs.readFileSync(seasonPath, 'utf8'));
+        allowManualCurrentPick = (season.phase || '').toLowerCase() === 'offseason';
+      }
+    } catch { /* ignore */ }
+    if (!allowManualCurrentPick) allowManualCurrentPick = false;
+  }
+  const submitId = draft?.mode === '2k'
+    ? `trade_preview_submit|${draftId}`
+    : `madden_trade_preview_submit|${draftId}`;
+  const rows = [
     new ActionRowBuilder().addComponents(
       new ButtonBuilder().setCustomId(`trade_builder_add|yours|${draftId}`).setLabel('Add your assets').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId(`trade_builder_add|other|${draftId}`).setLabel("Add their assets").setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`trade_builder_search|yours|${draftId}`).setLabel('Search your team').setStyle(ButtonStyle.Primary),
-      new ButtonBuilder().setCustomId(`trade_builder_search|other|${draftId}`).setLabel('Search their team').setStyle(ButtonStyle.Secondary),
-    ),
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`trade_builder_pick_manual|yours|${draftId}`).setLabel('Type current pick (yours)').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`trade_builder_pick_manual|other|${draftId}`).setLabel('Type current pick (theirs)').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`trade_builder_reset|${draftId}`).setLabel('Reset').setStyle(ButtonStyle.Danger),
-      new ButtonBuilder().setCustomId(`madden_trade_preview_submit|${draftId}`).setLabel('Submit').setStyle(ButtonStyle.Success),
     ),
   ];
+
+  const actionRow = new ActionRowBuilder();
+  if (!is2k || allowManualCurrentPick) {
+    actionRow.addComponents(
+      new ButtonBuilder().setCustomId(`trade_builder_pick_manual|yours|${draftId}`).setLabel('Type current pick (yours)').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`trade_builder_pick_manual|other|${draftId}`).setLabel('Type current pick (theirs)').setStyle(ButtonStyle.Secondary),
+    );
+  }
+  actionRow.addComponents(
+    new ButtonBuilder().setCustomId(`trade_builder_reset|${draftId}`).setLabel('Reset').setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(submitId).setLabel('Submit').setStyle(ButtonStyle.Success),
+  );
+  rows.push(actionRow);
+  return rows;
 }
 
 async function refreshBuilder(interaction, draft, snapshot) {
+  if (draft.mode === '2k') {
+    const summary = summarizeAssets2k(draft);
+    const gap = summary.your.total - summary.other.total;
+    const GAP_LIMIT = 50;
+    const embed = new EmbedBuilder()
+      .setTitle('Trade Builder')
+      .setDescription(`Gap (you - them): ${gap.toFixed(1)}${Math.abs(gap) > GAP_LIMIT ? ' — exceeds limit' : ' — within limit'}`)
+      .addFields(
+        {
+          name: `Your team: ${draft.yourTeamName || '—'} (Total ${summary.your.total.toFixed(1)})`,
+          value: summary.your.lines.length ? summary.your.lines.join('\n') : 'No assets yet.',
+          inline: false,
+        },
+        {
+          name: `Other team: ${draft.otherTeamName || '—'} (Total ${summary.other.total.toFixed(1)})`,
+          value: summary.other.lines.length ? summary.other.lines.join('\n') : 'No assets yet.',
+          inline: false,
+        },
+      )
+      .setColor(0x5865f2);
+    draft.assetsSent = summary.your.lines.join('\n');
+    draft.assetsReceived = summary.other.lines.join('\n');
+    saveTradeDraft(draft.draftId, draft);
+    await interaction.update({
+      content: null,
+      embeds: [embed],
+      components: buildButtons(draft.draftId),
+    });
+    return;
+  }
   const valueMap = buildValueMap(snapshot);
   const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear;
   const summary = summarizeAssets(draft, valueMap, seasonYear);
@@ -304,24 +472,46 @@ async function refreshBuilder(interaction, draft, snapshot) {
 
 export async function execute(interaction) {
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
-  if (!leagueId) return;
+  const draftId = interaction.customId.split('|')[1];
+  const draft = getTradeDraft(draftId);
+  const isNBA = draft?.mode === '2k';
   if (RESET_CUSTOM_ID.test(interaction.customId)) {
     const draftId = interaction.customId.split('|')[1];
     const draft = getTradeDraft(draftId);
     if (!draft) return;
     draft.assets = { your: [], other: [] };
+    // Also clear team selections in 2K so the user can re-pick cleanly
+    if (draft.mode === '2k') {
+      draft.otherTeamName = null;
+      draft.otherTeamId = null;
+      draft.otherTeam = null;
+    }
     saveTradeDraft(draftId, draft);
-    const snapshot = loadLeagueSnapshot(leagueId);
+    if (draft.mode === '2k') {
+      await refreshBuilder(interaction, draft, null);
+      return;
+    }
+    if (!leagueId) return;
     await refreshBuilder(interaction, draft, snapshot);
     return;
   }
   if (ADD_CUSTOM_ID.test(interaction.customId)) {
     const [, side, draftId] = interaction.customId.split('|');
     const draft = getTradeDraft(draftId);
-    if (!draft || !draft[side === 'yours' ? 'yourTeamId' : 'otherTeamId']) {
+    if (!draft || !(draft.mode === '2k' ? draft[side === 'yours' ? 'yourTeamName' : 'otherTeamName'] : draft[side === 'yours' ? 'yourTeamId' : 'otherTeamId'])) {
       await interaction.reply({ content: 'Select both teams first.', ephemeral: true });
       return;
     }
+    if (draft.mode === '2k') {
+      const rows = buildAssetSelectRows2k(side === 'yours' ? 'yours' : 'other', draftId, side === 'yours' ? draft.yourTeamName : draft.otherTeamName);
+      if (!rows?.length) {
+        await interaction.reply({ content: 'No assets found for that team.', ephemeral: true });
+        return;
+      }
+      await interaction.reply({ content: `Select assets for ${side === 'yours' ? 'your' : 'their'} team`, components: rows.slice(0, 5), ephemeral: true });
+      return;
+    }
+    if (!leagueId) return;
     const snapshot = loadLeagueSnapshot(leagueId);
     const rows = buildAssetSelectRows(side === 'yours' ? 'yours' : 'other', draftId, snapshot, side === 'yours' ? draft.yourTeamId : draft.otherTeamId);
     if (!rows?.length) {
@@ -342,9 +532,60 @@ export async function execute(interaction) {
       await interaction.reply({ content: 'Trade builder expired. Start again.', ephemeral: true });
       return;
     }
+    if (draft.mode === '2k') {
+      const rosterData = rosterForTeam2k(side === 'yours' ? draft.yourTeamName : draft.otherTeamName);
+      const rosterMap = new Map(rosterData.players.map(p => [normalizeName(p.name), p]));
+      const sel = interaction.values || [];
+      const assetsArr = draft.assets?.[side === 'yours' ? 'your' : 'other'] || [];
+      sel.forEach(v => {
+        if (v.startsWith('player:')) {
+          const name = v.slice('player:'.length);
+          const p = rosterMap.get(normalizeName(name));
+          if (!p) return;
+          if (assetsArr.find(a => a.type === 'player' && normalizeName(a.label) === normalizeName(name))) return;
+          const salary = (Array.isArray(p.contractYears) && p.contractYears[0]?.salary) ? Number(String(p.contractYears[0].salary).replace(/[^0-9.]/g,'')) : 0;
+          const yearsInNBA = Number(p.yearsInNBA || 0);
+          const ageVal = (() => {
+            if (p.birthdate) return p.birthdate; // keep birthdate string if available
+            if (p.age) return Number(p.age);
+            if (yearsInNBA) return yearsInNBA + 19;
+            return null;
+          })();
+          assetsArr.push({
+            type: 'player',
+            label: p.name,
+            pos: p.position,
+            ovr: Number(p.ovr) || 0,
+            age: ageVal,
+            salary,
+            yearsLeft: Array.isArray(p.contractYears) ? p.contractYears.length : 0,
+            contractYears: p.contractYears,
+            yearsInNBA
+          });
+        } else if (v.startsWith('pick:')) {
+          const raw = v.slice('pick:'.length);
+          if (assetsArr.find(a => a.type === 'pick' && a.raw === raw)) return;
+          const parsed = parsePickValue2k(raw, draft.seasonYear) || {};
+          assetsArr.push({
+            type: 'pick',
+            raw,
+            year: parsed.year,
+            round: parsed.round,
+            pickNum: parsed.pickNum,
+            protection: parsed.protection,
+            value: parsed.value,
+            label: parsed.label,
+          });
+        }
+      });
+      draft.assets = draft.assets || { your: [], other: [] };
+      draft.assets[side === 'yours' ? 'your' : 'other'] = assetsArr;
+      saveTradeDraft(draftId, draft);
+      await refreshBuilder(interaction, draft, null);
+      return;
+    }
+    if (!leagueId) return;
     const snapshot = loadLeagueSnapshot(leagueId);
-    const valueMap = buildValueMap(snapshot);
-    const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear;
     const roster = rosterForTeam(snapshot, side === 'yours' ? draft.yourTeamId : draft.otherTeamId);
     const rosterMap = new Map(roster.map(p => [String(p.rosterId), p]));
     const sel = interaction.values || [];
@@ -372,7 +613,19 @@ export async function execute(interaction) {
         const suffix = rnd === '1' ? 'st' : rnd === '2' ? 'nd' : rnd === '3' ? 'rd' : 'th';
         const raw = pickNum ? `${year} ${rnd}${suffix} pick ${pickNum}` : `${year} ${rnd}${suffix}`;
         if (assetsArr.find(a => a.type === 'pick' && a.raw === raw)) return;
-        assetsArr.push({ type: 'pick', raw, year: Number(year), round: Number(rnd), pickNum: pickNum ? Number(pickNum) : null });
+        const parsed = draft.mode === '2k'
+          ? parsePickValue2k(raw, draft.seasonYear)
+          : parsePickValue(raw, loadLeagueSnapshot(leagueId)?.info?.careerHubInfo?.seasonInfo?.seasonYear);
+        assetsArr.push({
+          type: 'pick',
+          raw,
+          year: parsed?.year ?? Number(year),
+          round: parsed?.round ?? Number(rnd),
+          pickNum: parsed?.pickNum ?? (pickNum ? Number(pickNum) : null),
+          protection: parsed?.protection,
+          value: parsed?.value,
+          label: parsed?.label,
+        });
       }
     });
     draft.assets = draft.assets || { your: [], other: [] };
@@ -384,6 +637,11 @@ export async function execute(interaction) {
   }
 
   if (PICK_MANUAL_BTN.test(interaction.customId)) {
+    const draft = getTradeDraft(interaction.customId.split('|')[2]);
+    if (draft?.mode === '2k') {
+      await interaction.reply({ content: 'For NBA, add picks from the Picks menu.', ephemeral: true });
+      return;
+    }
     const [, side, draftId] = interaction.customId.split('|');
     const modalId = `trade_builder_pick_modal|${side}|${draftId}`;
     const modal = new ModalBuilder()
@@ -409,19 +667,12 @@ export async function execute(interaction) {
       await interaction.reply({ content: 'Trade builder expired. Start again.', ephemeral: true });
       return;
     }
-    const snapshot = loadLeagueSnapshot(leagueId);
-    const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear;
     const rawInput = interaction.fields.getTextInputValue('pickLabel') || '';
-    const parsed = parsePickValue(rawInput, seasonYear);
+    const parsed = draft.mode === '2k'
+      ? parsePickValue2k(rawInput, draft.seasonYear)
+      : parsePickValue(rawInput, loadLeagueSnapshot(leagueId)?.info?.careerHubInfo?.seasonInfo?.seasonYear);
     if (!parsed) {
-      await interaction.reply({ content: 'Could not parse that pick. Try formats like "2026 Round 1 Pick 5" or "2026 1st".', ephemeral: true });
-      return;
-    }
-    // Enforce current-season specific picks only for manual entry
-    const currentDraftYear = seasonYear || parsed.year;
-    const isCurrentYearPick = parsed.year === currentDraftYear && !parsed.isFuture && !!parsed.pickNum;
-    if (!isCurrentYearPick) {
-      await interaction.reply({ content: 'Please enter a specific pick from the current draft year only (e.g., "2026 Round 1 Pick 5"). Future years are round-only.', ephemeral: true });
+      await interaction.reply({ content: 'Could not parse that pick. Try formats like \"2026 Round 1\" or \"2026 Round 1 Pick 5\".', ephemeral: true });
       return;
     }
     draft.assets = draft.assets || { your: [], other: [] };
@@ -430,7 +681,16 @@ export async function execute(interaction) {
       ? `${parsed.year} Round ${parsed.round} Pick ${parsed.pickNum}`
       : `${parsed.year} Round ${parsed.round}`;
     if (!assetsArr.find(a => a.type === 'pick' && a.raw === canonical)) {
-      assetsArr.push({ type: 'pick', raw: canonical, year: parsed.year, round: parsed.round, pickNum: parsed.pickNum });
+      assetsArr.push({
+        type: 'pick',
+        raw: canonical,
+        year: parsed.year,
+        round: parsed.round,
+        pickNum: parsed.pickNum,
+        protection: parsed.protection,
+        value: parsed.value,
+        label: parsed.label,
+      });
     }
     draft.assets[side === 'yours' ? 'your' : 'other'] = assetsArr;
     saveTradeDraft(draftId, draft);

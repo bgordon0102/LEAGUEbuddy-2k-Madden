@@ -31,16 +31,43 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction, options = {}) {
   // If this is a button interaction, use update, else use reply
   const isButton = interaction.isButton && interaction.isButton();
-  if (!isButton) await interaction.deferReply({ ephemeral: true });
-  const roleMap = loadRoleMap();
-  const member = await interaction.guild.members.fetch(interaction.user.id);
-  const noAccessMsg = 'Only Ghost Legacy Commish/Co-Commish can use this command.';
-  if (!hasStaffRole(member, roleMap)) {
-    if (isButton) {
-      const responder = interaction.deferred || interaction.replied ? interaction.followUp.bind(interaction) : interaction.reply.bind(interaction);
-      await responder({ content: noAccessMsg, ephemeral: true });
-    } else {
-      await interaction.editReply({ content: noAccessMsg });
+  if (!isButton) {
+    // Defer immediately for slash commands
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (err) {
+      console.error('[top100test] Failed to deferReply:', err);
+      return;
+    }
+  }
+  let member;
+  try {
+    const roleMap = loadRoleMap();
+    member = await interaction.guild.members.fetch(interaction.user.id);
+    const noAccessMsg = 'Only Ghost Legacy Commish/Co-Commish can use this command.';
+    if (!hasStaffRole(member, roleMap)) {
+      if (isButton) {
+        const responder = interaction.deferred || interaction.replied ? interaction.followUp.bind(interaction) : interaction.reply.bind(interaction);
+        try {
+          await responder({ content: noAccessMsg, ephemeral: true });
+        } catch (err) {
+          console.error('[top100test] Failed to send noAccessMsg:', err);
+        }
+      } else {
+        try {
+          await interaction.editReply({ content: noAccessMsg });
+        } catch (err) {
+          console.error('[top100test] Failed to editReply noAccessMsg:', err);
+        }
+      }
+      return;
+    }
+  } catch (err) {
+    console.error('[top100test] Error in role check:', err);
+    try {
+      if (!isButton) await interaction.editReply({ content: 'Error checking permissions.' });
+    } catch (e2) {
+      console.error('[top100test] Failed to send error after role check:', e2);
     }
     return;
   }
@@ -115,12 +142,12 @@ export async function execute(interaction, options = {}) {
     try {
       const data = JSON.parse(fs.readFileSync(allFile, 'utf8'));
       if (Array.isArray(data?.players)) loaded = data.players;
-    } catch {}
+    } catch { }
     if (!loaded.length) {
       try {
         const data = JSON.parse(fs.readFileSync(file, 'utf8'));
         if (Array.isArray(data?.top100)) loaded = data.top100;
-      } catch {}
+      } catch { }
     }
     if (!loaded.length) {
       loaded = computeWeeklyList(snapshot, week);
@@ -143,7 +170,7 @@ export async function execute(interaction, options = {}) {
     let weekFiles = [];
     try {
       weekFiles = fs.readdirSync(historyDir).filter(f => /^week-\\d+-all\\.json$/.test(f));
-    } catch {}
+    } catch { }
     const weekChoices = weekFiles
       .map(f => Number(f.replace(/\\D/g, '')))
       .filter(n => Number.isFinite(n))

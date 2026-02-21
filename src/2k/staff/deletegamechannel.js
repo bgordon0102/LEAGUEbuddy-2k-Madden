@@ -1,8 +1,8 @@
 import { SlashCommandBuilder, ChannelType } from 'discord.js';
 
 export const data = new SlashCommandBuilder()
-    .setName('2k-deletegamechannel')
-    .setDescription('Delete all game channels for a given week')
+    .setName('2k-deletegamethreads')
+    .setDescription('Delete all game threads for a given week')
     .addIntegerOption(option =>
         option.setName('week')
             .setDescription('Week number to delete channels for')
@@ -70,10 +70,21 @@ export async function execute(interaction) {
             for (const t of active.threads.values()) allThreads.set(t.id, t);
             if (archived && archived.threads) for (const t of archived.threads.values()) allThreads.set(t.id, t);
 
-            const weekMarker = `-w${week}`;
+            const weekMarkerLower = `-w${week}`;       // old pattern
+            const weekMarkerUpper = `- w${week}`;       // old pattern with space
+            const weekLabel = `- w${week}`;             // canonical lower
+            const weekLabelCompact = `- w${week}`;      // keep for case-insensitive match
+            const weekShort = `- w${week}`;             // alias
+            const weekNew = `- w${week}`;               // placeholder
+            const weekLabelNew = `- w${week}`;          // placeholder
             for (const thread of allThreads.values()) {
                 const name = (thread.name || '').toLowerCase();
-                if (name.includes(weekMarker.toLowerCase()) || name.includes(`week ${week}`)) {
+                if (
+                  name.includes(`- w${week}`) ||
+                  name.includes(`-w${week}`) ||
+                  name.includes(`week ${week}`) ||
+                  name.includes(`w${week}`)
+                ) {
                     try {
                         await thread.delete();
                         deleted++;

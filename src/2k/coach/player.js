@@ -15,19 +15,32 @@ const data = new SlashCommandBuilder()
     );
 
 // Helper to load all players from all team roster files using readRoster utility
-import { readRoster } from '../../utils/rosterUtils.js';
+import { readRoster, computePlayerValue2k, deriveAge, deriveContract } from '../../utils/rosterUtils.js';
+
+const teamEmojisPath = path.join(process.cwd(), 'data', '2k', 'team_emojis.json');
+let teamEmojis = {};
+try { teamEmojis = JSON.parse(fs.readFileSync(teamEmojisPath, 'utf8')); } catch { teamEmojis = {}; }
+
+function findTeamEmoji(teamName) {
+    if (!teamName) return null;
+    const mascot = teamName.trim().split(/\s+/).pop().toLowerCase();
+    const matchKey = Object.keys(teamEmojis).find(k => k.toLowerCase() === mascot);
+    if (!matchKey) return null;
+    const emojiId = teamEmojis[matchKey];
+    const emojiName = matchKey.replace(/\s+/g, '');
+    return `<:${emojiName}:${emojiId}>`;
+}
 function loadAllPlayers() {
     const rostersDir = path.join(process.cwd(), "teams_rosters");
-    const files = fs.readdirSync(rostersDir).filter(f => f.endsWith('.json'));
+    const files = fs.existsSync(rostersDir) ? fs.readdirSync(rostersDir).filter(f => f.endsWith('.json')) : [];
     let players = [];
     for (const file of files) {
-        const teamNameRaw = file.replace('.json', '').replace(/_/g, ' ');
-        const teamName = teamNameRaw.split(' ').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+        const teamFile = file.replace('.json','');
+        const teamDisplay = teamFile.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
         try {
-            const data = readRoster(teamNameRaw.replace(/ /g, '_'));
-            if (data && data.roster && Array.isArray(data.roster.players)) {
-                players.push(...data.roster.players.map(p => ({ ...p, team: p.team || teamName })));
-            }
+            const data = readRoster(teamFile);
+            const arr = Array.isArray(data) ? data : Array.isArray(data?.players) ? data.players : [];
+            players.push(...arr.map(p => ({ ...p, team: p.team || teamDisplay })));
         } catch { }
     }
     return players;
@@ -35,21 +48,17 @@ function loadAllPlayers() {
 
 async function autocomplete(interaction) {
     try {
-        const focusedValue = interaction.options.getFocused() || "";
-        let allPlayers = loadAllPlayers();
-        // Sort all players alphabetically by name
-        allPlayers = allPlayers.sort((a, b) => {
-            if (!a.name) return 1;
-            if (!b.name) return -1;
-            return a.name.localeCompare(b.name);
-        });
-        // Filter by name (case-insensitive, partial match)
-        const filtered = allPlayers.filter(p => p.name && p.name.toLowerCase().includes(focusedValue.toLowerCase()));
-        // Show top 25 matches, sorted
-        const options = (filtered.length ? filtered : allPlayers)
-            .map(p => ({ name: p.name, value: p.name }))
-            .slice(0, 25);
-        await interaction.respond(options);
+        const focusedValue = (interaction.options.getFocused() || "").toLowerCase();
+        let allPlayers = loadAllPlayers()
+            .filter(p => p.name)
+            .sort((a, b) => a.name.localeCompare(b.name));
+
+        const filtered = focusedValue
+            ? allPlayers.filter(p => p.name.toLowerCase().includes(focusedValue))
+            : allPlayers;
+
+        const options = filtered.slice(0, 25).map(p => ({ name: p.name, value: p.name }));
+        await interaction.respond(options.length ? options : [{ name: 'No players found', value: 'none' }]);
     } catch (err) {
         if (err?.code === 10062 || err?.code === 40060) return;
         console.error('[player autocomplete] Error:', err);
@@ -103,17 +112,24 @@ async function execute(interaction) {
         // Build embed with all info
         const pos = player.position || player.position_1 || player.position1 || "-";
         const thumb = player.imgUrl || player.imgURL || player.img || player.thumbnail;
-        const embed = new EmbedBuilder().setTitle(String(player.name));
+        const value = computePlayerValue2k(player);
+        const { salary, yearsLeft } = deriveContract(player);
+        const emoji = findTeamEmoji(player.team);
+        const title = `${emoji ? `${emoji} ` : ''}${player.name}`;
+        const embed = new EmbedBuilder().setTitle(title);
         if (thumb) embed.setThumbnail(String(thumb));
         embed.addFields(
             { name: "Position", value: String(pos || "-"), inline: true },
             { name: "Overall", value: player.ovr != null ? String(player.ovr) : "-", inline: true },
             { name: "Team", value: player.team ? String(player.team) : "-", inline: true },
+            { name: "Trade Value", value: value ? value.toFixed(1) : "-", inline: true },
             { name: "Height", value: player.height != null ? String(player.height) : "-", inline: true },
             { name: "Weight", value: player.weight != null ? String(player.weight) : "-", inline: true },
             { name: "Wingspan", value: player.wingspan != null ? String(player.wingspan) : "-", inline: true },
             { name: "Archetype", value: player.archetype != null ? String(player.archetype) : "-", inline: true },
             { name: "Age", value: ageStr, inline: true },
+            { name: "Salary (yr1)", value: salary ? `$${salary.toLocaleString()}` : "-", inline: true },
+            { name: "Years Left", value: yearsLeft ? String(yearsLeft) : "-", inline: true },
             { name: "Prior to NBA", value: player.prior_to_nba != null ? String(player.prior_to_nba) : "-", inline: true },
             { name: "Nationality", value: player.nationality != null ? String(player.nationality) : "-", inline: true }
         );

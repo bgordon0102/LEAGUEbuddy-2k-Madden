@@ -20,6 +20,22 @@ const RECRUITS_FILE = path.join(DATA_DIR, 'recruits.json');
 const SCOUT_POINTS_FILE = path.join(DATA_DIR, 'scout_points.json');
 const SCHEDULE_FILE = path.join(DATA_DIR, 'schedule.json');
 
+// Ensure no team appears more than once in the same week
+function validateScheduleNoDuplicates(weeks) {
+    // weeks[0] is the empty placeholder
+    for (let i = 1; i < weeks.length; i++) {
+        const used = new Set();
+        for (const g of weeks[i] || []) {
+            const t1 = g.team1?.name;
+            const t2 = g.team2?.name;
+            if (!t1 || !t2) continue;
+            if (used.has(t1) || used.has(t2)) return false;
+            used.add(t1); used.add(t2);
+        }
+    }
+    return true;
+}
+
 // Helper to write JSON
 // Helper to copy all team rosters to backup folder
 function backupAllRosters() {
@@ -145,19 +161,26 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
     // Static NBA team list (shuffled for random schedule)
     // Dynamically build team list from teams_rosters directory
     const teamsRostersDir = path.join(process.cwd(), 'data', 'teams_rosters');
+    const seen = new Set();
     const teamFiles = fs.readdirSync(teamsRostersDir).filter(f => f.endsWith('.json') && f !== 'Free_Agency.json');
-    const nbaTeams = teamFiles.map((file, idx) => {
+    const nbaTeams = [];
+    for (const file of teamFiles) {
         const name = file.replace('.json', '').replace(/_/g, ' ');
-        // Try to infer abbreviation from file name (first 3 letters of each word)
+        const key = name.toLowerCase();
+        if (seen.has(key)) continue; // skip duplicate files (e.g., with underscores/spaces)
+        seen.add(key);
         const abbr = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 3);
-        return { id: idx + 1, name, abbreviation: abbr };
-    });
-    // Shuffle for random schedule
-    const staticTeams = nbaTeams.map(team => ({ ...team, coach: null }));
-    for (let i = staticTeams.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [staticTeams[i], staticTeams[j]] = [staticTeams[j], staticTeams[i]];
+        nbaTeams.push({ id: nbaTeams.length + 1, name, abbreviation: abbr });
     }
+    // Helper to shuffle
+    const shuffleTeams = (list) => {
+        const arr = list.map(team => ({ ...team, coach: null }));
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    };
 
     // --- Self-healing file logic ---
     function safeReadJSON(file, fallback) {
@@ -175,18 +198,12 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
     // Coach Role Map: never rewrite or update coachRoleMap.json in startseason. Always use the existing file as-is.
     // If you need to update coachRoleMap.json, do it manually.
 
-    // Schedule
+    // Schedule: single generate (algorithm already avoids intra-week duplicates)
+    const staticTeams = shuffleTeams(nbaTeams);
     const schedule = generateWeekBasedSchedule(staticTeams, gameno);
-    // Validate schedule: must be non-empty array of arrays
-    if (!Array.isArray(schedule) || schedule.length === 0 || !Array.isArray(schedule[0])) {
-        console.error('[startseason] Generated schedule is invalid, writing fallback.');
-        console.log('[startseason] Writing schedule.json: fallback');
-        writeJSON(SCHEDULE_FILE, [{ error: 'No schedule generated' }]);
-    } else {
-        console.log('[startseason] Writing schedule.json:', SCHEDULE_FILE, JSON.stringify(schedule, null, 2));
-        writeJSON(SCHEDULE_FILE, schedule);
-        console.log('[startseason] Wrote schedule.json');
-    }
+    console.log('[startseason] Writing schedule.json:', SCHEDULE_FILE, JSON.stringify(schedule, null, 2));
+    writeJSON(SCHEDULE_FILE, schedule);
+    console.log('[startseason] Wrote schedule.json');
 
     // Teams
     console.log('[startseason] Writing teams.json:', TEAMS_FILE, JSON.stringify(staticTeams, null, 2));
@@ -209,7 +226,7 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
 
     // Season file: always use the freshly generated coachRoleMap
     const seasonData = {
-        currentWeek: 0,
+        currentWeek: 1,
         seasonNo: seasonno,
         coachRoleMap: coachRoleMap,
         phase: 'regular',
@@ -243,10 +260,10 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
 
 // Generate a 14-game schedule: single round robin within each conference (East/West), one game per week
 function generateWeekBasedSchedule(teams, gameno) {
-    const eastNames = new Set([
-        'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls',
-        'Cleveland Cavaliers', 'Detroit Pistons', 'Indiana Pacers', 'Miami Heat', 'Milwaukee Bucks',
-        'New York Knicks', 'Orlando Magic', 'Philadelphia 76ers', 'Toronto Raptors', 'Washington Wizards'
+        const eastNames = new Set([
+            'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls',
+            'Cleveland Cavaliers', 'Detroit Pistons', 'Indiana Pacers', 'Miami Heat', 'Milwaukee Bucks',
+            'New York Knicks', 'Orlando Magic', 'Philadelphia 76ers', 'Toronto Raptors', 'Washington Wizards'
     ]);
     const westNames = new Set([
         'Dallas Mavericks', 'Denver Nuggets', 'Golden State Warriors', 'Houston Rockets', 'Los Angeles Clippers',
@@ -259,6 +276,21 @@ function generateWeekBasedSchedule(teams, gameno) {
     const west = [];
     for (const t of teams) {
         if (isEast(t.name)) east.push(t); else if (westNames.has(t.name)) west.push(t); else west.push(t);
+    }
+
+    function validateScheduleNoDuplicates(weeks) {
+        // weeks[0] is empty placeholder
+        for (let i = 1; i < weeks.length; i++) {
+            const used = new Set();
+            for (const g of weeks[i] || []) {
+                const t1 = g.team1?.name;
+                const t2 = g.team2?.name;
+                if (!t1 || !t2) continue;
+                if (used.has(t1) || used.has(t2)) return false;
+                used.add(t1); used.add(t2);
+            }
+        }
+        return true;
     }
 
     const buildRoundRobin = (list, startId) => {
@@ -283,8 +315,7 @@ function generateWeekBasedSchedule(teams, gameno) {
         return { weeks: schedule, nextId: id };
     };
 
-    // Add week 0 (no games)
-    const combined = [[]];
+    const combined = [];
     const eastSchedule = buildRoundRobin(east, 0);
     const westSchedule = buildRoundRobin(west, eastSchedule.nextId);
     const totalRounds = Math.max(eastSchedule.weeks.length, westSchedule.weeks.length);

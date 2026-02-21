@@ -29,6 +29,7 @@ function getTeamFromMemberRoles(member) {
 export const customId = /^trade_for/;
 
 export async function execute(interaction) {
+  console.log('[DEBUG] trade_for_button handler called', { customId: interaction.customId, user: interaction.user?.id });
   if (!interaction.isButton()) return;
   if (!canTrade()) {
     const state = getSeasonState();

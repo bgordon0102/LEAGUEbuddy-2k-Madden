@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
-const RECRUITING_PATH = path.resolve('data/draft_classes/madden/Madden 26 CUS01 Recruiting.json');
+const RECRUITING_PATH = path.resolve('data/draft_classes/madden/Madden26_CUS01 - Recruiting.json');
 const PAGE_SIZE = 10;
 
 const safeLoadRecruiting = () => {

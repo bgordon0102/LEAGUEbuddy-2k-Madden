@@ -31,6 +31,7 @@ async function autocomplete(interaction) {
         if (fs.existsSync(rostersDir)) {
             teams = fs.readdirSync(rostersDir)
                 .filter(f => f.endsWith('.json'))
+                .filter(f => !/free[_ ]?agency/i.test(f)) // exclude Free Agency pseudo-team
                 .map(f => f.replace('.json', '').replace(/_/g, ' '))
                 .sort((a, b) => a.localeCompare(b));
         }
@@ -81,38 +82,35 @@ async function execute(interaction) {
             .map(f => f.replace('.json', '').replace(/_/g, ' '));
         const schedule = JSON.parse(fs.readFileSync(schedulePath, "utf8"));
         const seasonData = JSON.parse(fs.readFileSync(seasonPath, "utf8"));
-        const currentWeek = seasonData.currentWeek;
-        let week = 1;
-        let gamesList = [];
+        const currentWeek = seasonData.currentWeek || 1; // treat as 1-based
         if (!teams.includes(team)) {
             await interaction.editReply({ content: `Team not found: ${team}` });
             return;
         }
-        if (currentWeek === 0) {
-            gamesList.push('**Week 0**');
-        }
-        gamesList = gamesList.concat(
-            schedule.flat().map((g) => {
-                let opponent = null;
-                if (g.team1 && g.team1.name === team) {
-                    opponent = g.team2 && g.team2.name ? g.team2.name : '';
-                } else if (g.team2 && g.team2.name === team) {
-                    opponent = g.team1 && g.team1.name ? g.team1.name : '';
-                }
-                if (!opponent) return null;
-                if (week === currentWeek && currentWeek !== 0) {
-                    // Highlight current week
-                    const line = `➡️ **W${week}. ${opponent}**`;
-                    week++;
-                    return line;
-                } else {
-                    const line = `W${week}. ${opponent}`;
-                    week++;
-                    return line;
-                }
-            }).filter(Boolean)
-        );
-        const weekLabel = currentWeek === 0 ? 'Week 0' : `Current Week: ${currentWeek}`;
+        const gamesList = [];
+        schedule.forEach((weekGames, idx) => {
+            if (!Array.isArray(weekGames)) return;
+            const match = weekGames.find(g =>
+                (g.team1 && g.team1.name === team) || (g.team2 && g.team2.name === team)
+            );
+            let label;
+            const weekNumber = idx + 1; // display 1-based
+            if (!match) {
+                label = (weekNumber === currentWeek)
+                    ? `➡️ **W${weekNumber}. BYE**`
+                    : `W${weekNumber}. BYE`;
+            } else {
+                const opponent = (match.team1 && match.team1.name === team)
+                    ? (match.team2?.name || '')
+                    : (match.team1?.name || '');
+                if (!opponent) return;
+                label = (weekNumber === currentWeek)
+                    ? `➡️ **W${weekNumber}. ${opponent}**`
+                    : `W${weekNumber}. ${opponent}`;
+            }
+            gamesList.push(label);
+        });
+        const weekLabel = `Current Week: ${currentWeek}`;
         const embed = new EmbedBuilder()
             .setTitle(`Schedule for ${team}`)
             .setDescription(gamesList.length ? gamesList.join("\n") : "No games found.")

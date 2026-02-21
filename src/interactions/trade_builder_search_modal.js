@@ -2,6 +2,7 @@ import { ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuOptionBuilde
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
 import { getTradeDraft } from '../shared/trade_draft_store.js';
 import { rosterForTeam, buildButtons } from './trade_builder_add_assets.js';
+import { readRoster, normalizeName, resolveTeamNameForRoster } from '../shared/rosterUtils.js';
 
 export const customId = /^trade_builder_search_modal\|(yours|other)\|/;
 
@@ -14,6 +15,44 @@ export async function execute(interaction) {
     await interaction.reply({ content: 'Trade builder expired. Start again.', ephemeral: true });
     return;
   }
+  if (draft.mode === '2k') {
+    const teamName = resolveTeamNameForRoster(side === 'yours' ? draft.yourTeamName : draft.otherTeamName);
+    if (!teamName) {
+      await interaction.reply({ content: 'Select both teams first.', ephemeral: true });
+      return;
+    }
+    const data = readRoster(teamName);
+    const players = Array.isArray(data?.players) ? data.players : Array.isArray(data) ? data : [];
+    const matches = players
+      .filter(p => (p.name || '').toLowerCase().includes(query))
+      .slice(0, 25);
+    if (!matches.length) {
+      await interaction.reply({ content: 'No players matched that search.', ephemeral: true });
+      return;
+    }
+    const select = new StringSelectMenuBuilder()
+      .setCustomId(`trade_builder_select_assets|${side}|${draftId}|search`)
+      .setPlaceholder('Select player(s) to add')
+      .setMinValues(1)
+      .setMaxValues(Math.min(5, matches.length))
+      .addOptions(
+        matches.map(p => {
+          const label = p.name || 'Player';
+          const desc = `${p.position || 'UNK'} | OVR ${p.ovr || '??'}`;
+          return new StringSelectMenuOptionBuilder()
+            .setLabel(label.slice(0, 90))
+            .setDescription(desc.slice(0, 100))
+            .setValue(`player:${p.name}`);
+        })
+      );
+    await interaction.reply({
+      content: 'Select players to add',
+      components: [new ActionRowBuilder().addComponents(select)],
+      ephemeral: true,
+    });
+    return;
+  }
+
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
     await interaction.reply({ content: 'No league configured.', ephemeral: true });

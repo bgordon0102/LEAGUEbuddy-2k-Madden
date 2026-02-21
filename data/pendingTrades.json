@@ -1,1 +1,25 @@
-{}
+{
+  "1474782955439128637": {
+    "trade": {
+      "tradeId": "builder_1076243288056664234_1771686019446",
+      "proposerId": "1076243288056664234",
+      "coachBId": "1460736622390935562",
+      "yourTeam": "Cleveland Cavaliers",
+      "otherTeam": "Washington Wizards",
+      "assetsSent": "2026 Round 1 — 240.0\n2027 Round 1 (lottery protected) — 138.0",
+      "assetsReceived": "Tre Johnson (SG / SF) — 392.0",
+      "picksSent": [
+        "2026 Round 1",
+        "2027 Round 1 (lottery protected)"
+      ],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "committee",
+      "postedToCommittee": true,
+      "submittedAt": 1771686049297,
+      "expiresAt": 1771772449297
+    },
+    "votes": {}
+  }
+}

@@ -8,7 +8,7 @@ const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.jso
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
 const LOGO_DIR = path.join(process.cwd(), 'college football logos');
-const POINTS_PER_WEEK = 60; // regular & postseason
+const POINTS_PER_WEEK = 60; // regular & postseason (back to standard)
 const COST_PER_REVEAL = 10;
 const OFFSEASON_POINTS = 300; // full offseason pool
 // Preferred position order for autocomplete (canonical names)
