@@ -588,6 +588,43 @@ export function readRoster(team) {
   return [];
 }
 
+// Ensure pick entries have a fixed value; convert strings to {pick, value}
+export function ensurePickValues(roster) {
+  if (!roster || typeof roster !== 'object') return roster;
+  const seasonYear = (() => {
+    try {
+      const seasonPath = path.join(process.cwd(), 'data', 'season.json');
+      if (fs.existsSync(seasonPath)) {
+        const s = JSON.parse(fs.readFileSync(seasonPath, 'utf8'));
+        if (s.seasonYear) return Number(s.seasonYear);
+        if (s.seasonNo) return 2025 + Number(s.seasonNo); // season 1 => 2026
+      }
+    } catch { /* ignore */ }
+    return new Date().getFullYear();
+  })();
+
+  const picksArr = Array.isArray(roster.picks) ? roster.picks : [];
+  const normalizePickObj = (p) => {
+    if (typeof p === 'object' && p.pick && p.value != null) return p;
+    const pickStr = typeof p === 'string' ? p : p?.pick || '';
+    if (!pickStr) return p;
+    const lower = pickStr.toLowerCase();
+    const year = Number((lower.match(/(20\d{2})/) || [])[1]);
+    const round = /1st|round 1/.test(lower) ? 1 : /2nd|round 2/.test(lower) ? 2 : null;
+    const prot = (() => {
+      if (/lottery/.test(lower)) return 'lottery';
+      if (/top\s*10/.test(lower)) return 'top 10';
+      if (/top\s*5/.test(lower)) return 'top 5';
+      if (/top\s*3/.test(lower)) return 'top 3';
+      return null;
+    })();
+    const val = round ? computePickValue2k(year || seasonYear, round, null, seasonYear, prot) : 0;
+    return { pick: pickStr, value: val };
+  };
+  roster.picks = picksArr.map(normalizePickObj);
+  return roster;
+}
+
 export function saveRoster(team, roster) {
   const targets = [
     path.join(process.cwd(), 'data', '2k', 'teams_rosters', `${team}.json`),

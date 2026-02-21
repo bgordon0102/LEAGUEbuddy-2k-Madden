@@ -10,26 +10,20 @@ async function safeUpdate(interaction, payload) {
   try {
     return await interaction.update(payload);
   } catch (err) {
-    if ([10062, 40060, 50027].includes(err?.code) && interaction.channel?.isTextBased()) {
-      return interaction.channel.send(
-        typeof payload === 'string'
-          ? payload
-          : { ...payload, content: 'Trade builder interaction expired. Please press Start Trade Builder again.', components: [] }
-      ).catch(() => {});
-    }
+    // Only update interaction, do not send public channel message
     throw err;
   }
 }
 
 const EAST = [
-  'Atlanta Hawks','Boston Celtics','Brooklyn Nets','Charlotte Hornets','Chicago Bulls',
-  'Cleveland Cavaliers','Detroit Pistons','Indiana Pacers','Miami Heat','Milwaukee Bucks',
-  'New York Knicks','Orlando Magic','Philadelphia 76ers','Toronto Raptors','Washington Wizards'
+  'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls',
+  'Cleveland Cavaliers', 'Detroit Pistons', 'Indiana Pacers', 'Miami Heat', 'Milwaukee Bucks',
+  'New York Knicks', 'Orlando Magic', 'Philadelphia 76ers', 'Toronto Raptors', 'Washington Wizards'
 ];
 const WEST = [
-  'Dallas Mavericks','Denver Nuggets','Golden State Warriors','Houston Rockets','Los Angeles Clippers',
-  'Los Angeles Lakers','Memphis Grizzlies','Minnesota Timberwolves','New Orleans Pelicans','Oklahoma City Thunder',
-  'Phoenix Suns','Portland Trail Blazers','Sacramento Kings','San Antonio Spurs','Utah Jazz'
+  'Dallas Mavericks', 'Denver Nuggets', 'Golden State Warriors', 'Houston Rockets', 'Los Angeles Clippers',
+  'Los Angeles Lakers', 'Memphis Grizzlies', 'Minnesota Timberwolves', 'New Orleans Pelicans', 'Oklahoma City Thunder',
+  'Phoenix Suns', 'Portland Trail Blazers', 'Sacramento Kings', 'San Antonio Spurs', 'Utah Jazz'
 ];
 
 function buildTeamOptions(snapshot, conference) {
@@ -115,8 +109,8 @@ export async function execute(interaction) {
   const yourOptions = draft.yourTeamId
     ? [{ label: draft.yourTeamName || 'Your team', value: String(draft.yourTeamId) }]
     : (draft.mode === '2k'
-        ? [...EAST, ...WEST].map(t => ({ label: t, value: t })).slice(0, 25)
-        : limitOptions(buildTeamOptions(snapshot), draft.yourTeamId));
+      ? [...EAST, ...WEST].map(t => ({ label: t, value: t })).slice(0, 25)
+      : limitOptions(buildTeamOptions(snapshot), draft.yourTeamId));
   components.push(
     new ActionRowBuilder().addComponents(
       new StringSelectMenuBuilder()
@@ -130,8 +124,8 @@ export async function execute(interaction) {
 
   const otherEastOptions = draft.mode === '2k'
     ? (draft.otherTeamName && EAST.includes(draft.otherTeamName)
-        ? [{ label: draft.otherTeamName, value: draft.otherTeamName }]
-        : EAST.map(t => ({ label: t, value: t })))
+      ? [{ label: draft.otherTeamName, value: draft.otherTeamName }]
+      : EAST.map(t => ({ label: t, value: t })))
     : limitOptions(buildTeamOptions(snapshot, 'AFC'));
   components.push(
     new ActionRowBuilder().addComponents(
@@ -149,8 +143,8 @@ export async function execute(interaction) {
 
   const otherWestOptions = draft.mode === '2k'
     ? (draft.otherTeamName && WEST.includes(draft.otherTeamName)
-        ? [{ label: draft.otherTeamName, value: draft.otherTeamName }]
-        : WEST.map(t => ({ label: t, value: t })))
+      ? [{ label: draft.otherTeamName, value: draft.otherTeamName }]
+      : WEST.map(t => ({ label: t, value: t })))
     : limitOptions(buildTeamOptions(snapshot, 'NFC'));
   components.push(
     new ActionRowBuilder().addComponents(

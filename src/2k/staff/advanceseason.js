@@ -4,7 +4,7 @@ import path from 'path';
 import { resetSeasonData } from './startseason.js';
 
 const dataDir = path.join(process.cwd(), 'data');
-const rostersDir = path.join(dataDir, 'teams_rosters');
+const rostersDir = path.join(dataDir, '2k', 'teams_rosters');
 const rostersMasterDir = path.join(dataDir, 'teams_rosters_master');
 const picksFile = path.join(dataDir, 'team_picks.json');
 const picksMasterFile = path.join(dataDir, 'team_picks_master.json');

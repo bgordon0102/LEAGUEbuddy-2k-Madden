@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { normalizeName } from '../utils/rosterUtils.js';
 
-const ROSTER_DIR = path.join(process.cwd(), 'data', 'teams_rosters');
+const ROSTER_DIR = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
 const PENDING_FILE = path.join(process.cwd(), 'data', 'removeretires_pending.json');
 
 function loadRosters() {

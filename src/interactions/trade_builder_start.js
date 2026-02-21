@@ -12,13 +12,7 @@ async function safeReply(interaction, payload) {
   try {
     return await interaction.reply(payload);
   } catch (err) {
-    if ([10062, 40060, 50027].includes(err?.code) && interaction.channel?.isTextBased()) {
-      return interaction.channel.send(
-        typeof payload === 'string'
-          ? payload
-          : { ...payload, content: payload.content || 'Trade builder interaction expired. Please press Start Trade Builder again.', components: payload.components || [] }
-      ).catch(() => {});
-    }
+    // Only send ephemeral reply, do not send public channel message
     throw err;
   }
 }
@@ -31,22 +25,22 @@ export async function execute(interaction) {
 
   // ---------- NBA (2K) fallback ----------
   const east = [
-    'Atlanta Hawks','Boston Celtics','Brooklyn Nets','Charlotte Hornets','Chicago Bulls',
-    'Cleveland Cavaliers','Detroit Pistons','Indiana Pacers','Miami Heat','Milwaukee Bucks',
-    'New York Knicks','Orlando Magic','Philadelphia 76ers','Toronto Raptors','Washington Wizards'
+    'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls',
+    'Cleveland Cavaliers', 'Detroit Pistons', 'Indiana Pacers', 'Miami Heat', 'Milwaukee Bucks',
+    'New York Knicks', 'Orlando Magic', 'Philadelphia 76ers', 'Toronto Raptors', 'Washington Wizards'
   ];
   const west = [
-    'Dallas Mavericks','Denver Nuggets','Golden State Warriors','Houston Rockets','Los Angeles Clippers',
-    'Los Angeles Lakers','Memphis Grizzlies','Minnesota Timberwolves','New Orleans Pelicans','Oklahoma City Thunder',
-    'Phoenix Suns','Portland Trail Blazers','Sacramento Kings','San Antonio Spurs','Utah Jazz'
+    'Dallas Mavericks', 'Denver Nuggets', 'Golden State Warriors', 'Houston Rockets', 'Los Angeles Clippers',
+    'Los Angeles Lakers', 'Memphis Grizzlies', 'Minnesota Timberwolves', 'New Orleans Pelicans', 'Oklahoma City Thunder',
+    'Phoenix Suns', 'Portland Trail Blazers', 'Sacramento Kings', 'San Antonio Spurs', 'Utah Jazz'
   ];
   const nbaTeams = [...east, ...west];
 
   const coachMapPath = path.join(process.cwd(), 'data/coachRoleMap.json');
   let coachMap = {};
-  try { coachMap = JSON.parse(fs.readFileSync(coachMapPath, 'utf8')); } catch {}
+  try { coachMap = JSON.parse(fs.readFileSync(coachMapPath, 'utf8')); } catch { }
   const userRoleIds = interaction.member?.roles?.cache ? Array.from(interaction.member.roles.cache.keys()) : [];
-  const roleToTeam = Object.entries(coachMap).reduce((acc,[team,roleId]) => { acc[roleId]=team; return acc; }, {});
+  const roleToTeam = Object.entries(coachMap).reduce((acc, [team, roleId]) => { acc[roleId] = team; return acc; }, {});
   const detectedTeamRaw = userRoleIds.map(id => roleToTeam[id]).find(Boolean) || null;
   const detectedTeam = detectedTeamRaw ? resolveTeamNameForRoster(detectedTeamRaw) : null;
 
@@ -166,19 +160,19 @@ export async function execute(interaction) {
           .setPlaceholder(detectedTeam ? `Your team: ${detectedTeam}` : 'Your team')
           // Allow override even if a coach role auto-detected the wrong team
           .setDisabled(false)
-          .addOptions(detectedTeam ? [toOption(detectedTeam)] : nbaTeams.map(toOption).slice(0,25))
+          .addOptions(detectedTeam ? [toOption(detectedTeam)] : nbaTeams.map(toOption).slice(0, 25))
       ),
       new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`trade_builder_team_other_afc|${draftId}`)
           .setPlaceholder('Select other team (East)')
-          .addOptions(optionsEast.slice(0,25))
+          .addOptions(optionsEast.slice(0, 25))
       ),
       new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`trade_builder_team_other_nfc|${draftId}`)
           .setPlaceholder('Select other team (West)')
-          .addOptions(optionsWest.slice(0,25))
+          .addOptions(optionsWest.slice(0, 25))
       ),
     ];
   }

@@ -39,7 +39,7 @@ function validateScheduleNoDuplicates(weeks) {
 // Helper to write JSON
 // Helper to copy all team rosters to backup folder
 function backupAllRosters() {
-    const rostersDir = path.join(process.cwd(), 'data', 'teams_rosters');
+    const rostersDir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
     const backupDir = path.join(process.cwd(), 'data', 'rosters_backup');
     if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
     const files = fs.readdirSync(rostersDir).filter(f => f.endsWith('.json'));
@@ -65,8 +65,8 @@ function restoreTeamPicksFromMaster() {
     console.log('[startseason] Restored team picks from team_picks_master.json');
 }
 function restoreAllRostersFromMaster() {
-    const rostersDir = path.join(process.cwd(), 'data', 'teams_rosters');
-    const masterDir = path.join(process.cwd(), 'data', 'teams_rosters_master');
+    const rostersDir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
+    const masterDir = path.join(process.cwd(), 'data', '2k', 'teams_rosters_master');
     if (!fs.existsSync(masterDir)) {
         console.error('[startseason] No master folder found to restore rosters.');
         return;
@@ -77,7 +77,7 @@ function restoreAllRostersFromMaster() {
         const dest = path.join(rostersDir, file);
         fs.copyFileSync(src, dest);
     }
-    console.log('[startseason] Restored all team rosters from teams_rosters_master');
+    console.log('[startseason] Restored all team rosters from 2k/teams_rosters_master');
 }
 function writeJSON(file, data) {
     try {
@@ -159,8 +159,8 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
     // New season length: 14 games (single round vs conference only)
     const gameno = 14;
     // Static NBA team list (shuffled for random schedule)
-    // Dynamically build team list from teams_rosters directory
-    const teamsRostersDir = path.join(process.cwd(), 'data', 'teams_rosters');
+    // Dynamically build team list from 2k/teams_rosters directory
+    const teamsRostersDir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
     const seen = new Set();
     const teamFiles = fs.readdirSync(teamsRostersDir).filter(f => f.endsWith('.json') && f !== 'Free_Agency.json');
     const nbaTeams = [];
@@ -260,10 +260,10 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
 
 // Generate a 14-game schedule: single round robin within each conference (East/West), one game per week
 function generateWeekBasedSchedule(teams, gameno) {
-        const eastNames = new Set([
-            'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls',
-            'Cleveland Cavaliers', 'Detroit Pistons', 'Indiana Pacers', 'Miami Heat', 'Milwaukee Bucks',
-            'New York Knicks', 'Orlando Magic', 'Philadelphia 76ers', 'Toronto Raptors', 'Washington Wizards'
+    const eastNames = new Set([
+        'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls',
+        'Cleveland Cavaliers', 'Detroit Pistons', 'Indiana Pacers', 'Miami Heat', 'Milwaukee Bucks',
+        'New York Knicks', 'Orlando Magic', 'Philadelphia 76ers', 'Toronto Raptors', 'Washington Wizards'
     ]);
     const westNames = new Set([
         'Dallas Mavericks', 'Denver Nuggets', 'Golden State Warriors', 'Houston Rockets', 'Los Angeles Clippers',

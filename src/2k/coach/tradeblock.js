@@ -15,7 +15,7 @@ const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 
 // Paths to data files
 const coachRoleMapPath = path.join(__dirname, '../../../data/coachRoleMap.json');
-import { readRoster } from '../../utils/rosterUtils.js';
+import { readRoster, computePlayerValue2k, resolveTeamNameForRoster } from '../../utils/rosterUtils.js';
 const tradeBlockPath = path.join(__dirname, '../../../data/tradeblock.json');
 const teamsRostersPath = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
 const teamsJsonPath = path.join(process.cwd(), 'data', 'teams.json');
@@ -40,80 +40,79 @@ function computeSeasonAge(birthdate) {
     return age;
 }
 
+function normalizeTeamSlug(str) {
+    return (str || '')
+        .toLowerCase()
+        .replace(/coach/gi, '')
+        .replace(/head/gi, '')
+        .replace(/\\s+/g, '')
+        .replace(/_/g, '')
+        .replace(/[^a-z0-9]/g, '');
+}
+
+function getTeamListSlugs() {
+    try {
+        const files = fs.readdirSync(teamsRostersPath).filter(f => f.endsWith('.json'));
+        return files.map(f => ({
+            file: f.replace('.json', ''),
+            slug: normalizeTeamSlug(f.replace('.json', '').replace(/_/g, ' '))
+        }));
+    } catch {
+        return [];
+    }
+}
+
 function getCoachTeamFromRoles(interaction) {
-    // Find a role ending in 'Coach' and map to team
     const roles = interaction.member?.roles?.cache;
     if (!roles) return null;
-    // First, try the role name pattern (legacy)
-    for (const [roleId, role] of roles) {
-        if (role.name.endsWith('Coach')) {
-            // Map role name to team file name
-            // e.g. 'Hawks Coach' -> 'Atlanta_Hawks', 'Lakers Coach' -> 'Los_Angeles_Lakers'
-            const base = role.name.replace(' Coach', '');
-            // Map base to full team name (add more mappings as needed)
-            const teamMap = {
-                'Hawks': 'Atlanta_Hawks',
-                'Celtics': 'Boston_Celtics',
-                'Nets': 'Brooklyn_Nets',
-                'Hornets': 'Charlotte_Hornets',
-                'Bulls': 'Chicago_Bulls',
-                'Cavaliers': 'Cleveland_Cavaliers',
-                'Mavericks': 'Dallas_Mavericks',
-                'Nuggets': 'Denver_Nuggets',
-                'Pistons': 'Detroit_Pistons',
-                'Warriors': 'Golden_State_Warriors',
-                'Rockets': 'Houston_Rockets',
-                'Pacers': 'Indiana_Pacers',
-                'Clippers': 'Los_Angeles_Clippers',
-                'Lakers': 'Los_Angeles_Lakers',
-                'Grizzlies': 'Memphis_Grizzlies',
-                'Heat': 'Miami_Heat',
-                'Bucks': 'Milwaukee_Bucks',
-                'Timberwolves': 'Minnesota_Timberwolves',
-                'Pelicans': 'New_Orleans_Pelicans',
-                'Knicks': 'New_York_Knicks',
-                'Thunder': 'Oklahoma_City_Thunder',
-                'Magic': 'Orlando_Magic',
-                '76ers': 'Philadelphia_76ers',
-                'Suns': 'Phoenix_Suns',
-                'Trail Blazers': 'Portland_Trail_Blazers',
-                'Kings': 'Sacramento_Kings',
-                'Spurs': 'San_Antonio_Spurs',
-                'Raptors': 'Toronto_Raptors',
-                'Jazz': 'Utah_Jazz',
-                'Wizards': 'Washington_Wizards'
-            };
-            return teamMap[base] || null;
+    const teamSlugs = getTeamListSlugs();
+
+    // 1) Exact "Team Coach" role names
+    for (const [, role] of roles) {
+        if (role.name.toLowerCase().includes('coach')) {
+            const base = role.name.replace(/coach/i, '').trim();
+            const slug = normalizeTeamSlug(base);
+            const hit = teamSlugs.find(t => t.slug === slug);
+            if (hit) return hit.file;
         }
     }
-    // Fallback: use coachRoleMap.json (roleId -> team name like "Phoenix Suns Coach")
+
+    // 2) coachRoleMap.json (roleId -> "Team Coach")
     try {
         const coachMap = JSON.parse(fs.readFileSync(coachRoleMapPath, 'utf8'));
         const roleIdToTeam = Object.entries(coachMap || {}).reduce((acc, [teamName, rid]) => {
             if (rid) acc[rid] = teamName;
             return acc;
         }, {});
-        for (const [rid] of roles) {
-            const teamNameWithCoach = roleIdToTeam[rid];
-            if (teamNameWithCoach) {
-                const base = teamNameWithCoach.replace(/\\s*Coach$/i, '').trim();
-                return base.replace(/\s+/g, '_');
+        for (const [rid, role] of roles) {
+            const mapped = roleIdToTeam[rid];
+            if (mapped) {
+                const base = mapped.replace(/\\s*Coach$/i, '').trim();
+                return resolveTeamNameForRoster(base) || base.replace(/\s+/g, '_');
             }
         }
     } catch { /* ignore */ }
+
+    // 3) Any role name matching team slug
+    for (const [, role] of roles) {
+        const slug = normalizeTeamSlug(role.name);
+        const hit = teamSlugs.find(t => t.slug === slug);
+        if (hit) return hit.file;
+    }
     return null;
 }
 
 function getTeamPlayers(team) {
-    const data = readRoster(team);
+    const resolved = resolveTeamNameForRoster(team) || team;
+    const data = readRoster(resolved);
     // Support legacy shapes: array, { players: [] }, or { roster: { players: [] } }
     const playersArr = Array.isArray(data)
         ? data
         : Array.isArray(data?.players)
-          ? data.players
-          : Array.isArray(data?.roster?.players)
-            ? data.roster.players
-            : [];
+            ? data.players
+            : Array.isArray(data?.roster?.players)
+                ? data.roster.players
+                : [];
     return playersArr.map(p => p.name).filter(Boolean);
 }
 
@@ -247,21 +246,30 @@ const data = new SlashCommandBuilder()
 export default {
     data,
     async autocomplete(interaction) {
+        const safeRespond = async (options) => {
+            try {
+                await interaction.respond(options);
+            } catch (err) {
+                if (err?.code === 10062 || err?.code === 40060) return; // interaction expired/acknowledged
+                console.error('TRADEBLOCK AUTOCOMPLETE RESPOND ERROR:', err);
+            }
+        };
+
         let responded = false;
-        // Set a timeout to always respond within 2 seconds
         const timeout = setTimeout(async () => {
             if (!responded) {
                 responded = true;
-                try { await interaction.respond([]); } catch { }
+                await safeRespond([]);
             }
-        }, 2000);
+        }, 1500);
+
         try {
             const focusedOption = interaction.options.getFocused(true);
             if (focusedOption.name === 'action') {
                 if (!responded) {
                     responded = true;
                     clearTimeout(timeout);
-                    await interaction.respond([
+                    await safeRespond([
                         { name: 'add', value: 'add' },
                         { name: 'remove', value: 'remove' }
                     ]);
@@ -273,7 +281,7 @@ export default {
                 if (!responded) {
                     responded = true;
                     clearTimeout(timeout);
-                    await interaction.respond([]);
+                    await safeRespond([]);
                 }
                 return;
             }
@@ -287,7 +295,7 @@ export default {
                     if (!responded) {
                         responded = true;
                         clearTimeout(timeout);
-                        await interaction.respond(available.map(p => ({ name: p, value: p })).slice(0, 25));
+                        await safeRespond(available.map(p => ({ name: p, value: p })).slice(0, 25));
                     }
                     return;
                 } else if (action === 'remove') {
@@ -295,7 +303,7 @@ export default {
                     if (!responded) {
                         responded = true;
                         clearTimeout(timeout);
-                        await interaction.respond(blocked.map(p => ({ name: p, value: p })).slice(0, 25));
+                        await safeRespond(blocked.map(p => ({ name: p, value: p })).slice(0, 25));
                     }
                     return;
                 }
@@ -303,24 +311,20 @@ export default {
             if (!responded) {
                 responded = true;
                 clearTimeout(timeout);
-                await interaction.respond([]);
+                await safeRespond([]);
             }
         } catch (err) {
             console.error('TRADEBLOCK AUTOCOMPLETE ERROR:', err);
             if (!responded) {
                 responded = true;
                 clearTimeout(timeout);
-                try {
-                    await interaction.respond([{ name: 'Error loading options', value: 'none' }]);
-                } catch (e) {
-                    // If interaction already acknowledged/expired, just log
-                    console.error('TRADEBLOCK AUTOCOMPLETE RESPOND ERROR:', e);
-                }
+                await safeRespond([{ name: 'Error loading options', value: 'none' }]);
             }
         }
     },
     async execute(interaction) {
-        const team = getCoachTeamFromRoles(interaction);
+        const teamRaw = getCoachTeamFromRoles(interaction);
+        const team = resolveTeamNameForRoster(teamRaw) || teamRaw;
         if (!team) return interaction.reply({ content: 'You are not mapped to a team.', ephemeral: true });
         const action = interaction.options.getString('action');
         const player = interaction.options.getString('player');
@@ -349,12 +353,29 @@ export default {
             // Post a player-specific embed to the team thread in trade block channel
             const tradeBlockChannelId = TRADE_BLOCK_CHANNEL_ID;
             const channel = interaction.client.channels.cache.get(tradeBlockChannelId) || await interaction.client.channels.fetch(tradeBlockChannelId).catch(() => null);
-            // Find player info from roster file
-            const teamFile = path.join(teamsRostersPath, `${team}.json`);
+            // Resolve roster file path robustly
+            const resolveRosterPath = (teamName) => {
+                const candidates = [
+                    `${teamName}.json`,
+                    `${teamName.replace(/ /g, '_')}.json`,
+                    `${teamName.replace(/_/g, ' ')}.json`,
+                ];
+                try {
+                    const files = fs.readdirSync(teamsRostersPath);
+                    const hit = files.find(f => candidates.some(c => f.toLowerCase() === c.toLowerCase()));
+                    if (hit) return path.join(teamsRostersPath, hit);
+                } catch { /* ignore */ }
+                // fallback original
+                return path.join(teamsRostersPath, `${teamName}.json`);
+            };
+            const teamFile = resolveRosterPath(team);
             let position = '';
             let ovr = '';
             let age = '';
             let thumbnailUrl = '';
+            let value = '';
+            let build = '';
+            let salary = '';
             if (fs.existsSync(teamFile)) {
                 const roster = JSON.parse(fs.readFileSync(teamFile));
                 const playerObj = roster.players?.find(p => p.name === player);
@@ -362,24 +383,28 @@ export default {
                     position = playerObj.position || '';
                     ovr = playerObj.ovr || '';
                     age = playerObj.age || computeSeasonAge(playerObj.birthdate);
+                    value = computePlayerValue2k(playerObj).toFixed(1);
+                    build = playerObj.archetype || playerObj.build || '';
+                    const firstYear = Array.isArray(playerObj.contractYears) ? playerObj.contractYears[0] : null;
+                    salary = firstYear?.salary || '';
                     // support both imgUrl and imgURL casing
                     thumbnailUrl = playerObj.imgUrl || playerObj.imgURL || `https://cdn.nba2k.com/players/${player.replace(/ /g, '_')}.png`;
                 }
             }
             const embed = {
                 title: `${player} added to the ${team.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} trade block!`,
-                description: `Position: ${position || 'N/A'}${ovr ? `\nOVR: ${ovr}` : ''}${age ? `\nAge: ${age}` : ''}`,
+                description: [
+                  `${position || 'N/A'} ${ovr ? `| OVR ${ovr}` : ''}`.trim(),
+                  age ? `Age: ${age}` : null,
+                  build ? `Build: ${build}` : null,
+                  salary ? `Current Year Salary: ${salary}` : null,
+                  value ? `Trade Val: ${value}` : null,
+                ].filter(Boolean).join('\n'),
                 color: 0x00AE86,
                 thumbnail: thumbnailUrl ? { url: thumbnailUrl } : undefined
             };
-            const tradeButtonRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId(`trade_for::${encodeURIComponent(team)}::${encodeURIComponent(player)}`)
-                    .setLabel('Trade For')
-                    .setStyle(ButtonStyle.Primary)
-            );
             const target = channel ? await getOrCreateTeamThread(channel, team.replace(/_/g, ' ')) : interaction.channel;
-            const sentMsg = await target.send({ content: `<@&${GHOST_PARADISE_ROLE_ID}>`, embeds: [embed], components: [tradeButtonRow] });
+            const sentMsg = await target.send({ content: `<@&${GHOST_PARADISE_ROLE_ID}>`, embeds: [embed] });
             // Store message ID for later removal
             tradeBlockMessages[team] = tradeBlockMessages[team] || {};
             tradeBlockMessages[team][player] = { messageId: sentMsg.id, threadId: target?.id || null };
@@ -399,7 +424,7 @@ export default {
             const msgRef = tradeBlockMessages[team]?.[player];
             const msgId = msgRef?.messageId || msgRef;
             const threadId = msgRef?.threadId;
-            const thread = threadId ? await (channel?.threads?.fetch(threadId).catch(()=>null)) : null;
+            const thread = threadId ? await (channel?.threads?.fetch(threadId).catch(() => null)) : null;
             const target = thread || channel;
             if (target && msgId) {
                 try {

@@ -84,7 +84,7 @@ function findPlayerDataAcrossRosters(targetName) {
   const targetNorm = normalizeName(targetName);
   const sources = [];
   try {
-    const dir = path.join(process.cwd(), 'data', 'teams_rosters');
+    const dir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
     const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
     for (const file of files) {
       const data = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
@@ -211,7 +211,7 @@ export async function execute_modal_resigning(interaction) {
   // Duplicate guard: block if player exists on another roster
   let dupeTeams = [];
   try {
-    const dir = path.join(process.cwd(), 'data', 'teams_rosters');
+    const dir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
     const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
     for (const file of files) {
       const full = path.join(dir, file);

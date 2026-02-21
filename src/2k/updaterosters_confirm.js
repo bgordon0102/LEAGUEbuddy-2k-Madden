@@ -112,22 +112,21 @@ function moveAssets(source, dest, assets, actorId, results) {
   const now = new Date().toISOString();
   for (const asset of assets) {
     if (asset.type === 'pick') {
-      // Find pick by value or label, move full object
+      // Find pick by value or label, move full original string
       let idx = source.roster.picks.findIndex(p => {
         if (typeof p === 'string') return p === asset.value;
         return p.value === asset.value || p.label === asset.value || p.pick === asset.value;
       });
+      dest.roster.picks = dest.roster.picks || [];
       if (idx !== -1) {
         const originalPick = source.roster.picks[idx];
         source.roster.picks.splice(idx, 1);
-        dest.roster.picks = dest.roster.picks || [];
         dest.roster.picks.push(originalPick);
         results.moves.push(`Pick ${asset.value}: ${source.name} -> ${dest.name}`);
       } else {
-        // If not found, fallback to pushing value
-        dest.roster.picks = dest.roster.picks || [];
+        // If not found, preserve the full original string and do NOT revalue or normalize
         dest.roster.picks.push(asset.value);
-        results.moves.push(`Pick ${asset.value} (not found as object): ${source.name} -> ${dest.name}`);
+        results.moves.push(`Pick ${asset.value} (not found as object, preserved as-is): ${source.name} -> ${dest.name}`);
       }
       continue;
     }

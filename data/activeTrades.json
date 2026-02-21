@@ -1,6 +1,6 @@
 {
-  "builder_1076243288056664234_1771686019446": {
-    "tradeId": "builder_1076243288056664234_1771686019446",
+  "builder_1076243288056664234_1771695086809": {
+    "tradeId": "builder_1076243288056664234_1771695086809",
     "proposerId": "1076243288056664234",
     "coachBId": "1460736622390935562",
     "yourTeam": "Cleveland Cavaliers",
@@ -16,7 +16,7 @@
     "guildId": "1255691165265821747",
     "status": "committee",
     "postedToCommittee": true,
-    "submittedAt": 1771686049297,
-    "expiresAt": 1771772449297
+    "submittedAt": 1771695111674,
+    "expiresAt": 1771781511674
   }
 }

@@ -25,8 +25,8 @@ async function autocomplete(interaction) {
     }, 1900);
     try {
         const focusedValue = interaction.options.getFocused();
-        // Read team names from /teams_rosters/
-        const rostersDir = path.join(process.cwd(), "teams_rosters");
+        // Read team names from /data/2k/teams_rosters/
+        const rostersDir = path.join(process.cwd(), "data", "2k", "teams_rosters");
         let teams = [];
         if (fs.existsSync(rostersDir)) {
             teams = fs.readdirSync(rostersDir)
@@ -68,7 +68,7 @@ async function execute(interaction) {
         responded = true;
         const team = interaction.options.getString("team");
         console.log(`[DEBUG] Requested team: ${team}`);
-        const rostersDir = path.join(process.cwd(), "teams_rosters");
+        const rostersDir = path.join(process.cwd(), "data", "2k", "teams_rosters");
         const schedulePath = path.join(process.cwd(), "data/schedule.json");
         const seasonPath = path.join(process.cwd(), "data/season.json");
         if (!fs.existsSync(rostersDir) || !fs.existsSync(schedulePath) || !fs.existsSync(seasonPath)) {

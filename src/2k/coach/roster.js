@@ -76,7 +76,14 @@ async function execute(interaction) {
             teamPicks = [];
         } else if (data && typeof data === 'object') {
             playersArr = Array.isArray(data.players) ? data.players : [];
-            teamPicks = Array.isArray(data.picks) ? data.picks : [];
+            teamPicks = Array.isArray(data.picks)
+              ? data.picks.map(p => {
+                  if (typeof p === 'object' && p.pick && p.value != null) return p;
+                  const pickStr = typeof p === 'string' ? p : p?.pick || '';
+                  const val = p?.value != null ? Number(p.value) : null;
+                  return val != null ? { pick: pickStr, value: val } : { pick: pickStr };
+                })
+              : [];
         } else {
             playersArr = [];
             teamPicks = [];
@@ -162,9 +169,14 @@ async function execute(interaction) {
                 const displayYear = year || 'Other';
                 let line = pickStr;
                 const storedVal = (typeof pick === 'object' && pick.value != null) ? Number(pick.value) : null;
-                if (year && round) {
-                    const val = storedVal ?? computePickValue2k(year, round, pickNum, seasonYear);
-                    line += ` (Val: ${val.toFixed(0)})`;
+                // Keep traded pick value stable: use stored value if present; otherwise only compute when not VIA
+                const val = storedVal != null
+                  ? storedVal
+                  : (year && round && !pickStr.includes('VIA')
+                    ? computePickValue2k(year, round, pickNum, seasonYear)
+                    : null);
+                if (val != null) {
+                    line += ` (Val: ${Number(val).toFixed(0)})`;
                 }
                 if (typeof pick === 'object') {
                     if (pick.protection && pick.protection !== 'unprotected') {

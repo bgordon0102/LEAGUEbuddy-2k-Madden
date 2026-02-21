@@ -1,1 +1,74 @@
-{}
+{
+  "builder_564228061529374730_1771690068023": {
+    "draftId": "builder_564228061529374730_1771690068023",
+    "userId": "564228061529374730",
+    "guildId": "1255691165265821747",
+    "mode": "2k",
+    "yourTeamName": "Sacramento Kings",
+    "yourTeamId": "Sacramento Kings",
+    "otherTeamName": null,
+    "seasonYear": 2026,
+    "assets": {
+      "your": [],
+      "other": []
+    },
+    "savedAt": 1771690068023
+  },
+  "builder_817610144460308501_1771690732644": {
+    "draftId": "builder_817610144460308501_1771690732644",
+    "userId": "817610144460308501",
+    "guildId": "1255691165265821747",
+    "mode": "2k",
+    "yourTeamName": "Orlando Magic",
+    "yourTeamId": "Orlando Magic",
+    "otherTeamName": "San Antonio Spurs",
+    "seasonYear": 2026,
+    "assets": {
+      "your": [
+        {
+          "type": "player",
+          "label": "Franz Wagner",
+          "pos": "SF / PF",
+          "ovr": 87,
+          "age": "August 27, 2001",
+          "salary": 38661750,
+          "yearsLeft": 5,
+          "contractYears": [
+            {
+              "year": "2025-26",
+              "salary": "$38,661,750",
+              "option": null
+            },
+            {
+              "year": "2026-27",
+              "salary": "$41,754,690",
+              "option": null
+            },
+            {
+              "year": "2027-28",
+              "salary": "$44,847,630",
+              "option": null
+            },
+            {
+              "year": "2028-29",
+              "salary": "$47,940,570",
+              "option": null
+            },
+            {
+              "year": "2029-30",
+              "salary": "$51,033,510",
+              "option": null
+            }
+          ],
+          "yearsInNBA": 5
+        }
+      ],
+      "other": []
+    },
+    "savedAt": 1771690764933,
+    "otherTeamId": "San Antonio Spurs",
+    "otherTeam": "San Antonio Spurs",
+    "assetsSent": "Franz Wagner (SF / PF) — 620.0",
+    "assetsReceived": ""
+  }
+}

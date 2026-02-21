@@ -31,12 +31,12 @@ function findTeamEmoji(teamName) {
     return `<:${emojiName}:${emojiId}>`;
 }
 function loadAllPlayers() {
-    const rostersDir = path.join(process.cwd(), "teams_rosters");
+    const rostersDir = path.join(process.cwd(), "data", "2k", "teams_rosters");
     const files = fs.existsSync(rostersDir) ? fs.readdirSync(rostersDir).filter(f => f.endsWith('.json')) : [];
     let players = [];
     for (const file of files) {
-        const teamFile = file.replace('.json','');
-        const teamDisplay = teamFile.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+        const teamFile = file.replace('.json', '');
+        const teamDisplay = teamFile.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         try {
             const data = readRoster(teamFile);
             const arr = Array.isArray(data) ? data : Array.isArray(data?.players) ? data.players : [];

@@ -291,28 +291,30 @@ function buildAssetSelectRows2k(side, draftId, teamName) {
   ];
   players
     .slice()
-    .sort((a,b)=> (Number(b.ovr||0)) - (Number(a.ovr||0)))
+    .sort((a, b) => (Number(b.ovr || 0)) - (Number(a.ovr || 0)))
     .forEach(p => {
-      const pos = (p.position || '').toUpperCase();
+      const posRaw = (p.position || '').toUpperCase();
+      const primary = posRaw.split(/[\\/]/)[0].trim().split(/\s+/)[0] || posRaw;
       const val = computePlayerValue2k(p);
       const desc = `${p.position || 'UNK'} | OVR ${p.ovr || '??'} | Val ${val}`;
       const opt = new StringSelectMenuOptionBuilder()
-        .setLabel((p.name || 'Player').slice(0,90))
-        .setDescription(desc.slice(0,100))
+        .setLabel((p.name || 'Player').slice(0, 90))
+        .setDescription(desc.slice(0, 100))
         .setValue(`player:${p.name}`);
-      if (pos.includes('G')) buckets[0].items.push(opt);
-      else if (pos.includes('F')) buckets[1].items.push(opt);
-      else buckets[2].items.push(opt);
+      if (primary === 'PG' || primary === 'SG') buckets[0].items.push(opt);
+      else if (primary === 'SF' || primary === 'PF') buckets[1].items.push(opt);
+      else if (primary === 'C') buckets[2].items.push(opt);
+      else buckets[1].items.push(opt); // default unknowns to wings
     });
 
   const rows = buckets
-    .map(b => b.items.slice(0,25))
+    .map(b => b.items.slice(0, 25))
     .filter(arr => arr.length)
     .map((opts, idx) =>
       new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`trade_builder_select_assets|${side}|${draftId}|${buckets[idx].key}|0`)
-          .setPlaceholder(`Add ${side==='yours'?'your':'their'} ${buckets[idx].label}`)
+          .setPlaceholder(`Add ${side === 'yours' ? 'your' : 'their'} ${buckets[idx].label}`)
           .setMinValues(1)
           .setMaxValues(Math.min(5, opts.length))
           .addOptions(opts)
@@ -320,7 +322,7 @@ function buildAssetSelectRows2k(side, draftId, teamName) {
     );
 
   if (picks.length) {
-    const pickOpts = picks.slice(0,25).map(p => ({
+    const pickOpts = picks.slice(0, 25).map(p => ({
       label: p,
       value: `pick:${p}`
     }));
@@ -328,15 +330,14 @@ function buildAssetSelectRows2k(side, draftId, teamName) {
       new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`trade_builder_select_assets|${side}|${draftId}|picks|0`)
-          .setPlaceholder(`Add ${side==='yours'?'your':'their'} picks`)
+          .setPlaceholder(`Add ${side === 'yours' ? 'your' : 'their'} picks`)
           .setMinValues(1)
           .setMaxValues(Math.min(5, pickOpts.length))
           .addOptions(pickOpts)
       )
     );
   }
-  // Discord max 5 rows
-  return rows.slice(0,5);
+  return rows;
 }
 
 function summarizeAssets2k(draft) {
@@ -350,11 +351,16 @@ function summarizeAssets2k(draft) {
         lines.push(`${item.label} (${item.pos || 'UNK'}) — ${val.toFixed(1)}`);
       } else if (item.type === 'pick') {
         const raw = item.raw || '';
-        const parsed = parsePickValue2k(raw, draft.seasonYear);
-        const val = item.value ?? parsed?.value ?? 0;
-        const label = parsed?.label || raw || 'Pick';
-        total += val;
-        lines.push(`${label} — ${val.toFixed(1)}`);
+        // Prevent revaluation if pick string contains 'VIA'
+        if (raw.includes('VIA')) {
+          lines.push(raw);
+        } else {
+          const parsed = parsePickValue2k(raw, draft.seasonYear);
+          const val = item.value ?? parsed?.value ?? 0;
+          const label = parsed?.label || raw || 'Pick';
+          total += val;
+          lines.push(`${label} — ${val.toFixed(1)}`);
+        }
       }
     });
     return { total, lines };
@@ -509,6 +515,13 @@ export async function execute(interaction) {
         return;
       }
       await interaction.reply({ content: `Select assets for ${side === 'yours' ? 'your' : 'their'} team`, components: rows.slice(0, 5), ephemeral: true });
+      if (rows.length > 5) {
+        await interaction.followUp({
+          content: 'More options (picks / remaining positions):',
+          components: rows.slice(5, 10),
+          ephemeral: true,
+        });
+      }
       return;
     }
     if (!leagueId) return;
@@ -543,7 +556,7 @@ export async function execute(interaction) {
           const p = rosterMap.get(normalizeName(name));
           if (!p) return;
           if (assetsArr.find(a => a.type === 'player' && normalizeName(a.label) === normalizeName(name))) return;
-          const salary = (Array.isArray(p.contractYears) && p.contractYears[0]?.salary) ? Number(String(p.contractYears[0].salary).replace(/[^0-9.]/g,'')) : 0;
+          const salary = (Array.isArray(p.contractYears) && p.contractYears[0]?.salary) ? Number(String(p.contractYears[0].salary).replace(/[^0-9.]/g, '')) : 0;
           const yearsInNBA = Number(p.yearsInNBA || 0);
           const ageVal = (() => {
             if (p.birthdate) return p.birthdate; // keep birthdate string if available

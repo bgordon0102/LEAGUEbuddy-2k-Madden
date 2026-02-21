@@ -1,12 +1,20 @@
-// Calculate approve/deny counts for logging and replies
-const votesArr = Object.values(entry.votes);
-const approveCount = votesArr.filter(v => v === 'approve').length;
-const denyCount = votesArr.filter(v => v === 'deny').length;
+function ensurePickArray(val) {
+    if (!val) return [];
+    if (Array.isArray(val)) return val;
+    if (typeof val === "string") {
+        return val
+            .split(/[,\n]/)
+            .map(s => s.trim())
+            .filter(Boolean);
+    }
+    return [];
+}
 // Calculate approve/deny counts for logging and replies
 // ...existing code...
 import { ButtonInteraction, EmbedBuilder } from "discord.js";
 import fs from "fs";
 import path from "path";
+import { ensurePickValues, computePickValue2k } from "../shared/rosterUtils.js";
 
 export const customId = /^committee_(approve|deny)_/;
 // Handles committee voting for trade proposals
@@ -120,15 +128,25 @@ export async function execute(interaction) {
     }
     // Log the vote for this user and finalize immediately for 2K
     entry.votes = entry.votes || {};
-    let finalized = false;
+    // Record vote
     if (interaction.customId.startsWith('committee_approve_')) {
         entry.votes[interaction.user.id] = 'approve';
-        entry.trade.status = 'approved';
-        finalized = true;
     } else if (interaction.customId.startsWith('committee_deny_')) {
         entry.votes[interaction.user.id] = 'deny';
+    }
+
+    const approveCount = Object.values(entry.votes).filter(v => v === 'approve').length;
+    const denyCount = Object.values(entry.votes).filter(v => v === 'deny').length;
+    // First to 3 decides
+    let finalized = false;
+    if (approveCount >= 3) {
+        entry.trade.status = 'approved';
+        finalized = true;
+    } else if (denyCount >= 3) {
         entry.trade.status = 'denied';
         finalized = true;
+    } else {
+        entry.trade.status = 'pending';
     }
     console.log('[DEBUG] Vote count', { approveCount, denyCount, finalized, tradeStatus: entry.trade.status });
     pendingTrades[messageId] = entry;
@@ -161,15 +179,25 @@ export async function execute(interaction) {
     // Only update rosters/picks and post to correct channel based on trade status
     if (finalized && trade.status === 'approved') {
         console.log('[DEBUG] Trade approval block reached', { trade });
+        const sentPicksRaw = trade.picks || trade.picksSent || trade.assetsSent;
+        const receivedPicksRaw = trade.picksTo || trade.picksReceived || trade.assetsReceived;
         console.log('[DEBUG] Entering roster update block for approved trade:', {
             messageId,
             yourTeam: trade.yourTeam,
             otherTeam: trade.otherTeam,
             assetsSent: trade.assetsSent,
             assetsReceived: trade.assetsReceived,
-            sentPicks: trade.picks || trade.picksSent,
-            receivedPicks: trade.picksTo || trade.picksReceived
+            sentPicksRaw,
+            receivedPicksRaw,
         });
+
+        const sentPicks = ensurePickArray(sentPicksRaw).length
+            ? ensurePickArray(sentPicksRaw)
+            : extractPicks(trade.assetsSent);
+
+        const receivedPicks = ensurePickArray(receivedPicksRaw).length
+            ? ensurePickArray(receivedPicksRaw)
+            : extractPicks(trade.assetsReceived);
         // Roster update logic
         // ...existing code...
         // Roster update logic
@@ -180,8 +208,8 @@ export async function execute(interaction) {
         const coachRoleB = getCoachRole(trade.otherTeam);
         let teamARoster, teamBRoster;
         try {
-            teamARoster = JSON.parse(fs.readFileSync(teamAFile, 'utf8'));
-            teamBRoster = JSON.parse(fs.readFileSync(teamBFile, 'utf8'));
+            teamARoster = ensurePickValues(JSON.parse(fs.readFileSync(teamAFile, 'utf8')));
+            teamBRoster = ensurePickValues(JSON.parse(fs.readFileSync(teamBFile, 'utf8')));
         } catch (err) {
             console.error('Failed to read roster files for trade:', err);
             await interaction.reply({ content: 'Trade approved but roster files missing/corrupt; manual fix required.', flags: 64 });
@@ -210,8 +238,50 @@ export async function execute(interaction) {
                 }
             }
         }
-        // Move picks
-        function movePicks(pickNames, fromRoster, toRoster, fromTeamName) {
+        // Build pick->value map from embed so values stay fixed after moves
+        function buildPickValueMap(tradeObj) {
+            const map = {};
+            const lines = []
+                .concat(String(tradeObj.assetsSent || '').split(/\n|,/))
+                .concat(String(tradeObj.assetsReceived || '').split(/\n|,/));
+            for (const raw of lines) {
+                const line = raw.trim();
+                if (!line) continue;
+                const parts = line.split(/—|-/);
+                if (parts.length < 2) continue;
+                const labelPart = parts[0].trim();
+                const valNum = parseFloat(parts.slice(1).join('-').trim());
+                if (!Number.isFinite(valNum)) continue;
+                const norm = labelPart
+                    .replace(/\s*\(.*\)/, '')
+                    .replace(/round\s*1/i, '1st')
+                    .replace(/round\s*2/i, '2nd')
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]/g, '');
+                map[norm] = valNum;
+            }
+            return map;
+        }
+
+        const pickValueMap = buildPickValueMap(trade);
+        function getSeasonYear() {
+            try {
+                const seasonPath = path.join(process.cwd(), 'data', 'season.json');
+                if (fs.existsSync(seasonPath)) {
+                    const s = JSON.parse(fs.readFileSync(seasonPath, 'utf8'));
+                    if (s.seasonYear) return Number(s.seasonYear);
+                    if (s.seasonNo) return 2025 + Number(s.seasonNo); // season 1 => 2026
+                }
+            } catch { /* ignore */ }
+            return new Date().getFullYear();
+        }
+
+        // Move picks, preserving stored values
+        function movePicks(pickNames, fromRoster, toRoster, fromTeamName, pickValueMap) {
+            if (!Array.isArray(pickNames)) {
+                console.warn('[movePicks] pickNames was not array:', pickNames);
+                return;
+            }
             function parsePick(val) {
                 let str = typeof val === 'string' ? val : val.pick || val.label || '';
                 // Remove (Val: ...) annotation for matching
@@ -231,7 +301,15 @@ export async function execute(interaction) {
                 // Extract protection annotation if present
                 const protectionMatch = str.match(/\(([^)]+protected[^)]*)\)/);
                 const protection = protectionMatch ? protectionMatch[1] : null;
-                return { year, round, protection, raw: val };
+                const valMatch = (typeof val === 'object' && val.value != null)
+                  ? Number(val.value)
+                  : (() => { const m = String(val).match(/val:\s*([0-9.]+)/i); return m ? Number(m[1]) : null; })();
+                const normKey = str
+                  .replace(/\s*\(.*\)/, '')
+                  .replace(/round\s*1/i, '1st')
+                  .replace(/round\s*2/i, '2nd')
+                  .replace(/[^a-z0-9]/g, '');
+                return { year, round, protection, raw: val, value: valMatch, normKey };
             }
             for (const pick of pickNames) {
                 const tradePick = parsePick(pick);
@@ -268,13 +346,23 @@ export async function execute(interaction) {
                     });
                     continue;
                 }
-                let movedPick = fromRoster.picks[idx];
+                const original = fromRoster.picks[idx];
+                const originalParsed = parsePick(original);
+                // start with the original pick string/label
+                let movedPick = (typeof original === 'string' ? original : original?.pick || '').trim();
                 // If the traded pick has protection, annotate it for the receiving roster
                 if (tradePick.protection) {
                     // Format: "2027 1st (lottery protected)"
                     const basePick = movedPick.replace(/\(([^)]+protected[^)]*)\)/, '').trim();
                     movedPick = `${basePick} (${tradePick.protection})`;
                 }
+                // Add VIA annotation for receiving roster
+                movedPick = `${movedPick} (VIA ${fromTeamName})`;
+                // Preserve value; if missing, compute once and store
+                const storedVal = (originalParsed.value != null && originalParsed.value !== undefined)
+                  ? originalParsed.value
+                  : (pickValueMap[tradePick.normKey] ?? computePickValue2k(tradePick.year, tradePick.round, null, getSeasonYear(), tradePick.protection));
+                movedPick = { pick: movedPick, value: storedVal };
                 console.log('[movePicks][MOVE]', {
                     movedPick,
                     fromTeam: fromTeamName,
@@ -302,8 +390,6 @@ export async function execute(interaction) {
         const sentPlayers = trade.players || trade.assetsSent.split(',').map(s => s.trim()).filter(s => s && !s.match(/pick/i));
         const receivedPlayers = trade.playersTo || trade.assetsReceived.split(',').map(s => s.trim()).filter(s => s && !s.match(/pick/i));
         // Robust pick extraction
-        const sentPicks = trade.picks || trade.picksSent || extractPicks(trade.assetsSent);
-        const receivedPicks = trade.picksTo || trade.picksReceived || extractPicks(trade.assetsReceived);
         console.log('[DEBUG] Calling movePicks', {
             sentPicks,
             receivedPicks,
@@ -311,16 +397,21 @@ export async function execute(interaction) {
             teamBRosterPicks: teamBRoster.picks,
             tradeObj: trade
         });
+        // Ensure picks have fixed values before any moves
+        teamARoster = ensurePickValues(teamARoster);
+        teamBRoster = ensurePickValues(teamBRoster);
+
         movePlayers(sentPlayers, teamARoster, teamBRoster);
         movePlayers(receivedPlayers, teamBRoster, teamARoster);
-        movePicks(sentPicks, teamARoster, teamBRoster, trade.yourTeam);
-        movePicks(receivedPicks, teamBRoster, teamARoster, trade.otherTeam);
+        movePicks(sentPicks, teamARoster, teamBRoster, trade.yourTeam, pickValueMap);
+        movePicks(receivedPicks, teamBRoster, teamARoster, trade.otherTeam, pickValueMap);
         try {
             fs.writeFileSync(teamAFile, JSON.stringify(teamARoster, null, 2));
             fs.writeFileSync(teamBFile, JSON.stringify(teamBRoster, null, 2));
         } catch (err) {
             console.error('Failed to write updated rosters:', err);
         }
+        let approvedChannel;
         try {
             approvedChannel = await interaction.client.channels.fetch(APPROVED_CHANNEL_ID);
         } catch (err) {
@@ -328,7 +419,13 @@ export async function execute(interaction) {
         }
         if (approvedChannel) {
             try {
-                const tagLine = `${GHOST_PARADISE_ROLE_ID ? `<@&${GHOST_PARADISE_ROLE_ID}> ` : ''}${coachRoleA ? `<@&${coachRoleA}>` : ''}${coachRoleB ? ` <@&${coachRoleB}>` : ''}`;
+                // Tag Ghost Paradise and both coaches for approved trades
+                const tags = [
+                  GHOST_PARADISE_ROLE_ID ? `<@&${GHOST_PARADISE_ROLE_ID}>` : null,
+                  coachRoleA ? `<@&${coachRoleA}>` : null,
+                  coachRoleB ? `<@&${coachRoleB}>` : null,
+                ].filter(Boolean).join(' ');
+                const tagLine = tags || null;
                 await approvedChannel.send({
                     content: tagLine || null,
                     embeds: [embed],
@@ -353,8 +450,13 @@ export async function execute(interaction) {
         }
         if (deniedChannel) {
             try {
-                // Only tag Ghost Paradise role if trade is denied
-                const tagLine = GHOST_PARADISE_ROLE_ID ? `<@&${GHOST_PARADISE_ROLE_ID}>` : null;
+                // Tag Ghost Paradise and both coaches for denied trades too
+                const tags = [
+                  GHOST_PARADISE_ROLE_ID ? `<@&${GHOST_PARADISE_ROLE_ID}>` : null,
+                  getCoachRole(trade.yourTeam) ? `<@&${getCoachRole(trade.yourTeam)}>` : null,
+                  getCoachRole(trade.otherTeam) ? `<@&${getCoachRole(trade.otherTeam)}>` : null,
+                ].filter(Boolean).join(' ');
+                const tagLine = tags || null;
                 await deniedChannel.send({ content: tagLine, embeds: [embed] });
             } catch (err) {
                 console.error('Failed to send denied trade message:', err);
