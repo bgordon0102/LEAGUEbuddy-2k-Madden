@@ -42,6 +42,8 @@ function writePending(data) {
 
 function applySignings(entries, actorId) {
   const results = { applied: [], missing: [] };
+  // Load Free Agency roster for full player info
+  const faData = readRoster('free agency');
   for (const entry of entries) {
     const data = readRoster(entry.team);
     if (!data) {
@@ -49,14 +51,26 @@ function applySignings(entries, actorId) {
       continue;
     }
     const { roster, rosterPath } = data;
-    const payload = {
-      name: entry.player,
-      position: entry.position || undefined,
-      lastSigned: 'transaction',
-      lastUpdatedBy: actorId,
-      lastUpdatedAt: new Date().toISOString(),
-    };
-    upsertPlayer(roster, entry.player, payload);
+    // Find player in Free Agency
+    let faPlayer = null;
+    if (faData && faData.roster && Array.isArray(faData.roster.players)) {
+      faPlayer = faData.roster.players.find(p => normalizeName(p.name) === normalizeName(entry.player));
+    }
+    // Strictly copy all fields from free agency profile, only overlay contract fields
+    if (!faPlayer) {
+      results.missing.push(`${entry.player} not found in Free Agency`);
+      continue;
+    }
+    let mergedPlayer = { ...faPlayer };
+    // Overlay contract fields and transaction fields only
+    if (entry.contractYears) mergedPlayer.contractYears = entry.contractYears;
+    if (entry.salaryPerYear) mergedPlayer.salaryPerYear = entry.salaryPerYear;
+    if (entry.salaryText) mergedPlayer.salaryText = entry.salaryText;
+    if (entry.contractYearsText) mergedPlayer.contractYearsText = entry.contractYearsText;
+    mergedPlayer.lastSigned = 'transaction';
+    mergedPlayer.lastUpdatedBy = actorId;
+    mergedPlayer.lastUpdatedAt = new Date().toISOString();
+    upsertPlayer(roster, mergedPlayer);
     removePlayerFromOtherRostersFuzzy(entry.player, rosterPath);
     saveRoster(rosterPath, roster);
     results.applied.push(`${entry.player} -> ${entry.team}`);

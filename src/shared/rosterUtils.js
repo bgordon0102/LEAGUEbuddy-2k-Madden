@@ -11,7 +11,8 @@ export function get2kRostersDir() {
 }
 
 export function normalizeName(name) {
-  return name ? name.trim() : '';
+  if (!name) return '';
+  return name.trim().toLowerCase();
 }
 
 // --- NBA 2K trade value model ---
@@ -532,7 +533,12 @@ export function resolveTeamNameForRoster(name) {
       t.city,
     ].filter(Boolean).map(norm);
     const n = norm(input);
-    return names.some(v => v === n || v.includes(n) || n.includes(v));
+    return names.some(v => {
+      if (!v) return false;
+      // Abbreviations (<=3 chars) must match exactly to avoid substring collisions (e.g., "MB" in "Timberwolves")
+      if (v.length <= 3) return v === n;
+      return v === n || v.includes(n) || n.includes(v);
+    });
   });
   return match?.name || input;
 }
@@ -546,17 +552,43 @@ function rosterFileCandidates(team) {
   add(cleaned.replace(/\s+/g, '_'));
   add(cleaned.replace(/[^A-Za-z0-9]+/g, '_'));
   add(cleaned.replace(/&/g, 'and').replace(/[^A-Za-z0-9]+/g, '_'));
+  add(cleaned + '.json'); // allow bare name or with extension
   return [...variants].filter(Boolean);
 }
 
-export function readRoster(team) {
-  const rostersDirs = [
-    path.join(process.cwd(), 'data', '2k', 'teams_rosters'),
-    path.join(process.cwd(), 'teams_rosters'),
-    path.join(process.cwd(), 'data', 'teams_rosters')
-  ];
+export function readRoster(team, opts = {}) {
+  const aliasMap = {
+    heat: 'Miami Heat',
+    suns: 'Phoenix Suns',
+    celtics: 'Boston Celtics',
+    knicks: 'New York Knicks',
+    nets: 'Brooklyn Nets',
+    lakers: 'Los Angeles Lakers',
+    clippers: 'Los Angeles Clippers',
+    warriors: 'Golden State Warriors',
+    sixers: 'Philadelphia 76ers',
+    '76ers': 'Philadelphia 76ers',
+    pels: 'New Orleans Pelicans',
+    pelicans: 'New Orleans Pelicans',
+    wolves: 'Minnesota Timberwolves',
+    twolves: 'Minnesota Timberwolves',
+    blazers: 'Portland Trail Blazers',
+    mavs: 'Dallas Mavericks',
+    spurs: 'San Antonio Spurs',
+    jazz: 'Utah Jazz',
+    bucks: 'Milwaukee Bucks',
+  };
+  const force2k = !!opts.force2k;
+  const alias = aliasMap[String(team || '').toLowerCase()] || team;
+  const rostersDirs = force2k
+    ? [path.join(process.cwd(), 'data', '2k', 'teams_rosters')]
+    : [
+        path.join(process.cwd(), 'data', '2k', 'teams_rosters'),
+        path.join(process.cwd(), 'teams_rosters'),
+        path.join(process.cwd(), 'data', 'teams_rosters'),
+      ];
 
-  const candidates = rosterFileCandidates(team).map(name => `${name}.json`);
+  const candidates = rosterFileCandidates(alias).map(name => `${name}.json`);
 
   for (const dir of rostersDirs) {
     if (!fs.existsSync(dir)) continue;
@@ -565,9 +597,11 @@ export function readRoster(team) {
       const full = path.join(dir, candidate);
       if (fs.existsSync(full)) {
         try {
-          return JSON.parse(fs.readFileSync(full, 'utf-8'));
+          const raw = JSON.parse(fs.readFileSync(full, 'utf-8'));
+          const roster = normalizeRosterShape(raw);
+          return { rosterPath: full, roster };
         } catch {
-          return [];
+          return null;
         }
       }
     }
@@ -578,14 +612,31 @@ export function readRoster(team) {
       const lower = candidates.map(c => c.toLowerCase());
       const match = files.find(f => lower.includes(f.toLowerCase()));
       if (match) {
-        return JSON.parse(fs.readFileSync(path.join(dir, match), 'utf-8'));
+        const raw = JSON.parse(fs.readFileSync(path.join(dir, match), 'utf-8'));
+        const roster = normalizeRosterShape(raw);
+        return { rosterPath: path.join(dir, match), roster };
       }
     } catch {
       // ignore and try next dir
     }
   }
 
-  return [];
+  return null;
+}
+
+function normalizeRosterShape(raw) {
+  if (!raw) return { players: [], picks: [] };
+  if (Array.isArray(raw)) return { players: raw, picks: [] };
+  if (Array.isArray(raw.players)) {
+    return { ...raw, players: raw.players, picks: Array.isArray(raw.picks) ? raw.picks : [] };
+  }
+  if (Array.isArray(raw.roster?.players)) {
+    return { ...raw.roster, players: raw.roster.players, picks: Array.isArray(raw.roster.picks) ? raw.roster.picks : [] };
+  }
+  if (Array.isArray(raw.players)) {
+    return { players: raw.players, picks: Array.isArray(raw.picks) ? raw.picks : [] };
+  }
+  return { players: [], picks: [] };
 }
 
 // Ensure pick entries have a fixed value; convert strings to {pick, value}
@@ -625,11 +676,41 @@ export function ensurePickValues(roster) {
   return roster;
 }
 
-export function saveRoster(team, roster) {
-  const targets = [
-    path.join(process.cwd(), 'data', '2k', 'teams_rosters', `${team}.json`),
-    path.join(process.cwd(), 'data', 'teams_rosters', `${team}.json`)
-  ];
+export function saveRoster(teamOrPath, roster) {
+  // If a path is provided, write directly
+  if (typeof teamOrPath === 'string' && /\.json$/i.test(teamOrPath)) {
+    try {
+      fs.mkdirSync(path.dirname(teamOrPath), { recursive: true });
+      fs.writeFileSync(teamOrPath, JSON.stringify(roster, null, 2));
+      return true;
+    } catch (err) {
+      console.error('[saveRoster] failed to write path', teamOrPath, err);
+      return false;
+    }
+  }
+
+  const team = teamOrPath;
+  const candidates = rosterFileCandidates(team).map(name => `${name}.json`);
+  const targets = [];
+
+  // Prefer existing files in 2k rosters to avoid creating new variants
+  const dir2k = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
+  if (fs.existsSync(dir2k)) {
+    const files = fs.readdirSync(dir2k).filter(f => f.endsWith('.json'));
+    const lowerFiles = files.map(f => f.toLowerCase());
+    for (const c of candidates) {
+      const idx = lowerFiles.indexOf(c.toLowerCase());
+      if (idx !== -1) {
+        targets.push(path.join(dir2k, files[idx]));
+        break; // first existing match is enough
+      }
+    }
+    // If no existing match, still add first candidate in 2k dir
+    targets.push(path.join(dir2k, candidates[0]));
+  }
+
+  // Fallback legacy dir
+  targets.push(path.join(process.cwd(), 'data', 'teams_rosters', `${candidates[0]}`));
   // Save to first available directory (preferring 2k path) and ensure dir exists
   for (const file of targets) {
     try {
@@ -640,17 +721,27 @@ export function saveRoster(team, roster) {
       // try next target
     }
   }
+  console.error('[saveRoster] failed for team', team);
   return false;
 }
 
 export function upsertPlayer(roster, player) {
-  const existingIndex = roster.findIndex(p => p.id === player.id || normalizeName(p.name) === normalizeName(player.name));
-  if (existingIndex >= 0) {
-    roster[existingIndex] = { ...roster[existingIndex], ...player };
-  } else {
-    roster.push(player);
+  const arr = Array.isArray(roster) ? roster : Array.isArray(roster?.players) ? roster.players : null;
+  if (!Array.isArray(arr)) {
+    throw new TypeError('upsertPlayer expected roster array');
   }
-  return roster;
+  const ovrNum = (p = {}) => Number(p.ovr ?? p.OVR ?? p.rating ?? p.Rating ?? p.overall ?? p.Overall ?? 0);
+  const existingIndex = arr.findIndex(p => p.id === player.id || normalizeName(p.name) === normalizeName(player.name));
+  if (existingIndex >= 0) {
+    arr[existingIndex] = { ...arr[existingIndex], ...player };
+  } else {
+    arr.push(player);
+  }
+  // keep roster sorted by OVR descending for display/exports
+  arr.sort((a, b) => ovrNum(b) - ovrNum(a));
+  // keep wrapper in sync
+  if (Array.isArray(roster?.players)) roster.players = arr;
+  return arr;
 }
 
 // Remove a player from all other rosters (fuzzy by name); returns true if removed

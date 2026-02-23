@@ -1,1 +1,323 @@
-{}
+{
+  "1475175579748929699": {
+    "trade": {
+      "tradeId": "builder_670446898695503897_1771731828284",
+      "proposerId": "670446898695503897",
+      "coachBId": "1460735355568525413",
+      "yourTeam": "San Antonio Spurs",
+      "otherTeam": "Charlotte Hornets",
+      "assetsSent": "Keldon Johnson (SF / PF) — 380.0\n2026 Round 1 — 240.0",
+      "assetsReceived": "LaMelo Ball (PG / SG) — 600.0",
+      "picksSent": [
+        "2026 Round 1"
+      ],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "pending",
+      "postedToCommittee": true,
+      "submittedAt": 1771731853949,
+      "expiresAt": 1771818253949
+    },
+    "votes": {
+      "1076243288056664234": "deny",
+      "1195843329477328978": "approve",
+      "670446898695503897": "approve"
+    }
+  },
+  "1475175586631651470": {
+    "trade": {
+      "tradeId": "builder_817610144460308501_1771778899900",
+      "proposerId": "817610144460308501",
+      "coachBId": "1460735355568525413",
+      "yourTeam": "Orlando Magic",
+      "otherTeam": "Charlotte Hornets",
+      "assetsSent": "Franz Wagner (SF / PF) — 620.0\nJonathan Isaac (PF / C) — 130.0",
+      "assetsReceived": "Brandon Miller (SG / SF) — 600.0\nJosh Green (SF / SG) — 145.0",
+      "picksSent": [],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "pending",
+      "postedToCommittee": true,
+      "submittedAt": 1771779033300,
+      "expiresAt": 1771865433300
+    },
+    "votes": {
+      "1076243288056664234": "approve",
+      "1195843329477328978": "approve"
+    }
+  },
+  "1475186764539891862": {
+    "trade": {
+      "tradeId": "builder_840269359578611753_1771777739717",
+      "proposerId": "840269359578611753",
+      "coachBId": "1460734780600619193",
+      "yourTeam": "Minnesota Timberwolves",
+      "otherTeam": "Chicago Bulls",
+      "assetsSent": "2026 Round 1 — 240.0\n2028 Round 1 — 118.0\n2026 Round 2 — 86.0\n2028 Round 2 — 50.0",
+      "assetsReceived": "Josh Giddey (PG / SG) — 455.0",
+      "picksSent": [
+        "2026 Round 1",
+        "2028 Round 1",
+        "2026 Round 2",
+        "2028 Round 2"
+      ],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "pending",
+      "postedToCommittee": true,
+      "submittedAt": 1771777864731,
+      "expiresAt": 1771864264731
+    },
+    "votes": {
+      "670446898695503897": "approve"
+    }
+  },
+  "1475201534210867431": {
+    "trade": {
+      "tradeId": "builder_323517644785582081_1771785738579",
+      "proposerId": "323517644785582081",
+      "coachBId": "1460736566103244808",
+      "yourTeam": "Houston Rockets",
+      "otherTeam": "Golden State Warriors",
+      "assetsSent": "Alperen Sengun (C / PF) — 620.0",
+      "assetsReceived": "2026 Round 1 — 240.0\n2027 Round 1 — 168.0\n2029 Round 1 — 100.0\nGary Payton II (SF / PF) — 160.0",
+      "picksSent": [],
+      "picksReceived": [
+        "2026 Round 1",
+        "2027 Round 1",
+        "2029 Round 1"
+      ],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "committee",
+      "postedToCommittee": true,
+      "submittedAt": 1771785838096,
+      "expiresAt": 1771872238096
+    },
+    "votes": {}
+  },
+  "1475254807051764029": {
+    "trade": {
+      "tradeId": "builder_1076243288056664234_1771798489224",
+      "proposerId": "1076243288056664234",
+      "coachBId": "1460736265682026779",
+      "yourTeam": "Cleveland Cavaliers",
+      "otherTeam": "San Antonio Spurs",
+      "assetsSent": "2026 Round 1 — 240.0\n2027 Round 1 (lottery protected) — 138.0",
+      "assetsReceived": "Dylan Harper (PG / SG) — 410.0",
+      "picksSent": [
+        "2026 Round 1",
+        "2027 Round 1 (lottery protected)"
+      ],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "denied",
+      "postedToCommittee": true,
+      "submittedAt": 1771798527690,
+      "expiresAt": 1771884927690
+    },
+    "votes": {
+      "1076243288056664234": "approve",
+      "670446898695503897": "approve",
+      "1195843329477328978": "approve"
+    }
+  },
+  "1475256444625621094": {
+    "trade": {
+      "tradeId": "builder_1390369353605840977_1771798878241",
+      "proposerId": "1390369353605840977",
+      "coachBId": "1460734885667934373",
+      "yourTeam": "Phoenix Suns",
+      "otherTeam": "Cleveland Cavaliers",
+      "assetsSent": "Jalen Green (SG / PG) — 425.0\n2026 Round 2 — 86.0",
+      "assetsReceived": "James Harden (PG / SG) — 515.0",
+      "picksSent": [
+        "2026 Round 2"
+      ],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "denied",
+      "postedToCommittee": true,
+      "submittedAt": 1771798937274,
+      "expiresAt": 1771885337274
+    },
+    "votes": {
+      "1076243288056664234": "approve"
+    }
+  },
+  "1475263737094213845": {
+    "trade": {
+      "tradeId": "builder_1076243288056664234_1771800648823",
+      "proposerId": "1076243288056664234",
+      "coachBId": "1460736336150528094",
+      "yourTeam": "Cleveland Cavaliers",
+      "otherTeam": "Phoenix Suns",
+      "assetsSent": "Jaylon Tyson (SF / PF) — 395.0",
+      "assetsReceived": "Grayson Allen (SG / SF) — 425.0",
+      "picksSent": [],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "approved_pending_2k",
+      "postedToCommittee": true,
+      "submittedAt": 1771800675999,
+      "expiresAt": 1771887075999,
+      "proofUrl": "https://cdn.discordapp.com/attachments/1425555422063890443/1475265766491291668/006_-_C_Luke_Causey.png?ex=699cdbcf&is=699b8a4f&hm=37c11e8f98e1c7a2c3324a0953f37c20d04569c6751442beda903398a4b5b066&",
+      "proofBy": "1076243288056664234",
+      "proofAt": 1771801168038
+    },
+    "votes": {
+      "1076243288056664234": "approve",
+      "670446898695503897": "approve"
+    }
+  },
+  "1475265424169107506": {
+    "trade": {
+      "tradeId": "builder_1076243288056664234_1771801052592",
+      "proposerId": "1076243288056664234",
+      "coachBId": "1460736336150528094",
+      "yourTeam": "Cleveland Cavaliers",
+      "otherTeam": "Phoenix Suns",
+      "assetsSent": "Jaylon Tyson (SF / PF) — 395.0",
+      "assetsReceived": "Jalen Green (SG / PG) — 425.0",
+      "picksSent": [],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "approved_pending_2k",
+      "postedToCommittee": true,
+      "submittedAt": 1771801076261,
+      "expiresAt": 1771887476261
+    },
+    "votes": {
+      "670446898695503897": "approve",
+      "1076243288056664234": "approve"
+    }
+  },
+  "1475270835865391185": {
+    "trade": {
+      "tradeId": "builder_1076243288056664234_1771802286089",
+      "proposerId": "1076243288056664234",
+      "coachBId": "1460736336150528094",
+      "yourTeam": "Cleveland Cavaliers",
+      "otherTeam": "Phoenix Suns",
+      "assetsSent": "Jaylon Tyson (SF / PF) — 395.0",
+      "assetsReceived": "Jalen Green (SG / PG) — 425.0",
+      "picksSent": [],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "approved_pending_2k",
+      "postedToCommittee": true,
+      "submittedAt": 1771802367405,
+      "expiresAt": 1771888767405,
+      "proofUrl": "https://cdn.discordapp.com/attachments/1425555422063890443/1475271095744593920/006_-_C_Luke_Causey.png?ex=699ce0c6&is=699b8f46&hm=9f6759489a827ec2a8daecbe494fc6e11e02e0b713dc65aadf87754c94342c8e&",
+      "proofBy": "1076243288056664234",
+      "proofAt": 1771802438741
+    },
+    "votes": {
+      "1076243288056664234": "approve"
+    },
+    "proofRequested": true
+  },
+  "1475272364240539729": {
+    "trade": {
+      "tradeId": "builder_1076243288056664234_1771802707139",
+      "proposerId": "1076243288056664234",
+      "coachBId": "1460736336150528094",
+      "yourTeam": "Cleveland Cavaliers",
+      "otherTeam": "Phoenix Suns",
+      "assetsSent": "Jaylon Tyson (SF / PF) — 395.0",
+      "assetsReceived": "Jalen Green (SG / PG) — 425.0",
+      "picksSent": [],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "approved_pending_2k",
+      "postedToCommittee": true,
+      "submittedAt": 1771802731896,
+      "expiresAt": 1771889131896
+    },
+    "votes": {
+      "1076243288056664234": "approve"
+    },
+    "proofRequested": true
+  },
+  "1475272999082004500": {
+    "trade": {
+      "tradeId": "builder_1076243288056664234_1771802858502",
+      "proposerId": "1076243288056664234",
+      "coachBId": "1460736336150528094",
+      "yourTeam": "Cleveland Cavaliers",
+      "otherTeam": "Phoenix Suns",
+      "assetsSent": "Jaylon Tyson (SF / PF) — 395.0",
+      "assetsReceived": "Jalen Green (SG / PG) — 425.0",
+      "picksSent": [],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "approved_pending_2k",
+      "postedToCommittee": true,
+      "submittedAt": 1771802882755,
+      "expiresAt": 1771889282755
+    },
+    "votes": {
+      "1076243288056664234": "approve"
+    },
+    "proofRequested": true
+  },
+  "1475273572741157044": {
+    "trade": {
+      "tradeId": "builder_1076243288056664234_1771802992145",
+      "proposerId": "1076243288056664234",
+      "coachBId": "1460736336150528094",
+      "yourTeam": "Cleveland Cavaliers",
+      "otherTeam": "Phoenix Suns",
+      "assetsSent": "Jaylon Tyson (SF / PF) — 395.0",
+      "assetsReceived": "Jalen Green (SG / PG) — 425.0",
+      "picksSent": [],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "approved_pending_2k",
+      "postedToCommittee": true,
+      "submittedAt": 1771803019944,
+      "expiresAt": 1771889419944
+    },
+    "votes": {
+      "670446898695503897": "approve"
+    },
+    "proofRequested": true
+  },
+  "1475274712438280306": {
+    "trade": {
+      "tradeId": "builder_1076243288056664234_1771803267782",
+      "proposerId": "1076243288056664234",
+      "coachBId": "1460736336150528094",
+      "yourTeam": "Cleveland Cavaliers",
+      "otherTeam": "Phoenix Suns",
+      "assetsSent": "Jaylon Tyson (SF / PF) — 395.0",
+      "assetsReceived": "Jalen Green (SG / PG) — 425.0",
+      "picksSent": [],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "approved_pending_2k",
+      "postedToCommittee": true,
+      "submittedAt": 1771803290454,
+      "expiresAt": 1771889690454,
+      "proofUrl": "https://cdn.discordapp.com/attachments/1425555422063890443/1475285473457999962/IMG_3197.jpg?ex=699cee2a&is=699b9caa&hm=1d96ee2ebd3ef125693570276157805693441c2ba1a54ca0903db38152c98466&",
+      "proofBy": "1390369353605840977",
+      "proofAt": 1771805866556
+    },
+    "votes": {
+      "1076243288056664234": "approve"
+    },
+    "proofRequested": true
+  }
+}

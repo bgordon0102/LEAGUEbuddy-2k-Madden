@@ -345,20 +345,6 @@
       ]
     },
     {
-      "name": "Pete Nance",
-      "position": "PF / C",
-      "height": "6'10\" (208cm)",
-      "weight": "230lbs (104kg)",
-      "archetype": "Stretch Rim Wrecker",
-      "birthdate": "February 19, 2000",
-      "yearsInNBA": "3",
-      "wingspan": "7'2\" (218cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Pete-Nance-2K-Rating.png",
-      "ovr": "72",
-      "prior_to_nba": "North Carolina",
-      "nationality": "United States"
-    },
-    {
       "name": "Andre Jackson Jr.",
       "position": "SF / SG",
       "height": "6'6\" (198cm)",
@@ -404,20 +390,48 @@
           "option": null
         }
       ]
+    }
+  ],
+  "picks": [
+    {
+      "pick": "2026 1st",
+      "value": 208
     },
     {
-      "name": "Alex Antetokounmpo",
-      "position": "SF / PF",
-      "height": "6'8\" (203cm)",
-      "weight": "214lbs (96kg)",
-      "archetype": "Slashing Point Forward",
-      "birthdate": "August 27, 2001",
-      "yearsInNBA": "5",
-      "wingspan": "7'0\" (213cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Alex-Antetokounmpo-2K-Rating.png",
-      "ovr": "68",
-      "prior_to_nba": "Dominican High School",
-      "nationality": "Greece   /  Nigeria"
+      "pick": "2026 2nd",
+      "value": 120
+    },
+    {
+      "pick": "2027 1st",
+      "value": 168
+    },
+    {
+      "pick": "2027 2nd",
+      "value": 56
+    },
+    {
+      "pick": "2028 1st",
+      "value": 118
+    },
+    {
+      "pick": "2028 2nd",
+      "value": 50
+    },
+    {
+      "pick": "2029 1st",
+      "value": 100
+    },
+    {
+      "pick": "2029 2nd",
+      "value": 50
+    },
+    {
+      "pick": "2030 1st",
+      "value": 100
+    },
+    {
+      "pick": "2030 2nd",
+      "value": 50
     }
   ]
 }

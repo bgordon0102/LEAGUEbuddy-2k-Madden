@@ -1,24 +1,6 @@
 {
-  "1771188424617": {
-    "id": "1771188424617",
-    "player": {
-      "name": "Ben Simmons",
-      "position": "PG / C",
-      "ovr": "77",
-      "age": 29,
-      "img": "https://www.2kratings.com/wp-content/uploads/Ben-Simmons-2K-Rating-1.png",
-      "thumbnail": "https://www.2kratings.com/wp-content/uploads/Ben-Simmons-2K-Rating-1.png"
-    },
-    "team": "Thunder Coach",
-    "years": "3",
-    "salary": "6M",
-    "coachId": "1126312455111458849",
-    "createdAt": "2026-02-15T20:47:04.617Z",
-    "alertSent": true,
-    "staffMessageId": "1472695736922538016"
-  },
-  "1771389748378": {
-    "id": "1771389748378",
+  "1771788366027": {
+    "id": "1771788366027",
     "player": {
       "name": "Ben Simmons",
       "position": "PG / C",
@@ -29,28 +11,10 @@
     },
     "team": "Timberwolves Coach",
     "years": "4",
-    "salary": "4.39M",
+    "salary": "5.5M",
     "coachId": "840269359578611753",
-    "createdAt": "2026-02-18T04:42:28.378Z",
-    "alertSent": true,
-    "staffMessageId": "1473540150113079449"
-  },
-  "1771645717005": {
-    "id": "1771645717005",
-    "player": {
-      "name": "Bol Bol",
-      "position": "PF / C",
-      "ovr": "73",
-      "age": 25,
-      "img": "https://www.2kratings.com/wp-content/uploads/Bol-Bol-2K-Rating.png",
-      "thumbnail": "https://www.2kratings.com/wp-content/uploads/Bol-Bol-2K-Rating.png"
-    },
-    "team": "Rockets Coach",
-    "years": "2",
-    "salary": "$10M",
-    "coachId": "323517644785582081",
-    "createdAt": "2026-02-21T03:48:37.005Z",
-    "alertSent": true,
-    "staffMessageId": "1474613762320502987"
+    "createdAt": "2026-02-22T19:26:06.027Z",
+    "alertSent": false,
+    "staffMessageId": "1475212072580157502"
   }
 }

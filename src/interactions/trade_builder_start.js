@@ -36,13 +36,74 @@ export async function execute(interaction) {
   ];
   const nbaTeams = [...east, ...west];
 
+  // Robust coach team detection for 2K
   const coachMapPath = path.join(process.cwd(), 'data/coachRoleMap.json');
   let coachMap = {};
   try { coachMap = JSON.parse(fs.readFileSync(coachMapPath, 'utf8')); } catch { }
-  const userRoleIds = interaction.member?.roles?.cache ? Array.from(interaction.member.roles.cache.keys()) : [];
+  const userRoles = interaction.member?.roles?.cache || new Map();
+  const userRoleIds = Array.from(userRoles.keys());
+  const USER_TEAM_OVERRIDES = {
+    // Timberwolves coach user
+    '840269359578611753': 'Minnesota Timberwolves',
+  };
+
+  // Helper to normalize role/team strings
+  const normSlug = (str = '') => str.toLowerCase().replace(/coach/g, '').replace(/[^a-z0-9]/g, '');
+  const rosterFiles = (() => {
+    try {
+      const dir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
+      return fs.readdirSync(dir)
+        .filter(f => f.endsWith('.json'))
+        .filter(f => !/free[_ ]?agency/i.test(f))
+        .map(f => f.replace('.json', ''));
+    } catch { return []; }
+  })();
+
   const roleToTeam = Object.entries(coachMap).reduce((acc, [team, roleId]) => { acc[roleId] = team; return acc; }, {});
-  const detectedTeamRaw = userRoleIds.map(id => roleToTeam[id]).find(Boolean) || null;
-  const detectedTeam = detectedTeamRaw ? resolveTeamNameForRoster(detectedTeamRaw) : null;
+
+  // Collect all possible matches; if more than one, leave null to force manual pick
+  const matches = new Set();
+
+  // Priority 0: explicit user override
+  const overrideTeam = USER_TEAM_OVERRIDES[interaction.user.id];
+  if (overrideTeam) matches.add(overrideTeam);
+
+  // Priority 1: exact roleId mapping
+  userRoleIds.forEach(id => { if (roleToTeam[id]) matches.add(roleToTeam[id]); });
+
+  // Hard overrides for known role ids
+  if (userRoleIds.includes('1460736451473051739')) {
+    matches.clear();
+    matches.add('Minnesota Timberwolves');
+  } else if (userRoleIds.includes('1460734654901653525')) {
+    matches.clear();
+    matches.add('Milwaukee Bucks');
+  } else if (interaction.user.id === '1076243288056664234') {
+    matches.clear();
+    matches.add('Cleveland Cavaliers');
+  }
+
+  // Priority 2: role name matches roster slug
+  for (const [, role] of userRoles) {
+    const slug = normSlug(role.name);
+    const hit = rosterFiles.find(t => normSlug(t.replace(/_/g, ' ')) === slug);
+    if (hit) matches.add(hit.replace(/_/g, ' '));
+  }
+
+  let detectedTeam = null;
+  if (matches.size === 1) {
+    const only = Array.from(matches)[0];
+    detectedTeam = /timberwolves/i.test(only) ? 'Minnesota Timberwolves'
+      : /bucks/i.test(only) ? 'Milwaukee Bucks'
+      : resolveTeamNameForRoster(only);
+  }
+  console.log('[trade_builder_start][detect]', {
+    userId: interaction.user.id,
+    userRoles: userRoleIds,
+    roleMatches: Array.from(matches),
+    detectedTeam,
+    overrideTeam: USER_TEAM_OVERRIDES[interaction.user.id] || null,
+  });
 
   // Try Madden first; if not configured or empty snapshot, switch to NBA mode
   let snapshot = null;
@@ -98,13 +159,14 @@ export async function execute(interaction) {
       assets: { your: [], other: [] },
     });
   } else {
+    const initialTeam = detectedTeam || USER_TEAM_OVERRIDES[interaction.user.id] || null;
     saveTradeDraft(draftId, {
       draftId,
       userId: interaction.user.id,
       guildId: interaction.guildId,
       mode: '2k',
-      yourTeamName: detectedTeam,
-      yourTeamId: detectedTeam || null,
+      yourTeamName: initialTeam,
+      yourTeamId: initialTeam,
       otherTeamName: null,
       seasonYear,
       assets: { your: [], other: [] },
@@ -153,14 +215,20 @@ export async function execute(interaction) {
     const toOption = name => ({ label: name, value: name });
     const optionsEast = east.map(toOption);
     const optionsWest = west.map(toOption);
+    // Put detected team (if any) at top of a combined list for convenience
+    const allOptions = nbaTeams.map(toOption);
+    const uniq = (arr) => Array.from(new Map(arr.map(o => [o.value, o])).values());
+    const yourTeamOptions = detectedTeam
+      ? uniq([toOption(detectedTeam), ...allOptions]).slice(0, 25)
+      : allOptions.slice(0, 25);
+    const lockYourTeam = !!(detectedTeam || USER_TEAM_OVERRIDES[interaction.user.id]);
     rows = [
       new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
           .setCustomId(`trade_builder_team_yours|${draftId}`)
-          .setPlaceholder(detectedTeam ? `Your team: ${detectedTeam}` : 'Your team')
-          // Allow override even if a coach role auto-detected the wrong team
-          .setDisabled(false)
-          .addOptions(detectedTeam ? [toOption(detectedTeam)] : nbaTeams.map(toOption).slice(0, 25))
+          .setPlaceholder(detectedTeam ? `Your team (auto): ${detectedTeam}` : 'Select your team')
+          .setDisabled(lockYourTeam)
+          .addOptions(yourTeamOptions)
       ),
       new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()

@@ -367,10 +367,9 @@ async function scrapeTeamPage(url, { label = 'team' } = {}) {
 async function main() {
     console.log("[DEBUG] main() started");
     const arg = process.argv[2];
-    const playerUrl = process.argv[3];
-    // If a player URL is provided, scrape that player only
-    if (playerUrl && typeof playerUrl === 'string' && playerUrl.includes('2kratings.com') && !playerUrl.includes('/teams/')) {
-        console.log(`[DEBUG] Scraping individual player: ${playerUrl}`);
+    // If the argument is a player URL, scrape that player only
+    if (arg && typeof arg === 'string' && arg.includes('2kratings.com') && !arg.includes('/teams/')) {
+        console.log(`[DEBUG] Scraping individual player: ${arg}`);
         const browser = await puppeteer.launch({ headless: true });
         let cookies = null;
         const cookiesPath = path.resolve('./cookies.json');
@@ -390,7 +389,7 @@ async function main() {
                 console.log('[DEBUG] Failed to set cookies on player page:', e.message);
             }
         }
-        await page.goto(playerUrl, { waitUntil: 'networkidle2', timeout: 60000 });
+        await page.goto(arg, { waitUntil: 'networkidle2', timeout: 60000 });
         await page.waitForSelector('body', { timeout: 20000 });
         await new Promise(res => setTimeout(res, 3000));
         const info = await page.evaluate(() => {
@@ -485,6 +484,8 @@ async function main() {
         // Normalize team file name
         let fileName = teamName.replace(/[^a-zA-Z0-9]/g, '_') + '.json';
         let filePath = path.join(OUTPUT_DIR, fileName);
+        // Ensure output directory exists
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
         let players = [];
         if (fs.existsSync(filePath)) {
             try {
@@ -496,6 +497,11 @@ async function main() {
         }
         // Remove any existing player with the same name
         players = players.filter(p => p.name.toLowerCase() !== info.name.toLowerCase());
+        // Backfill imgUrl if missing using 2KRatings pattern
+        if (!info.imgUrl) {
+            const fallbackName = info.name.replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, '-');
+            info.imgUrl = `https://www.2kratings.com/wp-content/uploads/${fallbackName}-2K-Rating.png`;
+        }
         // Add the new player
         players.push(info);
         // Sort by OVR descending

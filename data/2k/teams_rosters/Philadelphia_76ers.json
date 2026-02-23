@@ -326,20 +326,6 @@
       ]
     },
     {
-      "name": "Jabari Walker",
-      "position": "PF / SF",
-      "height": "6'7\" (201cm)",
-      "weight": "237lbs (107kg)",
-      "archetype": "Slashing Putback Rim Rocker",
-      "birthdate": "July 30, 2002",
-      "yearsInNBA": "4",
-      "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Jabari-Walker-2K-Rating.png",
-      "ovr": "72",
-      "prior_to_nba": "Colorado",
-      "nationality": "United States"
-    },
-    {
       "name": "Charles Bassey",
       "position": "C",
       "height": "6'10\" (208cm)",
@@ -354,20 +340,6 @@
       "nationality": "United States"
     },
     {
-      "name": "MarJon Beauchamp",
-      "position": "SF / SG",
-      "height": "6'7\" (201cm)",
-      "weight": "199lbs (90kg)",
-      "archetype": "Crafty 3-Level Scorer",
-      "birthdate": "October 12, 2000",
-      "yearsInNBA": "",
-      "wingspan": "7'1\" (216cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/MarJon-Beauchamp-2K-Rating.png",
-      "ovr": "70",
-      "prior_to_nba": "Yakima Valley",
-      "nationality": "United States"
-    },
-    {
       "name": "Patrick Baldwin Jr.",
       "position": "PF / SF",
       "height": "6'9\" (206cm)",
@@ -378,7 +350,7 @@
       "wingspan": "7'1\" (216cm)",
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/Patrick-Baldwin-Jr-2K-Rating.png",
       "ovr": "70",
-      "prior_to_nba": "Wisconsin\u2013Milwaukee",
+      "prior_to_nba": "Wisconsin–Milwaukee",
       "nationality": "United States"
     },
     {
@@ -419,15 +391,45 @@
     }
   ],
   "picks": [
-    "2026 1st",
-    "2026 2nd",
-    "2027 1st",
-    "2027 2nd",
-    "2028 1st",
-    "2028 2nd",
-    "2029 1st",
-    "2029 2nd",
-    "2030 1st",
-    "2030 2nd"
+    {
+      "pick": "2026 1st",
+      "value": 240
+    },
+    {
+      "pick": "2026 2nd",
+      "value": 120
+    },
+    {
+      "pick": "2027 1st",
+      "value": 168
+    },
+    {
+      "pick": "2027 2nd",
+      "value": 56
+    },
+    {
+      "pick": "2028 1st",
+      "value": 118
+    },
+    {
+      "pick": "2028 2nd",
+      "value": 50
+    },
+    {
+      "pick": "2029 1st",
+      "value": 100
+    },
+    {
+      "pick": "2029 2nd",
+      "value": 50
+    },
+    {
+      "pick": "2030 1st",
+      "value": 100
+    },
+    {
+      "pick": "2030 2nd",
+      "value": 50
+    }
   ]
 }

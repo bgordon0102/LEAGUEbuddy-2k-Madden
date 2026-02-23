@@ -44,6 +44,14 @@ async function autocomplete(interaction) {
         if (focusedValue) {
             filtered = teams.filter(name => name.toLowerCase().includes(focusedValue.toLowerCase()));
         }
+        // dedupe by normalized name to avoid duplicates (e.g., path variants)
+        const seen = new Set();
+        filtered = filtered.filter(name => {
+            const key = normalizeName(name);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
         const options = filtered.map(name => ({ name, value: name })).slice(0, 25);
         await interaction.respond(options);
         return;
@@ -69,31 +77,24 @@ async function execute(interaction) {
         responded = true;
         const team = interaction.options.getString("team");
         // Load roster using shared helper to honor aliases and fuzzy matches
-        const data = readRoster(team);
-        let playersArr, teamPicks;
-        if (Array.isArray(data)) {
-            playersArr = data;
-            teamPicks = [];
-        } else if (data && typeof data === 'object') {
-            playersArr = Array.isArray(data.players) ? data.players : [];
-            teamPicks = Array.isArray(data.picks)
-              ? data.picks.map(p => {
-                  if (typeof p === 'object' && p.pick && p.value != null) return p;
-                  const pickStr = typeof p === 'string' ? p : p?.pick || '';
-                  const val = p?.value != null ? Number(p.value) : null;
-                  return val != null ? { pick: pickStr, value: val } : { pick: pickStr };
-                })
-              : [];
-        } else {
-            playersArr = [];
-            teamPicks = [];
-        }
+        const data = readRoster(team, { force2k: true });
+        const rosterObj = data?.roster || {};
+        let playersArr = Array.isArray(rosterObj.players) ? rosterObj.players : [];
+        let teamPicks = Array.isArray(rosterObj.picks)
+            ? rosterObj.picks.map(p => {
+                if (typeof p === 'object' && p.pick && p.value != null) return p;
+                const pickStr = typeof p === 'string' ? p : p?.pick || '';
+                const val = p?.value != null ? Number(p.value) : null;
+                return val != null ? { pick: pickStr, value: val } : { pick: pickStr };
+              })
+            : [];
         if (!Array.isArray(playersArr) || playersArr.length === 0) {
             await interaction.editReply({ content: `No players found for ${team}.` });
             return;
         }
         // Determine if the viewer is the coach of this team (for waive button visibility)
         let canWaive = false;
+        const COMMISH_ROLE_IDS = ['1460734222238220326', '1460734128935665817'];
         try {
             const coachMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/coachRoleMap.json'), 'utf8'));
             const staffMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data/staffRoleMap.main.json'), 'utf8'));
@@ -104,12 +105,14 @@ async function execute(interaction) {
                 return match ? match[1] : null;
             })();
             const isCoach = teamRoleId && interaction.member?.roles?.cache?.has(teamRoleId);
-            const isStaff = interaction.member?.roles?.cache?.some(r =>
-                Object.entries(staffMap || {})
+            const staffIds = [
+                ...Object.entries(staffMap || {})
                     .filter(([name]) => name === 'Paradise Commish' || name === 'Paradise Co-Commish')
                     .map(([, id]) => id)
-                    .includes(r.id)
-            );
+                    .filter(Boolean),
+                ...COMMISH_ROLE_IDS,
+            ];
+            const isStaff = interaction.member?.roles?.cache?.some(r => staffIds.includes(r.id));
             if (isCoach || isStaff) {
                 canWaive = true;
             }

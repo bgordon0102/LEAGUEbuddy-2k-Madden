@@ -1,8 +1,180 @@
 {
-  "Cleveland Cavaliers": {
-    "Keon Ellis": {
-      "messageId": "1474823307722362922",
-      "threadId": "1470807030943187027"
+  "Houston Rockets": {
+    "Alperen Sengun": {
+      "messageId": "1474828472290640115",
+      "threadId": "1470806923497570482"
+    },
+    "Fred VanVleet": {
+      "messageId": "1474828637751476478",
+      "threadId": "1470806923497570482"
+    },
+    "Reed Sheppard": {
+      "messageId": "1474828709457563819",
+      "threadId": "1470806923497570482"
+    },
+    "Kevin Durant": {
+      "messageId": "1474987026301587547",
+      "threadId": "1470806923497570482"
+    }
+  },
+  "Sacramento Kings": {
+    "DeMar DeRozan": {
+      "messageId": "1474830634424860715",
+      "threadId": "1470806980493967558"
+    },
+    "Domantas Sabonis": {
+      "messageId": "1474830780705280154",
+      "threadId": "1470806980493967558"
+    },
+    "Russell Westbrook": {
+      "messageId": "1474830837492224243",
+      "threadId": "1470806980493967558"
+    }
+  },
+  "Golden State Warriors": {
+    "Jimmy Butler": {
+      "messageId": "1474831288270848251",
+      "threadId": "1470806997275508937"
+    },
+    "Draymond Green": {
+      "messageId": "1474831335918010368",
+      "threadId": "1470806997275508937"
+    },
+    "Brandin Podziemski": {
+      "messageId": "1474831643645579552",
+      "threadId": "1470806997275508937"
+    },
+    "Moses Moody": {
+      "messageId": "1474831731734614107",
+      "threadId": "1470806997275508937"
+    },
+    "Kristaps Porzingis": {
+      "messageId": "1475205310267396187",
+      "threadId": "1470806997275508937"
+    }
+  },
+  "Miami Heat": {
+    "Pelle Larsson": {
+      "messageId": "1474835447476650045",
+      "threadId": "1470806986688954370"
+    },
+    "Simone Fontecchio": {
+      "messageId": "1474835539575439370",
+      "threadId": "1470806986688954370"
+    },
+    "Nikola Jovic": {
+      "messageId": "1474835606050832405",
+      "threadId": "1470806986688954370"
+    },
+    "Norman Powell": {
+      "messageId": "1474838259044585726",
+      "threadId": "1470806986688954370"
+    },
+    "Andrew Wiggins": {
+      "messageId": "1474838487168581662",
+      "threadId": "1470806986688954370"
+    }
+  },
+  "Orlando Magic": {
+    "Franz Wagner": {
+      "messageId": "1474841409985974587",
+      "threadId": "1470806955474948269"
+    },
+    "Jalen Suggs": {
+      "messageId": "1474841555117543505",
+      "threadId": "1470806955474948269"
+    }
+  },
+  "Dallas Mavericks": {
+    "Kyrie Irving": {
+      "messageId": "1474854174981357751",
+      "threadId": "1470806938785812668"
+    }
+  },
+  "Charlotte Hornets": {
+    "Moussa Diabate": {
+      "messageId": "1474854728088158218",
+      "threadId": "1470807017814888624"
+    }
+  },
+  "Los Angeles Lakers": {
+    "Rui Hachimura": {
+      "messageId": "1474857679263502358",
+      "threadId": "1470806921018871809"
+    },
+    "LeBron James": {
+      "messageId": "1474857929365520504",
+      "threadId": "1470806921018871809"
+    }
+  },
+  "Detroit Pistons": {
+    "Ausar Thompson": {
+      "messageId": "1474885602548912221",
+      "threadId": "1470807014664966307"
+    },
+    "Isaiah Stewart": {
+      "messageId": "1474885696899645491",
+      "threadId": "1470807014664966307"
+    },
+    "Tobias Harris": {
+      "messageId": "1474885799701905421",
+      "threadId": "1470807014664966307"
+    },
+    "Daniss Jenkins": {
+      "messageId": "1474885853544190156",
+      "threadId": "1470807014664966307"
+    }
+  },
+  "Minnesota Timberwolves": {
+    "Julius Randle": {
+      "messageId": "1474904015937732651",
+      "threadId": "1470806994381312161"
+    },
+    "Ayo Dosunmu": {
+      "messageId": "1474904088163651776",
+      "threadId": "1470806994381312161"
+    },
+    "Donte DiVincenzo": {
+      "messageId": "1474904541039169607",
+      "threadId": "1470806994381312161"
+    }
+  },
+  "Oklahoma City Thunder": {
+    "Luguentz Dort": {
+      "messageId": "1474920174695223377",
+      "threadId": "1470806926236323985"
+    },
+    "Alex Caruso": {
+      "messageId": "1474920285135437975",
+      "threadId": "1470806926236323985"
+    }
+  },
+  "Chicago Bulls": {
+    "Josh Giddey": {
+      "messageId": "1474975249908109415",
+      "threadId": "1470807006540599316"
+    },
+    "Anfernee Simons": {
+      "messageId": "1474975299115421718",
+      "threadId": "1470807006540599316"
+    },
+    "Tre Jones": {
+      "messageId": "1474975377704358001",
+      "threadId": "1470807006540599316"
+    },
+    "Jaden Ivey": {
+      "messageId": "1474975423711678636",
+      "threadId": "1470807006540599316"
+    }
+  },
+  "Boston Celtics": {
+    "Nikola Vucevic": {
+      "messageId": "1475167373269930094",
+      "threadId": "1470807003260522547"
+    },
+    "Payton Pritchard": {
+      "messageId": "1475167396862886011",
+      "threadId": "1470807003260522547"
     }
   }
 }

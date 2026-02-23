@@ -80,17 +80,17 @@ export async function execute_modal_set_game_info(interaction) {
       return;
     }
 
-    let content = message.content || '';
-    if (content.includes('**In-game date:**')) {
-      content = content.replace(/(\*\*In-game date:\*\* ?)(.*)/, `**In-game date:** **${dateText}**`);
-    } else {
-      const welcomeMatch = content.match(/^(Welcome.*?)(\n|$)/);
-      if (welcomeMatch) {
-        const idx = welcomeMatch[0].length;
-        content = content.slice(0, idx) + `\n**In-game date:** **${dateText}**` + content.slice(idx);
+    // Update embed with in-game date; leave content (tags) unchanged
+    const embeds = (message.embeds || []).map(e => e.toJSON());
+    if (embeds.length) {
+      const embed = embeds[0];
+      const desc = embed.description || '';
+      if (/\*\*In-game date:\*\*/i.test(desc)) {
+        embed.description = desc.replace(/\*\*In-game date:\*\*.*?(?=\n|$)/i, `**In-game date:** **${dateText}**`);
       } else {
-        content = `${content}\n**In-game date:** **${dateText}**`;
+        embed.description = [desc.trim(), `**In-game date:** **${dateText}**`].filter(Boolean).join('\n');
       }
+      embeds[0] = embed;
     }
 
     const components = [
@@ -106,10 +106,10 @@ export async function execute_modal_set_game_info(interaction) {
       messageId: message?.id,
       channelId: message?.channelId,
       authorId: message?.author?.id,
-      content,
+      embeds,
       components
     });
-    await message.edit({ content, components });
+    await message.edit({ content: message.content, embeds, components });
     await interaction.reply({ content: 'Game info set. Mark Game Complete is now available.', flags: 64 });
 
     // Notify commish roles in the thread/channel

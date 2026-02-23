@@ -73,8 +73,28 @@ export async function execute(interaction) {
   const prevOther = draft.otherTeamId;
   draft[side] = selected;
 
+  // Hard user override for Timberwolves coach user ID
+  const USER_TEAM_OVERRIDES = {
+    '840269359578611753': 'Minnesota Timberwolves',
+  };
+  const userOverride = USER_TEAM_OVERRIDES[interaction.user.id];
+
   if (draft.mode === '2k') {
-    const resolved = resolveTeamNameForRoster(selected);
+    const resolved = (() => {
+      if (userOverride && side === 'yourTeamId') return userOverride;
+      if (/timberwolves/i.test(selected)) return 'Minnesota Timberwolves';
+      if (/bucks/i.test(selected)) return 'Milwaukee Bucks';
+      return resolveTeamNameForRoster(selected);
+    })();
+    console.log('[trade_builder_team_select][2k]', {
+      userId: interaction.user.id,
+      side,
+      selected,
+      resolved,
+      userOverride,
+      prevYour,
+      prevOther,
+    });
     if (side === 'yourTeamId') {
       draft.yourTeamName = resolved;
       draft.yourTeamId = resolved;

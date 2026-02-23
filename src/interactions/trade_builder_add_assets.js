@@ -23,6 +23,28 @@ const PICK_MANUAL_BTN = /^trade_builder_pick_manual\|(yours|other)\|/;
 const PICK_MANUAL_MODAL = /^trade_builder_pick_modal\|(yours|other)\|/;
 export const customId = /^(trade_builder_add\|(yours|other)\|.+|trade_builder_select_assets\|(yours|other)\|.+|trade_builder_reset\|.+|trade_builder_pick_manual\|(yours|other)\|.+|trade_builder_pick_modal\|(yours|other)\|.+)$/;
 
+const formatSalary = (n) => `$${Math.round(n || 0).toLocaleString()}`;
+const parseSalary = (p) => {
+  if (!p) return 0;
+  if (typeof p === 'number') return p;
+  if (typeof p.salaryPerYear === 'number') return p.salaryPerYear;
+  const salaryStr = p.salaryPerYear || p.salary || (Array.isArray(p.contractYears) && p.contractYears[0]?.salary) || '';
+  if (!salaryStr) return 0;
+  const cleaned = String(salaryStr).replace(/[$,]/g, '').trim();
+  const m = cleaned.match(/([0-9]*\\.?[0-9]+)/);
+  if (!m) return 0;
+  let val = Number(m[1]);
+  if (/m/i.test(cleaned)) val *= 1_000_000;
+  return Number.isFinite(val) ? val : 0;
+};
+
+function currentYearSalary(p) {
+  const cy = Array.isArray(p?.contractYears) ? p.contractYears[0]?.salary : null;
+  if (cy) return cy;
+  if (p?.salaryPerYear) return p.salaryPerYear;
+  return null;
+}
+
 export function teamLookup(snapshot, teamIdOrName) {
   const teams = snapshot?.teams?.leagueTeamInfoList || [];
   const target = String(teamIdOrName || '').toLowerCase();
@@ -257,18 +279,39 @@ function summarizeAssets(draft, valueMap, seasonYear) {
 
 // ---------- NBA (2K) helpers ----------
 function rosterForTeam2k(teamName) {
-  const resolved = resolveTeamNameForRoster(teamName);
-  const data = readRoster(resolved);
-  if (Array.isArray(data)) return { players: data, picks: [] };
-  return {
-    players: Array.isArray(data?.players) ? data.players : [],
-    picks: Array.isArray(data?.picks) ? data.picks : [],
-  };
+  // Restrict to 2K rosters directory and avoid cross-league fallbacks
+  const dir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
+  const candidates = [
+    `${teamName || ''}.json`,
+    `${(teamName || '').replace(/ /g, '_')}.json`,
+    `${(teamName || '').replace(/_/g, ' ')}.json`,
+  ].map(s => s.toLowerCase());
+  let file = null;
+  try {
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+    file = files.find(f => candidates.includes(f.toLowerCase()));
+  } catch { /* ignore */ }
+  if (!file) {
+    console.warn('[rosterForTeam2k] roster file not found for', teamName, { dir, candidates });
+    return { players: [], picks: [] };
+  }
+  try {
+    const data = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+    if (Array.isArray(data)) return { players: data, picks: [] };
+    return {
+      players: Array.isArray(data?.players) ? data.players : [],
+      picks: Array.isArray(data?.picks) ? data.picks : [],
+    };
+  } catch (err) {
+    console.error('[rosterForTeam2k] failed to read', file, err);
+    return { players: [], picks: [] };
+  }
 }
 
 function buildAssetSelectRows2k(side, draftId, teamName) {
   const draft = getTradeDraft(draftId);
   const seasonYear = draft?.seasonYear || new Date().getFullYear();
+  console.log('[buildAssetSelectRows2k]', { draftId, side, teamName, userId: draft?.userId });
   const { players } = rosterForTeam2k(teamName);
   // Generate pick options: 2026-2030 1st/2nd; protections (top3/5/10/lottery) only for next 3 seasons
   const baseYear = seasonYear;
@@ -283,6 +326,12 @@ function buildAssetSelectRows2k(side, draftId, teamName) {
     });
     picks.push(`${y} Round 2`);
   });
+
+  // Include any VIA picks already on the roster (keep their original labels)
+  rosterForTeam2k(teamName).picks?.forEach(p => {
+    const label = typeof p === 'string' ? p : p?.pick || '';
+    if (label && !picks.includes(label)) picks.push(label);
+  });
   if (!players.length && !picks.length) return [];
   const buckets = [
     { key: 'guards', label: 'Guards', items: [] },
@@ -296,7 +345,9 @@ function buildAssetSelectRows2k(side, draftId, teamName) {
       const posRaw = (p.position || '').toUpperCase();
       const primary = posRaw.split(/[\\/]/)[0].trim().split(/\s+/)[0] || posRaw;
       const val = computePlayerValue2k(p);
-      const desc = `${p.position || 'UNK'} | OVR ${p.ovr || '??'} | Val ${val}`;
+      const sal = currentYearSalary(p);
+      const salText = sal ? ` | ${String(sal).replace(/[$,]/g, '').match(/^[0-9.]+$/) ? `$${Number(String(sal).replace(/[$,]/g,'')).toLocaleString()}` : sal}` : '';
+      const desc = `${p.position || 'UNK'} | OVR ${p.ovr || '??'} | Val ${val}${salText}`;
       const opt = new StringSelectMenuOptionBuilder()
         .setLabel((p.name || 'Player').slice(0, 90))
         .setDescription(desc.slice(0, 100))
@@ -341,13 +392,37 @@ function buildAssetSelectRows2k(side, draftId, teamName) {
 }
 
 function summarizeAssets2k(draft) {
+  const parseSalary = (p) => {
+    if (!p) return 0;
+    if (typeof p.salaryPerYear === 'number') return p.salaryPerYear;
+    const salaryStr = p.salaryPerYear || p.salary || (Array.isArray(p.contractYears) && p.contractYears[0]?.salary) || '';
+    if (!salaryStr) return 0;
+    const cleaned = String(salaryStr).replace(/[$,]/g, '').trim();
+    const m = cleaned.match(/([0-9]*\.?[0-9]+)/);
+    if (!m) return 0;
+    let val = Number(m[1]);
+    if (/m/i.test(cleaned)) val *= 1_000_000;
+    return Number.isFinite(val) ? val : 0;
+  };
+
+  const formatSalary = (n) => {
+    if (!n) return '$0';
+    const m = n / 1_000_000;
+    return m >= 1 ? `$${m.toFixed(1)}M` : `$${n.toLocaleString()}`;
+  };
+
+  // currentYearSalary defined at top-level
+
   const summarize = (arr) => {
     let total = 0;
+    let salary = 0;
     const lines = [];
     arr.forEach(item => {
       if (item.type === 'player') {
         const val = computePlayerValue2k(item);
         total += val;
+        const sal = parseSalary(item);
+        salary += sal;
         lines.push(`${item.label} (${item.pos || 'UNK'}) — ${val.toFixed(1)}`);
       } else if (item.type === 'pick') {
         const raw = item.raw || '';
@@ -363,7 +438,7 @@ function summarizeAssets2k(draft) {
         }
       }
     });
-    return { total, lines };
+    return { total, lines, salary, salaryPretty: formatSalary(salary) };
   };
   return {
     your: summarize(draft.assets?.your || []),
@@ -416,9 +491,18 @@ async function refreshBuilder(interaction, draft, snapshot) {
     const summary = summarizeAssets2k(draft);
     const gap = summary.your.total - summary.other.total;
     const GAP_LIMIT = 50;
+    // Salary matching validation per team (NBA 2025-26 rules)
+    const yourSalary = summary.your.salary;
+    const otherSalary = summary.other.salary;
+
+    // Compute current team payrolls from 2K rosters (more tolerant matching)
     const embed = new EmbedBuilder()
       .setTitle('Trade Builder')
-      .setDescription(`Gap (you - them): ${gap.toFixed(1)}${Math.abs(gap) > GAP_LIMIT ? ' — exceeds limit' : ' — within limit'}`)
+      .setDescription(
+        [
+          `Value gap (you - them): ${gap.toFixed(1)}${Math.abs(gap) > GAP_LIMIT ? ' — exceeds limit' : ' — within limit'}`,
+        ].join('\n')
+      )
       .addFields(
         {
           name: `Your team: ${draft.yourTeamName || '—'} (Total ${summary.your.total.toFixed(1)})`,
@@ -509,7 +593,12 @@ export async function execute(interaction) {
       return;
     }
     if (draft.mode === '2k') {
-      const rows = buildAssetSelectRows2k(side === 'yours' ? 'yours' : 'other', draftId, side === 'yours' ? draft.yourTeamName : draft.otherTeamName);
+      // Hard override: specific user forced to Timberwolves to avoid wrong roster
+      const forceTeam = (draft.userId === '840269359578611753' && side === 'yours')
+        ? 'Minnesota Timberwolves'
+        : null;
+      const teamName = forceTeam || (side === 'yours' ? draft.yourTeamName : draft.otherTeamName);
+      const rows = buildAssetSelectRows2k(side === 'yours' ? 'yours' : 'other', draftId, teamName);
       if (!rows?.length) {
         await interaction.reply({ content: 'No assets found for that team.', ephemeral: true });
         return;

@@ -9,6 +9,28 @@ import {
   normalizeName,
 } from '../utils/rosterUtils.js';
 
+const TEAM_ALIASES = {
+  heat: 'Miami Heat',
+  suns: 'Phoenix Suns',
+  celtics: 'Boston Celtics',
+  knicks: 'New York Knicks',
+  nets: 'Brooklyn Nets',
+  lakers: 'Los Angeles Lakers',
+  clippers: 'Los Angeles Clippers',
+  warriors: 'Golden State Warriors',
+  sixers: 'Philadelphia 76ers',
+  '76ers': 'Philadelphia 76ers',
+  pels: 'New Orleans Pelicans',
+  pelicans: 'New Orleans Pelicans',
+  wolves: 'Minnesota Timberwolves',
+  twolves: 'Minnesota Timberwolves',
+  blazers: 'Portland Trail Blazers',
+  mavs: 'Dallas Mavericks',
+  spurs: 'San Antonio Spurs',
+  jazz: 'Utah Jazz',
+  bucks: 'Milwaukee Bucks',
+};
+
 const PENDING_FILE = path.join(process.cwd(), 'data', 'updaterosters_pending.json');
 const STAFF_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
 
@@ -42,6 +64,7 @@ function rosterFileCandidates(team) {
   const variants = new Set();
   const add = (s) => variants.add(s.replace(/_+/g, '_').replace(/^_+|_+$/g, ''));
   add(cleaned);
+  add(cleaned.replace(/ /g, '_'));
   add(cleaned.replace(/\s+/g, '_'));
   add(cleaned.replace(/[^A-Za-z0-9]+/g, '_'));
   add(cleaned.replace(/&/g, 'and').replace(/[^A-Za-z0-9]+/g, '_'));
@@ -49,11 +72,12 @@ function rosterFileCandidates(team) {
 }
 
 function resolveTeamKey(team) {
+  const alias = TEAM_ALIASES[String(team || '').toLowerCase()] || team;
   const dirs = [
     path.join(process.cwd(), 'data', '2k', 'teams_rosters'),
     path.join(process.cwd(), 'data', 'teams_rosters'),
   ];
-  const candidates = rosterFileCandidates(team).map(n => `${n}.json`);
+  const candidates = rosterFileCandidates(alias).map(n => `${n}.json`);
   for (const dir of dirs) {
     if (!fs.existsSync(dir)) continue;
     const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
@@ -62,27 +86,39 @@ function resolveTeamKey(team) {
     if (found) return found.replace(/\.json$/i, '');
   }
   // fallback to normalized name
-  return rosterFileCandidates(team)[0] || team;
+  const fallback = rosterFileCandidates(alias)[0] || alias;
+  console.warn('[updaterosters][resolveTeamKey] fallback', team, 'alias', alias, '->', fallback);
+  return fallback;
 }
 
 function loadRoster(team) {
-  const raw = readRoster(team);
-  if (!raw) return null;
-  const key = resolveTeamKey(team);
+  const alias = TEAM_ALIASES[String(team || '').toLowerCase()] || team;
+  const raw = readRoster(alias, { force2k: true });
+  if (!raw) {
+    console.warn('[updaterosters][loadRoster] roster not found', { team, alias });
+    return null;
+  }
+  const key = raw.rosterPath || resolveTeamKey(alias);
   if (raw?.roster && Array.isArray(raw.roster.players)) {
-    return { roster: raw.roster, rosterPath: key };
+    return { roster: raw.roster, rosterPath: raw.rosterPath || key };
   }
   if (Array.isArray(raw?.players)) {
-    return { roster: { players: raw.players, picks: raw.picks || [] }, rosterPath: key };
+    return { roster: { players: raw.players, picks: raw.picks || [] }, rosterPath: raw.rosterPath || key };
   }
   if (Array.isArray(raw)) {
-    return { roster: { players: raw, picks: [] }, rosterPath: key };
+    return { roster: { players: raw, picks: [] }, rosterPath: raw.rosterPath || key };
   }
   return null;
 }
 
-function applySignings(entries, actorId) {
+function applySignings(entries = [], actorId) {
+  if (!Array.isArray(entries)) entries = [];
   const results = { applied: [], missing: [] };
+  const faData = loadRoster('free agency');
+  const findPlayerByName = (rosterObj, name) => {
+    const norm = normalizeName(name);
+    return rosterObj?.players?.find(p => normalizeName(p.name || '') === norm) || null;
+  };
   for (const entry of entries) {
     const data = loadRoster(entry.team);
     if (!data) {
@@ -90,22 +126,33 @@ function applySignings(entries, actorId) {
       continue;
     }
     const { roster, rosterPath } = data;
-    const payload = {
-      name: entry.player,
-      position: entry.position || undefined,
-      lastSigned: 'transaction',
-      lastUpdatedBy: actorId,
-      lastUpdatedAt: new Date().toISOString(),
-    };
+    // Prefer full player data from free agency (keeps OVR/contract intact)
+    const source = faData ? findPlayerByName(faData.roster, entry.player) : null;
+    const payload = source
+      ? {
+          ...source,
+          lastSigned: 'transaction',
+          lastUpdatedBy: actorId,
+          lastUpdatedAt: new Date().toISOString(),
+        }
+      : {
+          name: entry.player,
+          position: entry.position || undefined,
+          lastSigned: 'transaction',
+          lastUpdatedBy: actorId,
+          lastUpdatedAt: new Date().toISOString(),
+        };
     upsertPlayer(roster.players, payload);
     removePlayerFromOtherRostersFuzzy(entry.player);
     saveRoster(rosterPath, roster);
+    console.log('[updaterosters][sign]', { player: entry.player, team: entry.team, rosterPath, size: roster.players.length });
     results.applied.push(`${entry.player} -> ${entry.team}`);
   }
   return results;
 }
 
-function applyWaives(entries, actorId) {
+function applyWaives(entries = [], actorId) {
+  if (!Array.isArray(entries)) entries = [];
   const results = { waived: [], missing: [] };
   const faData = loadRoster('free agency');
   if (!faData) {
@@ -184,7 +231,8 @@ function moveAssets(source, dest, assets, actorId, results) {
   }
 }
 
-function applyTrades(entries, actorId) {
+function applyTrades(entries = [], actorId) {
+  if (!Array.isArray(entries)) entries = [];
   const results = { moves: [], missing: [], note: '' };
   if (entries.length < 2) {
     results.note = `Need two sides for a trade; detected ${entries.length}.`;
@@ -236,7 +284,7 @@ export async function execute(interaction) {
 
   let results;
   if (entry.type === 'auto') {
-    const signRes = applySignings(entry.entries.sign || [], interaction.user.id);
+    const signRes = applySignings(entry.entries.sign || entry.entries || [], interaction.user.id);
     const waiveRes = applyWaives(entry.entries.waive || [], interaction.user.id);
     const tradeRes = applyTrades(entry.entries.trade || [], interaction.user.id);
     results = {
@@ -247,11 +295,12 @@ export async function execute(interaction) {
       note: tradeRes.note,
     };
   } else if (entry.type === 'sign') {
-    results = applySignings(entry.entries, interaction.user.id);
+    const signEntries = Array.isArray(entry.entries?.sign) ? entry.entries.sign : Array.isArray(entry.entries) ? entry.entries : [];
+    results = applySignings(signEntries, interaction.user.id);
   } else if (entry.type === 'waive') {
-    results = applyWaives(entry.entries, interaction.user.id);
+    results = applyWaives(entry.entries || [], interaction.user.id);
   } else if (entry.type === 'trade') {
-    results = applyTrades(entry.entries, interaction.user.id);
+    results = applyTrades(entry.entries || [], interaction.user.id);
   } else {
     results = { missing: ['Unknown type'], applied: [], moves: [] };
   }

@@ -5,6 +5,7 @@ export const customId = /^waive_player_(open_modal|confirm)::/;
 const FREE_AGENCY_PATH = 'free agency';
 const COACH_ROLE_MAP_PATH = './data/coachRoleMap.json';
 const STAFF_ROLE_MAP_PATH = './data/staffRoleMap.main.json';
+const COMMISH_ROLE_IDS = ['1460734222238220326', '1460734128935665817'];
 
 function sortByOvrDesc(players = []) {
   return [...players].sort((a, b) => (Number(b.ovr) || 0) - (Number(a.ovr) || 0));
@@ -49,6 +50,14 @@ export async function execute(interaction) {
   // Confirm flow from modal submit
   if (!interaction.isModalSubmit()) return;
   const team = parts[1];
+  if (['free agency', 'freeagency'].includes(normalizeName(team))) {
+    try {
+      await interaction.reply({ content: 'You cannot waive players from free agency.', flags: 64 });
+    } catch (err) {
+      if (err?.code !== 10062) console.error('[waive_player] free agency block failed', err);
+    }
+    return;
+  }
   try {
     await interaction.deferReply({ flags: 64 });
   } catch (err) {
@@ -65,10 +74,13 @@ export async function execute(interaction) {
       const match = Object.entries(coachMap || {}).find(([k]) => normalizeName(k) === norm);
       return match ? match[1] : null;
     })();
-    const staffIds = Object.entries(staffMap || {})
-      .filter(([name]) => name === 'Paradise Commish' || name === 'Paradise Co-Commish')
-      .map(([, id]) => id)
-      .filter(Boolean);
+    const staffIds = [
+      ...Object.entries(staffMap || {})
+        .filter(([name]) => name === 'Paradise Commish' || name === 'Paradise Co-Commish')
+        .map(([, id]) => id)
+        .filter(Boolean),
+      ...COMMISH_ROLE_IDS,
+    ];
     const isCoach = teamRoleId && interaction.member?.roles?.cache?.has(teamRoleId);
     const isStaff = interaction.member?.roles?.cache?.some(r => staffIds.includes(r.id));
     if (!isCoach && !isStaff) {
@@ -94,17 +106,31 @@ export async function execute(interaction) {
   activeWaives.add(lockKey);
 
   // Load team roster
-  const teamData = readRoster(team);
+  const teamData = readRoster(team, { force2k: true });
+  console.log('[waive_player] loaded roster', {
+    team,
+    hasRoster: !!teamData?.roster,
+    hasPlayers: Array.isArray(teamData?.roster?.players),
+    rosterPath: teamData?.rosterPath,
+  });
   if (!teamData) {
     await interaction.editReply({ content: `Roster not found for ${team}.` });
     return;
   }
-  const { rosterPath: teamPath, roster } = teamData;
+  const teamPath = teamData.rosterPath || teamData.path;
+  const rosterObj = teamData?.roster;
+  const rosterArr = Array.isArray(rosterObj?.players) ? rosterObj.players : null;
+  if (!teamPath || !Array.isArray(rosterArr)) {
+    console.warn('[waive_player] roster format invalid', { team, teamPath, rosterKeys: Object.keys(teamData || {}) });
+    await interaction.editReply({ content: `Roster format invalid for ${team}.` });
+    return;
+  }
+
   const norm = normalizeName(playerName);
-  const idxExact = roster.players.findIndex(p => normalizeName(p.name) === norm);
+  const idxExact = rosterArr.findIndex(p => normalizeName(p.name) === norm);
   let foundIdx = idxExact;
   if (foundIdx === -1) {
-    foundIdx = roster.players.findIndex(p => {
+    foundIdx = rosterArr.findIndex(p => {
       const n = normalizeName(p.name);
       return n.includes(norm) || norm.includes(n);
     });
@@ -114,18 +140,28 @@ export async function execute(interaction) {
     activeWaives.delete(lockKey);
     return;
   }
-  const player = roster.players[foundIdx];
-  roster.players.splice(foundIdx, 1);
-  saveRoster(teamPath, roster);
+  const player = rosterArr[foundIdx];
+  rosterArr.splice(foundIdx, 1);
+  saveRoster(teamPath || team, { ...rosterObj, players: rosterArr });
 
   // Add to free agency pool
-  const faData = readRoster(FREE_AGENCY_PATH) || { rosterPath: null, roster: { players: [], picks: [] } };
+  const faData = readRoster(FREE_AGENCY_PATH, { force2k: true }) || { rosterPath: null, roster: { players: [], picks: [] } };
   if (!faData.rosterPath) {
     await interaction.editReply({ content: 'Free agency file not found.' });
     return;
   }
-  const faPlayers = faData.roster.players || [];
-  const filtered = faPlayers.filter(p => normalizeName(p.name) !== norm);
+
+  const faArr = Array.isArray(faData.roster)
+    ? faData.roster
+    : Array.isArray(faData?.roster?.players)
+      ? faData.roster.players
+      : Array.isArray(faData?.players)
+        ? faData.players
+        : Array.isArray(faData?.roster?.roster?.players)
+          ? faData.roster.roster.players
+          : [];
+
+  const filtered = faArr.filter(p => normalizeName(p.name) !== norm);
   const playerCopy = { ...player };
   if (!playerCopy.imgUrl && playerCopy.img) playerCopy.imgUrl = playerCopy.img;
   if (!playerCopy.imgURL && playerCopy.imgUrl) playerCopy.imgURL = playerCopy.imgUrl;
@@ -135,8 +171,18 @@ export async function execute(interaction) {
   playerCopy.lastSigned = 'waived';
   playerCopy.lastUpdatedAt = new Date().toISOString();
   filtered.push(playerCopy);
-  faData.roster.players = sortByOvrDesc(filtered);
-  saveRoster(faData.rosterPath, faData.roster);
+
+  const sorted = sortByOvrDesc(filtered);
+  if (Array.isArray(faData.roster)) {
+    faData.roster = sorted;
+  } else if (Array.isArray(faData?.roster?.players)) {
+    faData.roster.players = sorted;
+  } else if (Array.isArray(faData?.players)) {
+    faData.players = sorted;
+  } else if (Array.isArray(faData?.roster?.roster?.players)) {
+    faData.roster.roster.players = sorted;
+  }
+  saveRoster(faData.rosterPath || FREE_AGENCY_PATH, faData.roster);
 
   await interaction.editReply({ content: `${player.name} has been waived by ${team} and added to free agency.` });
   activeWaives.delete(lockKey);

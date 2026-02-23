@@ -15,11 +15,13 @@ const STORE_PATH = path.join(process.cwd(), 'data', 'freeagency_entries.json');
 const STAFF_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
 const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json');
 const STAFF_ROLES = ['Paradise Commish', 'Paradise Co-Commish', 'Schedule Tracker'];
+const COMMISH_ROLE_IDS = ['1460734222238220326', '1460734128935665817']; // explicit commish + co-commish
 const STAFF_OFFER_CHANNEL_ID = process.env.FREE_AGENCY_STAFF_CHANNEL_ID || '1455151770383814666';
 const ANNOUNCE_CHANNEL_ID = process.env.FREE_AGENCY_ANNOUNCE_CHANNEL_ID || '1455152984089694218';
 const OFFER_ALERT_CHANNEL_ID = process.env.FREE_AGENCY_OFFER_ALERT_CHANNEL_ID || '1425555647167987792';
 const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
+const ROLE_MAP_FILE = path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json');
 
 // Data store helpers
 function readEntries() {
@@ -45,10 +47,17 @@ function readCoachRoleMap() {
 function getTeamFromMemberRoles(member) {
   const map = readCoachRoleMap(); // Team -> roleId
   if (!member?.roles?.cache) return null;
+  const USER_TEAM_OVERRIDES = {
+    '840269359578611753': 'Minnesota Timberwolves',
+  };
+  if (USER_TEAM_OVERRIDES[member.user?.id]) return USER_TEAM_OVERRIDES[member.user.id];
   const roleToTeam = Object.entries(map).reduce((acc, [team, roleId]) => {
     if (roleId) acc[roleId] = team;
     return acc;
   }, {});
+  // Explicit override: Timberwolves coach role id
+  if (member.roles.cache.has('1460736451473051739')) return 'Minnesota Timberwolves';
+  if (member.roles.cache.has('1460734654901653525')) return 'Milwaukee Bucks';
   for (const [roleId] of member.roles.cache) {
     if (roleToTeam[roleId]) return roleToTeam[roleId];
   }
@@ -82,8 +91,8 @@ function findPlayerDataAcrossRosters(targetName) {
   else if (Array.isArray(fa?.roster)) sources.push({ roster: fa.roster, team: 'free agency' });
   else if (Array.isArray(fa?.roster?.players)) sources.push({ roster: fa.roster.players, team: 'free agency' });
   try {
-    const dir = path.join(process.cwd(), 'data', 'teams_rosters');
-    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+    const dir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
+    const files = fs.readdirSync(dir).filter(f => f.endsWith('.json')).filter(f => !/free[_ ]?agency/i.test(f));
     for (const file of files) {
       const data = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
       const rosterArr = Array.isArray(data) ? data : (Array.isArray(data.players) ? data.players : []);
@@ -171,12 +180,8 @@ function chunkButtons(buttons, size = 5) {
 }
 
 function getStaffRoleMentions() {
-  try {
-    const staffMap = JSON.parse(fs.readFileSync(STAFF_MAP_PATH, 'utf8'));
-    return STAFF_ROLES.map(r => staffMap[r]).filter(Boolean).map(id => `<@&${id}>`).join(' ');
-  } catch {
-    return '';
-  }
+  if (COMMISH_ROLE_IDS.length) return COMMISH_ROLE_IDS.map(id => `<@&${id}>`).join(' ');
+  return '';
 }
 
 // Custom IDs
@@ -202,16 +207,19 @@ export async function execute(interaction) {
     return;
   }
 
-  if (interaction.customId === 'freeagency_staff_add_button') {
-    // Staff gate
-    try {
-      const staffMap = JSON.parse(fs.readFileSync(STAFF_MAP_PATH, 'utf8'));
-      const allowedRoleIds = STAFF_ROLES.map(r => staffMap[r]).filter(Boolean);
-      const memberRoles = interaction.member?.roles?.cache;
-      const isStaff = allowedRoleIds.length ? allowedRoleIds.some(rid => memberRoles?.has(rid)) : true;
-      if (!isStaff) {
-        await interaction.reply({ content: 'Staff only.', ephemeral: true });
-        return;
+    if (interaction.customId === 'freeagency_staff_add_button') {
+      // Staff gate
+      try {
+        const staffMap = JSON.parse(fs.readFileSync(STAFF_MAP_PATH, 'utf8'));
+        const allowedRoleIds = [
+          ...STAFF_ROLES.map(r => staffMap[r]).filter(Boolean),
+          ...COMMISH_ROLE_IDS,
+        ];
+        const memberRoles = interaction.member?.roles?.cache;
+        const isStaff = allowedRoleIds.length ? allowedRoleIds.some(rid => memberRoles?.has(rid)) : true;
+        if (!isStaff) {
+          await interaction.reply({ content: 'Staff only.', ephemeral: true });
+          return;
       }
     } catch {
       // allow if map missing
@@ -291,8 +299,9 @@ export async function execute_modal_staff_add(interaction) {
     .setLabel('Submit Offer')
     .setStyle(ButtonStyle.Primary);
   const row = new ActionRowBuilder().addComponents(offerBtn);
+  const commishTags = COMMISH_ROLE_IDS.map(id => `<@&${id}>`).join(' ');
   const faMessage = await interaction.channel.send({
-    content: `<@&${GHOST_PARADISE_ROLE_ID}> Free agent available`,
+    content: `${commishTags} <@&${GHOST_PARADISE_ROLE_ID}> Free agent available`.trim(),
     embeds: [buildFAEmbed(entry)],
     components: [row],
   });
@@ -346,6 +355,7 @@ async function sendOrUpdateStaffMessage(client, entry) {
   try {
     const staffChannel = await client.channels.fetch(STAFF_OFFER_CHANNEL_ID).catch(() => null);
     if (!staffChannel || !staffChannel.isTextBased()) return;
+    let commishTags = '<@&1460734222238220326> <@&1460734128935665817>';
 
     const buttons = (entry.offers || []).map(o =>
       new ButtonBuilder()
@@ -359,16 +369,17 @@ async function sendOrUpdateStaffMessage(client, entry) {
     if (entry.staffMessageId) {
       try {
         const msg = await staffChannel.messages.fetch(entry.staffMessageId);
-        await msg.edit({ embeds: [embed], components: rows });
+        await msg.edit({ content: commishTags || null, embeds: [embed], components: rows });
         return;
       } catch {
         // fallthrough to send new
       }
     }
     const msg = await staffChannel.send({
-      content: getStaffRoleMentions() || 'Staff review needed',
+      content: commishTags || 'Staff review needed',
       embeds: [embed],
       components: rows,
+      allowedMentions: { parse: ['roles'], roles: ['1460734222238220326', '1460734128935665817'] }
     });
     entry.staffMessageId = msg.id;
     const entries = readEntries();
@@ -422,22 +433,22 @@ async function handleStaffPick(interaction) {
   const entryId = parts[3];
   const teamEncoded = parts.slice(4).join('_');
   const team = teamEncoded.replace(/_/g, ' ');
-  // Gate to commish/co-commish only
+  // Gate to commish/co-commish (explicit IDs) or mapped staff roles
+  const memberRoles = interaction.member?.roles?.cache;
+  let allowedRoleIds = [];
   try {
     const staffMap = JSON.parse(fs.readFileSync(STAFF_MAP_PATH, 'utf8'));
-    const allowedRoles = ['Paradise Commish', 'Paradise Co-Commish'];
-    const allowedIds = Object.entries(staffMap || {})
-      .filter(([name]) => allowedRoles.includes(name))
-      .map(([, id]) => id)
-      .filter(Boolean);
-    const memberRoles = interaction.member?.roles?.cache;
-    const isStaff = allowedIds.length ? allowedIds.some(rid => memberRoles?.has(rid)) : true;
-    if (!isStaff) {
-      await interaction.reply({ content: 'Only Commish/Co-Commish can finalize free agency signings.', flags: 64 });
-      return;
-    }
+    allowedRoleIds = [
+      ...STAFF_ROLES.map(r => staffMap[r]).filter(Boolean),
+      ...COMMISH_ROLE_IDS,
+    ];
   } catch {
-    // if map missing, allow by default
+    allowedRoleIds = [...COMMISH_ROLE_IDS];
+  }
+  const hasStaff = allowedRoleIds.some(rid => memberRoles?.has(rid));
+  if (!hasStaff) {
+    await interaction.reply({ content: 'Only Commish/Co-Commish can finalize free agency signings.', flags: 64 });
+    return;
   }
   await interaction.deferReply({ flags: 64 });
 

@@ -1,5 +1,66 @@
 {
-  "Cleveland Cavaliers": [
-    "Keon Ellis"
+  "Houston Rockets": [
+    "Alperen Sengun",
+    "Fred VanVleet",
+    "Reed Sheppard",
+    "Kevin Durant"
+  ],
+  "Sacramento Kings": [
+    "DeMar DeRozan",
+    "Domantas Sabonis",
+    "Russell Westbrook"
+  ],
+  "Golden State Warriors": [
+    "Jimmy Butler",
+    "Draymond Green",
+    "Brandin Podziemski",
+    "Moses Moody",
+    "Kristaps Porzingis"
+  ],
+  "Miami Heat": [
+    "Pelle Larsson",
+    "Simone Fontecchio",
+    "Nikola Jovic",
+    "Norman Powell",
+    "Andrew Wiggins"
+  ],
+  "Orlando Magic": [
+    "Franz Wagner",
+    "Jalen Suggs"
+  ],
+  "Dallas Mavericks": [
+    "Kyrie Irving"
+  ],
+  "Charlotte Hornets": [
+    "Moussa Diabate"
+  ],
+  "Los Angeles Lakers": [
+    "Rui Hachimura",
+    "LeBron James"
+  ],
+  "Detroit Pistons": [
+    "Ausar Thompson",
+    "Isaiah Stewart",
+    "Tobias Harris",
+    "Daniss Jenkins"
+  ],
+  "Minnesota Timberwolves": [
+    "Julius Randle",
+    "Ayo Dosunmu",
+    "Donte DiVincenzo"
+  ],
+  "Oklahoma City Thunder": [
+    "Luguentz Dort",
+    "Alex Caruso"
+  ],
+  "Chicago Bulls": [
+    "Josh Giddey",
+    "Anfernee Simons",
+    "Tre Jones",
+    "Jaden Ivey"
+  ],
+  "Boston Celtics": [
+    "Nikola Vucevic",
+    "Payton Pritchard"
   ]
 }

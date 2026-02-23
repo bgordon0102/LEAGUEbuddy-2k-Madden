@@ -156,8 +156,8 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
     }
     console.log(`[resetSeasonData] Called from: ${caller}`);
     console.log(`[resetSeasonData] process.cwd():`, process.cwd());
-    // New season length: 14 games (single round vs conference only)
-    const gameno = 14;
+    // New season length: 15 weeks (single round vs conference only, one bye each week)
+    const gameno = 15;
     // Static NBA team list (shuffled for random schedule)
     // Dynamically build team list from 2k/teams_rosters directory
     const teamsRostersDir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
@@ -258,7 +258,7 @@ export async function resetSeasonData(seasonno, guild, caller = 'unknown', useCu
     return staticTeams.length;
 }
 
-// Generate a 14-game schedule: single round robin within each conference (East/West), one game per week
+// Generate a 15-week schedule: single round robin within each conference (East/West), one game per week, one bye per conference each week
 function generateWeekBasedSchedule(teams, gameno) {
     const eastNames = new Set([
         'Atlanta Hawks', 'Boston Celtics', 'Brooklyn Nets', 'Charlotte Hornets', 'Chicago Bulls',
@@ -271,12 +271,9 @@ function generateWeekBasedSchedule(teams, gameno) {
         'Phoenix Suns', 'Portland Trail Blazers', 'Sacramento Kings', 'San Antonio Spurs', 'Utah Jazz'
     ]);
 
-    const isEast = (name) => eastNames.has(name);
-    const east = [];
-    const west = [];
-    for (const t of teams) {
-        if (isEast(t.name)) east.push(t); else if (westNames.has(t.name)) west.push(t); else west.push(t);
-    }
+    const teamMap = teams.reduce((acc, t) => { acc[t.name] = t; return acc; }, {});
+    const east = [...eastNames].map(n => teamMap[n]).filter(Boolean);
+    const west = [...westNames].map(n => teamMap[n]).filter(Boolean);
 
     function validateScheduleNoDuplicates(weeks) {
         // weeks[0] is empty placeholder
@@ -294,25 +291,31 @@ function generateWeekBasedSchedule(teams, gameno) {
     }
 
     const buildRoundRobin = (list, startId) => {
-        const schedule = [];
+        const weeks = [];
         let id = startId;
         let arr = [...list];
-        if (arr.length % 2 !== 0) arr.push(null);
+        if (arr.length % 2 !== 0) arr.push(null); // BYE slot
         const n = arr.length;
-        const rounds = n - 1;
+        const rounds = n - 1; // with BYE, this yields one bye per team
         const half = n / 2;
         for (let round = 0; round < rounds; round++) {
             const week = [];
             for (let i = 0; i < half; i++) {
                 const a = arr[i];
                 const b = arr[n - 1 - i];
-                if (a && b) week.push({ id: id++, team1: a, team2: b });
+                if (a && b) {
+                    week.push({ id: id++, team1: a, team2: b });
+                }
+                // ignore BYE pairings
             }
-            schedule.push(week);
-            // rotate
-            arr = [arr[0], arr[n - 1], ...arr.slice(1, n - 1)];
+            weeks.push(week);
+            // standard circle method rotation
+            const fixed = arr[0];
+            const last = arr.pop();
+            arr.splice(1, 0, last);
+            arr[0] = fixed;
         }
-        return { weeks: schedule, nextId: id };
+        return { weeks, nextId: id };
     };
 
     const combined = [];

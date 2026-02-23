@@ -81,5 +81,45 @@
     },
     "requester": "1076243288056664234",
     "createdAt": "2026-02-11T21:44:22.693Z"
+  },
+  "1771791735655": {
+    "id": "1771791735655",
+    "type": "sign",
+    "entries": {
+      "sign": [
+        {
+          "type": "sign",
+          "team": "Heat",
+          "player": "Torrey Craig",
+          "position": "PF",
+          "raw": "Heat sign PF Torrey Craig to 1yr/$2.30M deal"
+        },
+        {
+          "type": "sign",
+          "team": "Suns",
+          "player": "Shake Milton",
+          "position": "PG",
+          "raw": "Suns sign PG Shake Milton to 1yr/$2.30M deal"
+        },
+        {
+          "type": "sign",
+          "team": "Celtics",
+          "player": "Dante Exum",
+          "position": "SG",
+          "raw": "Celtics sign SG Dante Exum to 1yr/$2.30M deal"
+        },
+        {
+          "type": "sign",
+          "team": "Celtics",
+          "player": "Cameron Payne",
+          "position": "PG",
+          "raw": "Celtics sign PG Cameron Payne to 1yr/$2.30M deal"
+        }
+      ],
+      "waive": [],
+      "trade": []
+    },
+    "requester": "1076243288056664234",
+    "createdAt": "2026-02-22T20:22:15.655Z"
   }
 }

@@ -10,6 +10,30 @@ const SELECT_PENDING_FILE = path.join(process.cwd(), 'data', 'updaterosters_type
 const STAFF_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
 
 const ALLOWED_STAFF_NAMES = ['Paradise Commish', 'Paradise Co-Commish'];
+const TEAM_ALIASES = {
+  heat: 'Miami Heat',
+  'hea t': 'Miami Heat',
+  suns: 'Phoenix Suns',
+  celtics: 'Boston Celtics',
+  'celt os': 'Boston Celtics',
+  celtos: 'Boston Celtics',
+  knicks: 'New York Knicks',
+  nets: 'Brooklyn Nets',
+  lakers: 'Los Angeles Lakers',
+  clippers: 'Los Angeles Clippers',
+  warriors: 'Golden State Warriors',
+  sixers: 'Philadelphia 76ers',
+  '76ers': 'Philadelphia 76ers',
+  pels: 'New Orleans Pelicans',
+  pelicans: 'New Orleans Pelicans',
+  wolves: 'Minnesota Timberwolves',
+  twolves: 'Minnesota Timberwolves',
+  blazers: 'Portland Trail Blazers',
+  mavs: 'Dallas Mavericks',
+  spurs: 'San Antonio Spurs',
+  jazz: 'Utah Jazz',
+  bucks: 'Milwaukee Bucks',
+};
 
 function readStaffRoleIds() {
   try {
@@ -168,17 +192,21 @@ function parseByType(type, lines) {
 }
 
 function getRosterCached(cache, team) {
-  if (cache[team]) return cache[team];
-  const data = readRoster(team);
+  const keyRaw = String(team || '').trim();
+  const key = keyRaw.toLowerCase();
+  if (cache[key]) return cache[key];
+  const alias = TEAM_ALIASES[key] || keyRaw;
+  const data = readRoster(alias, { force2k: true });
   let normalized = null;
   if (data?.roster && Array.isArray(data.roster.players)) {
-    normalized = { roster: data.roster, rosterPath: data.rosterPath || team };
+    normalized = { roster: data.roster, rosterPath: data.rosterPath || alias };
   } else if (Array.isArray(data?.players)) {
-    normalized = { roster: { players: data.players, picks: data.picks || [] }, rosterPath: team };
+    normalized = { roster: { players: data.players, picks: data.picks || [] }, rosterPath: alias };
   } else if (Array.isArray(data)) {
-    normalized = { roster: { players: data, picks: [] }, rosterPath: team };
+    normalized = { roster: { players: data, picks: [] }, rosterPath: alias };
   }
-  cache[team] = normalized;
+  console.log('[updaterosters][getRosterCached]', { team: keyRaw, alias, found: !!normalized, rosterPath: normalized?.rosterPath, players: normalized?.roster?.players?.length });
+  cache[key] = normalized;
   return normalized;
 }
 

@@ -10,12 +10,11 @@ import {
 } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
-import { readRoster, saveRoster, upsertPlayer, removePlayerFromOtherRostersFuzzy, normalizeName } from '../utils/rosterUtils.js';
+import { readRoster, saveRoster, upsertPlayer, removePlayerFromOtherRostersFuzzy, normalizeName, computePlayerValue2k } from '../utils/rosterUtils.js';
 import { getSeasonState } from '../utils/seasonUtils.js';
 
 const FA_CHANNEL_ID = '1455148525179502602';
-const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
-const ANNOUNCE_CHANNEL_ID = '1455152984089694218'; // offseason announcements channel
+const ANNOUNCE_CHANNEL_ID = '1455152984089694218'; // offseason announcements channel (disabled during testing)
 const OFFER_ALERT_CHANNEL_ID = process.env.FREE_AGENCY_OFFER_ALERT_CHANNEL_ID || '1425555647167987792';
 const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json');
 const STAFF_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
@@ -24,8 +23,24 @@ const STAFF_REVIEW_CHANNEL_ID = '1455151770383814666';
 const PENDING_FILE = path.join(process.cwd(), 'data', 'inseason_fa_pending.json');
 // Role names that are allowed to approve/deny in-season free agents
 const APPROVER_ROLE_NAMES = ['Paradise Commish', 'Paradise Co-Commish', 'League Buddy', 'LEAGUEbuddy Admin'];
+const APPROVER_ROLE_IDS = ['1460399404241522759']; // explicit commish role to always tag
 // Prefix used to tag the coach who submitted an offer (falls back to the user if the role is missing)
 const COACH_TAG_PREFIX = 'Coach:';
+
+function resolveTeamName(name) {
+  const base = name.replace(/\s+coach$/i, '').trim();
+  const cleaned = normalizeName(base);
+  try {
+    const teamsPath = path.join(process.cwd(), 'data', 'teams.json');
+    const teams = JSON.parse(fs.readFileSync(teamsPath, 'utf8'));
+    const match = teams.find(t => {
+      const n = normalizeName(t.name || '');
+      return n === cleaned || n.includes(cleaned) || cleaned.includes(n);
+    });
+    if (match?.name) return match.name;
+  } catch { /* ignore */ }
+  return base;
+}
 
 function readCoachRoleMap() {
   try {
@@ -52,7 +67,7 @@ function getStaffMention(guild) {
         .map(([, id]) => id)
         .filter(Boolean)
     )
-  );
+  ).concat(APPROVER_ROLE_IDS);
   const validIds = guild?.roles?.cache ? ids.filter(id => guild.roles.cache.has(id)) : ids;
   return validIds.length ? validIds.map(id => `<@&${id}>`).join(' ') : '';
 }
@@ -175,8 +190,6 @@ export async function execute(interaction) {
     });
 
     const firstOptions = sorted.slice(0, 25).map(toOption);
-    const remainingOptions = sorted.slice(25, 50).map(toOption); // Discord select max 25
-
     const rows = [];
     rows.push(
       new ActionRowBuilder().addComponents(
@@ -186,16 +199,14 @@ export async function execute(interaction) {
           .addOptions(firstOptions)
       )
     );
-    if (remainingOptions.length) {
-      rows.push(
-        new ActionRowBuilder().addComponents(
-          new StringSelectMenuBuilder()
-            .setCustomId('inseason_fa_select_more')
-            .setPlaceholder('More free agents')
-            .addOptions(remainingOptions)
-        )
-      );
-    }
+    rows.push(
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('inseason_fa_search_btn')
+          .setLabel('Search all free agents')
+          .setStyle(ButtonStyle.Secondary)
+      )
+    );
 
     await interaction.editReply({
       content: 'Select a free agent to sign.',
@@ -339,7 +350,7 @@ async function handleModalSubmit(interaction) {
       }
       const coachMention = getCoachMention(reviewChannel.guild, team, coachMap) || `<@${interaction.user.id}>`;
       const staffMention = getStaffMention(reviewChannel.guild);
-      const content = [staffMention, `${COACH_TAG_PREFIX} ${coachMention}`].filter(Boolean).join(' | ');
+      const content = [staffMention].filter(Boolean).join(' '); // only commish/co-commish
       const msg = await reviewChannel.send({ content, embeds: [embed], components: [buttons] });
       if (latest[requestId]) {
         latest[requestId].staffMessageId = msg.id;
@@ -355,33 +366,33 @@ async function handleModalSubmit(interaction) {
 
 async function sendOfferAlert(client, entry) {
   try {
-    const pending = readPending();
-    const stored = pending[entry.id];
-    if (stored?.alertSent) return;
-    if (stored) {
-      stored.alertSent = true;
-      writePending(pending);
-    }
+    if (!entry || entry.alertSent) return;
     const channel = await client.channels.fetch(OFFER_ALERT_CHANNEL_ID).catch(() => null);
     if (!channel || !channel.isTextBased()) return;
-    const expireTs = Math.floor((Date.now() + 60 * 60 * 1000) / 1000);
+    const gpTag = '<@&1460733464721490108>'; // Ghost Paradise
     const embed = new EmbedBuilder()
-      .setTitle(`New In-Season FA Offer: ${entry.player.name}`)
-      .setColor(0xf1c40f)
-      .setDescription('You have an hour to send in an offer before they sign.')
+      .setTitle('In-Season FA Request')
+      .setColor(0xFEE75C)
       .addFields(
-        { name: 'Position', value: entry.player.position || '—', inline: true },
-        { name: 'OVR', value: entry.player.ovr ? String(entry.player.ovr) : '—', inline: true },
-        { name: 'Timer', value: `<t:${expireTs}:R>`, inline: true },
-      );
-    if (entry.player.thumbnail || entry.player.img || entry.player.imgUrl || entry.player.imgURL) {
-      const thumb = entry.player.thumbnail || entry.player.img || entry.player.imgUrl || entry.player.imgURL;
-      embed.setThumbnail(thumb);
+        { name: 'Team', value: entry.team || 'Unknown', inline: true },
+        { name: 'Player', value: entry.player?.name || 'Unknown', inline: true },
+        { name: 'Position', value: entry.player?.position || '—', inline: true },
+        { name: 'OVR', value: entry.player?.ovr ? String(entry.player.ovr) : '—', inline: true },
+        { name: 'Terms', value: `${entry.years || '—'} years${entry.salary ? ` | ${entry.salary}` : ''}`, inline: false },
+      )
+      .setFooter({ text: `Request ID: ${entry.id}` })
+      .setTimestamp(new Date());
+    const thumb = entry.player?.img || entry.player?.imgUrl || entry.player?.imgURL;
+    if (thumb) embed.setThumbnail(thumb);
+
+    await channel.send({ content: gpTag, embeds: [embed] });
+
+    // mark alertSent
+    const pending = readPending();
+    if (pending[entry.id]) {
+      pending[entry.id].alertSent = true;
+      writePending(pending);
     }
-    await channel.send({
-      content: `<@&${GHOST_PARADISE_ROLE_ID}> ${entry.team} placed an in-season FA offer for ${entry.player.name}.`,
-      embeds: [embed],
-    });
   } catch (err) {
     console.error('[inseason_fa] Failed to send offer alert:', err);
   }
@@ -389,6 +400,7 @@ async function sendOfferAlert(client, entry) {
 
 async function handleApproval(interaction, approve) {
   const id = interaction.customId.replace(approve ? 'inseason_fa_approve_' : 'inseason_fa_deny_', '');
+  console.log('[inseason_fa][approve] start', { id, team: interaction.customId });
   // Gate to commish/co-commish only
   try {
     const staffMap = JSON.parse(fs.readFileSync(STAFF_ROLE_MAP_PATH, 'utf8'));
@@ -439,16 +451,31 @@ async function handleApproval(interaction, approve) {
     return;
   }
 
-  const rosterData = readRoster(entry.team);
+  const rosterData = readRoster(entry.team, { force2k: true }) || readRoster(resolveTeamName(entry.team), { force2k: true });
+  const rosterPath = rosterData?.rosterPath || rosterData?.path;
+  const roster = rosterData?.roster || rosterData;
+  console.log('[inseason_fa][approve] roster lookup', {
+    entryTeam: entry.team,
+    teamName: resolveTeamName(entry.team),
+    found: !!rosterData,
+    rosterPath,
+    hasPlayers: Array.isArray(roster?.players),
+  });
   if (!rosterData) {
-    await interaction.editReply({ content: `Roster not found for ${entry.team}.` });
+    await interaction.editReply({ content: `Roster not found for ${resolveTeamName(entry.team)}.` });
     return;
   }
-  const { rosterPath, roster } = rosterData;
-  upsertPlayer(roster, entry.player.name, {
+  // Preserve any existing contractYears if present; store offer details for reference
+  const contractYears = Array.isArray(entry.player.contractYears) ? entry.player.contractYears : undefined;
+  const playerValue = computePlayerValue2k(entry.player) || Number(entry.player.val ?? entry.player.value ?? entry.player.valuation ?? 0);
+
+  upsertPlayer(roster, {
     ...entry.player,
-    contractYears: entry.years || undefined,
+    contractYears: contractYears || undefined,
+    contractYearsText: entry.years || undefined,
     salaryPerYear: entry.salary || undefined,
+    salaryText: entry.salary || undefined,
+    val: playerValue || undefined,
     lastSigned: 'in-season free agency',
     lastUpdatedBy: interaction.user.id,
     lastUpdatedAt: new Date().toISOString(),
@@ -456,33 +483,7 @@ async function handleApproval(interaction, approve) {
   removePlayerFromOtherRostersFuzzy(entry.player.name, rosterPath);
   saveRoster(rosterPath, roster);
 
-  // Announce (same channel as offseason announcements)
-  try {
-    const announceChannel = await interaction.client.channels.fetch(ANNOUNCE_CHANNEL_ID).catch(() => null);
-    if (announceChannel && announceChannel.isTextBased()) {
-      const coachMap = readCoachRoleMap();
-      const roleId = coachMap[entry.team];
-       const thumb = entry.player.img || entry.player.imgUrl || entry.player.imgURL || entry.player.thumbnail || null;
-      const embed = new EmbedBuilder()
-        .setTitle(`In-Season Signing: ${entry.player.name}`)
-        .setColor(0x57f287)
-        .addFields(
-          { name: 'Team', value: entry.team, inline: true },
-          { name: 'Position', value: entry.player.position || '—', inline: true },
-          { name: 'OVR', value: entry.player.ovr ? String(entry.player.ovr) : '—', inline: true },
-          { name: 'Age', value: entry.player.age ? String(entry.player.age) : '—', inline: true },
-          { name: 'Terms', value: `${entry.years || '—'} years${entry.salary ? ` | ${entry.salary}` : ''}`, inline: false },
-        )
-        .setTimestamp(new Date());
-      if (thumb) embed.setThumbnail(thumb);
-      await announceChannel.send({
-        content: `${roleId ? `<@&${roleId}>` : ''} <@&${GHOST_PARADISE_ROLE_ID}> ${entry.player.name} signed with ${entry.team}.`,
-        embeds: [embed],
-      });
-    }
-  } catch (err) {
-    console.error('[inseason_fa] Failed to announce:', err);
-  }
+  // Announcements disabled during testing
 
   delete pending[id];
   writePending(pending);

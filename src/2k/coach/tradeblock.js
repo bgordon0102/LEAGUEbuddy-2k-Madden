@@ -66,6 +66,21 @@ function getCoachTeamFromRoles(interaction) {
     const roles = interaction.member?.roles?.cache;
     if (!roles) return null;
     const teamSlugs = getTeamListSlugs();
+    const USER_TEAM_OVERRIDES = {
+        '840269359578611753': 'Minnesota_Timberwolves',
+    };
+    if (USER_TEAM_OVERRIDES[interaction.user?.id]) return USER_TEAM_OVERRIDES[interaction.user.id];
+    // Explicit override: Timberwolves coach role id or role name containing 'timberwolves'
+    if (roles.has('1460736451473051739')) return 'Minnesota_Timberwolves';
+    if (roles.has('1460734654901653525')) return 'Milwaukee_Bucks';
+    for (const [, role] of roles) {
+        if ((role.name || '').toLowerCase().includes('timberwolves')) return 'Minnesota_Timberwolves';
+        if ((role.name || '').toLowerCase().includes('bucks')) return 'Milwaukee_Bucks';
+    }
+    console.log('[tradeblock][team-detect-fallback]', {
+        userId: interaction.user?.id,
+        roleIds: Array.from(roles.keys())
+    });
 
     // 1) Exact "Team Coach" role names
     for (const [, role] of roles) {
@@ -104,7 +119,7 @@ function getCoachTeamFromRoles(interaction) {
 
 function getTeamPlayers(team) {
     const resolved = resolveTeamNameForRoster(team) || team;
-    const data = readRoster(resolved);
+    const data = readRoster(resolved, { force2k: true });
     // Support legacy shapes: array, { players: [] }, or { roster: { players: [] } }
     const playersArr = Array.isArray(data)
         ? data
@@ -113,6 +128,12 @@ function getTeamPlayers(team) {
             : Array.isArray(data?.roster?.players)
                 ? data.roster.players
                 : [];
+    console.log('[tradeblock][players]', {
+        team,
+        resolved,
+        count: playersArr.length,
+        sample: playersArr.slice(0, 5).map(p => p.name)
+    });
     return playersArr.map(p => p.name).filter(Boolean);
 }
 
@@ -323,14 +344,31 @@ export default {
         }
     },
     async execute(interaction) {
+        let replied = false;
+        const safeReply = async (payload) => {
+            if (!replied) {
+                replied = true;
+                return interaction.editReply ? interaction.editReply(payload) : interaction.reply(payload);
+            }
+            return interaction.followUp ? interaction.followUp(payload) : null;
+        };
+        try {
+            await interaction.deferReply({ ephemeral: true });
+            replied = true;
+        } catch (err) {
+            if (err?.code !== 10062 && err?.code !== 40060) {
+                console.error('[tradeblock] deferReply failed', err);
+            }
+        }
+
         const teamRaw = getCoachTeamFromRoles(interaction);
         const team = resolveTeamNameForRoster(teamRaw) || teamRaw;
-        if (!team) return interaction.reply({ content: 'You are not mapped to a team.', ephemeral: true });
+        if (!team) return safeReply({ content: 'You are not mapped to a team.', ephemeral: true });
         const action = interaction.options.getString('action');
         const player = interaction.options.getString('player');
         const teamPlayers = getTeamPlayers(team);
         if (!teamPlayers.includes(player)) {
-            return interaction.reply({ content: 'You can only add/remove players from your own team.', ephemeral: true });
+            return safeReply({ content: 'You can only add/remove players from your own team.', ephemeral: true });
         }
         // Always reload trade block from disk to avoid race conditions
         let tradeBlock = getTradeBlock();
@@ -341,11 +379,11 @@ export default {
             tradeBlock = getTradeBlock();
             tradeBlock[team] = tradeBlock[team] || [];
             if (tradeBlock[team].length >= 5) {
-                return interaction.reply({ content: 'You can only have 5 players on your trade block.', ephemeral: true });
+                return safeReply({ content: 'You can only have 5 players on your trade block.', ephemeral: true });
             }
             if (tradeBlock[team].includes(player)) {
                 console.log(`[DEBUG] Attempted to add duplicate player to trade block: ${player} for team ${team}`);
-                return interaction.reply({ content: `${player} is already on your trade block.`, ephemeral: true });
+                return safeReply({ content: `${player} is already on your trade block.`, ephemeral: true });
             }
             tradeBlock[team].push(player);
             saveTradeBlock(tradeBlock);
@@ -410,10 +448,10 @@ export default {
             tradeBlockMessages[team][player] = { messageId: sentMsg.id, threadId: target?.id || null };
             saveTradeBlockMessages(tradeBlockMessages);
 
-            return interaction.reply({ content: `${player} added to your trade block.`, ephemeral: true });
+            return safeReply({ content: `${player} added to your trade block.`, ephemeral: true });
         } else if (action === 'remove') {
             if (!tradeBlock[team].includes(player)) {
-                return interaction.reply({ content: `${player} is not on your trade block.`, ephemeral: true });
+                return safeReply({ content: `${player} is not on your trade block.`, ephemeral: true });
             }
             tradeBlock[team] = tradeBlock[team].filter(p => p !== player);
             saveTradeBlock(tradeBlock);
@@ -440,9 +478,9 @@ export default {
                 }
                 saveTradeBlockMessages(tradeBlockMessages);
             }
-            return interaction.reply({ content: `${player} removed from your trade block.`, ephemeral: true });
+            return safeReply({ content: `${player} removed from your trade block.`, ephemeral: true });
         } else {
-            return interaction.reply({ content: 'Invalid action.', ephemeral: true });
+            return safeReply({ content: 'Invalid action.', ephemeral: true });
         }
     }
 };

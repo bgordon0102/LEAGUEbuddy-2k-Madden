@@ -14,14 +14,14 @@ import { readRoster, saveRoster, upsertPlayer, removePlayerFromOtherRostersFuzzy
 import { getSeasonState } from '../shared/seasonUtils.js';
 
 const FA_CHANNEL_ID = '1455148525179502602';
-const GHOST_PARADISE_ROLE_ID = '1460733464721490108';
 const ANNOUNCE_CHANNEL_ID = '1455152984089694218'; // offseason announcements channel
 const OFFER_ALERT_CHANNEL_ID = process.env.FREE_AGENCY_OFFER_ALERT_CHANNEL_ID || '1425555647167987792';
 const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json');
-const STAFF_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
 const SEASON_PATH = path.join(process.cwd(), 'data', 'season.json');
 const STAFF_REVIEW_CHANNEL_ID = '1455151770383814666';
 const PENDING_FILE = path.join(process.cwd(), 'data', 'inseason_fa_pending.json');
+const COMMISH_ROLE_IDS = ['1460734222238220326', '1460734128935665817'];
+const STAFF_MENTION = '<@&1460734222238220326> <@&1460734128935665817>';
 
 function readCoachRoleMap() {
   try {
@@ -31,26 +31,25 @@ function readCoachRoleMap() {
   }
 }
 
-function readStaffRoles() {
-  try {
-    return JSON.parse(fs.readFileSync(STAFF_ROLE_MAP_PATH, 'utf8'));
-  } catch {
-    return {};
-  }
+function getStaffMention() {
+  return STAFF_MENTION;
 }
 
-function getStaffMention() {
-  const map = readStaffRoles();
-  const ALLOWED = ['Paradise Commish', 'Paradise Co-Commish'];
-  const ids = Array.from(
-    new Set(
-      Object.entries(map || {})
-        .filter(([name]) => ALLOWED.includes(name))
-        .map(([, id]) => id)
-        .filter(Boolean)
-    )
-  );
-  return ids.length ? ids.map(id => `<@&${id}>`).join(' ') : '';
+async function debugStaffMentions(client) {
+  try {
+    const guildId = client.guilds?.cache?.first()?.id;
+    if (!guildId) return;
+    const guild = client.guilds.cache.get(guildId);
+    const roles = await guild.roles.fetch();
+    const hits = COMMISH_ROLE_IDS.map(id => ({ id, exists: roles.has(id), name: roles.get(id)?.name }));
+    console.log('[inseason_fa][staffMention]', {
+      staffMention: STAFF_MENTION,
+      allowedMentionsRoles: COMMISH_ROLE_IDS,
+      rolesFound: hits,
+    });
+  } catch (err) {
+    console.warn('[inseason_fa][staffMention] debug failed', err);
+  }
 }
 
 function readPending() {
@@ -63,7 +62,12 @@ function readPending() {
 
 function writePending(data) {
   try {
-    fs.writeFileSync(PENDING_FILE, JSON.stringify(data ?? {}, null, 2));
+    const normalized = data && typeof data === 'object' && !Array.isArray(data)
+      ? data
+      : {};
+    fs.mkdirSync(path.dirname(PENDING_FILE), { recursive: true });
+    fs.writeFileSync(PENDING_FILE, JSON.stringify(normalized, null, 2));
+    console.log('[inseason_fa][writePending] saved', { count: Object.keys(normalized || {}).length, path: PENDING_FILE });
   } catch (err) {
     console.error('[inseason_fa] Failed to write pending approvals:', err);
   }
@@ -121,6 +125,36 @@ function loadFreeAgents() {
     img: p.imgUrl || p.imgURL || null,
   }));
 }
+
+function resolveTeamName(name) {
+  const base = name.replace(/\s+coach$/i, '').trim();
+  const cleaned = normalizeName(base);
+  try {
+    const teamsPath = path.join(process.cwd(), 'data', 'teams.json');
+    const teams = JSON.parse(fs.readFileSync(teamsPath, 'utf8'));
+    const match = teams.find(t => {
+      const n = normalizeName(t.name || '');
+      return n === cleaned || n.includes(cleaned) || cleaned.includes(n);
+    });
+    if (match?.name) return match.name;
+  } catch { /* ignore */ }
+  return base;
+}
+
+function findRoster2k(team) {
+  const primary = readRoster(team, { force2k: true });
+  if (primary) return primary;
+  const resolved = resolveTeamName(team);
+  const secondary = readRoster(resolved, { force2k: true });
+  if (secondary) return secondary;
+  try {
+    const dir = path.join(process.cwd(), "data", "2k", "teams_rosters");
+    const files = fs.readdirSync(dir).filter(f => f.endsWith(".json"));
+    console.warn("[inseason_fa][findRoster2k] not found", { team, resolved, files });
+  } catch {}
+  return null;
+}
+
 
 export const customId = /^inseason_fa_(button|select|modal_.+|approve_.+|deny_.+)_?.*/;
 
@@ -263,7 +297,7 @@ async function handleModalSubmit(interaction) {
 
   const years = interaction.fields.getTextInputValue('years') || '';
   const salary = interaction.fields.getTextInputValue('salary') || '';
-  const pending = readPending();
+  const pending = readPending() || {};
   const exists = Object.values(pending || {}).find(entry =>
     entry.team === team && normalizeName(entry.player?.name || entry.player) === normalizeName(player.name)
   );
@@ -289,6 +323,7 @@ async function handleModalSubmit(interaction) {
     staffMessageId: null,
   };
   writePending(pending);
+  console.log('[inseason_fa][submit] added pending', { id: requestId, team, player: player.name });
 
   await sendOfferAlert(interaction.client, pending[requestId]);
 
@@ -317,16 +352,15 @@ async function handleModalSubmit(interaction) {
         new ButtonBuilder().setCustomId(`inseason_fa_approve_${requestId}`).setLabel('Approve').setStyle(ButtonStyle.Success),
         new ButtonBuilder().setCustomId(`inseason_fa_deny_${requestId}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
       );
+
       const latest = readPending();
-      if (latest[requestId]?.staffMessageId) {
-        // already sent
-        return;
+      const existingId = latest[requestId]?.staffMessageId;
+      let msg = null;
+      if (existingId) {
+        msg = await reviewChannel.messages.fetch(existingId).catch(() => null);
       }
-      const msg = await reviewChannel.send({ content: getStaffMention(), embeds: [embed], components: [buttons] });
-      if (latest[requestId]) {
-        latest[requestId].staffMessageId = msg.id;
-        writePending(latest);
-      }
+
+  // Staff announcement temporarily removed during testing (no Ghost Paradise tag either)
     }
   } catch (err) {
     console.error('[inseason_fa] Failed to send staff review:', err);
@@ -360,10 +394,8 @@ async function sendOfferAlert(client, entry) {
       const thumb = entry.player.thumbnail || entry.player.img || entry.player.imgUrl || entry.player.imgURL;
       embed.setThumbnail(thumb);
     }
-    await channel.send({
-      content: `<@&${GHOST_PARADISE_ROLE_ID}> ${entry.team} placed an in-season FA offer for ${entry.player.name}.`,
-      embeds: [embed],
-    });
+    // No notifications while testing
+    await channel.send({ embeds: [embed], content: '' });
   } catch (err) {
     console.error('[inseason_fa] Failed to send offer alert:', err);
   }
@@ -372,22 +404,10 @@ async function sendOfferAlert(client, entry) {
 async function handleApproval(interaction, approve) {
   const id = interaction.customId.replace(approve ? 'inseason_fa_approve_' : 'inseason_fa_deny_', '');
   // Gate to commish/co-commish only
-  try {
-    const staffMap = JSON.parse(fs.readFileSync(STAFF_ROLE_MAP_PATH, 'utf8'));
-    const allowedRoles = ['Paradise Commish', 'Paradise Co-Commish'];
-    const allowedIds = Object.entries(staffMap || {})
-      .filter(([name]) => allowedRoles.includes(name))
-      .map(([, rid]) => rid)
-      .filter(Boolean);
-    const memberRoles = interaction.member?.roles?.cache;
-    const isStaff = allowedIds.length ? allowedIds.some(rid => memberRoles?.has(rid)) : false;
-    if (!isStaff) {
-      await interaction.reply({ content: 'Only Commish/Co-Commish can approve or deny in-season FA offers.', flags: 64 });
-      return;
-    }
-  } catch {
-    // if map missing, deny to be safe
-    await interaction.reply({ content: 'Staff role map missing. Only Commish/Co-Commish may act.', flags: 64 });
+  const memberRoles = interaction.member?.roles?.cache;
+  const isStaff = COMMISH_ROLE_IDS.some(rid => memberRoles?.has(rid));
+  if (!isStaff) {
+    await interaction.reply({ content: 'Only Commish/Co-Commish can approve or deny in-season FA offers.', flags: 64 });
     return;
   }
   const pending = readPending();
@@ -422,13 +442,39 @@ async function handleApproval(interaction, approve) {
     return;
   }
 
-  const rosterData = readRoster(entry.team);
-  if (!rosterData) {
-    await interaction.editReply({ content: `Roster not found for ${entry.team}.` });
+  const teamName = resolveTeamName(entry.team);
+  const finalRoster = readRoster(entry.team, { force2k: true }) || readRoster(teamName, { force2k: true });
+  console.log('[inseason_fa][approve] roster lookup', {
+    entryTeam: entry.team,
+    teamName,
+    found: !!finalRoster,
+    rosterPath: finalRoster?.rosterPath || finalRoster?.path,
+    hasPlayers: Array.isArray(finalRoster?.players) || Array.isArray(finalRoster?.roster?.players),
+  });
+  if (!finalRoster) {
+    // log directory for debug
+    try {
+      const dir = path.join(process.cwd(), 'data', '2k', 'teams_rosters');
+      const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
+      console.warn('[inseason_fa][approve] roster not found', { entryTeam: entry.team, teamName, files });
+    } catch {}
+    await interaction.editReply({ content: `Roster not found for ${teamName}.` });
     return;
   }
-  const { rosterPath, roster } = rosterData;
-  upsertPlayer(roster, entry.player.name, {
+  const rosterPath = finalRoster.rosterPath || finalRoster.path;
+  const rosterObj = finalRoster.roster || finalRoster;
+  const rosterArr = Array.isArray(rosterObj?.players)
+    ? rosterObj.players
+    : Array.isArray(rosterObj)
+      ? rosterObj
+      : null;
+
+  if (!Array.isArray(rosterArr)) {
+    await interaction.editReply({ content: `Roster format invalid for ${entry.team}.` });
+    return;
+  }
+
+  upsertPlayer(rosterObj, {
     ...entry.player,
     contractYears: entry.years || undefined,
     salaryPerYear: entry.salary || undefined,
@@ -436,36 +482,11 @@ async function handleApproval(interaction, approve) {
     lastUpdatedBy: interaction.user.id,
     lastUpdatedAt: new Date().toISOString(),
   });
-  removePlayerFromOtherRostersFuzzy(entry.player.name, rosterPath);
-  saveRoster(rosterPath, roster);
 
-  // Announce (same channel as offseason announcements)
-  try {
-    const announceChannel = await interaction.client.channels.fetch(ANNOUNCE_CHANNEL_ID).catch(() => null);
-    if (announceChannel && announceChannel.isTextBased()) {
-      const coachMap = readCoachRoleMap();
-      const roleId = coachMap[entry.team];
-      const thumb = entry.player.img || entry.player.imgUrl || entry.player.imgURL || entry.player.thumbnail || null;
-      const embed = new EmbedBuilder()
-        .setTitle(`In-Season Signing: ${entry.player.name}`)
-        .setColor(0x57f287)
-        .addFields(
-          { name: 'Team', value: entry.team, inline: true },
-          { name: 'Position', value: entry.player.position || '—', inline: true },
-          { name: 'OVR', value: entry.player.ovr ? String(entry.player.ovr) : '—', inline: true },
-          { name: 'Age', value: entry.player.age ? String(entry.player.age) : '—', inline: true },
-          { name: 'Terms', value: `${entry.years || '—'} years${entry.salary ? ` | ${entry.salary}` : ''}`, inline: false },
-        )
-        .setTimestamp(new Date());
-      if (thumb) embed.setThumbnail(thumb);
-      await announceChannel.send({
-        content: `${roleId ? `<@&${roleId}>` : ''} <@&${GHOST_PARADISE_ROLE_ID}> ${entry.player.name} signed with ${entry.team}.`,
-        embeds: [embed],
-      });
-    }
-  } catch (err) {
-    console.error('[inseason_fa] Failed to announce:', err);
-  }
+  removePlayerFromOtherRostersFuzzy(entry.player.name);
+  saveRoster(rosterPath || teamName, { ...rosterObj, players: Array.isArray(rosterObj?.players) ? rosterObj.players : rosterArr });
+
+  // Announcements temporarily disabled during testing
 
   delete pending[id];
   writePending(pending);
