@@ -1,20 +1,6 @@
 {
   "players": [
     {
-      "name": "Cameron Payne",
-      "position": "PG",
-      "height": "6'3\" (191cm)",
-      "weight": "183lbs (82kg)",
-      "archetype": "3PT-Sniping Creator",
-      "birthdate": "August 8, 1994",
-      "yearsInNBA": "11",
-      "wingspan": "6'7\" (201cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Cameron-Payne-2K-Rating.png",
-      "ovr": "75",
-      "prior_to_nba": "Murray State",
-      "nationality": "United States"
-    },
-    {
       "name": "Dante Exum",
       "position": "SG / SF",
       "height": "6'5\" (196cm)",
@@ -27,6 +13,20 @@
       "ovr": "75",
       "prior_to_nba": "Lake Ginninderra High School (Australia)",
       "nationality": "Australia"
+    },
+    {
+      "name": "Cameron Payne",
+      "position": "PG",
+      "height": "6'3\" (191cm)",
+      "weight": "183lbs (82kg)",
+      "archetype": "3PT-Sniping Creator",
+      "birthdate": "August 8, 1994",
+      "yearsInNBA": "11",
+      "wingspan": "6'7\" (201cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Cameron-Payne-2K-Rating.png",
+      "ovr": "75",
+      "prior_to_nba": "Murray State",
+      "nationality": "United States"
     },
     {
       "name": "Torrey Craig",

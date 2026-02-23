@@ -579,5 +579,120 @@
     "postedToCommittee": true,
     "submittedAt": 1771803517563,
     "expiresAt": 1771889917563
+  },
+  "builder_1195843329477328978_1771808686534": {
+    "tradeId": "builder_1195843329477328978_1771808686534",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736265682026779",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "San Antonio Spurs",
+    "assetsSent": "Jaime Jaquez Jr. (PF / SF) — 380.0\n2026 Round 1 — 240.0",
+    "assetsReceived": "De’Aaron Fox (PG / SG) — 600.0",
+    "picksSent": [
+      "2026 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771808731730,
+    "expiresAt": 1771895131730
+  },
+  "builder_817610144460308501_1771808799397": {
+    "tradeId": "builder_817610144460308501_1771808799397",
+    "proposerId": "817610144460308501",
+    "coachBId": "1460735355568525413",
+    "yourTeam": "Orlando Magic",
+    "otherTeam": "Charlotte Hornets",
+    "assetsSent": "Franz Wagner (SF / PF) — 620.0\nJonathan Isaac (PF / C) — 130.0",
+    "assetsReceived": "Brandon Miller (SG / SF) — 600.0\nJosh Green (SF / SG) — 145.0",
+    "picksSent": [],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771808841004,
+    "expiresAt": 1771895241004
+  },
+  "builder_670446898695503897_1771810149361": {
+    "tradeId": "builder_670446898695503897_1771810149361",
+    "proposerId": "670446898695503897",
+    "coachBId": "1460736215178285209",
+    "yourTeam": "San Antonio Spurs",
+    "otherTeam": "Houston Rockets",
+    "assetsSent": "Keldon Johnson (SF / PF) — 380.0\n2026 Round 1 — 240.0\n2026 Round 1 — 240.0",
+    "assetsReceived": "Amen Thompson (SG / PG) — 600.0\n2026 Round 2 — 86.0\n2027 Round 2 — 56.0\nJeff Green (PF / C) — 130.0",
+    "picksSent": [
+      "2026 Round 1",
+      "2026 Round 1"
+    ],
+    "picksReceived": [
+      "2026 Round 2",
+      "2027 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771810211566,
+    "expiresAt": 1771896611566
+  },
+  "builder_817610144460308501_1771813256841": {
+    "tradeId": "builder_817610144460308501_1771813256841",
+    "proposerId": "817610144460308501",
+    "coachBId": "1460736507206697081",
+    "yourTeam": "Orlando Magic",
+    "otherTeam": "Portland Trail Blazers",
+    "assetsSent": "Franz Wagner (SF / PF) — 620.0",
+    "assetsReceived": "Shaedon Sharpe (SG / PG) — 455.0\nVit Krejci (SF / PG) — 175.0",
+    "picksSent": [],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771813328704,
+    "expiresAt": 1771899728704
+  },
+  "builder_817610144460308501_1771813352167": {
+    "tradeId": "builder_817610144460308501_1771813352167",
+    "proposerId": "817610144460308501",
+    "coachBId": "1460736336150528094",
+    "yourTeam": "Orlando Magic",
+    "otherTeam": "Phoenix Suns",
+    "assetsSent": "Franz Wagner (SF / PF) — 620.0\nJase Richardson (SG / PG) — 320.0",
+    "assetsReceived": "Devin Booker (PG / SG) — 680.0\nRoyce O’Neale (PF / SF) — 190.0\n2026 Round 2 — 86.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2026 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771813431330,
+    "expiresAt": 1771899831330
+  },
+  "builder_817610144460308501_1771813623051": {
+    "tradeId": "builder_817610144460308501_1771813623051",
+    "proposerId": "817610144460308501",
+    "coachBId": "1460736030029385790",
+    "yourTeam": "Orlando Magic",
+    "otherTeam": "New Orleans Pelicans",
+    "assetsSent": "Jase Richardson (SG / PG) — 320.0\nGoga Bitadze (C) — 175.0\nJonathan Isaac (PF / C) — 130.0",
+    "assetsReceived": "Dejounte Murray (PG / SG) — 395.0\nMicah Peavy (SF / SG) — 115.0\n2027 Round 2 — 56.0\n2030 Round 2 — 50.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2027 Round 2",
+      "2030 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771813687190,
+    "expiresAt": 1771900087190
   }
 }

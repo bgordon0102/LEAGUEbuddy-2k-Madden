@@ -138,12 +138,12 @@ export async function execute(interaction) {
 
     const approveCount = Object.values(entry.votes).filter(v => v === 'approve').length;
     const denyCount = Object.values(entry.votes).filter(v => v === 'deny').length;
-    // Threshold: first to 1 decides
+    // Threshold: first to 3 decides
     let finalized = false;
-    if (approveCount >= 1) {
+    if (approveCount >= 3) {
         entry.trade.status = 'approved_pending_2k';
         finalized = true;
-    } else if (denyCount >= 1) {
+    } else if (denyCount >= 3) {
         entry.trade.status = 'denied';
         finalized = true;
     } else {
@@ -291,6 +291,6 @@ export async function execute(interaction) {
             : `Trade ${trade.status}.`;
         await interaction.reply({ content: note, flags: 64 });
     } else {
-        await interaction.reply({ content: `Vote recorded: ${approveCount} approve, ${denyCount} deny. First to 1 decides.`, flags: 64 });
+        await interaction.reply({ content: `Vote recorded: ${approveCount} approve, ${denyCount} deny. First to 3 decides.`, flags: 64 });
     }
 }

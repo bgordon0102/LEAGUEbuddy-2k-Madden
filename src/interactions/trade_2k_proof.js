@@ -30,6 +30,15 @@ function getCommitteeRoleId() {
   }
 }
 
+function getStaffRoleIds() {
+  try {
+    const staffMap = JSON.parse(fs.readFileSync(STAFF_ROLE_MAP_PATH, "utf8"));
+    return Object.values(staffMap || {}).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 function getCoachRole(teamName) {
   try {
     const coachMap = JSON.parse(fs.readFileSync(COACH_ROLE_MAP_PATH, 'utf8'));
@@ -61,8 +70,11 @@ export async function execute(interaction) {
       return;
     }
     const committeeRoleId = getCommitteeRoleId();
-    const isStaff = interaction.member?.permissions?.has?.('ManageGuild');
-    if (!isStaff && !(committeeRoleId && interaction.member?.roles?.cache?.has(committeeRoleId))) {
+    const staffRoleIds = getStaffRoleIds();
+    const hasRole = (id) => interaction.member?.roles?.cache?.has(id);
+    const isStaff = staffRoleIds.some(hasRole);
+    const isCommittee = committeeRoleId ? hasRole(committeeRoleId) : false;
+    if (!isStaff && !isCommittee) {
       await interaction.reply({ content: 'Only committee or staff can finalize proof.', flags: 64 });
       return;
     }
@@ -126,15 +138,17 @@ export async function execute(interaction) {
   const trade = entry.trade;
 
   const committeeRoleId = getCommitteeRoleId();
+  const staffRoleIds = getStaffRoleIds();
   const coachRoleA = getCoachRole(trade.yourTeam);
   const coachRoleB = getCoachRole(trade.otherTeam);
   const userRoles = interaction.member?.roles?.cache ? Array.from(interaction.member.roles.cache.keys()) : [];
   const isCoachA = coachRoleA && userRoles.includes(coachRoleA);
   const isCoachB = coachRoleB && userRoles.includes(coachRoleB);
   const isCommittee = committeeRoleId && userRoles.includes(committeeRoleId);
-  console.log('[DEBUG][proof-submit] user:', interaction.user.id, 'coachRoleA:', coachRoleA, 'coachRoleB:', coachRoleB, 'userRoles:', userRoles, 'isCoachA:', isCoachA, 'isCoachB:', isCoachB, 'isCommittee:', isCommittee);
-  if (!(isCoachA || isCoachB || isCommittee)) {
-    await interaction.reply({ content: 'Only a coach from either team or committee can complete this step.', flags: 64 });
+  const isStaff = staffRoleIds.some(id => userRoles.includes(id));
+  console.log('[DEBUG][proof-submit] user:', interaction.user.id, 'coachRoleA:', coachRoleA, 'coachRoleB:', coachRoleB, 'userRoles:', userRoles, 'isCoachA:', isCoachA, 'isCoachB:', isCoachB, 'isCommittee:', isCommittee, 'isStaff:', isStaff);
+  if (!(isCoachA || isCoachB || isCommittee || isStaff)) {
+    await interaction.reply({ content: 'Only a coach from either team, committee, or staff can complete this step.', flags: 64 });
     return;
   }
 

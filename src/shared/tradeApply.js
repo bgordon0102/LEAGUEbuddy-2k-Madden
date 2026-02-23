@@ -179,7 +179,7 @@ function movePicks(pickNames, fromRoster, toRoster, fromTeamName, pickValueMap) 
     let idx = -1;
     for (let i = 0; i < fromRoster.picks.length; i++) {
       const rosterPick = parsePick(fromRoster.picks[i]);
-      if (rosterPick.year === tradePick.year && rosterPick.round === tradePick.round && !rosterPick.protection) {
+      if (rosterPick.year === tradePick.year && rosterPick.round === tradePick.round) {
         idx = i;
         break;
       }

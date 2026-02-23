@@ -147,7 +147,7 @@ function loadFreeAgents() {
   }));
 }
 
-export const customId = /^inseason_fa_(button|select|modal_.+|approve_.+|deny_.+)_?.*/;
+export const customId = /^inseason_fa_(button|select|select_more|search_btn|search_modal|modal_.+|approve_.+|deny_.+)_?.*/;
 
 export async function execute(interaction) {
   const state = getSeasonState();
@@ -215,6 +215,24 @@ export async function execute(interaction) {
     return;
   }
 
+  if (interaction.customId === 'inseason_fa_search_btn') {
+    const modal = new ModalBuilder()
+      .setCustomId('inseason_fa_search_modal')
+      .setTitle('Search Free Agents');
+    const queryInput = new TextInputBuilder()
+      .setCustomId('fa_search_query')
+      .setLabel('Player name (partial ok)')
+      .setStyle(TextInputStyle.Short)
+      .setRequired(true);
+    modal.addComponents(new ActionRowBuilder().addComponents(queryInput));
+    try {
+      await interaction.showModal(modal);
+    } catch (err) {
+      if (err?.code !== 10062) console.error('[inseason_fa] search modal error', err);
+    }
+    return;
+  }
+
   if (interaction.customId === 'inseason_fa_select' || interaction.customId === 'inseason_fa_select_more') {
     // No defer here; showModal must be first response
     const selected = interaction.values[0];
@@ -263,6 +281,42 @@ export async function execute(interaction) {
         console.error('[inseason_fa] showModal failed:', err);
       }
     }
+  }
+
+  if (interaction.isModalSubmit() && interaction.customId === 'inseason_fa_search_modal') {
+    const query = interaction.fields.getTextInputValue('fa_search_query')?.trim().toLowerCase();
+    const tokens = (query || '').split(/\s+/).filter(Boolean);
+    const faPlayers = loadFreeAgents();
+    const matches = faPlayers.filter(p => {
+      const name = (p.name || '').toLowerCase();
+      return tokens.length
+        ? tokens.every(t => name.includes(t))
+        : name.includes(query);
+    });
+    if (!matches.length) {
+      await interaction.reply({ content: 'No free agents matched that search.', flags: 64 });
+      return;
+    }
+    const options = [];
+    const seen = new Set();
+    for (const p of matches) {
+      const val = normalizeName(p.name);
+      if (seen.has(val)) continue;
+      seen.add(val);
+      options.push({
+        label: `${p.name}${p.position ? ` (${p.position})` : ''}${p.ovr ? ` OVR ${p.ovr}` : ''}`,
+        value: val,
+      });
+      if (options.length >= 25) break;
+    }
+    const row = new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('inseason_fa_select_more')
+        .setPlaceholder('Search results')
+        .addOptions(options)
+    );
+    await interaction.reply({ content: 'Select a free agent from search results.', components: [row], flags: 64 });
+    return;
   }
 }
 
@@ -483,7 +537,28 @@ async function handleApproval(interaction, approve) {
   removePlayerFromOtherRostersFuzzy(entry.player.name, rosterPath);
   saveRoster(rosterPath, roster);
 
-  // Announcements disabled during testing
+  // Announce signing
+  try {
+    const announceChannel = await interaction.client.channels.fetch(ANNOUNCE_CHANNEL_ID).catch(() => null);
+    if (announceChannel && announceChannel.isTextBased()) {
+      const gpTag = '<@&1460733464721490108>'; // Ghost Paradise
+      const embed = new EmbedBuilder()
+        .setTitle('In-Season Free Agent Signed')
+        .setColor(0x57F287)
+        .addFields(
+          { name: 'Team', value: resolveTeamName(entry.team), inline: true },
+          { name: 'Player', value: `${entry.player.name} (${entry.player.position || '—'})`, inline: true },
+          { name: 'OVR', value: entry.player.ovr ? String(entry.player.ovr) : '—', inline: true },
+          { name: 'Terms', value: `${entry.years || '—'} years${entry.salary ? ` | ${entry.salary}` : ''}`, inline: false },
+        )
+        .setTimestamp(new Date());
+      const thumb = entry.player?.img || entry.player?.imgUrl || entry.player?.imgURL;
+      if (thumb) embed.setThumbnail(thumb);
+      await announceChannel.send({ content: gpTag, embeds: [embed] });
+    }
+  } catch (err) {
+    console.error('[inseason_fa] failed to send announcement', err);
+  }
 
   delete pending[id];
   writePending(pending);

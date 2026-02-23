@@ -124,6 +124,9 @@ function applyWaives(entries, actorId) {
 
 function moveAssets(source, dest, assets, actorId, results) {
   const now = new Date().toISOString();
+  console.log('[updaterosters][moveAssets] Moving assets:', assets, 'from', source.name, 'to', dest.name);
+  console.log('[updaterosters][moveAssets] Source roster before:', source.roster.players.map(p => p.name));
+  console.log('[updaterosters][moveAssets] Dest roster before:', dest.roster.players.map(p => p.name));
   for (const asset of assets) {
     if (asset.type === 'pick') {
       // Find pick by value or label, move full original string
@@ -149,6 +152,7 @@ function moveAssets(source, dest, assets, actorId, results) {
     let playerObj = source.roster.players.find(p => normalizeName(p.name || '') === norm);
     if (playerObj) {
       source.roster.players = source.roster.players.filter(p => normalizeName(p.name || '') !== norm);
+      console.log('[updaterosters][moveAssets] Removed player', asset.name, 'from', source.name);
     }
     if (!playerObj) {
       results.missing.push(`${asset.name} not found on ${source.name}`);
@@ -165,7 +169,10 @@ function moveAssets(source, dest, assets, actorId, results) {
     upsertPlayer(dest.roster, asset.name, payload);
     removePlayerFromOtherRostersFuzzy(asset.name, dest.rosterPath);
     results.moves.push(`${asset.name}: ${source.name} -> ${dest.name}`);
+    console.log('[updaterosters][moveAssets] Added player', asset.name, 'to', dest.name);
   }
+  console.log('[updaterosters][moveAssets] Source roster after:', source.roster.players.map(p => p.name));
+  console.log('[updaterosters][moveAssets] Dest roster after:', dest.roster.players.map(p => p.name));
 }
 
 function applyTrades(entries, actorId) {
@@ -180,8 +187,12 @@ function applyTrades(entries, actorId) {
   if (!rosterA) results.missing.push(`${a.team} roster not found`);
   if (!rosterB) results.missing.push(`${b.team} roster not found`);
   if (!rosterA || !rosterB) return results;
+  console.log('[updaterosters][applyTrades] BEFORE: RosterA', a.team, rosterA.roster.players.map(p => p.name));
+  console.log('[updaterosters][applyTrades] BEFORE: RosterB', b.team, rosterB.roster.players.map(p => p.name));
   moveAssets({ ...rosterA, name: a.team }, { ...rosterB, name: b.team }, a.assets, actorId, results);
   moveAssets({ ...rosterB, name: b.team }, { ...rosterA, name: a.team }, b.assets, actorId, results);
+  console.log('[updaterosters][applyTrades] AFTER: RosterA', a.team, rosterA.roster.players.map(p => p.name));
+  console.log('[updaterosters][applyTrades] AFTER: RosterB', b.team, rosterB.roster.players.map(p => p.name));
   saveRoster(rosterA.rosterPath, rosterA.roster);
   saveRoster(rosterB.rosterPath, rosterB.roster);
   return results;

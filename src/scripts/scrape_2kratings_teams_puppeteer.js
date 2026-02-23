@@ -389,7 +389,9 @@ async function main() {
                 console.log('[DEBUG] Failed to set cookies on player page:', e.message);
             }
         }
-        await page.goto(arg, { waitUntil: 'networkidle2', timeout: 60000 });
+        console.log('[DEBUG] Navigating to player page:', arg);
+        await page.goto(arg, { waitUntil: 'networkidle2', timeout: 120000 });
+        console.log('[DEBUG] Navigation complete:', arg);
         await page.waitForSelector('body', { timeout: 20000 });
         await new Promise(res => setTimeout(res, 3000));
         const info = await page.evaluate(() => {
@@ -470,21 +472,8 @@ async function main() {
         await page.close();
         await browser.close();
         // --- Auto-add player to correct roster file ---
-        let teamName = (info.nationality && info.nationality.toLowerCase().includes('free agent')) ? 'Free_Agency' : null;
-        // Try to extract team from page if available
-        if (!teamName && info.position && info.position.toLowerCase().includes('free agent')) {
-            teamName = 'Free_Agency';
-        }
-        // If not free agent, try to get team from URL or fallback to manual entry
-        if (!teamName) {
-            // Try to extract team from the URL (e.g., /teams/{team}) or ask user to specify
-            // For now, fallback to Free_Agency if not found
-            teamName = 'Free_Agency';
-        }
-        // Normalize team file name
-        let fileName = teamName.replace(/[^a-zA-Z0-9]/g, '_') + '.json';
-        let filePath = path.join(OUTPUT_DIR, fileName);
-        // Ensure output directory exists
+        // Always use the main data/2k/teams_rosters/Free_Agency.json for free agents
+        const filePath = path.join('data', '2k', 'teams_rosters', 'Free_Agency.json');
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         let players = [];
         if (fs.existsSync(filePath)) {
@@ -508,7 +497,7 @@ async function main() {
         players.sort((a, b) => parseInt(b.ovr) - parseInt(a.ovr));
         // Save back to file
         fs.writeFileSync(filePath, JSON.stringify({ players }, null, 2));
-        console.log(`[INFO] Added ${info.name} to ${fileName} in OVR order.`);
+        console.log(`[INFO] Added ${info.name} to Free_Agency.json in OVR order.`);
         console.log(JSON.stringify(info, null, 2));
         return;
     }
