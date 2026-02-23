@@ -132,10 +132,7 @@ function getSeasonYear() {
 function movePlayers(playerNames, fromRoster, toRoster) {
   for (const name of playerNames) {
     const normName = normalize(name);
-    const idx = fromRoster.players.findIndex(p => {
-      const normRosterName = normalize(p.name);
-      return normRosterName === normName || normRosterName.includes(normName) || normName.includes(normRosterName);
-    });
+    const idx = fromRoster.players.findIndex(p => normalize(p.name) === normName);
     if (idx !== -1) {
       toRoster.players.push(fromRoster.players[idx]);
       fromRoster.players.splice(idx, 1);

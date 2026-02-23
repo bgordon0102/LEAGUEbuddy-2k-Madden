@@ -694,5 +694,43 @@
     "postedToCommittee": false,
     "submittedAt": 1771813687190,
     "expiresAt": 1771900087190
+  },
+  "builder_1442183083695542272_1771825816244": {
+    "tradeId": "builder_1442183083695542272_1771825816244",
+    "proposerId": "1442183083695542272",
+    "coachBId": "1460735084566155555",
+    "yourTeam": "Boston Celtics",
+    "otherTeam": "Memphis Grizzlies",
+    "assetsSent": "Jayson Tatum (PF / SF) — 850.0\nBaylor Scheierman (SF / SG) — 145.0\n2026 Round 2 — 86.0",
+    "assetsReceived": "Ja Morant (PG / SG) — 620.0\nZach Edey (C) — 500.0",
+    "picksSent": [
+      "2026 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771825902493,
+    "expiresAt": 1771912302493
+  },
+  "builder_840269359578611753_1771828680859": {
+    "tradeId": "builder_840269359578611753_1771828680859",
+    "proposerId": "840269359578611753",
+    "coachBId": "1460735894276542484",
+    "yourTeam": "Minnesota Timberwolves",
+    "otherTeam": "Denver Nuggets",
+    "assetsSent": "Bones Hyland (PG / SG) — 175.0\n2030 Round 2 — 50.0",
+    "assetsReceived": "Spencer Jones (SG / PG) — 220.0",
+    "picksSent": [
+      "2030 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771828751613,
+    "expiresAt": 1771915151613
   }
 }

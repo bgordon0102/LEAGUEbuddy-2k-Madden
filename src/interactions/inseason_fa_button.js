@@ -523,8 +523,10 @@ async function handleApproval(interaction, approve) {
   const contractYears = Array.isArray(entry.player.contractYears) ? entry.player.contractYears : undefined;
   const playerValue = computePlayerValue2k(entry.player) || Number(entry.player.val ?? entry.player.value ?? entry.player.valuation ?? 0);
 
+  // Sign exactly this player (as displayed in the modal), and remove that exact player from FA
+  const signedPlayer = { ...entry.player };
   upsertPlayer(roster, {
-    ...entry.player,
+    ...signedPlayer,
     contractYears: contractYears || undefined,
     contractYearsText: entry.years || undefined,
     salaryPerYear: entry.salary || undefined,
@@ -534,7 +536,19 @@ async function handleApproval(interaction, approve) {
     lastUpdatedBy: interaction.user.id,
     lastUpdatedAt: new Date().toISOString(),
   });
-  removePlayerFromOtherRostersFuzzy(entry.player.name, rosterPath);
+  try {
+    const faPath = path.join(process.cwd(), 'data', '2k', 'teams_rosters', 'free_agency.json');
+    const faData = JSON.parse(fs.readFileSync(faPath, 'utf8'));
+    if (Array.isArray(faData.players)) {
+      const idx = faData.players.findIndex(p => normalizeName(p.name) === normalizeName(signedPlayer.name));
+      if (idx >= 0) {
+        faData.players.splice(idx, 1);
+        fs.writeFileSync(faPath, JSON.stringify(faData, null, 2));
+      }
+    }
+  } catch (err) {
+    console.error('[inseason_fa] failed to remove from free agency', err);
+  }
   saveRoster(rosterPath, roster);
 
   // Announce signing

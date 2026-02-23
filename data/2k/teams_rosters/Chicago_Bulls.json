@@ -380,6 +380,20 @@
       ]
     },
     {
+      "name": "Mac McClung",
+      "position": "PG / SG",
+      "height": "6'2\" (188cm)",
+      "weight": "185lbs (83kg)",
+      "archetype": "Blow-By High Flyer",
+      "birthdate": "January 6, 1999",
+      "yearsInNBA": "5",
+      "wingspan": "6'6\" (198cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Mac-McClung-2K-Rating.png",
+      "ovr": "71",
+      "prior_to_nba": "Texas Tech",
+      "nationality": "United States"
+    },
+    {
       "name": "Leonard Miller",
       "position": "PF / SF",
       "height": "6'10\" (208cm)",
@@ -404,6 +418,48 @@
           "option": "Team"
         }
       ]
+    },
+    {
+      "name": "Yuki  Kawamura",
+      "position": "PG",
+      "height": "5'8\" (173cm)",
+      "weight": "159lbs (72kg)",
+      "archetype": "Blow-By Bully",
+      "birthdate": "May 2, 2001",
+      "yearsInNBA": "3",
+      "wingspan": "5'11\" (180cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Yuki-Kawamura-2K-Rating.png",
+      "ovr": "68",
+      "prior_to_nba": "Japan",
+      "nationality": "Japan"
+    },
+    {
+      "name": "Emanuel Miller",
+      "position": "SG / SF",
+      "height": "6'7\" (201cm)",
+      "weight": "215lbs (97kg)",
+      "archetype": "High-Flying Wing Runner",
+      "birthdate": "June 19, 2000",
+      "yearsInNBA": "2",
+      "wingspan": "6'11\" (211cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Emanuel-Miller-2K-Rating.png",
+      "ovr": "68",
+      "prior_to_nba": "TCU",
+      "nationality": "Canada"
+    },
+    {
+      "name": "Lachlan Olbrich",
+      "position": "PF / C",
+      "height": "6'10\" (208cm)",
+      "weight": "236lbs (106kg)",
+      "archetype": "Crafty Mid-Post Point Center",
+      "birthdate": "December 30, 2003",
+      "yearsInNBA": "1",
+      "wingspan": "6'11\" (211cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Lachlan-Olbrich-2K-Rating.png",
+      "ovr": "68",
+      "prior_to_nba": "Australia",
+      "nationality": "Australia"
     }
   ],
   "picks": [

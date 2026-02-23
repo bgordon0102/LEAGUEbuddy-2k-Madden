@@ -1,17 +1,176 @@
 {
-  "builder_1076243288056664234_1771811227504": {
-    "draftId": "builder_1076243288056664234_1771811227504",
-    "userId": "1076243288056664234",
+  "builder_670446898695503897_1771858682441": {
+    "draftId": "builder_670446898695503897_1771858682441",
+    "userId": "670446898695503897",
     "guildId": "1255691165265821747",
     "mode": "2k",
-    "yourTeamName": "Cleveland Cavaliers",
-    "yourTeamId": "Cleveland Cavaliers",
-    "otherTeamName": null,
+    "yourTeamName": "San Antonio Spurs",
+    "yourTeamId": "San Antonio Spurs",
+    "otherTeamName": "Los Angeles Lakers",
     "seasonYear": 2026,
     "assets": {
-      "your": [],
-      "other": []
+      "your": [
+        {
+          "type": "player",
+          "label": "Dylan Harper",
+          "pos": "PG / SG",
+          "ovr": 79,
+          "age": "March 2, 2006",
+          "salary": 12370320,
+          "yearsLeft": 4,
+          "contractYears": [
+            {
+              "year": "2025-26",
+              "salary": "$12,370,320",
+              "option": null
+            },
+            {
+              "year": "2026-27",
+              "salary": "$12,989,040",
+              "option": null
+            },
+            {
+              "year": "2027-28",
+              "salary": "$13,607,760",
+              "option": "Team"
+            },
+            {
+              "year": "2028-29",
+              "salary": "$17,172,994",
+              "option": "Team"
+            }
+          ],
+          "yearsInNBA": 1
+        },
+        {
+          "type": "player",
+          "label": "Keldon Johnson",
+          "pos": "SF / PF",
+          "ovr": 80,
+          "age": "October 11, 1999",
+          "salary": 17500000,
+          "yearsLeft": 2,
+          "contractYears": [
+            {
+              "year": "2025-26",
+              "salary": "$17,500,000",
+              "option": null
+            },
+            {
+              "year": "2026-27",
+              "salary": "$17,500,000",
+              "option": null
+            }
+          ],
+          "yearsInNBA": 7
+        },
+        {
+          "type": "pick",
+          "raw": "2026 Round 1",
+          "year": 2026,
+          "round": 1,
+          "pickNum": null,
+          "protection": null,
+          "value": 240,
+          "label": "2026 Round 1"
+        },
+        {
+          "type": "pick",
+          "raw": "2026 1st",
+          "year": 2026,
+          "round": 1,
+          "pickNum": null,
+          "protection": null,
+          "value": 240,
+          "label": "2026 Round 1"
+        }
+      ],
+      "other": [
+        {
+          "type": "player",
+          "label": "Luka Doncic",
+          "pos": "PG / SG",
+          "ovr": 97,
+          "age": "February 28, 1999",
+          "salary": 45999660,
+          "yearsLeft": 4,
+          "contractYears": [
+            {
+              "year": "2025-26",
+              "salary": "$45,999,660",
+              "option": null
+            },
+            {
+              "year": "2026-27",
+              "salary": "$49,800,000",
+              "option": null
+            },
+            {
+              "year": "2027-28",
+              "salary": "$53,784,000",
+              "option": null
+            },
+            {
+              "year": "2028-29",
+              "salary": "$57,768,000",
+              "option": "Player"
+            }
+          ],
+          "yearsInNBA": 8
+        },
+        {
+          "type": "pick",
+          "raw": "2026 Round 2",
+          "year": 2026,
+          "round": 2,
+          "pickNum": null,
+          "protection": null,
+          "value": 86,
+          "label": "2026 Round 2"
+        },
+        {
+          "type": "player",
+          "label": "Adou Thiero",
+          "pos": "SF / PF",
+          "ovr": 70,
+          "age": "May 8, 2004",
+          "salary": 1272870,
+          "yearsLeft": 3,
+          "contractYears": [
+            {
+              "year": "2025-26",
+              "salary": "$1,272,870",
+              "option": null
+            },
+            {
+              "year": "2026-27",
+              "salary": "$2,150,917",
+              "option": null
+            },
+            {
+              "year": "2027-28",
+              "salary": "$2,525,901",
+              "option": "Team"
+            }
+          ],
+          "yearsInNBA": 1
+        },
+        {
+          "type": "player",
+          "label": "Drew Timme",
+          "pos": "C / PF",
+          "ovr": 72,
+          "age": "September 9, 2000",
+          "salary": 0,
+          "yearsLeft": 0,
+          "yearsInNBA": 3
+        }
+      ]
     },
-    "savedAt": 1771811227506
+    "savedAt": 1771858789080,
+    "otherTeamId": "Los Angeles Lakers",
+    "otherTeam": "Los Angeles Lakers",
+    "assetsSent": "Dylan Harper (PG / SG) — 392.0\nKeldon Johnson (SF / PF) — 380.0\n2026 Round 1 — 240.0\n2026 Round 1 — 240.0",
+    "assetsReceived": "Luka Doncic (PG / SG) — 955.0\n2026 Round 2 — 86.0\nAdou Thiero (SF / PF) — 85.0\nDrew Timme (C / PF) — 115.0"
   }
 }

@@ -125,42 +125,16 @@
       ]
     },
     {
-      "name": "Moussa Diabate",
-      "position": "C / PF",
-      "height": "6'9\" (206cm)",
-      "weight": "210lbs (95kg)",
-      "archetype": "Rim-Rocking Putback Pro",
-      "birthdate": "January 21, 2002",
-      "yearsInNBA": "4",
-      "wingspan": "7'1\" (216cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Moussa-Diabate-2K-Rating.png",
-      "ovr": "80",
-      "prior_to_nba": "Michigan",
-      "nationality": "France",
-      "contractYears": [
-        {
-          "year": "2025-26",
-          "salary": "$2,270,735",
-          "option": null
-        },
-        {
-          "year": "2026-27",
-          "salary": "$2,461,462",
-          "option": null
-        }
-      ]
-    },
-    {
       "name": "Coby White",
       "position": "SG / PG",
       "height": "6'5\" (196cm)",
       "weight": "195lbs (88kg)",
-      "archetype": "3PT Shot Hunter",
+      "archetype": "Crafty Laymaking Combo Guard",
       "birthdate": "February 16, 2000",
       "yearsInNBA": "7",
       "wingspan": "6'5\" (196cm)",
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/Coby-White-2K-Rating.png",
-      "ovr": "80",
+      "ovr": "82",
       "prior_to_nba": "North Carolina",
       "nationality": "United States",
       "contractYears": [
@@ -170,6 +144,20 @@
           "option": null
         }
       ]
+    },
+    {
+      "name": "Moussa Diabate",
+      "position": "C / PF",
+      "height": "6'9\" (206cm)",
+      "weight": "210lbs (95kg)",
+      "archetype": "Rim-Rocking Putback Pro",
+      "birthdate": "January 21, 2002",
+      "yearsInNBA": "4",
+      "wingspan": "7'1\" (216cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Moussa-Diabate-2K-Rating.png",
+      "ovr": "79",
+      "prior_to_nba": "Michigan",
+      "nationality": "France"
     },
     {
       "name": "Ryan Kalkbrenner",
@@ -219,24 +207,7 @@
       "imgUrl": "https://www.2kratings.com/wp-content/uploads/Tidjane-Salaun-2K-Rating.png",
       "ovr": "76",
       "prior_to_nba": "Cholet Basket (LNB Pro A, France)",
-      "nationality": "France",
-      "contractYears": [
-        {
-          "year": "2025-26",
-          "salary": "$7,863,240",
-          "option": null
-        },
-        {
-          "year": "2026-27",
-          "salary": "$8,237,880",
-          "option": "Team"
-        },
-        {
-          "year": "2027-28",
-          "salary": "$10,445,633",
-          "option": "Team"
-        }
-      ]
+      "nationality": "France"
     },
     {
       "name": "Sion James",
@@ -271,32 +242,6 @@
           "year": "2028-29",
           "salary": "$2,735,698",
           "option": "Team"
-        }
-      ]
-    },
-    {
-      "name": "Grant Williams",
-      "position": "PF / C",
-      "height": "6'6\" (198cm)",
-      "weight": "236lbs (106kg)",
-      "archetype": "Stretch Four Dimer",
-      "birthdate": "November 30, 1998",
-      "yearsInNBA": "7",
-      "wingspan": "6'10\" (208cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Grant-Williams-2K-Rating.png",
-      "ovr": "75",
-      "prior_to_nba": "Tennessee",
-      "nationality": "United States",
-      "contractYears": [
-        {
-          "year": "2025-26",
-          "salary": "$13,645,500",
-          "option": null
-        },
-        {
-          "year": "2026-27",
-          "salary": "$14,265,750",
-          "option": null
         }
       ]
     },
@@ -358,25 +303,44 @@
       ]
     },
     {
-      "name": "Pat Connaughton",
-      "position": "SF / SG",
-      "height": "6'5\" (196cm)",
-      "weight": "209lbs (94kg)",
-      "archetype": "High-Flying Slasher",
-      "birthdate": "January 6, 1993",
-      "yearsInNBA": "11",
-      "wingspan": "6'9\" (206cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Pat-Connaughton-2K-Rating.png",
-      "ovr": "73",
-      "prior_to_nba": "Notre Dame",
+      "name": "Grant Williams",
+      "position": "PF / C",
+      "height": "6'6\" (198cm)",
+      "weight": "236lbs (106kg)",
+      "archetype": "Crafty 3-Level Dime-Dropper",
+      "birthdate": "November 30, 1998",
+      "yearsInNBA": "7",
+      "wingspan": "6'10\" (208cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Grant-Williams-2K-Rating.png",
+      "ovr": "74",
+      "prior_to_nba": "Tennessee",
       "nationality": "United States",
       "contractYears": [
         {
           "year": "2025-26",
-          "salary": "$9,423,869",
-          "option": "Player"
+          "salary": "$13,645,500",
+          "option": null
+        },
+        {
+          "year": "2026-27",
+          "salary": "$14,265,750",
+          "option": null
         }
       ]
+    },
+    {
+      "name": "KJ Simpson",
+      "position": "PG",
+      "height": "6'0\" (183cm)",
+      "weight": "189lbs (85kg)",
+      "archetype": "Tempo Setter",
+      "birthdate": "August 8, 2002",
+      "yearsInNBA": "2",
+      "wingspan": "6'5\" (196cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/KJ-Simpson-2K-Rating.png",
+      "ovr": "73",
+      "prior_to_nba": "Colorado",
+      "nationality": "United States"
     },
     {
       "name": "Xavier Tillman Sr.",
@@ -396,6 +360,27 @@
           "year": "2025-26",
           "salary": "$2,546,675",
           "option": null
+        }
+      ]
+    },
+    {
+      "name": "Malaki Branham",
+      "position": "SG / PG",
+      "height": "6'4\" (193cm)",
+      "weight": "180lbs (81kg)",
+      "archetype": "Crafty Inside-Out High Flyer",
+      "birthdate": "May 12, 2003",
+      "yearsInNBA": "4",
+      "wingspan": "6'8\" (203cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Malaki-Branham-2K-Rating.png",
+      "ovr": "72",
+      "prior_to_nba": "Ohio State",
+      "nationality": "United States",
+      "contractYears": [
+        {
+          "year": "2025-26",
+          "salary": "$4,962,033",
+          "option": "Team"
         }
       ]
     },
@@ -448,20 +433,6 @@
           "option": "Team"
         }
       ]
-    },
-    {
-      "name": "Tosan Evbuomwan",
-      "position": "SF / PF",
-      "height": "6'7\" (201cm)",
-      "weight": "217lbs (98kg)",
-      "archetype": "Crafty Laymaking Point Forward",
-      "birthdate": "February 16, 2001",
-      "yearsInNBA": "3",
-      "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Tosan-Evbuomwan-2K-Rating.png",
-      "ovr": "70",
-      "prior_to_nba": "Princeton",
-      "nationality": "United Kingdom"
     },
     {
       "name": "Antonio Reeves",
