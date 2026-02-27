@@ -83,8 +83,9 @@ export async function execute(interaction) {
     ];
     const isCoach = teamRoleId && interaction.member?.roles?.cache?.has(teamRoleId);
     const isStaff = interaction.member?.roles?.cache?.some(r => staffIds.includes(r.id));
-    if (!isCoach && !isStaff) {
-      await interaction.editReply({ content: 'You do not have permission to waive players from this team.' });
+    // Allow any coach to waive only their own roster; staff can waive anyone
+    if (!isStaff && !isCoach) {
+      await interaction.editReply({ content: 'You can only waive players from your own roster (or be staff).' });
       return;
     }
   } catch (err) {

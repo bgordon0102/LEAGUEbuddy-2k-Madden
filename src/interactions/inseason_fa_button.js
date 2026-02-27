@@ -525,6 +525,18 @@ async function handleApproval(interaction, approve) {
 
   // Sign exactly this player (as displayed in the modal), and remove that exact player from FA
   const signedPlayer = { ...entry.player };
+  const beforeNames = Array.isArray(roster?.players) ? roster.players.map(p => p.name) : [];
+  console.log('[inseason_fa][approve] before add', {
+    team: resolveTeamName(entry.team),
+    count: beforeNames.length,
+    hasSignedAlready: beforeNames.some(n => normalizeName(n) === normalizeName(signedPlayer.name)),
+    sample: beforeNames.slice(0, 5)
+  });
+  console.log('[inseason_fa][approve] signing player', {
+    name: signedPlayer.name,
+    norm: normalizeName(signedPlayer.name),
+    ovr: signedPlayer.ovr,
+  });
   upsertPlayer(roster, {
     ...signedPlayer,
     contractYears: contractYears || undefined,
@@ -535,6 +547,13 @@ async function handleApproval(interaction, approve) {
     lastSigned: 'in-season free agency',
     lastUpdatedBy: interaction.user.id,
     lastUpdatedAt: new Date().toISOString(),
+  });
+  const afterNames = Array.isArray(roster?.players) ? roster.players.map(p => p.name) : [];
+  console.log('[inseason_fa][approve] after add', {
+    team: resolveTeamName(entry.team),
+    count: afterNames.length,
+    hasSigned: afterNames.some(n => normalizeName(n) === normalizeName(signedPlayer.name)),
+    removedNames: beforeNames.filter(n => !afterNames.includes(n)), // sanity check if something disappeared
   });
   try {
     const faPath = path.join(process.cwd(), 'data', '2k', 'teams_rosters', 'free_agency.json');

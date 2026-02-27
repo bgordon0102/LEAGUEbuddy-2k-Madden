@@ -1,32 +1,24 @@
 {
   "Houston Rockets": [
-    "Alperen Sengun",
     "Fred VanVleet",
     "Reed Sheppard",
-    "Kevin Durant"
+    "Kevin Durant",
+    "Alperen Sengun"
   ],
   "Sacramento Kings": [
     "DeMar DeRozan",
     "Domantas Sabonis",
-    "Russell Westbrook"
+    "Russell Westbrook",
+    "De’Andre Hunter"
   ],
-  "Golden State Warriors": [
-    "Jimmy Butler",
-    "Draymond Green",
-    "Brandin Podziemski",
-    "Moses Moody",
-    "Kristaps Porzingis"
-  ],
+  "Golden State Warriors": [],
   "Miami Heat": [
-    "Pelle Larsson",
-    "Simone Fontecchio",
-    "Nikola Jovic",
-    "Norman Powell",
-    "Andrew Wiggins"
+    "Davion Mitchell"
   ],
   "Orlando Magic": [
     "Franz Wagner",
-    "Jalen Suggs"
+    "Jalen Suggs",
+    "Anthony Black"
   ],
   "Dallas Mavericks": [
     "Kyrie Irving"
@@ -36,7 +28,7 @@
   ],
   "Los Angeles Lakers": [
     "Rui Hachimura",
-    "LeBron James"
+    "Jarred Vanderbilt"
   ],
   "Detroit Pistons": [
     "Ausar Thompson",
@@ -48,20 +40,42 @@
     "Julius Randle",
     "Ayo Dosunmu",
     "Donte DiVincenzo",
-    "Terrence Shannon Jr."
+    "Terrence Shannon Jr.",
+    "Naz Reid"
   ],
   "Oklahoma City Thunder": [
     "Luguentz Dort",
-    "Alex Caruso"
+    "Alex Caruso",
+    "Kenrich Williams",
+    "Jared McCain",
+    "Isaiah Hartenstein"
   ],
   "Chicago Bulls": [
     "Josh Giddey",
     "Anfernee Simons",
     "Tre Jones",
-    "Jaden Ivey"
+    "Jaden Ivey",
+    "Rob Dillingham"
   ],
   "Boston Celtics": [
     "Nikola Vucevic",
-    "Payton Pritchard"
+    "Payton Pritchard",
+    "Neemias Queta"
+  ],
+  "San Antonio Spurs": [
+    "Dylan Harper"
+  ],
+  "Cleveland Cavaliers": [
+    "James Harden",
+    "Jarrett Allen",
+    "Evan Mobley"
+  ],
+  "Portland Trail Blazers": [
+    "Toumani Camara",
+    "Jrue Holiday"
+  ],
+  "Brooklyn Nets": [
+    "Noah Clowney",
+    "Malik Beasley"
   ]
 }

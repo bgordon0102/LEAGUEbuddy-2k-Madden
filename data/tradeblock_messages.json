@@ -1,9 +1,5 @@
 {
   "Houston Rockets": {
-    "Alperen Sengun": {
-      "messageId": "1474828472290640115",
-      "threadId": "1470806923497570482"
-    },
     "Fred VanVleet": {
       "messageId": "1474828637751476478",
       "threadId": "1470806923497570482"
@@ -14,6 +10,10 @@
     },
     "Kevin Durant": {
       "messageId": "1474987026301587547",
+      "threadId": "1470806923497570482"
+    },
+    "Alperen Sengun": {
+      "messageId": "1475616215954096303",
       "threadId": "1470806923497570482"
     }
   },
@@ -29,50 +29,10 @@
     "Russell Westbrook": {
       "messageId": "1474830837492224243",
       "threadId": "1470806980493967558"
-    }
-  },
-  "Golden State Warriors": {
-    "Jimmy Butler": {
-      "messageId": "1474831288270848251",
-      "threadId": "1470806997275508937"
     },
-    "Draymond Green": {
-      "messageId": "1474831335918010368",
-      "threadId": "1470806997275508937"
-    },
-    "Brandin Podziemski": {
-      "messageId": "1474831643645579552",
-      "threadId": "1470806997275508937"
-    },
-    "Moses Moody": {
-      "messageId": "1474831731734614107",
-      "threadId": "1470806997275508937"
-    },
-    "Kristaps Porzingis": {
-      "messageId": "1475205310267396187",
-      "threadId": "1470806997275508937"
-    }
-  },
-  "Miami Heat": {
-    "Pelle Larsson": {
-      "messageId": "1474835447476650045",
-      "threadId": "1470806986688954370"
-    },
-    "Simone Fontecchio": {
-      "messageId": "1474835539575439370",
-      "threadId": "1470806986688954370"
-    },
-    "Nikola Jovic": {
-      "messageId": "1474835606050832405",
-      "threadId": "1470806986688954370"
-    },
-    "Norman Powell": {
-      "messageId": "1474838259044585726",
-      "threadId": "1470806986688954370"
-    },
-    "Andrew Wiggins": {
-      "messageId": "1474838487168581662",
-      "threadId": "1470806986688954370"
+    "De’Andre Hunter": {
+      "messageId": "1475600162721108161",
+      "threadId": "1470806980493967558"
     }
   },
   "Orlando Magic": {
@@ -82,6 +42,10 @@
     },
     "Jalen Suggs": {
       "messageId": "1474841555117543505",
+      "threadId": "1470806955474948269"
+    },
+    "Anthony Black": {
+      "messageId": "1475611977823817818",
       "threadId": "1470806955474948269"
     }
   },
@@ -102,8 +66,8 @@
       "messageId": "1474857679263502358",
       "threadId": "1470806921018871809"
     },
-    "LeBron James": {
-      "messageId": "1474857929365520504",
+    "Jarred Vanderbilt": {
+      "messageId": "1475992015580954664",
       "threadId": "1470806921018871809"
     }
   },
@@ -141,6 +105,10 @@
     "Terrence Shannon Jr.": {
       "messageId": "1475374459501154326",
       "threadId": "1470806994381312161"
+    },
+    "Naz Reid": {
+      "messageId": "1476010509273661470",
+      "threadId": "1470806994381312161"
     }
   },
   "Oklahoma City Thunder": {
@@ -150,6 +118,18 @@
     },
     "Alex Caruso": {
       "messageId": "1474920285135437975",
+      "threadId": "1470806926236323985"
+    },
+    "Kenrich Williams": {
+      "messageId": "1476023398550212741",
+      "threadId": "1470806926236323985"
+    },
+    "Jared McCain": {
+      "messageId": "1476023451822067854",
+      "threadId": "1470806926236323985"
+    },
+    "Isaiah Hartenstein": {
+      "messageId": "1476025096115196035",
       "threadId": "1470806926236323985"
     }
   },
@@ -169,6 +149,10 @@
     "Jaden Ivey": {
       "messageId": "1474975423711678636",
       "threadId": "1470807006540599316"
+    },
+    "Rob Dillingham": {
+      "messageId": "1476784917932277923",
+      "threadId": "1470807006540599316"
     }
   },
   "Boston Celtics": {
@@ -179,6 +163,56 @@
     "Payton Pritchard": {
       "messageId": "1475167396862886011",
       "threadId": "1470807003260522547"
+    },
+    "Neemias Queta": {
+      "messageId": "1476496574312874054",
+      "threadId": "1470807003260522547"
+    }
+  },
+  "San Antonio Spurs": {
+    "Dylan Harper": {
+      "messageId": "1475611939286552761",
+      "threadId": "1470807021551882375"
+    }
+  },
+  "Cleveland Cavaliers": {
+    "James Harden": {
+      "messageId": "1475625869979418835",
+      "threadId": "1470807030943187027"
+    },
+    "Jarrett Allen": {
+      "messageId": "1475625930767470618",
+      "threadId": "1470807030943187027"
+    },
+    "Evan Mobley": {
+      "messageId": "1475930947563032626",
+      "threadId": "1470807030943187027"
+    }
+  },
+  "Portland Trail Blazers": {
+    "Toumani Camara": {
+      "messageId": "1475985449809088532",
+      "threadId": "1470806978182774987"
+    },
+    "Jrue Holiday": {
+      "messageId": "1475985540343136317",
+      "threadId": "1470806978182774987"
+    }
+  },
+  "Brooklyn Nets": {
+    "Noah Clowney": {
+      "messageId": "1476401565827993650",
+      "threadId": "1470806941923278849"
+    },
+    "Malik Beasley": {
+      "messageId": "1476401739438489621",
+      "threadId": "1470806941923278849"
+    }
+  },
+  "Miami Heat": {
+    "Davion Mitchell": {
+      "messageId": "1476762008509616279",
+      "threadId": "1470806986688954370"
     }
   }
 }

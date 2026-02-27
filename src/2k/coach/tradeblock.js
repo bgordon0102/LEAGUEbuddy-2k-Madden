@@ -366,15 +366,15 @@ export default {
         if (!team) return safeReply({ content: 'You are not mapped to a team.', ephemeral: true });
         const action = interaction.options.getString('action');
         const player = interaction.options.getString('player');
-        const teamPlayers = getTeamPlayers(team);
-        if (!teamPlayers.includes(player)) {
-            return safeReply({ content: 'You can only add/remove players from your own team.', ephemeral: true });
-        }
         // Always reload trade block from disk to avoid race conditions
         let tradeBlock = getTradeBlock();
         tradeBlock[team] = tradeBlock[team] || [];
         const tradeBlockMessages = getTradeBlockMessages();
         if (action === 'add') {
+            const teamPlayers = getTeamPlayers(team);
+            if (!teamPlayers.includes(player)) {
+                return safeReply({ content: 'You can only add players that are currently on your roster.', ephemeral: true });
+            }
             // Reload again right before check
             tradeBlock = getTradeBlock();
             tradeBlock[team] = tradeBlock[team] || [];

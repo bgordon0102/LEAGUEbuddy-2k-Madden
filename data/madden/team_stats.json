@@ -1,0 +1,1506 @@
+{
+  "775553024": {
+    "teamName": "San Francisco Niners",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3728,
+      "td": 37,
+      "int": 11,
+      "sacksTaken": 32,
+      "comp": 282,
+      "att": 465
+    },
+    "rush": {
+      "yds": 1955,
+      "td": 14,
+      "att": 392
+    },
+    "rec": {
+      "yds": 3728,
+      "td": 37
+    },
+    "def": {
+      "sacks": 28,
+      "ints": 14
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Christian McCaffrey",
+        "val": 1104
+      },
+      "recYds": {
+        "name": "Ricky Pearsall",
+        "val": 1037
+      },
+      "defSacks": {
+        "name": "Nick Bosa",
+        "val": 10
+      },
+      "defInts": {
+        "name": "Fred Warner",
+        "val": 4
+      },
+      "passYds": {
+        "name": "Brock Purdy",
+        "val": 3728
+      }
+    }
+  },
+  "775553025": {
+    "teamName": "Chicago Bears",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 4841,
+      "td": 39,
+      "int": 13,
+      "sacksTaken": 44,
+      "comp": 368,
+      "att": 550
+    },
+    "rush": {
+      "yds": 1936,
+      "td": 25,
+      "att": 358
+    },
+    "rec": {
+      "yds": 4841,
+      "td": 39
+    },
+    "def": {
+      "sacks": 43,
+      "ints": 24
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Montez Sweat",
+        "val": 8.5
+      },
+      "defInts": {
+        "name": "Jaylon Johnson",
+        "val": 6
+      },
+      "rushYds": {
+        "name": "D'Andre Swift",
+        "val": 1290
+      },
+      "recYds": {
+        "name": "DJ Moore",
+        "val": 1192
+      },
+      "passYds": {
+        "name": "Caleb Williams",
+        "val": 4841
+      }
+    }
+  },
+  "775553026": {
+    "teamName": "Cincinnati Bengals",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 4721,
+      "td": 31,
+      "int": 9,
+      "sacksTaken": 47,
+      "comp": 314,
+      "att": 503
+    },
+    "rush": {
+      "yds": 1434,
+      "td": 22,
+      "att": 311
+    },
+    "rec": {
+      "yds": 4721,
+      "td": 31
+    },
+    "def": {
+      "sacks": 35,
+      "ints": 11
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Shemar Stewart",
+        "val": 7.5
+      },
+      "defInts": {
+        "name": "Jordan Battle",
+        "val": 2
+      },
+      "rushYds": {
+        "name": "Chase Brown",
+        "val": 793
+      },
+      "recYds": {
+        "name": "Ja'Marr Chase",
+        "val": 1565
+      },
+      "passYds": {
+        "name": "Joe Burrow",
+        "val": 4351
+      }
+    }
+  },
+  "775553027": {
+    "teamName": "Buffalo Bills",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 4217,
+      "td": 41,
+      "int": 11,
+      "sacksTaken": 30,
+      "comp": 350,
+      "att": 521
+    },
+    "rush": {
+      "yds": 1728,
+      "td": 15,
+      "att": 407
+    },
+    "rec": {
+      "yds": 4217,
+      "td": 41
+    },
+    "def": {
+      "sacks": 49,
+      "ints": 11
+    },
+    "leaders": {
+      "passYds": {
+        "name": "Josh Allen",
+        "val": 4217
+      },
+      "rushYds": {
+        "name": "James Cook III",
+        "val": 689
+      },
+      "defSacks": {
+        "name": "Greg Rousseau",
+        "val": 13
+      },
+      "defInts": {
+        "name": "Christian Benford",
+        "val": 4
+      },
+      "recYds": {
+        "name": "Joshua Palmer",
+        "val": 974
+      }
+    }
+  },
+  "775553028": {
+    "teamName": "Denver Broncos",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 4072,
+      "td": 36,
+      "int": 19,
+      "sacksTaken": 39,
+      "comp": 369,
+      "att": 545
+    },
+    "rush": {
+      "yds": 1361,
+      "td": 15,
+      "att": 314
+    },
+    "rec": {
+      "yds": 4072,
+      "td": 36
+    },
+    "def": {
+      "sacks": 44,
+      "ints": 22
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Jonathon Cooper",
+        "val": 10
+      },
+      "defInts": {
+        "name": "Brandon Jones",
+        "val": 5
+      },
+      "rushYds": {
+        "name": "Jaleel McLaughlin",
+        "val": 522
+      },
+      "recYds": {
+        "name": "Troy Franklin",
+        "val": 1135
+      },
+      "passYds": {
+        "name": "Bo Nix",
+        "val": 4072
+      }
+    }
+  },
+  "775553029": {
+    "teamName": "Cleveland Browns",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3797,
+      "td": 36,
+      "int": 13,
+      "sacksTaken": 42,
+      "comp": 302,
+      "att": 508
+    },
+    "rush": {
+      "yds": 1137,
+      "td": 10,
+      "att": 287
+    },
+    "rec": {
+      "yds": 3797,
+      "td": 36
+    },
+    "def": {
+      "sacks": 35,
+      "ints": 17
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Mason Graham",
+        "val": 8
+      },
+      "defInts": {
+        "name": "Grant Delpit",
+        "val": 5
+      },
+      "recYds": {
+        "name": "Jerry Jeudy",
+        "val": 923
+      },
+      "rushYds": {
+        "name": "Quinshon Judkins",
+        "val": 764
+      },
+      "passYds": {
+        "name": "P.Rivers",
+        "val": 2512
+      }
+    }
+  },
+  "775553030": {
+    "teamName": "Tampa Bay Bucs",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3482,
+      "td": 23,
+      "int": 12,
+      "sacksTaken": 46,
+      "comp": 316,
+      "att": 489
+    },
+    "rush": {
+      "yds": 1383,
+      "td": 9,
+      "att": 339
+    },
+    "rec": {
+      "yds": 3482,
+      "td": 23
+    },
+    "def": {
+      "sacks": 38,
+      "ints": 10
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Yaya Diaby",
+        "val": 11.5
+      },
+      "defInts": {
+        "name": "Christian Izien",
+        "val": 2
+      },
+      "rushYds": {
+        "name": "Bucky Irving",
+        "val": 945
+      },
+      "recYds": {
+        "name": "Emeka Egbuka",
+        "val": 977
+      },
+      "passYds": {
+        "name": "Baker Mayfield",
+        "val": 3482
+      }
+    }
+  },
+  "775553031": {
+    "teamName": "Arizona Cardinals",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 5223,
+      "td": 62,
+      "int": 15,
+      "sacksTaken": 18,
+      "comp": 329,
+      "att": 522
+    },
+    "rush": {
+      "yds": 1525,
+      "td": 11,
+      "att": 259
+    },
+    "rec": {
+      "yds": 5223,
+      "td": 62
+    },
+    "def": {
+      "sacks": 35,
+      "ints": 19
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Josh Sweat",
+        "val": 10
+      },
+      "defInts": {
+        "name": "Jalen Thompson",
+        "val": 5
+      },
+      "rushYds": {
+        "name": "Kyler Murray",
+        "val": 729
+      },
+      "recYds": {
+        "name": "Marvin Harrison Jr",
+        "val": 1183
+      },
+      "passYds": {
+        "name": "Kyler Murray",
+        "val": 4843
+      }
+    }
+  },
+  "775553034": {
+    "teamName": "Los Angeles Bolts",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3302,
+      "td": 18,
+      "int": 34,
+      "sacksTaken": 49,
+      "comp": 272,
+      "att": 496
+    },
+    "rush": {
+      "yds": 893,
+      "td": 11,
+      "att": 222
+    },
+    "rec": {
+      "yds": 3299,
+      "td": 19
+    },
+    "def": {
+      "sacks": 46,
+      "ints": 4
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Omarion Hampton",
+        "val": 616
+      },
+      "recYds": {
+        "name": "Oronde Gadsden",
+        "val": 726
+      },
+      "defSacks": {
+        "name": "Daiyan Henley",
+        "val": 6.5
+      },
+      "defInts": {
+        "name": "Daiyan Henley",
+        "val": 1
+      },
+      "passYds": {
+        "name": "Justin Herbert",
+        "val": 3570
+      }
+    }
+  },
+  "775553035": {
+    "teamName": "Kansas City Chiefs",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 4187,
+      "td": 39,
+      "int": 14,
+      "sacksTaken": 30,
+      "comp": 357,
+      "att": 540
+    },
+    "rush": {
+      "yds": 850,
+      "td": 7,
+      "att": 248
+    },
+    "rec": {
+      "yds": 4187,
+      "td": 39
+    },
+    "def": {
+      "sacks": 39,
+      "ints": 16
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Ashton Gillotte",
+        "val": 7
+      },
+      "defInts": {
+        "name": "Bryan Cook",
+        "val": 4
+      },
+      "rushYds": {
+        "name": "Isiah Pacheco",
+        "val": 337
+      },
+      "recYds": {
+        "name": "Rashee Rice",
+        "val": 1193
+      },
+      "passYds": {
+        "name": "Patrick Mahomes",
+        "val": 4187
+      }
+    }
+  },
+  "775553036": {
+    "teamName": "Indianapolis Colts",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3923,
+      "td": 40,
+      "int": 19,
+      "sacksTaken": 16,
+      "comp": 279,
+      "att": 406
+    },
+    "rush": {
+      "yds": 2033,
+      "td": 24,
+      "att": 326
+    },
+    "rec": {
+      "yds": 3923,
+      "td": 40
+    },
+    "def": {
+      "sacks": 56,
+      "ints": 16
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Jonathan Taylor",
+        "val": 1724
+      },
+      "recYds": {
+        "name": "Tyler Warren",
+        "val": 898
+      },
+      "defSacks": {
+        "name": "Laiatu Latu",
+        "val": 14
+      },
+      "defInts": {
+        "name": "Charvarius Ward Sr",
+        "val": 5
+      },
+      "passYds": {
+        "name": "Anthony Richardson Sr",
+        "val": 3923
+      }
+    }
+  },
+  "775553037": {
+    "teamName": "Washington Commanders",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3670,
+      "td": 28,
+      "int": 8,
+      "sacksTaken": 44,
+      "comp": 320,
+      "att": 499
+    },
+    "rush": {
+      "yds": 1332,
+      "td": 14,
+      "att": 371
+    },
+    "rec": {
+      "yds": 3670,
+      "td": 28
+    },
+    "def": {
+      "sacks": 24,
+      "ints": 11
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Jacory Croskey-Merritt",
+        "val": 678
+      },
+      "recYds": {
+        "name": "Deebo Samuel Sr",
+        "val": 903
+      },
+      "defSacks": {
+        "name": "Jer'Zhan Newton",
+        "val": 5
+      },
+      "defInts": {
+        "name": "Trey Amos",
+        "val": 2
+      },
+      "passYds": {
+        "name": "Jayden Daniels",
+        "val": 3670
+      }
+    }
+  },
+  "775553038": {
+    "teamName": "Dallas Cowboys",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 4080,
+      "td": 33,
+      "int": 11,
+      "sacksTaken": 42,
+      "comp": 317,
+      "att": 481
+    },
+    "rush": {
+      "yds": 1416,
+      "td": 15,
+      "att": 356
+    },
+    "rec": {
+      "yds": 4080,
+      "td": 33
+    },
+    "def": {
+      "sacks": 47,
+      "ints": 9
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Donovan Ezeiruaku",
+        "val": 14.5
+      },
+      "defInts": {
+        "name": "Caelen Carson",
+        "val": 3
+      },
+      "rushYds": {
+        "name": "Javonte Williams",
+        "val": 941
+      },
+      "recYds": {
+        "name": "CeeDee Lamb",
+        "val": 1248
+      },
+      "passYds": {
+        "name": "Dak Prescott",
+        "val": 4080
+      }
+    }
+  },
+  "775553039": {
+    "teamName": "Miami Phins",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3289,
+      "td": 19,
+      "int": 14,
+      "sacksTaken": 47,
+      "comp": 285,
+      "att": 457
+    },
+    "rush": {
+      "yds": 1284,
+      "td": 11,
+      "att": 335
+    },
+    "rec": {
+      "yds": 3289,
+      "td": 19
+    },
+    "def": {
+      "sacks": 29.5,
+      "ints": 11
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "De'Von Achane",
+        "val": 753
+      },
+      "recYds": {
+        "name": "Jaylen Waddle",
+        "val": 684
+      },
+      "defSacks": {
+        "name": "Bradley Chubb",
+        "val": 5.5
+      },
+      "defInts": {
+        "name": "Jack Jones",
+        "val": 3
+      },
+      "passYds": {
+        "name": "Tua Tagovailoa",
+        "val": 3289
+      }
+    }
+  },
+  "775553040": {
+    "teamName": "Philadelphia Eagles",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3844,
+      "td": 33,
+      "int": 19,
+      "sacksTaken": 43,
+      "comp": 323,
+      "att": 519
+    },
+    "rush": {
+      "yds": 1813,
+      "td": 16,
+      "att": 368
+    },
+    "rec": {
+      "yds": 3844,
+      "td": 33
+    },
+    "def": {
+      "sacks": 47,
+      "ints": 10
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Jalen Carter",
+        "val": 12
+      },
+      "defInts": {
+        "name": "Quinyon Mitchell",
+        "val": 4
+      },
+      "rushYds": {
+        "name": "Saquon Barkley",
+        "val": 1195
+      },
+      "recYds": {
+        "name": "DeVonta Smith",
+        "val": 1134
+      },
+      "passYds": {
+        "name": "Jalen Hurts",
+        "val": 3844
+      }
+    }
+  },
+  "775553041": {
+    "teamName": "Atlanta Falcons",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3842,
+      "td": 43,
+      "int": 17,
+      "sacksTaken": 23,
+      "comp": 293,
+      "att": 472
+    },
+    "rush": {
+      "yds": 2605,
+      "td": 29,
+      "att": 398
+    },
+    "rec": {
+      "yds": 3836,
+      "td": 43
+    },
+    "def": {
+      "sacks": 49,
+      "ints": 35
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Bijan Robinson",
+        "val": 2131
+      },
+      "recYds": {
+        "name": "Drake London",
+        "val": 1131
+      },
+      "defSacks": {
+        "name": "Jalon Walker",
+        "val": 13.5
+      },
+      "defInts": {
+        "name": "Jessie Bates III",
+        "val": 9
+      },
+      "passYds": {
+        "name": "Michael Penix Jr",
+        "val": 3842
+      }
+    }
+  },
+  "775553043": {
+    "teamName": "New York G-Men",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3841,
+      "td": 36,
+      "int": 21,
+      "sacksTaken": 28,
+      "comp": 295,
+      "att": 449
+    },
+    "rush": {
+      "yds": 2073,
+      "td": 23,
+      "att": 405
+    },
+    "rec": {
+      "yds": 3841,
+      "td": 36
+    },
+    "def": {
+      "sacks": 41,
+      "ints": 24
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Brian Burns",
+        "val": 13
+      },
+      "defInts": {
+        "name": "Bobby Okereke",
+        "val": 7
+      },
+      "rushYds": {
+        "name": "Cam Skattebo",
+        "val": 1351
+      },
+      "recYds": {
+        "name": "Malik Nabers",
+        "val": 1203
+      },
+      "passYds": {
+        "name": "Jaxson Dart",
+        "val": 3816
+      }
+    }
+  },
+  "775553045": {
+    "teamName": "Jacksonville Jags",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3740,
+      "td": 35,
+      "int": 10,
+      "sacksTaken": 34,
+      "comp": 285,
+      "att": 456
+    },
+    "rush": {
+      "yds": 1310,
+      "td": 8,
+      "att": 320
+    },
+    "rec": {
+      "yds": 3740,
+      "td": 35
+    },
+    "def": {
+      "sacks": 44,
+      "ints": 14
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Josh Hines-Allen",
+        "val": 11
+      },
+      "defInts": {
+        "name": "Greg Newsome II",
+        "val": 4
+      },
+      "rushYds": {
+        "name": "Travis Etienne Jr",
+        "val": 839
+      },
+      "recYds": {
+        "name": "Travis Hunter",
+        "val": 1347
+      },
+      "passYds": {
+        "name": "Trevor Lawrence",
+        "val": 3740
+      }
+    }
+  },
+  "775553046": {
+    "teamName": "New York Jets",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3264,
+      "td": 21,
+      "int": 16,
+      "sacksTaken": 51,
+      "comp": 285,
+      "att": 466
+    },
+    "rush": {
+      "yds": 1644,
+      "td": 10,
+      "att": 326
+    },
+    "rec": {
+      "yds": 3264,
+      "td": 21
+    },
+    "def": {
+      "sacks": 24,
+      "ints": 7
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Jermaine Johnson II",
+        "val": 7.5
+      },
+      "defInts": {
+        "name": "Jamien Sherwood",
+        "val": 2
+      },
+      "rushYds": {
+        "name": "Breece Hall",
+        "val": 923
+      },
+      "recYds": {
+        "name": "Adonai Mitchell",
+        "val": 851
+      },
+      "passYds": {
+        "name": "Justin Fields",
+        "val": 3076
+      }
+    }
+  },
+  "775553047": {
+    "teamName": "Detroit Lions",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 4013,
+      "td": 35,
+      "int": 9,
+      "sacksTaken": 48,
+      "comp": 323,
+      "att": 486
+    },
+    "rush": {
+      "yds": 1569,
+      "td": 13,
+      "att": 351
+    },
+    "rec": {
+      "yds": 4013,
+      "td": 35
+    },
+    "def": {
+      "sacks": 48,
+      "ints": 14
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Aidan Hutchinson",
+        "val": 19
+      },
+      "defInts": {
+        "name": "Brian Branch",
+        "val": 5
+      },
+      "rushYds": {
+        "name": "Jahmyr Gibbs",
+        "val": 1006
+      },
+      "recYds": {
+        "name": "Amon-Ra St. Brown",
+        "val": 1269
+      },
+      "passYds": {
+        "name": "Jared Goff",
+        "val": 4013
+      }
+    }
+  },
+  "775553049": {
+    "teamName": "Green Bay Pack",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3944,
+      "td": 35,
+      "int": 17,
+      "sacksTaken": 43,
+      "comp": 320,
+      "att": 492
+    },
+    "rush": {
+      "yds": 2184,
+      "td": 19,
+      "att": 384
+    },
+    "rec": {
+      "yds": 3944,
+      "td": 35
+    },
+    "def": {
+      "sacks": 47,
+      "ints": 12
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Micah Parsons",
+        "val": 17.5
+      },
+      "defInts": {
+        "name": "Nate Hobbs",
+        "val": 3
+      },
+      "recYds": {
+        "name": "Jayden Reed",
+        "val": 996
+      },
+      "rushYds": {
+        "name": "Josh Jacobs",
+        "val": 1325
+      },
+      "passYds": {
+        "name": "Jordan Love",
+        "val": 3944
+      }
+    }
+  },
+  "775553050": {
+    "teamName": "Carolina Panthers",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 2748,
+      "td": 12,
+      "int": 15,
+      "sacksTaken": 51,
+      "comp": 252,
+      "att": 451
+    },
+    "rush": {
+      "yds": 1362,
+      "td": 10,
+      "att": 344
+    },
+    "rec": {
+      "yds": 2725,
+      "td": 12
+    },
+    "def": {
+      "sacks": 43,
+      "ints": 4
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Nic Scourton",
+        "val": 12
+      },
+      "defInts": {
+        "name": "Desmond King II",
+        "val": 1
+      },
+      "rushYds": {
+        "name": "Rico Dowdle",
+        "val": 656
+      },
+      "recYds": {
+        "name": "Tetairoa McMillan",
+        "val": 765
+      },
+      "passYds": {
+        "name": "Bryce Young",
+        "val": 2748
+      }
+    }
+  },
+  "775553051": {
+    "teamName": "New England Pats",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3703,
+      "td": 24,
+      "int": 11,
+      "sacksTaken": 32,
+      "comp": 306,
+      "att": 473
+    },
+    "rush": {
+      "yds": 1918,
+      "td": 23,
+      "att": 432
+    },
+    "rec": {
+      "yds": 3703,
+      "td": 24
+    },
+    "def": {
+      "sacks": 51.5,
+      "ints": 11
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Milton Williams",
+        "val": 11.5
+      },
+      "defInts": {
+        "name": "Robert Spillane",
+        "val": 3
+      },
+      "recYds": {
+        "name": "Stefon Diggs",
+        "val": 956
+      },
+      "rushYds": {
+        "name": "TreVeyon Henderson",
+        "val": 1186
+      },
+      "passYds": {
+        "name": "Drake Maye",
+        "val": 3703
+      }
+    }
+  },
+  "775553052": {
+    "teamName": "Las Vegas Raiders",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3151,
+      "td": 20,
+      "int": 11,
+      "sacksTaken": 59,
+      "comp": 279,
+      "att": 456
+    },
+    "rush": {
+      "yds": 1224,
+      "td": 11,
+      "att": 311
+    },
+    "rec": {
+      "yds": 3151,
+      "td": 20
+    },
+    "def": {
+      "sacks": 32,
+      "ints": 22
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Keeanu Benton",
+        "val": 10
+      },
+      "defInts": {
+        "name": "Jamal Adams",
+        "val": 5
+      },
+      "recYds": {
+        "name": "Tre Tucker",
+        "val": 769
+      },
+      "rushYds": {
+        "name": "Ashton Jeanty",
+        "val": 981
+      },
+      "passYds": {
+        "name": "Kyle McCord",
+        "val": 2768
+      }
+    }
+  },
+  "775553053": {
+    "teamName": "Los Angeles Rams",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3968,
+      "td": 27,
+      "int": 10,
+      "sacksTaken": 44,
+      "comp": 339,
+      "att": 505
+    },
+    "rush": {
+      "yds": 1590,
+      "td": 14,
+      "att": 341
+    },
+    "rec": {
+      "yds": 3968,
+      "td": 27
+    },
+    "def": {
+      "sacks": 30,
+      "ints": 5
+    },
+    "leaders": {
+      "recYds": {
+        "name": "Puka Nacua",
+        "val": 1386
+      },
+      "rushYds": {
+        "name": "Kyren Williams",
+        "val": 958
+      },
+      "defSacks": {
+        "name": "Jared Verse",
+        "val": 8.5
+      },
+      "defInts": {
+        "name": "Cobie Durant",
+        "val": 3
+      },
+      "passYds": {
+        "name": "Matthew Stafford",
+        "val": 3940
+      }
+    }
+  },
+  "775553054": {
+    "teamName": "Baltimore Ravens",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3929,
+      "td": 38,
+      "int": 9,
+      "sacksTaken": 30,
+      "comp": 308,
+      "att": 423
+    },
+    "rush": {
+      "yds": 2094,
+      "td": 28,
+      "att": 405
+    },
+    "rec": {
+      "yds": 3929,
+      "td": 38
+    },
+    "def": {
+      "sacks": 47,
+      "ints": 21
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Derrick Henry",
+        "val": 1394
+      },
+      "recYds": {
+        "name": "Mark Andrews",
+        "val": 924
+      },
+      "defSacks": {
+        "name": "Nnamdi Madubuike",
+        "val": 12
+      },
+      "defInts": {
+        "name": "Kyle Hamilton",
+        "val": 5
+      },
+      "passYds": {
+        "name": "Lamar Jackson",
+        "val": 3799
+      }
+    }
+  },
+  "775553055": {
+    "teamName": "New Orleans Saints",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3700,
+      "td": 37,
+      "int": 22,
+      "sacksTaken": 31,
+      "comp": 260,
+      "att": 404
+    },
+    "rush": {
+      "yds": 1678,
+      "td": 14,
+      "att": 363
+    },
+    "rec": {
+      "yds": 3700,
+      "td": 37
+    },
+    "def": {
+      "sacks": 28,
+      "ints": 17
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Chase Young",
+        "val": 7.5
+      },
+      "defInts": {
+        "name": "Kool-Aid McKinstry",
+        "val": 5
+      },
+      "passYds": {
+        "name": "Tyler Shough",
+        "val": 3700
+      },
+      "rushYds": {
+        "name": "Alvin Kamara",
+        "val": 704
+      },
+      "recYds": {
+        "name": "Chris Olave",
+        "val": 1071
+      }
+    }
+  },
+  "775553056": {
+    "teamName": "Seattle Seahawks",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 4738,
+      "td": 45,
+      "int": 12,
+      "sacksTaken": 22,
+      "comp": 311,
+      "att": 456
+    },
+    "rush": {
+      "yds": 2044,
+      "td": 28,
+      "att": 265
+    },
+    "rec": {
+      "yds": 4738,
+      "td": 45
+    },
+    "def": {
+      "sacks": 26,
+      "ints": 14
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Kenneth Walker III",
+        "val": 1694
+      },
+      "recYds": {
+        "name": "Jaxon Smith-Njigba",
+        "val": 1442
+      },
+      "passYds": {
+        "name": "Jalen Milroe",
+        "val": 4650
+      },
+      "defSacks": {
+        "name": "Byron Murphy II",
+        "val": 5.5
+      },
+      "defInts": {
+        "name": "Ernest Jones IV",
+        "val": 5
+      }
+    }
+  },
+  "775553057": {
+    "teamName": "Pittsburgh Steelers",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3445,
+      "td": 20,
+      "int": 13,
+      "sacksTaken": 54,
+      "comp": 291,
+      "att": 466
+    },
+    "rush": {
+      "yds": 1342,
+      "td": 16,
+      "att": 296
+    },
+    "rec": {
+      "yds": 3473,
+      "td": 21
+    },
+    "def": {
+      "sacks": 37,
+      "ints": 15
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Jaylen Warren",
+        "val": 1012
+      },
+      "recYds": {
+        "name": "Calvin Austin",
+        "val": 995
+      },
+      "defSacks": {
+        "name": "T.J. Watt",
+        "val": 13
+      },
+      "defInts": {
+        "name": "Patrick Queen",
+        "val": 3
+      },
+      "passYds": {
+        "name": "Aaron Rodgers",
+        "val": 3083
+      }
+    }
+  },
+  "775553058": {
+    "teamName": "Houston Texans",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3693,
+      "td": 30,
+      "int": 13,
+      "sacksTaken": 34,
+      "comp": 313,
+      "att": 505
+    },
+    "rush": {
+      "yds": 1572,
+      "td": 11,
+      "att": 278
+    },
+    "rec": {
+      "yds": 3696,
+      "td": 29
+    },
+    "def": {
+      "sacks": 37.5,
+      "ints": 12
+    },
+    "leaders": {
+      "defSacks": {
+        "name": "Bryan Bresee",
+        "val": 9.5
+      },
+      "defInts": {
+        "name": "Calen Bullock",
+        "val": 2
+      },
+      "rushYds": {
+        "name": "Joe Mixon",
+        "val": 1158
+      },
+      "recYds": {
+        "name": "Nico Collins",
+        "val": 1109
+      },
+      "passYds": {
+        "name": "C.J. Stroud",
+        "val": 3198
+      }
+    }
+  },
+  "775553059": {
+    "teamName": "Tennessee Titans",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 3609,
+      "td": 23,
+      "int": 15,
+      "sacksTaken": 38,
+      "comp": 283,
+      "att": 459
+    },
+    "rush": {
+      "yds": 921,
+      "td": 12,
+      "att": 270
+    },
+    "rec": {
+      "yds": 3609,
+      "td": 23
+    },
+    "def": {
+      "sacks": 36.5,
+      "ints": 22
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Tony Pollard",
+        "val": 423
+      },
+      "recYds": {
+        "name": "Elic Ayomanor",
+        "val": 918
+      },
+      "defSacks": {
+        "name": "Jeffery Simmons",
+        "val": 13
+      },
+      "defInts": {
+        "name": "Amani Hooker",
+        "val": 5
+      },
+      "passYds": {
+        "name": "Cam Ward",
+        "val": 3598
+      }
+    }
+  },
+  "775553060": {
+    "teamName": "Minnesota Vikes",
+    "seasonIndex": 0,
+    "pass": {
+      "yds": 4412,
+      "td": 37,
+      "int": 20,
+      "sacksTaken": 45,
+      "comp": 352,
+      "att": 566
+    },
+    "rush": {
+      "yds": 989,
+      "td": 13,
+      "att": 215
+    },
+    "rec": {
+      "yds": 4412,
+      "td": 37
+    },
+    "def": {
+      "sacks": 30,
+      "ints": 9
+    },
+    "leaders": {
+      "rushYds": {
+        "name": "Jordan Mason",
+        "val": 481
+      },
+      "recYds": {
+        "name": "Justin Jefferson",
+        "val": 1438
+      },
+      "defSacks": {
+        "name": "Dallas Turner",
+        "val": 7.5
+      },
+      "defInts": {
+        "name": "Byron Murphy Jr",
+        "val": 2
+      },
+      "passYds": {
+        "name": "J.J. McCarthy",
+        "val": 4384
+      }
+    }
+  }
+}

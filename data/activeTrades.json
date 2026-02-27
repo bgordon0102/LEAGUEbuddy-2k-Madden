@@ -732,5 +732,638 @@
     "postedToCommittee": false,
     "submittedAt": 1771828751613,
     "expiresAt": 1771915151613
+  },
+  "builder_1195843329477328978_1771865622928": {
+    "tradeId": "builder_1195843329477328978_1771865622928",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736265682026779",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "San Antonio Spurs",
+    "assetsSent": "Jaime Jaquez Jr. (PF / SF) — 380.0\n2026 Round 1 — 240.0",
+    "assetsReceived": "De’Aaron Fox (PG / SG) — 620.0",
+    "picksSent": [
+      "2026 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771865670234,
+    "expiresAt": 1771952070234
+  },
+  "builder_840269359578611753_1771865671534": {
+    "tradeId": "builder_840269359578611753_1771865671534",
+    "proposerId": "840269359578611753",
+    "coachBId": "1460735894276542484",
+    "yourTeam": "Minnesota Timberwolves",
+    "otherTeam": "Denver Nuggets",
+    "assetsSent": "Julius Randle (PF / C) — 640.0",
+    "assetsReceived": "Aaron Gordon (PF) — 440.0\n2030 Round 1 — 100.0\n2030 Round 2 — 50.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2030 Round 1",
+      "2030 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771865706505,
+    "expiresAt": 1771952106505
+  },
+  "builder_670446898695503897_1771866369081": {
+    "tradeId": "builder_670446898695503897_1771866369081",
+    "proposerId": "670446898695503897",
+    "coachBId": "1460736215178285209",
+    "yourTeam": "San Antonio Spurs",
+    "otherTeam": "Houston Rockets",
+    "assetsSent": "Keldon Johnson (SF / PF) — 380.0\n2026 Round 1 — 240.0\n2026 Round 1 — 240.0",
+    "assetsReceived": "Amen Thompson (SG / PG) — 620.0\nJeff Green (PF / C) — 130.0\nAaron Holiday (PG / SG) — 130.0",
+    "picksSent": [
+      "2026 Round 1",
+      "2026 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771866455087,
+    "expiresAt": 1771952855087
+  },
+  "builder_670446898695503897_1771872628506": {
+    "tradeId": "builder_670446898695503897_1771872628506",
+    "proposerId": "670446898695503897",
+    "coachBId": "1460735640835719382",
+    "yourTeam": "San Antonio Spurs",
+    "otherTeam": "Los Angeles Lakers",
+    "assetsSent": "Dylan Harper (PG / SG) — 392.0\nKeldon Johnson (SF / PF) — 380.0\n2026 Round 1 — 240.0\n2026 Round 1 — 240.0",
+    "assetsReceived": "Luka Doncic (PG / SG) — 955.0\nDrew Timme (C / PF) — 115.0\nAdou Thiero (SF / PF) — 85.0\n2026 Round 2 — 86.0",
+    "picksSent": [
+      "2026 Round 1",
+      "2026 Round 1"
+    ],
+    "picksReceived": [
+      "2026 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771872725559,
+    "expiresAt": 1771959125559
+  },
+  "builder_670446898695503897_1771875164418": {
+    "tradeId": "builder_670446898695503897_1771875164418",
+    "proposerId": "670446898695503897",
+    "coachBId": "1460735640835719382",
+    "yourTeam": "San Antonio Spurs",
+    "otherTeam": "Los Angeles Lakers",
+    "assetsSent": "Stephon Castle (SG / PG) — 550.0\nDylan Harper (PG / SG) — 392.0\n2026 Round 1 — 240.0",
+    "assetsReceived": "Luka Doncic (PG / SG) — 955.0\nMarcus Smart (SG / SF) — 205.0",
+    "picksSent": [
+      "2026 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771875235461,
+    "expiresAt": 1771961635461
+  },
+  "builder_1076243288056664234_1771885054423": {
+    "tradeId": "builder_1076243288056664234_1771885054423",
+    "proposerId": "1076243288056664234",
+    "coachBId": "1460736393465696300",
+    "yourTeam": "Cleveland Cavaliers",
+    "otherTeam": "Oklahoma City Thunder",
+    "assetsSent": "Keon Ellis (SG / SF) — 175.0\nDennis Schroder (PG / SG) — 220.0",
+    "assetsReceived": "Luguentz Dort (SG / SF) — 380.0",
+    "picksSent": [],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771885084141,
+    "expiresAt": 1771971484141
+  },
+  "builder_991773636753096744_1771892674025": {
+    "tradeId": "builder_991773636753096744_1771892674025",
+    "proposerId": "991773636753096744",
+    "coachBId": "1460735288174313534",
+    "yourTeam": "Brooklyn Nets",
+    "otherTeam": "Miami Heat",
+    "assetsSent": "2027 Round 1 — 168.0\nOchai Agbaji (PF / SF) — 160.0\nJosh Minott (PF / C) — 160.0",
+    "assetsReceived": "Norman Powell (SF / SG) — 440.0",
+    "picksSent": [
+      "2027 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771892765574,
+    "expiresAt": 1771979165574
+  },
+  "builder_1195843329477328978_1771892705021": {
+    "tradeId": "builder_1195843329477328978_1771892705021",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460735822742425732",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Brooklyn Nets",
+    "assetsSent": "Norman Powell (SF / SG) — 440.0",
+    "assetsReceived": "2026 Round 1 — 240.0\nJosh Minott (PF / C) — 160.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2026 Round 1"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771892960084,
+    "expiresAt": 1771979360084
+  },
+  "builder_1195843329477328978_1771893559195": {
+    "tradeId": "builder_1195843329477328978_1771893559195",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460735822742425732",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Brooklyn Nets",
+    "assetsSent": "Norman Powell (SF / SG) — 440.0",
+    "assetsReceived": "Josh Minott (PF / C) — 160.0\n2026 Round 1 — 240.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2026 Round 1"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771893589588,
+    "expiresAt": 1771979989588
+  },
+  "builder_840269359578611753_1771908196992": {
+    "tradeId": "builder_840269359578611753_1771908196992",
+    "proposerId": "840269359578611753",
+    "coachBId": "1460735211137532059",
+    "yourTeam": "Minnesota Timberwolves",
+    "otherTeam": "Atlanta Hawks",
+    "assetsSent": "Ayo Dosunmu (SG / SF) — 380.0\n2029 Round 1 — 100.0",
+    "assetsReceived": "Dyson Daniels (SG / PG) — 425.0\n2030 Round 2 — 50.0",
+    "picksSent": [
+      "2029 Round 1"
+    ],
+    "picksReceived": [
+      "2030 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "postedToCommittee": false,
+    "submittedAt": 1771908297920,
+    "expiresAt": 1771994697920
+  },
+  "builder_840269359578611753_1771973062722": {
+    "tradeId": "builder_840269359578611753_1771973062722",
+    "proposerId": "840269359578611753",
+    "coachBId": "1460736507206697081",
+    "yourTeam": "Minnesota Timberwolves",
+    "otherTeam": "Portland Trail Blazers",
+    "assetsSent": "Ayo Dosunmu (SG / SF) — 380.0\n2026 Round 2 — 86.0",
+    "assetsReceived": "Jrue Holiday (PG / SG) — 425.0",
+    "picksSent": [
+      "2026 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771973164969,
+    "expiresAt": 1772059564969
+  },
+  "builder_840269359578611753_1771973344674": {
+    "tradeId": "builder_840269359578611753_1771973344674",
+    "proposerId": "840269359578611753",
+    "coachBId": "1460736507206697081",
+    "yourTeam": "Minnesota Timberwolves",
+    "otherTeam": "Portland Trail Blazers",
+    "assetsSent": "Ayo Dosunmu (SG / SF) — 380.0\n2027 Round 1 — 168.0",
+    "assetsReceived": "Toumani Camara (PF / SF) — 500.0",
+    "picksSent": [
+      "2027 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771973470379,
+    "expiresAt": 1772059870379
+  },
+  "builder_1195843329477328978_1771973690386": {
+    "tradeId": "builder_1195843329477328978_1771973690386",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736507206697081",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Portland Trail Blazers",
+    "assetsSent": "Kel’el Ware (C / PF) — 380.0\n2028 Round 1 — 118.0",
+    "assetsReceived": "Toumani Camara (PF / SF) — 500.0",
+    "picksSent": [
+      "2028 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771973740366,
+    "expiresAt": 1772060140366
+  },
+  "builder_472219952472915969_1771974376124": {
+    "tradeId": "builder_472219952472915969_1771974376124",
+    "proposerId": "472219952472915969",
+    "coachBId": "1460734885667934373",
+    "yourTeam": "Portland Trail Blazers",
+    "otherTeam": "Cleveland Cavaliers",
+    "assetsSent": "Toumani Camara (PF / SF) — 500.0\nJerami Grant (PF / SF) — 410.0",
+    "assetsReceived": "Evan Mobley (PF / C) — 620.0\n2026 Round 2 — 86.0\n2027 Round 2 — 56.0\n2028 Round 2 — 50.0\n2029 Round 2 — 50.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2026 Round 2",
+      "2027 Round 2",
+      "2028 Round 2",
+      "2029 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "postedToCommittee": false,
+    "submittedAt": 1771974547073,
+    "expiresAt": 1772060947073
+  },
+  "builder_1195843329477328978_1771977931147": {
+    "tradeId": "builder_1195843329477328978_1771977931147",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736393465696300",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Oklahoma City Thunder",
+    "assetsSent": "Tyler Herro (SG / PG) — 600.0\n2027 Round 1 — 168.0",
+    "assetsReceived": "Jalen Williams (SF / PF) — 620.0\nThomas Sorber (C / PF) — 100.0",
+    "picksSent": [
+      "2027 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "postedToCommittee": false,
+    "submittedAt": 1771978171782,
+    "expiresAt": 1772064571782
+  },
+  "builder_1195843329477328978_1771978182224": {
+    "tradeId": "builder_1195843329477328978_1771978182224",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736393465696300",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Oklahoma City Thunder",
+    "assetsSent": "Kel’el Ware (C / PF) — 380.0\n2026 Round 1 — 240.0",
+    "assetsReceived": "Jalen Williams (SF / PF) — 620.0",
+    "picksSent": [
+      "2026 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "postedToCommittee": false,
+    "submittedAt": 1771978253590,
+    "expiresAt": 1772064653590
+  },
+  "builder_472219952472915969_1771981103155": {
+    "tradeId": "builder_472219952472915969_1771981103155",
+    "proposerId": "472219952472915969",
+    "coachBId": "1460736451473051739",
+    "yourTeam": "Portland Trail Blazers",
+    "otherTeam": "Minnesota Timberwolves",
+    "assetsSent": "Jrue Holiday (PG / SG) — 425.0\n2030 Round 2 — 50.0",
+    "assetsReceived": "Naz Reid (C / PF) — 425.0",
+    "picksSent": [
+      "2030 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771981144796,
+    "expiresAt": 1772067544796
+  },
+  "builder_472219952472915969_1771981917353": {
+    "tradeId": "builder_472219952472915969_1771981917353",
+    "proposerId": "472219952472915969",
+    "coachBId": "1460736393465696300",
+    "yourTeam": "Portland Trail Blazers",
+    "otherTeam": "Oklahoma City Thunder",
+    "assetsSent": "Matisse Thybulle (SG / SF) — 160.0\n2030 Round 2 — 50.0",
+    "assetsReceived": "Jared McCain (PG / SG) — 220.0",
+    "picksSent": [
+      "2030 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771981964983,
+    "expiresAt": 1772068364983
+  },
+  "builder_472219952472915969_1771982293265": {
+    "tradeId": "builder_472219952472915969_1771982293265",
+    "proposerId": "472219952472915969",
+    "coachBId": "1460736393465696300",
+    "yourTeam": "Portland Trail Blazers",
+    "otherTeam": "Oklahoma City Thunder",
+    "assetsSent": "Matisse Thybulle (SG / SF) — 160.0\nKris Murray (SF / PF) — 145.0\n2027 Round 2 — 56.0\n2029 Round 2 — 50.0",
+    "assetsReceived": "Jared McCain (PG / SG) — 220.0\nKenrich Williams (PF / C) — 190.0",
+    "picksSent": [
+      "2027 Round 2",
+      "2029 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771982346149,
+    "expiresAt": 1772068746149
+  },
+  "builder_1126312455111458849_1771983009042": {
+    "tradeId": "builder_1126312455111458849_1771983009042",
+    "proposerId": "1126312455111458849",
+    "coachBId": "1460736507206697081",
+    "yourTeam": "Oklahoma City Thunder",
+    "otherTeam": "Portland Trail Blazers",
+    "assetsSent": "Jared McCain (PG / SG) — 220.0\nKenrich Williams (PF / C) — 190.0",
+    "assetsReceived": "Matisse Thybulle (SG / SF) — 160.0\nVit Krejci (SF / PG) — 175.0\n2030 Round 2 — 50.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2030 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1771983071571,
+    "expiresAt": 1772069471571
+  },
+  "builder_1195843329477328978_1771983795088": {
+    "tradeId": "builder_1195843329477328978_1771983795088",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736393465696300",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Oklahoma City Thunder",
+    "assetsSent": "Kel’el Ware (C / PF) — 380.0\n2027 Round 1 — 168.0\n2028 Round 1 — 118.0",
+    "assetsReceived": "Jalen Williams (SF / PF) — 620.0",
+    "picksSent": [
+      "2027 Round 1",
+      "2028 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "postedToCommittee": false,
+    "submittedAt": 1771983887209,
+    "expiresAt": 1772070287209
+  },
+  "builder_1195843329477328978_1771983917085": {
+    "tradeId": "builder_1195843329477328978_1771983917085",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460735694761754698",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Orlando Magic",
+    "assetsSent": "Kel’el Ware (C / PF) — 380.0\n2028 Round 1 — 118.0",
+    "assetsReceived": "Jalen Suggs (PG / SG) — 425.0\n2030 Round 2 — 50.0",
+    "picksSent": [
+      "2028 Round 1"
+    ],
+    "picksReceived": [
+      "2030 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "postedToCommittee": false,
+    "submittedAt": 1771984130052,
+    "expiresAt": 1772070530052
+  },
+  "builder_1195843329477328978_1771985384173": {
+    "tradeId": "builder_1195843329477328978_1771985384173",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736087499604180",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Detroit Pistons",
+    "assetsSent": "Tyler Herro (SG / PG) — 600.0",
+    "assetsReceived": "Ausar Thompson (SF / PF) — 500.0\n2030 Round 2 — 50.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2030 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1771985701235,
+    "expiresAt": 1772072101235
+  },
+  "builder_1195843329477328978_1772140580247": {
+    "tradeId": "builder_1195843329477328978_1772140580247",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736087499604180",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Detroit Pistons",
+    "assetsSent": "Tyler Herro (SG / PG) — 600.0",
+    "assetsReceived": "Ausar Thompson (SF / PF) — 500.0\n2030 Round 2 — 50.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2030 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1772140805946,
+    "expiresAt": 1772227205946
+  },
+  "builder_729435455350636654_1772146826392": {
+    "tradeId": "builder_729435455350636654_1772146826392",
+    "proposerId": "729435455350636654",
+    "coachBId": "1460735694761754698",
+    "yourTeam": "Detroit Pistons",
+    "otherTeam": "Orlando Magic",
+    "assetsSent": "Ausar Thompson (SF / PF) — 500.0\n2026 Round 2 — 86.0",
+    "assetsReceived": "Franz Wagner (SF / PF) — 620.0",
+    "picksSent": [
+      "2026 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1772146860169,
+    "expiresAt": 1772233260169
+  },
+  "builder_729435455350636654_1772147023514": {
+    "tradeId": "builder_729435455350636654_1772147023514",
+    "proposerId": "729435455350636654",
+    "coachBId": "1460735694761754698",
+    "yourTeam": "Detroit Pistons",
+    "otherTeam": "Orlando Magic",
+    "assetsSent": "Ausar Thompson (SF / PF) — 500.0\nDuncan Robinson (SG / SF) — 205.0",
+    "assetsReceived": "Franz Wagner (SF / PF) — 620.0\n2027 Round 2 — 56.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2027 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1772147074147,
+    "expiresAt": 1772233474147
+  },
+  "builder_1195843329477328978_1772147243838": {
+    "tradeId": "builder_1195843329477328978_1772147243838",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736087499604180",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Detroit Pistons",
+    "assetsSent": "Tyler Herro (SG / PG) — 600.0\n2030 Round 2 — 50.0",
+    "assetsReceived": "Ausar Thompson (SF / PF) — 500.0\nPaul Reed (C / PF) — 160.0",
+    "picksSent": [
+      "2030 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1772147514029,
+    "expiresAt": 1772233914029
+  },
+  "builder_670446898695503897_1772147827889": {
+    "tradeId": "builder_670446898695503897_1772147827889",
+    "proposerId": "670446898695503897",
+    "coachBId": "1460735355568525413",
+    "yourTeam": "San Antonio Spurs",
+    "otherTeam": "Charlotte Hornets",
+    "assetsSent": "Keldon Johnson (SF / PF) — 380.0\n2026 Round 1 — 240.0",
+    "assetsReceived": "LaMelo Ball (PG / SG) — 600.0",
+    "picksSent": [
+      "2026 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1772147872539,
+    "expiresAt": 1772234272539
+  },
+  "builder_1195843329477328978_1772157020701": {
+    "tradeId": "builder_1195843329477328978_1772157020701",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460735822742425732",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Brooklyn Nets",
+    "assetsSent": "Andrew Wiggins (PF / SF) — 395.0",
+    "assetsReceived": "Terance Mann (SG / SF) — 145.0\nZiaire Williams (SF / SG) — 175.0\n2030 Round 2 — 50.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2030 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1772157111765,
+    "expiresAt": 1772243511765
+  },
+  "builder_1195843329477328978_1772164210377": {
+    "tradeId": "builder_1195843329477328978_1772164210377",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460734780600619193",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Chicago Bulls",
+    "assetsSent": "Nikola Jovic (PF / C) — 160.0",
+    "assetsReceived": "Rob Dillingham (PG / SG) — 115.0",
+    "picksSent": [],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1772164859807,
+    "expiresAt": 1772251259807
+  },
+  "builder_1195843329477328978_1772209827608": {
+    "tradeId": "builder_1195843329477328978_1772209827608",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460734780600619193",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Chicago Bulls",
+    "assetsSent": "Nikola Jovic (PF / C) — 160.0",
+    "assetsReceived": "Rob Dillingham (PG / SG) — 115.0",
+    "picksSent": [],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1772209859488,
+    "expiresAt": 1772296259488
+  },
+  "builder_1195843329477328978_1772212440605": {
+    "tradeId": "builder_1195843329477328978_1772212440605",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736507206697081",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Portland Trail Blazers",
+    "assetsSent": "Davion Mitchell (PG / SG) — 205.0\nJosh Minott (PF / C) — 160.0\n2028 Round 1 — 118.0",
+    "assetsReceived": "Toumani Camara (PF / SF) — 500.0",
+    "picksSent": [
+      "2028 Round 1"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1772212526063,
+    "expiresAt": 1772298926063
+  },
+  "builder_1195843329477328978_1772215948020": {
+    "tradeId": "builder_1195843329477328978_1772215948020",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736087499604180",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Detroit Pistons",
+    "assetsSent": "Kel’el Ware (C / PF) — 380.0\nDavion Mitchell (PG / SG) — 205.0",
+    "assetsReceived": "Ausar Thompson (SF / PF) — 500.0\nChaz Lanier (SG / SF) — 55.0",
+    "picksSent": [],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "postedToCommittee": false,
+    "submittedAt": 1772216050253,
+    "expiresAt": 1772302450253
   }
 }

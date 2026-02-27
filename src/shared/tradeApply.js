@@ -19,6 +19,14 @@ function normalize(str = '') {
   return str.toLowerCase().replace(/[^a-z0-9]/gi, '');
 }
 
+// Strip position/value annotations from asset text to get the raw player name
+function cleanPlayerLabel(label = '') {
+  let base = String(label).split('—')[0]; // drop value part if present
+  base = base.split('-')[0]; // fallback dash
+  base = base.replace(/\(.*?\)/g, '').trim();
+  return base;
+}
+
 function teamToFile(team) {
   const map = {
     "cavaliers": "cleveland_cavaliers.json",
@@ -117,6 +125,15 @@ function buildPickValueMap(tradeObj) {
   return map;
 }
 
+function parsePlayersFromAssets(assetStr) {
+  if (!assetStr) return [];
+  return assetStr
+    .split(/[\n,]/)
+    .map(s => s.trim())
+    .filter(s => s && !/pick/i.test(s))
+    .map(cleanPlayerLabel);
+}
+
 function getSeasonYear() {
   try {
     const seasonPath = path.join(process.cwd(), 'data', 'season.json');
@@ -131,7 +148,7 @@ function getSeasonYear() {
 
 function movePlayers(playerNames, fromRoster, toRoster) {
   for (const name of playerNames) {
-    const normName = normalize(name);
+    const normName = normalize(cleanPlayerLabel(name));
     const idx = fromRoster.players.findIndex(p => normalize(p.name) === normName);
     if (idx !== -1) {
       toRoster.players.push(fromRoster.players[idx]);
@@ -222,8 +239,8 @@ export function applyApprovedTrade(trade) {
   teamBRoster.picks = Array.isArray(teamBRoster.picks) ? teamBRoster.picks : [];
 
   const pickValueMap = buildPickValueMap(trade);
-  const sentPlayers = trade.players || trade.assetsSent.split(',').map(s => s.trim()).filter(s => s && !s.match(/pick/i));
-  const receivedPlayers = trade.playersTo || trade.assetsReceived.split(',').map(s => s.trim()).filter(s => s && !s.match(/pick/i));
+  const sentPlayers = trade.players || parsePlayersFromAssets(trade.assetsSent);
+  const receivedPlayers = trade.playersTo || parsePlayersFromAssets(trade.assetsReceived);
 
   movePlayers(sentPlayers, teamARoster, teamBRoster);
   movePlayers(receivedPlayers, teamBRoster, teamARoster);

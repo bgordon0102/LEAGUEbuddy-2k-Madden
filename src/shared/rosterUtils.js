@@ -464,7 +464,9 @@ export function deriveAge(player) {
 export function deriveContract(player) {
   const years = Array.isArray(player.contractYears) ? player.contractYears : [];
   const salaryStr = years[0]?.salary || player.salary || player.Salary || '';
-  const salary = Number(String(salaryStr).replace(/[^0-9.]/g, '')) || 0;
+  // If salary is missing, use a neutral ~$10M so values don't spike from "free" contracts
+  let salary = Number(String(salaryStr).replace(/[^0-9.]/g, '')) || 0;
+  if (salary === 0) salary = 10_000_000;
   const yearsLeft = years.length || Number(player.contractYearsLeft || player.ContractYearsLeft || 0) || 1;
   return { salary, yearsLeft };
 }
@@ -731,7 +733,14 @@ export function upsertPlayer(roster, player) {
     throw new TypeError('upsertPlayer expected roster array');
   }
   const ovrNum = (p = {}) => Number(p.ovr ?? p.OVR ?? p.rating ?? p.Rating ?? p.overall ?? p.Overall ?? 0);
-  const existingIndex = arr.findIndex(p => p.id === player.id || normalizeName(p.name) === normalizeName(player.name));
+  // Match strictly by id if provided, else by exact name (no fuzzy/substring) to avoid removing similar names.
+  let existingIndex = -1;
+  if (player.id) {
+    existingIndex = arr.findIndex(p => p.id === player.id);
+  }
+  if (existingIndex === -1) {
+    existingIndex = arr.findIndex(p => p.name === player.name);
+  }
   if (existingIndex >= 0) {
     arr[existingIndex] = { ...arr[existingIndex], ...player };
   } else {

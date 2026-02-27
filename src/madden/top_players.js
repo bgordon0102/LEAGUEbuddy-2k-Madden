@@ -1292,6 +1292,20 @@ function computeWeeklyList(snapshot, weekIndex) {
 
   // Ensure a baseline linebacker presence across the full Top 100
   const MIN_LB = 10;
+  // Position grouping helper must be declared before any use
+  const posGroup = (posRaw = '') => {
+    const pos = String(posRaw).toUpperCase();
+    if (['LT', 'LG', 'C', 'RG', 'RT'].includes(pos)) return 'OL';
+    if (['QB'].includes(pos)) return 'QB';
+    if (['HB', 'FB', 'RB'].includes(pos)) return 'RB';
+    if (['WR', 'TE'].includes(pos)) return 'REC';
+    if (['LE', 'RE', 'DT'].includes(pos)) return 'DL';
+    if (['LOLB', 'ROLB', 'MLB', 'ILB'].includes(pos)) return 'LB';
+    if (['CB', 'FS', 'SS'].includes(pos)) return 'DB';
+    if (['K', 'P'].includes(pos)) return 'ST';
+    return 'OTH';
+  };
+
   const isLB = (p) => posGroup(p.position) === 'LB';
   let lbCount = forcedTop100.filter(isLB).length;
   if (lbCount < MIN_LB) {
@@ -1316,24 +1330,7 @@ function computeWeeklyList(snapshot, weekIndex) {
       .slice(0, 100);
   }
 
-  // --- Top 100 positional quotas by band ---
-  const posGroup = (posRaw) => {
-    const pos = (posRaw || '').toUpperCase();
-    if (pos === 'QB') return 'QB';
-    if (['HB', 'RB', 'TB'].includes(pos)) return 'RB';
-    if (pos === 'WR') return 'WR';
-    if (['LT', 'LG', 'C', 'RG', 'RT'].includes(pos)) return 'OL';
-    if (['MLB', 'ILB', 'LB', 'SAM', 'MIKE', 'WILL'].includes(pos)) return 'LB';
-    if (pos === 'CB') return 'CB';
-    if (pos === 'FS' || pos === 'SS') return 'S';
-    if (pos === 'K' || pos === 'P' || pos === 'FB') return 'SPECIAL';
-    // Edge catch-all (exclude pure DT/IDL/NT from EDG so edge quota can't be filled by DTs)
-    if (['LE', 'RE', 'ROLB', 'LOLB', 'EDGE', 'EDG', 'OLB', 'DE', 'LEDG', 'REDG', 'REDGE', 'LEDGE', 'EDGE_R', 'EDGE_L', 'EDGE-R', 'EDGE-L', 'LDE', 'RDE'].includes(pos)) return 'EDG';
-    if (/EDGE/.test(pos)) return 'EDG';
-    if (/DE/.test(pos)) return 'EDG';
-    if (/OLB/.test(pos) && !/MLB/.test(pos)) return 'EDG';
-    return 'OTHER';
-  };
+  // --- Top 100 positional quotas by band --- (uses posGroup defined above)
 
   const bandConfigs = [
     {

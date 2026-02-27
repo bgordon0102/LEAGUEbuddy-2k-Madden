@@ -320,31 +320,54 @@
     },
     "proofRequested": true
   },
-  "1475369546331455540": {
+  "1475537339781480670": {
     "trade": {
-      "tradeId": "builder_1442183083695542272_1771825816244",
-      "proposerId": "1442183083695542272",
-      "coachBId": "1460735084566155555",
-      "yourTeam": "Boston Celtics",
-      "otherTeam": "Memphis Grizzlies",
-      "assetsSent": "Jayson Tatum (PF / SF) — 850.0\nBaylor Scheierman (SF / SG) — 145.0\n2026 Round 2 — 86.0",
-      "assetsReceived": "Ja Morant (PG / SG) — 620.0\nZach Edey (C) — 500.0",
+      "tradeId": "builder_1195843329477328978_1771865622928",
+      "proposerId": "1195843329477328978",
+      "coachBId": "1460736265682026779",
+      "yourTeam": "Miami Heat",
+      "otherTeam": "San Antonio Spurs",
+      "assetsSent": "Jaime Jaquez Jr. (PF / SF) — 380.0\n2026 Round 1 — 240.0",
+      "assetsReceived": "De’Aaron Fox (PG / SG) — 620.0",
       "picksSent": [
-        "2026 Round 2"
+        "2026 Round 1"
       ],
       "picksReceived": [],
       "notes": "",
       "guildId": "1255691165265821747",
-      "status": "approved_pending_2k",
+      "status": "pending",
       "postedToCommittee": true,
-      "submittedAt": 1771825902493,
-      "expiresAt": 1771912302493
+      "submittedAt": 1771865670234,
+      "expiresAt": 1771952070234
     },
     "votes": {
       "670446898695503897": "approve",
-      "1195843329477328978": "approve",
-      "1076243288056664234": "approve"
+      "1195843329477328978": "approve"
+    }
+  },
+  "1475576769523220481": {
+    "trade": {
+      "tradeId": "builder_670446898695503897_1771875164418",
+      "proposerId": "670446898695503897",
+      "coachBId": "1460735640835719382",
+      "yourTeam": "San Antonio Spurs",
+      "otherTeam": "Los Angeles Lakers",
+      "assetsSent": "Stephon Castle (SG / PG) — 550.0\nDylan Harper (PG / SG) — 392.0\n2026 Round 1 — 240.0",
+      "assetsReceived": "Luka Doncic (PG / SG) — 955.0\nMarcus Smart (SG / SF) — 205.0",
+      "picksSent": [
+        "2026 Round 1"
+      ],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "pending",
+      "postedToCommittee": true,
+      "submittedAt": 1771875235461,
+      "expiresAt": 1771961635461
     },
-    "proofRequested": true
+    "votes": {
+      "670446898695503897": "approve",
+      "1076243288056664234": "deny"
+    }
   }
 }

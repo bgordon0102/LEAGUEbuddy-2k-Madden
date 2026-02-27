@@ -5,8 +5,8 @@ import { applyApprovedTrade } from '../shared/tradeApply.js';
 
 const pendingPath = path.join(process.cwd(), 'data/pendingTrades.json');
 // Channel where proofs are reviewed (committee)
-const COMMITTEE_CHANNEL_ID = "1425555499440410812"; // trade committee channel
-const APPROVED_CHANNEL_ID = "1425555422063890443"; // approved trades announcement channel
+const COMMITTEE_CHANNEL_ID = "1475590226712989836"; // trade committee channel
+const APPROVED_CHANNEL_ID = "1475517495484879004"; // approved trades announcement channel
 const STAFF_ROLE_MAP_PATH = path.join(process.cwd(), "data/staffRoleMap.main.json");
 const COACH_ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'coachRoleMap.json');
 

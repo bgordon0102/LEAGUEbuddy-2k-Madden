@@ -72,10 +72,18 @@ function canMarkComplete(member, thread) {
       }
       return null;
     };
-    const threadName = thread?.name || '';
-    const parts = threadName.split(/-vs-/i).map(s => s.replace(/-w\d+|-week\d+/i, '').trim());
-    const teamA = parts[0] || '';
-    const teamB = parts[1] || '';
+    const threadName = (thread?.name || '').replace(/[\[\]()]/g, '');
+    // Try to parse "TeamA vs TeamB - W1" or similar
+    let teamA = '', teamB = '';
+    const vsMatch = threadName.match(/\s*(.+?)\s+vs\s+([^-\n]+?)(?:\s*[-|]|$)/i);
+    if (vsMatch) {
+      teamA = vsMatch[1].trim();
+      teamB = vsMatch[2].trim();
+    } else {
+      const parts = threadName.split(/vs/i).map(s => s.replace(/-w\d+|-week\d+/i, '').trim());
+      teamA = parts[0] || '';
+      teamB = parts[1] || '';
+    }
     const allowedRoleIds = new Set(
       [resolveRoleId(teamA), resolveRoleId(teamB), ...getStaffRoleIds()].filter(Boolean)
     );
@@ -83,7 +91,17 @@ function canMarkComplete(member, thread) {
     if (!allowedRoleIds.size) {
       Object.values(coachMap || {}).forEach(id => id && allowedRoleIds.add(id));
     }
-    return member.roles.cache.some(r => allowedRoleIds.has(r.id));
+    const hasRole = member.roles.cache.some(r => allowedRoleIds.has(r.id));
+    console.log('[game_complete_button][canMarkComplete]', {
+      user: member.user?.id,
+      threadName,
+      teamA,
+      teamB,
+      allowedRoleIds: Array.from(allowedRoleIds),
+      memberRoles: Array.from(member.roles.cache.keys()),
+      result: hasRole,
+    });
+    return hasRole;
   } catch {
     return false;
   }

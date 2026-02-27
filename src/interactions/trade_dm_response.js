@@ -6,7 +6,7 @@ import path from "path";
 
 const ACTIVE_TRADES_PATH = path.join(process.cwd(), 'data', 'activeTrades.json');
 
-const COMMITTEE_CHANNEL_ID = "1425555499440410812"; // Committee channel
+const COMMITTEE_CHANNEL_ID = "1475590226712989836"; // Committee channel
 const APPROVED_CHANNEL_ID = "1425555422063890443";
 const DENIED_CHANNEL_ID = "1425567560241254520";
 
@@ -114,8 +114,20 @@ export async function execute(interaction) {
         const approveBtn = new ButtonBuilder().setCustomId(`committee_approve_${tradeId}`).setLabel("Approve").setStyle(ButtonStyle.Success);
         const denyBtn = new ButtonBuilder().setCustomId(`committee_deny_${tradeId}`).setLabel("Deny").setStyle(ButtonStyle.Danger);
         const row = new ActionRowBuilder().addComponents(approveBtn, denyBtn);
-        const committeeChannel = await interaction.client.channels.fetch(COMMITTEE_CHANNEL_ID);
-        const committeeMsg = await committeeChannel.send({ content: `<@&${committeeRoleId}>`, embeds: [embed], components: [row] });
+        let committeeMsg;
+        try {
+            const committeeChannel = await interaction.client.channels.fetch(COMMITTEE_CHANNEL_ID);
+            committeeMsg = await committeeChannel.send({ content: `<@&${committeeRoleId}>`, embeds: [embed], components: [row] });
+        } catch (err) {
+            console.error('[trade_dm_response] Failed to post to committee channel', COMMITTEE_CHANNEL_ID, err?.message);
+            // fallback to current channel if available
+            try {
+                committeeMsg = await interaction.channel.send({ content: `<@&${committeeRoleId}> (fallback here; committee channel missing)`, embeds: [embed], components: [row] });
+            } catch (err2) {
+                await interaction.reply({ content: 'Could not post to committee channel (unknown channel). Please alert staff.', ephemeral: true });
+                return;
+            }
+        }
         // Save trade data in pendingTrades.json using committeeMsg.id as key
         const pendingPath = path.join(process.cwd(), 'data/pendingTrades.json');
         let pendingTrades = {};

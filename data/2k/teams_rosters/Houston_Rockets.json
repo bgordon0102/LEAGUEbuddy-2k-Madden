@@ -258,6 +258,21 @@
       ]
     },
     {
+      "name": "Harrison Barnes",
+      "position": "PF / SF",
+      "ovr": "77",
+      "age": 33,
+      "img": "https://www.2kratings.com/wp-content/uploads/Harrison-Barnes-2K-Rating.png",
+      "thumbnail": "https://www.2kratings.com/wp-content/uploads/Harrison-Barnes-2K-Rating.png",
+      "contractYearsText": "1",
+      "salaryPerYear": "Minimum",
+      "salaryText": "Minimum",
+      "val": 356,
+      "lastSigned": "in-season free agency",
+      "lastUpdatedBy": "1076243288056664234",
+      "lastUpdatedAt": "2026-02-27T16:46:23.597Z"
+    },
+    {
       "name": "Dorian Finney-Smith",
       "position": "PF / SF",
       "height": "6'7\" (201cm)",
@@ -315,7 +330,7 @@
       ]
     },
     {
-      "name": "Jae\u2019Sean Tate",
+      "name": "Jae’Sean Tate",
       "position": "SF / PF",
       "height": "6'4\" (193cm)",
       "weight": "230lbs (104kg)",
@@ -369,54 +384,12 @@
           "option": null
         }
       ]
-    },
-    {
-      "name": "JD Davison",
-      "position": "PG / SG",
-      "height": "6'1\" (185cm)",
-      "weight": "195lbs (88kg)",
-      "archetype": "Blow-By High Flyer",
-      "birthdate": "October 3, 2002",
-      "yearsInNBA": "4",
-      "wingspan": "6'7\" (201cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/JD-Davison-2K-Rating.png",
-      "ovr": "69",
-      "prior_to_nba": "Alabama",
-      "nationality": "United States"
-    },
-    {
-      "name": "Tristen Newton",
-      "position": "PG / SG",
-      "height": "6'5\" (196cm)",
-      "weight": "190lbs (86kg)",
-      "archetype": "3PT Shot Hunter",
-      "birthdate": "April 26, 2001",
-      "yearsInNBA": "2",
-      "wingspan": "6'9\" (206cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Tristen-Newton-2K-Rating.png",
-      "ovr": "68",
-      "prior_to_nba": "UConn",
-      "nationality": "United States"
-    },
-    {
-      "name": "Isaiah Crawford",
-      "position": "SF / SG",
-      "height": "6'6\" (198cm)",
-      "weight": "220lbs (99kg)",
-      "archetype": "Crafty 3-Level Scorer",
-      "birthdate": "November 1, 2001",
-      "yearsInNBA": "2",
-      "wingspan": "6'10\" (208cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Isaiah-Crawford-2K-Rating.png",
-      "ovr": "68",
-      "prior_to_nba": "Louisiana Tech",
-      "nationality": "United States"
     }
   ],
   "picks": [
     {
       "pick": "2026 1st",
-      "value": 208
+      "value": 240
     },
     {
       "pick": "2026 2nd",

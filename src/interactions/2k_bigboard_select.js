@@ -66,6 +66,22 @@ export async function execute(interaction) {
   const weaknesses = [player.weakness_1, player.weakness_2, player.weakness_3].filter(Boolean).join(', ');
   const proComp = player.pro_comp || player.comparison || null;
 
+  // Load user-specific scouting notes if any
+  let scoutingText = null;
+  try {
+    const scoutPath = path.join(process.cwd(), 'data', 'scout_points.json');
+    if (fs.existsSync(scoutPath)) {
+      const scoutData = JSON.parse(fs.readFileSync(scoutPath, 'utf8'));
+      const userScouting = scoutData?.[interaction.user.id]?.playersScouted || {};
+      const notes = userScouting[player.name];
+      if (Array.isArray(notes) && notes.length) {
+        scoutingText = notes.join(', ');
+      }
+    }
+  } catch (err) {
+    console.error('[2k_bigboard_select] failed to read scouting', err);
+  }
+
   const fields = [
     { name: 'Team', value: team, inline: false },
     classYear ? { name: 'Class', value: classYear, inline: false } : null,
@@ -77,6 +93,7 @@ export async function execute(interaction) {
     strengths ? { name: 'Strengths', value: strengths, inline: false } : null,
     weaknesses ? { name: 'Weaknesses', value: weaknesses, inline: false } : null,
     proComp ? { name: 'Pro Comp', value: proComp, inline: false } : null,
+    scoutingText ? { name: 'Your Scouting Notes', value: scoutingText, inline: false } : null,
   ].filter(Boolean);
 
   const embed = new EmbedBuilder()

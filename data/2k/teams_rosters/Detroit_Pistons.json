@@ -89,27 +89,6 @@
       ]
     },
     {
-      "name": "Tobias Harris",
-      "position": "PF / SF",
-      "height": "6'8\" (203cm)",
-      "weight": "226lbs (102kg)",
-      "archetype": "Crafty Offensive Engine",
-      "birthdate": "July 15, 1992",
-      "yearsInNBA": "15",
-      "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Tobias-Harris-2K-Rating.png",
-      "ovr": "80",
-      "prior_to_nba": "Tennessee",
-      "nationality": "United States",
-      "contractYears": [
-        {
-          "year": "2025-26",
-          "salary": "$26,634,146",
-          "option": null
-        }
-      ]
-    },
-    {
       "name": "Isaiah Stewart",
       "position": "C / PF",
       "height": "6'8\" (203cm)",
@@ -337,55 +316,6 @@
       ]
     },
     {
-      "name": "Dario Saric",
-      "position": "PF / C",
-      "height": "6'10\" (208cm)",
-      "weight": "225lbs (101kg)",
-      "archetype": "2-Way Post-Scoring Dimer",
-      "birthdate": "April 8, 1994",
-      "yearsInNBA": "12",
-      "wingspan": "6'10\" (208cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Dario-Saric-2K-Rating.png",
-      "ovr": "74",
-      "prior_to_nba": "Anadolu Efes (Turkey)",
-      "nationality": "Croatia"
-    },
-    {
-      "name": "Isaac Jones",
-      "position": "PF / C",
-      "height": "6'9\" (206cm)",
-      "weight": "245lbs (110kg)",
-      "archetype": "Shot-Erasing Putback Pro",
-      "birthdate": "July 11, 2000",
-      "yearsInNBA": "2",
-      "wingspan": "7'3\" (221cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Isaac-Jones-2K-Rating.png",
-      "ovr": "71",
-      "prior_to_nba": "Washington State",
-      "nationality": "United States",
-      "contractYears": [
-        {
-          "year": "2025-26",
-          "salary": "$1,955,377",
-          "option": "Team"
-        }
-      ]
-    },
-    {
-      "name": "Wendell Moore Jr.",
-      "position": "SF / SG",
-      "height": "6'5\" (196cm)",
-      "weight": "215lbs (97kg)",
-      "archetype": "High-Flying 3PT Sniper",
-      "birthdate": "September 18, 2001",
-      "yearsInNBA": "4",
-      "wingspan": "6'9\" (206cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Wendell-Moore-Jr-2K-Rating.png",
-      "ovr": "70",
-      "prior_to_nba": "Duke",
-      "nationality": "United States"
-    },
-    {
       "name": "Bobi Klintman",
       "position": "PF / SF",
       "height": "6'9\" (206cm)",
@@ -451,20 +381,6 @@
           "option": "Team"
         }
       ]
-    },
-    {
-      "name": "Tolu Smith",
-      "position": "C / PF",
-      "height": "6'11\" (211cm)",
-      "weight": "245lbs (110kg)",
-      "archetype": "Board-Hunting Post Scorer",
-      "birthdate": "July 26, 2000",
-      "yearsInNBA": "2",
-      "wingspan": "7'3\" (221cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Tolu-Smith-2K-Rating.png",
-      "ovr": "67",
-      "prior_to_nba": "Mississippi State",
-      "nationality": "United States"
     }
   ],
   "picks": [
