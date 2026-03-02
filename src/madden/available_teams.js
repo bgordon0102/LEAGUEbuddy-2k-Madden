@@ -1,11 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
+import { draftOrder, applyPickTrades } from './coach/mockdraft.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const EMOJI_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
 const PIN_FILE = path.join(process.cwd(), 'data', 'madden', 'pins_available_teams.json');
+const LEAGUE_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 
 const CONFERENCES = {
   AFC: new Set([
@@ -31,13 +33,56 @@ function saveJson(file, data) {
   fs.writeFileSync(file, JSON.stringify(data ?? {}, null, 2));
 }
 
+function loadLatestLeagueSnapshot() {
+  try {
+    const files = fs.readdirSync(LEAGUE_DIR).filter(f => f.endsWith('.json')).sort((a, b) =>
+      fs.statSync(path.join(LEAGUE_DIR, b)).mtimeMs - fs.statSync(path.join(LEAGUE_DIR, a)).mtimeMs
+    );
+    if (!files.length) return null;
+    return JSON.parse(fs.readFileSync(path.join(LEAGUE_DIR, files[0]), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeKey(name = '') {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function buildPickMap(league) {
+  if (!league) return new Map();
+  let order = [];
+  try {
+    order = applyPickTrades(draftOrder(league));
+  } catch {
+    return new Map();
+  }
+  const map = new Map();
+  order.forEach((pick, idx) => {
+    const ownerName = pick.name || pick.nick || '';
+    const keys = [
+      normalizeKey(ownerName),
+      normalizeKey(ownerName.split(/\s+/).pop() || ownerName),
+    ].filter(Boolean);
+    if (!keys.length) return;
+    const entry = { num: idx + 1, via: pick.via };
+    keys.forEach(k => {
+      const list = map.get(k) || [];
+      list.push(entry);
+      map.set(k, list);
+    });
+  });
+  return map;
+}
+
 function teamRoles(roleMap) {
   return Object.entries(roleMap)
     .filter(([name]) => name.endsWith(' Coach'))
     .map(([name, id]) => ({ team: name.replace(/ Coach$/, ''), roleId: id }));
 }
 
-function formatAssignments(guild, roles) {
+function formatAssignments(guild, roles, opts = {}) {
+  const { pickMap = new Map(), isOffseason = false, debug = false } = opts;
   const emojiMap = loadJson(EMOJI_MAP_FILE);
   return roles.map(r => {
     const role = guild.roles.cache.get(r.roleId);
@@ -47,9 +92,23 @@ function formatAssignments(guild, roles) {
     const names = members.length
       ? members.map(m => m.displayName || m.user?.username || m.user?.tag || m.id).join(', ')
       : 'Open';
+    let value = names;
+    if (!members.length && isOffseason) {
+      const key = normalizeKey(r.team);
+      const picks = pickMap.get(key);
+      if (debug) {
+        console.log(`[available-teams] OFFSEASON open team=${r.team} key=${key} picks=`, picks);
+      }
+      if (picks && picks.length) {
+        const pickText = picks.map(p => p.via ? `${p.num} (via ${p.via})` : `${p.num}`).join(', ');
+        value = `Open — Picks: ${pickText}`;
+      } else {
+        value = 'Open — Picks: none';
+      }
+    }
     const emojiId = emojiMap[r.team];
     const emoji = emojiId ? `<:team_${r.team.toLowerCase()}:${emojiId}> ` : '';
-    return { team: `${emoji}${r.team}`, value: names, rawTeam: r.team };
+    return { team: `${emoji}${r.team}`, value, rawTeam: r.team };
   });
 }
 
@@ -110,7 +169,18 @@ export async function updateAvailableTeamsPin(client, guildId, options = {}) {
     }
 
     const roles = teamRoles(roleMap).sort((a, b) => a.team.localeCompare(b.team));
-    const assignments = formatAssignments(guild, roles);
+    const league = loadLatestLeagueSnapshot();
+    const seasonInfo = league?.info?.careerHubInfo?.seasonInfo || {};
+    const isOffseason = (seasonInfo.seasonWeekType === 8) ||
+      (seasonInfo.seasonTitle || '').toLowerCase().includes('offseason') ||
+      (seasonInfo.isDraftActive === false && seasonInfo.isLeagueStarted === true && seasonInfo.seasonWeekType !== 1);
+    const pickMap = buildPickMap(league);
+    const debug = process.env.MOCK_DEBUG === 'true';
+    if (debug) {
+      console.log('[available-teams] seasonInfo', seasonInfo);
+      console.log('[available-teams] isOffseason', isOffseason);
+    }
+    const assignments = formatAssignments(guild, roles, { pickMap, isOffseason, debug });
 
     const byConf = { AFC: [], NFC: [] };
     assignments.forEach(a => {

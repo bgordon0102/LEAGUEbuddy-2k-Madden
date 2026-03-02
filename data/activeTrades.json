@@ -1059,7 +1059,7 @@
     "picksReceived": [],
     "notes": "",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "postedToCommittee": false,
     "submittedAt": 1771981144796,
     "expiresAt": 1772067544796
@@ -1365,5 +1365,81 @@
     "postedToCommittee": false,
     "submittedAt": 1772216050253,
     "expiresAt": 1772302450253
+  },
+  "builder_323517644785582081_1772249933834": {
+    "tradeId": "builder_323517644785582081_1772249933834",
+    "proposerId": "323517644785582081",
+    "coachBId": "1460736451473051739",
+    "yourTeam": "Houston Rockets",
+    "otherTeam": "Minnesota Timberwolves",
+    "assetsSent": "Alperen Sengun (C / PF) — 660.0",
+    "assetsReceived": "2026 Round 1 — 240.0\nNaz Reid (C / PF) — 425.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2026 Round 1"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1772249985530,
+    "expiresAt": 1772336385530
+  },
+  "builder_541605807297527808_1772305455606": {
+    "tradeId": "builder_541605807297527808_1772305455606",
+    "proposerId": "541605807297527808",
+    "coachBId": "1460735531271848180",
+    "yourTeam": "Utah Jazz",
+    "otherTeam": "New York Knicks",
+    "assetsSent": "Kyle Filipowski (PF / C) — 270.0",
+    "assetsReceived": "Landry Shamet (SG / SF) — 190.0\n2027 Round 2 — 56.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2027 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1772305536603,
+    "expiresAt": 1772391936603
+  },
+  "builder_800545581760118816_1772313044840": {
+    "tradeId": "builder_800545581760118816_1772313044840",
+    "proposerId": "800545581760118816",
+    "coachBId": "1460735407531626791",
+    "yourTeam": "New York Knicks",
+    "otherTeam": "Utah Jazz",
+    "assetsSent": "Landry Shamet (SG / SF) — 190.0\n2027 Round 2 — 56.0",
+    "assetsReceived": "Kyle Filipowski (PF / C) — 270.0",
+    "picksSent": [
+      "2027 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1772313109511,
+    "expiresAt": 1772399509511
+  },
+  "builder_1126312455111458849_1772321385504": {
+    "tradeId": "builder_1126312455111458849_1772321385504",
+    "proposerId": "1126312455111458849",
+    "coachBId": "1460735407531626791",
+    "yourTeam": "Oklahoma City Thunder",
+    "otherTeam": "Utah Jazz",
+    "assetsSent": "Isaiah Hartenstein (C) — 425.0\n2026 Round 1 (lottery protected) — 197.0",
+    "assetsReceived": "Jaren Jackson Jr. (PF / C) — 600.0",
+    "picksSent": [
+      "2026 Round 1 (lottery protected)"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "postedToCommittee": false,
+    "submittedAt": 1772321457321,
+    "expiresAt": 1772407857321
   }
 }

@@ -11,7 +11,11 @@
     "Russell Westbrook",
     "De’Andre Hunter"
   ],
-  "Golden State Warriors": [],
+  "Golden State Warriors": [
+    "Jimmy Butler",
+    "Kristaps Porzingis",
+    "Brandin Podziemski"
+  ],
   "Miami Heat": [
     "Davion Mitchell"
   ],
@@ -46,9 +50,8 @@
   "Oklahoma City Thunder": [
     "Luguentz Dort",
     "Alex Caruso",
-    "Kenrich Williams",
-    "Jared McCain",
-    "Isaiah Hartenstein"
+    "Isaiah Hartenstein",
+    "Ben Simmons"
   ],
   "Chicago Bulls": [
     "Josh Giddey",
@@ -77,5 +80,11 @@
   "Brooklyn Nets": [
     "Noah Clowney",
     "Malik Beasley"
+  ],
+  "New York Knicks": [
+    "Karl-Anthony Towns"
+  ],
+  "Indiana Pacers": [
+    "T.J. McConnell"
   ]
 }

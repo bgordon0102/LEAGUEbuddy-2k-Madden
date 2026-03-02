@@ -189,6 +189,7 @@ export async function execute(interaction) {
             const names = fs.readdirSync(rosterDir)
                 .filter(f => f.endsWith('.json'))
                 .filter(f => !/free[_ ]?agency/i.test(f))
+                .filter(f => !/profile/i.test(f)) // drop stray player profile exports
                 .map(f => f.replace('.json', '').replace(/_/g, ' '));
             return Array.from(new Set(names.map(n => resolveTeamNameForRoster(n))));
         } catch { return []; }

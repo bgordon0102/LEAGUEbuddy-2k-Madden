@@ -26,6 +26,7 @@ function aggregate(league) {
   const teamStats = {};
   const rosterNameById = {};
   const playerTotals = {}; // pid -> {teamId, name, passYds, rushYds, recYds, sacks, ints}
+  const gamesByTeam = {};
   for (const [tidStr, rosterTeam] of Object.entries(league.rosters?.teams || {})) {
     for (const p of rosterTeam?.rosterInfoList || []) {
       rosterNameById[p.rosterId] = p.displayName || `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Player';
@@ -36,6 +37,7 @@ function aggregate(league) {
       const t = (league.teams?.leagueTeamInfoList || []).find(x => Number(x.teamId) === Number(tid)) || {};
       teamStats[tid] = {
         teamName: `${t.cityName || ''} ${t.nickName || ''}`.trim() || String(tid),
+        teamNick: t.nickName || t.displayName || t.abbrName || String(tid),
         seasonIndex: latestSeason,
         pass: { yds: 0, td: 0, int: 0, sacksTaken: 0, comp: 0, att: 0 },
         rush: { yds: 0, td: 0, att: 0 },
@@ -60,6 +62,8 @@ function aggregate(league) {
     if (stage !== 1) continue; // regular season only
     if (widx > 18) continue;
 
+    const seenTeams = new Set();
+
     for (const p of week.passing?.playerPassingStatInfoList || []) {
       const tid = p.teamId; const t = ensure(tid);
       t.pass.yds += p.passYds;
@@ -68,6 +72,7 @@ function aggregate(league) {
       t.pass.sacksTaken += p.passSacks;
       t.pass.comp += p.passComp;
       t.pass.att  += p.passAtt;
+      seenTeams.add(tid);
       const pid = p.rosterId;
       const name = rosterNameById[pid] || p.fullName || 'Player';
       if (pid != null) {
@@ -80,6 +85,7 @@ function aggregate(league) {
       t.rush.yds += r.rushYds;
       t.rush.td  += r.rushTDs;
       t.rush.att += r.rushAtt;
+      seenTeams.add(tid);
       const pid = r.rosterId;
       const name = rosterNameById[pid] || r.fullName || 'Player';
       if (pid != null) {
@@ -91,6 +97,7 @@ function aggregate(league) {
       const tid = r.teamId; const t = ensure(tid);
       t.rec.yds += r.recYds;
       t.rec.td  += r.recTDs;
+      seenTeams.add(tid);
       const pid = r.rosterId;
       const name = rosterNameById[pid] || r.fullName || 'Player';
       if (pid != null) {
@@ -102,6 +109,7 @@ function aggregate(league) {
       const tid = d.teamId; const t = ensure(tid);
       t.def.sacks += d.defSacks;
       t.def.ints  += d.defInts;
+      seenTeams.add(tid);
       const pid = d.rosterId;
       const name = rosterNameById[pid] || d.fullName || 'Player';
       if (pid != null) {
@@ -109,6 +117,11 @@ function aggregate(league) {
         playerTotals[pid].sacks = (playerTotals[pid].sacks || 0) + d.defSacks;
         playerTotals[pid].ints  = (playerTotals[pid].ints  || 0) + d.defInts;
       }
+    }
+
+    // track games played (once per team per week)
+    for (const tid of seenTeams) {
+      gamesByTeam[tid] = (gamesByTeam[tid] || 0) + 1;
     }
   }
 
@@ -121,6 +134,36 @@ function aggregate(league) {
     if (stats.recYds !== undefined) leaderMax(tid, 'recYds', stats.recYds, stats.name);
     if (stats.sacks   !== undefined) leaderMax(tid, 'defSacks', stats.sacks, stats.name);
     if (stats.ints    !== undefined) leaderMax(tid, 'defInts',  stats.ints,  stats.name);
+  }
+
+  // Derive rates/labels
+  for (const [tid, t] of Object.entries(teamStats)) {
+    const games = gamesByTeam[tid] || 0;
+    t.games = games;
+    if (t.pass.att > 0) {
+      t.pass.ypa = Number((t.pass.yds / t.pass.att).toFixed(2));
+      t.pass.compPct = Number((t.pass.comp / t.pass.att * 100).toFixed(1));
+    }
+    if (t.rush.att > 0) {
+      t.rush.ypc = Number((t.rush.yds / t.rush.att).toFixed(2));
+    }
+    // clearer labels for consumers
+    t.labels = {
+      passYds: t.pass.yds,
+      passTD: t.pass.td,
+      passINT: t.pass.int,
+      sacksAllowed: t.pass.sacksTaken,
+      compPct: t.pass.compPct,
+      ypa: t.pass.ypa,
+      rushYds: t.rush.yds,
+      rushTD: t.rush.td,
+      ypc: t.rush.ypc,
+      recYds: t.rec.yds,
+      recTD: t.rec.td,
+      defSacks: t.def.sacks,
+      defINT: t.def.ints,
+      games
+    };
   }
 
   return teamStats;

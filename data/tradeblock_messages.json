@@ -120,16 +120,12 @@
       "messageId": "1474920285135437975",
       "threadId": "1470806926236323985"
     },
-    "Kenrich Williams": {
-      "messageId": "1476023398550212741",
-      "threadId": "1470806926236323985"
-    },
-    "Jared McCain": {
-      "messageId": "1476023451822067854",
-      "threadId": "1470806926236323985"
-    },
     "Isaiah Hartenstein": {
       "messageId": "1476025096115196035",
+      "threadId": "1470806926236323985"
+    },
+    "Ben Simmons": {
+      "messageId": "1477448559845445713",
       "threadId": "1470806926236323985"
     }
   },
@@ -213,6 +209,32 @@
     "Davion Mitchell": {
       "messageId": "1476762008509616279",
       "threadId": "1470806986688954370"
+    }
+  },
+  "New York Knicks": {
+    "Karl-Anthony Towns": {
+      "messageId": "1477477445396467906",
+      "threadId": "1470807011313713154"
+    }
+  },
+  "Indiana Pacers": {
+    "T.J. McConnell": {
+      "messageId": "1477549255614005330",
+      "threadId": "1470806933916352819"
+    }
+  },
+  "Golden State Warriors": {
+    "Jimmy Butler": {
+      "messageId": "1477905256527695913",
+      "threadId": "1470806997275508937"
+    },
+    "Kristaps Porzingis": {
+      "messageId": "1477905368922325104",
+      "threadId": "1470806997275508937"
+    },
+    "Brandin Podziemski": {
+      "messageId": "1477918719442423889",
+      "threadId": "1470806997275508937"
     }
   }
 }

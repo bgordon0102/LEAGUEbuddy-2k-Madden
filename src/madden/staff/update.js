@@ -101,7 +101,8 @@ async function execute(interaction) {
     const inRegularSeason = stageForWeek === Stage.SEASON && currentWeekValue >= 1 && currentWeekValue <= 18 && !inOffseason && !inPreseason;
     const isWildcard = currentWeekValue === 19; // allow one last pull to capture Week 18 data
     // Update pins during regular season and Wild Card week; freeze afterward
-    const allowPinnedUpdates = (inRegularSeason || isWildcard) && !inOffseason && !inPreseason;
+    const backfillOnlyAwards = !!weekOverride; // when a week is passed, keep pins optional but still allow awards/top100
+    const allowPinnedUpdates = !backfillOnlyAwards && (inRegularSeason || isWildcard) && !inOffseason && !inPreseason;
     const effectiveCurrentWeek = currentWeekValue;
     // Debug: log week targeting and available stages for that week
     const targetWeekIdx = effectiveCurrentWeek ? effectiveCurrentWeek - 1 : null;
@@ -128,7 +129,7 @@ async function execute(interaction) {
     });
 
     // Open/reset scouting at Week 1 of the regular season
-    if (stageForWeek === Stage.SEASON && currentWeekValue === 1) {
+    if (!backfillOnlyAwards && stageForWeek === Stage.SEASON && currentWeekValue === 1) {
       try {
         fs.writeFileSync(SCOUT_POINTS_FILE, JSON.stringify({}, null, 2));
         console.log('[madden-weeklyupdate] Scouting reset/opened for Week 1');
@@ -138,7 +139,7 @@ async function execute(interaction) {
     }
 
     // On the first week of a new season (preseason), reset trade counts but keep pins
-    if (inPreseason) {
+    if (!backfillOnlyAwards && inPreseason) {
       try {
         const channelMap = JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8'));
         const emptyCounts = {};
@@ -182,7 +183,7 @@ async function execute(interaction) {
       } catch (e) {
         console.warn('[madden-weeklyupdate] power rankings reset skipped:', e?.message || e);
       }
-    } else if (allowPinnedUpdates) {
+    } else if (!backfillOnlyAwards && allowPinnedUpdates) {
       try {
         await updateStatLeaders(interaction.client, leagueId);
       } catch (e) {
@@ -192,7 +193,7 @@ async function execute(interaction) {
       console.warn('[madden-weeklyupdate] stat leaders skipped (not regular season)');
     }
 
-    if (allowPinnedUpdates) {
+    if (!backfillOnlyAwards && allowPinnedUpdates) {
       try {
         await updateStandings(interaction.client, leagueId);
       } catch (e) {
@@ -212,14 +213,16 @@ async function execute(interaction) {
       console.warn('[madden-weeklyupdate] standings/playoff picture/power rankings skipped (offseason/preseason or after Wild Card)');
     }
     // Post weekly transactions
-    try {
-      await updateTransactions(interaction.client, leagueId);
-    } catch (e) {
-      console.warn('[madden-weeklyupdate] transactions update skipped:', e?.message || e);
+    if (!backfillOnlyAwards) {
+      try {
+        await updateTransactions(interaction.client, leagueId);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] transactions update skipped:', e?.message || e);
+      }
     }
     const isSuperBowlBye = effectiveCurrentWeek === 22;
     // Player change log (position/attribute/dev changes) — skip bye week
-    if (!isSuperBowlBye) {
+    if (!backfillOnlyAwards && !isSuperBowlBye) {
       try {
         await updatePlayerChanges(interaction.client, leagueId);
       } catch (e) {
@@ -235,23 +238,28 @@ async function execute(interaction) {
       console.warn('[madden-weeklyupdate] bye week between Conference and Super Bowl: skipping player changes/injuries/awards');
     }
     // Draft grades auto-post (after draft recap)
-    try {
-      await maybePostDraftGrades(interaction.client, leagueId);
-    } catch (e) {
-      console.warn('[madden-weeklyupdate] draft grades skipped:', e?.message || e);
+    if (!backfillOnlyAwards) {
+      try {
+        await maybePostDraftGrades(interaction.client, leagueId);
+      } catch (e) {
+        console.warn('[madden-weeklyupdate] draft grades skipped:', e?.message || e);
+      }
     }
-    // Weekly Top 30 log + running Top 100 (post at Wild Card)
-    try {
-      await updateTopPlayers(interaction.client, leagueId, snap, effectiveCurrentWeek, {
-        isWildcard,
-        postChannelId: '1462629502864851069'
-      });
-    } catch (e) {
+    // Weekly Top 30 log + running Top 100 (use current formula even during backfill)
+    const allowTopPlayers = !inOffseason && !inPreseason;
+    if (allowTopPlayers) {
+      try {
+        await updateTopPlayers(interaction.client, leagueId, snap, effectiveCurrentWeek, {
+          isWildcard,
+          postChannelId: '1462629502864851069'
+        });
+      } catch (e) {
       console.warn('[madden-weeklyupdate] top players update skipped:', e?.message || e);
+      }
     }
     // Weekly awards (derived locally) — skip offseason and preseason
     try {
-      if (!inOffseason && !inPreseason && seasonInfo.isWeeklyAwardsPeriodActive !== false && effectiveCurrentWeek && effectiveCurrentWeek <= 23) {
+      if (backfillOnlyAwards || (!inOffseason && !inPreseason && seasonInfo.isWeeklyAwardsPeriodActive !== false && effectiveCurrentWeek && effectiveCurrentWeek <= 23)) {
         await updateAwards(interaction.client, leagueId, effectiveCurrentWeek);
       } else {
         console.warn('[madden-weeklyupdate] awards skipped (offseason, preseason, or awards period inactive)');

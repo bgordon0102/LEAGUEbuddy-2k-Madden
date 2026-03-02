@@ -118,6 +118,7 @@ export const data = new SlashCommandBuilder()
 
 export async function autocomplete(interaction) {
   if (!interaction.isAutocomplete()) return;
+  // Keep autocomplete fast to avoid Unknown interaction (3s limit)
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   const snapshot = leagueId ? loadLeagueSnapshot(leagueId) : null;
   const calendarYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear;
@@ -133,7 +134,7 @@ export async function autocomplete(interaction) {
       .filter(p => p.toLowerCase().includes(focusedVal))
       .slice(0, 25)
       .map(p => ({ name: p, value: p }));
-    await interaction.respond(choices);
+    try { await interaction.respond(choices); } catch (_) {}
     return;
   }
 
@@ -151,13 +152,20 @@ export async function autocomplete(interaction) {
       name: `${p.name}${p.school ? ` (${p.school})` : ''}`,
       value: p.name,
     }));
-  await interaction.respond(choices);
+  try { await interaction.respond(choices); } catch (_) {}
 }
 
 export async function execute(interaction) {
+  // Defer immediately to prevent interaction expiry; flags=64 for ephemeral-like visibility
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply({ flags: 64 });
+  }
+
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
-    await interaction.reply({ content: 'No league set. Run /madden-setleague first.', ephemeral: true });
+    const payload = { content: 'No league set. Run /madden-setleague first.' };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
   const snapshot = loadLeagueSnapshot(leagueId);
@@ -168,7 +176,9 @@ export async function execute(interaction) {
   const isOffseason = stage === 3;
   const scoutingOpen = (isRegularOrPost && currentWeek >= 1) || isOffseason;
   if (!scoutingOpen) {
-    await interaction.reply({ content: 'Scouting opens after the Week 1 regular-season update and stays open through playoffs and offseason.', ephemeral: true });
+    const payload = { content: 'Scouting opens after the Week 1 regular-season update and stays open through playoffs and offseason.' };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
 
@@ -176,7 +186,9 @@ export async function execute(interaction) {
   const { data: draftData, resolvedId: resolvedClassId } = loadDraftClass(classId);
   const classKey = resolvedClassId || classId;
   if (!draftData) {
-    await interaction.reply({ content: `Draft class ${classKey} not found. Add a JSON under data/draft_classes/madden.`, ephemeral: true });
+    const payload = { content: `Draft class ${classKey} not found. Add a JSON under data/draft_classes/madden.` };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
 
@@ -185,7 +197,9 @@ export async function execute(interaction) {
   const normPos = normalizePos(position);
   const players = Object.values(draftData).filter(p => normalizePos(p.position) === normPos && (!nameFilter || p.name?.toLowerCase().includes(nameFilter)));
   if (!players.length) {
-    await interaction.reply({ content: `No players found for ${position}${nameFilter ? ` matching "${nameFilter}"` : ''}.`, ephemeral: true });
+    const payload = { content: `No players found for ${position}${nameFilter ? ` matching "${nameFilter}"` : ''}.` };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
   const player = players[0]; // first match
@@ -203,12 +217,16 @@ export async function execute(interaction) {
   const unlocked = userData.players[classKey]?.[player.name] || [];
   const nextCat = nextCategory(unlocked);
   if (!nextCat) {
-    await interaction.reply({ content: 'All info already unlocked for this player.', ephemeral: true });
+    const payload = { content: 'All info already unlocked for this player.' };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
   const cost = COST_PER_REVEAL;
   if (pointsLeft < cost) {
-    await interaction.reply({ content: `Not enough points. You have ${pointsLeft} left this week.`, ephemeral: true });
+    const payload = { content: `Not enough points. You have ${pointsLeft} left this week.` };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
   const newUnlocked = [...unlocked, nextCat];
@@ -284,7 +302,9 @@ export async function execute(interaction) {
     embed.setImage(`attachment://${logo.name}`);
   }
 
-  await interaction.reply({ embeds: [embed], files, ephemeral: true });
+  const payload = { embeds: [embed], files };
+  if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+  else await interaction.reply({ ...payload, flags: 64 });
 }
 
 export default { data, execute, autocomplete };

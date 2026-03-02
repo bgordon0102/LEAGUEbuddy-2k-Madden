@@ -2,6 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { draftOrder, applyPickTrades } from '../coach/mockdraft.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -99,6 +100,44 @@ function resolveRoleId(team, roleMap) {
   return null;
 }
 
+function normalizeKey(name = '') {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function buildPickMap(snapshot) {
+  if (!snapshot) return new Map();
+  let order = [];
+  try { order = applyPickTrades(draftOrder(snapshot)); } catch { return new Map(); }
+  const map = new Map();
+  order.forEach((pick, idx) => {
+    const ownerName = pick.name || pick.nick || '';
+    const keys = [
+      normalizeKey(ownerName),
+      normalizeKey(ownerName.split(/\s+/).pop() || ownerName),
+    ].filter(Boolean);
+    if (!keys.length) return;
+    const entry = { num: idx + 1, via: pick.via };
+    keys.forEach(k => {
+      const list = map.get(k) || [];
+      list.push(entry);
+      map.set(k, list);
+    });
+  });
+  return map;
+}
+
+function uniqPicks(picks = []) {
+  const seen = new Set();
+  const out = [];
+  for (const p of picks) {
+    const key = `${p.num}|${p.via || ''}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(p);
+  }
+  return out;
+}
+
 async function execute(interaction) {
   await interaction.deferReply({ ephemeral: false });
   const roleMap = loadRoleMap();
@@ -134,6 +173,12 @@ async function execute(interaction) {
     const snapshot = loadLeagueSnapshot(leagueId);
     const teams = snapshot?.teams?.leagueTeamInfoList || [];
     const standings = snapshot?.standings?.teamStandingInfoList || [];
+    const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+    const isOffseason = (seasonInfo.seasonWeekType === 8) ||
+      (seasonInfo.seasonTitle || '').toLowerCase().includes('offseason') ||
+      (seasonInfo.isDraftActive === false && seasonInfo.isLeagueStarted === true && seasonInfo.seasonWeekType !== 1);
+    const pickMap = buildPickMap(snapshot);
+    const debug = process.env.MOCK_DEBUG === 'true';
     const standingsByTeam = new Map();
     standings.forEach(s => standingsByTeam.set(s.teamId, s));
 
@@ -150,12 +195,36 @@ async function execute(interaction) {
         assigned = count > 0;
       }
       if (assigned) continue;
-      const rec = standingsByTeam.get(t.teamId);
-      const wins = rec?.totalWins ?? rec?.wins ?? 0;
-      const losses = rec?.totalLosses ?? rec?.losses ?? 0;
-      const ties = rec?.totalTies ?? rec?.ties ?? 0;
-      const record = ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
-      lines.push(`${formatTeamName(t)}: ${record}`);
+      if (isOffseason) {
+        const nameFormatted = formatTeamName(t);
+        const keys = [
+          normalizeKey(nameFormatted),
+          normalizeKey((nameFormatted.split(/\s+/).pop()) || ''),
+          normalizeKey(t.nickName || ''),
+          normalizeKey((t.nickName || '').split(/\s+/).pop() || ''),
+        ].filter(Boolean);
+        const seen = new Set();
+        let merged = [];
+        for (const k of keys) {
+          if (seen.has(k)) continue;
+          seen.add(k);
+          const arr = pickMap.get(k);
+          if (arr && arr.length) merged = merged.concat(arr);
+        }
+        if (debug) console.log('[availableteams cmd] team', nameFormatted, 'keys', keys, 'picks', merged);
+        const deduped = uniqPicks(merged).sort((a, b) => a.num - b.num);
+        const pickText = deduped && deduped.length
+          ? deduped.map(p => p.via ? `${p.num} (via ${p.via})` : `${p.num}`).join(', ')
+          : 'none';
+        lines.push(`${nameFormatted} — Picks: ${pickText}`);
+      } else {
+        const rec = standingsByTeam.get(t.teamId);
+        const wins = rec?.totalWins ?? rec?.wins ?? 0;
+        const losses = rec?.totalLosses ?? rec?.losses ?? 0;
+        const ties = rec?.totalTies ?? rec?.ties ?? 0;
+        const record = ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
+        lines.push(`${formatTeamName(t)}: ${record}`);
+      }
     }
 
     const embed = new EmbedBuilder()

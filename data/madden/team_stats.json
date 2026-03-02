@@ -1,6 +1,7 @@
 {
   "775553024": {
     "teamName": "San Francisco Niners",
+    "teamNick": "Niners",
     "seasonIndex": 0,
     "pass": {
       "yds": 3728,
@@ -8,12 +9,15 @@
       "int": 11,
       "sacksTaken": 32,
       "comp": 282,
-      "att": 465
+      "att": 465,
+      "ypa": 8.02,
+      "compPct": 60.6
     },
     "rush": {
       "yds": 1955,
       "td": 14,
-      "att": 392
+      "att": 392,
+      "ypc": 4.99
     },
     "rec": {
       "yds": 3728,
@@ -44,10 +48,28 @@
         "name": "Brock Purdy",
         "val": 3728
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3728,
+      "passTD": 37,
+      "passINT": 11,
+      "sacksAllowed": 32,
+      "compPct": 60.6,
+      "ypa": 8.02,
+      "rushYds": 1955,
+      "rushTD": 14,
+      "ypc": 4.99,
+      "recYds": 3728,
+      "recTD": 37,
+      "defSacks": 28,
+      "defINT": 14,
+      "games": 17
     }
   },
   "775553025": {
     "teamName": "Chicago Bears",
+    "teamNick": "Bears",
     "seasonIndex": 0,
     "pass": {
       "yds": 4841,
@@ -55,12 +77,15 @@
       "int": 13,
       "sacksTaken": 44,
       "comp": 368,
-      "att": 550
+      "att": 550,
+      "ypa": 8.8,
+      "compPct": 66.9
     },
     "rush": {
       "yds": 1936,
       "td": 25,
-      "att": 358
+      "att": 358,
+      "ypc": 5.41
     },
     "rec": {
       "yds": 4841,
@@ -91,10 +116,28 @@
         "name": "Caleb Williams",
         "val": 4841
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 4841,
+      "passTD": 39,
+      "passINT": 13,
+      "sacksAllowed": 44,
+      "compPct": 66.9,
+      "ypa": 8.8,
+      "rushYds": 1936,
+      "rushTD": 25,
+      "ypc": 5.41,
+      "recYds": 4841,
+      "recTD": 39,
+      "defSacks": 43,
+      "defINT": 24,
+      "games": 18
     }
   },
   "775553026": {
     "teamName": "Cincinnati Bengals",
+    "teamNick": "Bengals",
     "seasonIndex": 0,
     "pass": {
       "yds": 4721,
@@ -102,12 +145,15 @@
       "int": 9,
       "sacksTaken": 47,
       "comp": 314,
-      "att": 503
+      "att": 503,
+      "ypa": 9.39,
+      "compPct": 62.4
     },
     "rush": {
       "yds": 1434,
       "td": 22,
-      "att": 311
+      "att": 311,
+      "ypc": 4.61
     },
     "rec": {
       "yds": 4721,
@@ -138,10 +184,28 @@
         "name": "Joe Burrow",
         "val": 4351
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 4721,
+      "passTD": 31,
+      "passINT": 9,
+      "sacksAllowed": 47,
+      "compPct": 62.4,
+      "ypa": 9.39,
+      "rushYds": 1434,
+      "rushTD": 22,
+      "ypc": 4.61,
+      "recYds": 4721,
+      "recTD": 31,
+      "defSacks": 35,
+      "defINT": 11,
+      "games": 18
     }
   },
   "775553027": {
     "teamName": "Buffalo Bills",
+    "teamNick": "Bills",
     "seasonIndex": 0,
     "pass": {
       "yds": 4217,
@@ -149,12 +213,15 @@
       "int": 11,
       "sacksTaken": 30,
       "comp": 350,
-      "att": 521
+      "att": 521,
+      "ypa": 8.09,
+      "compPct": 67.2
     },
     "rush": {
       "yds": 1728,
       "td": 15,
-      "att": 407
+      "att": 407,
+      "ypc": 4.25
     },
     "rec": {
       "yds": 4217,
@@ -185,10 +252,28 @@
         "name": "Joshua Palmer",
         "val": 974
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 4217,
+      "passTD": 41,
+      "passINT": 11,
+      "sacksAllowed": 30,
+      "compPct": 67.2,
+      "ypa": 8.09,
+      "rushYds": 1728,
+      "rushTD": 15,
+      "ypc": 4.25,
+      "recYds": 4217,
+      "recTD": 41,
+      "defSacks": 49,
+      "defINT": 11,
+      "games": 18
     }
   },
   "775553028": {
     "teamName": "Denver Broncos",
+    "teamNick": "Broncos",
     "seasonIndex": 0,
     "pass": {
       "yds": 4072,
@@ -196,12 +281,15 @@
       "int": 19,
       "sacksTaken": 39,
       "comp": 369,
-      "att": 545
+      "att": 545,
+      "ypa": 7.47,
+      "compPct": 67.7
     },
     "rush": {
       "yds": 1361,
       "td": 15,
-      "att": 314
+      "att": 314,
+      "ypc": 4.33
     },
     "rec": {
       "yds": 4072,
@@ -232,10 +320,28 @@
         "name": "Bo Nix",
         "val": 4072
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 4072,
+      "passTD": 36,
+      "passINT": 19,
+      "sacksAllowed": 39,
+      "compPct": 67.7,
+      "ypa": 7.47,
+      "rushYds": 1361,
+      "rushTD": 15,
+      "ypc": 4.33,
+      "recYds": 4072,
+      "recTD": 36,
+      "defSacks": 44,
+      "defINT": 22,
+      "games": 18
     }
   },
   "775553029": {
     "teamName": "Cleveland Browns",
+    "teamNick": "Browns",
     "seasonIndex": 0,
     "pass": {
       "yds": 3797,
@@ -243,12 +349,15 @@
       "int": 13,
       "sacksTaken": 42,
       "comp": 302,
-      "att": 508
+      "att": 508,
+      "ypa": 7.47,
+      "compPct": 59.4
     },
     "rush": {
       "yds": 1137,
       "td": 10,
-      "att": 287
+      "att": 287,
+      "ypc": 3.96
     },
     "rec": {
       "yds": 3797,
@@ -279,10 +388,28 @@
         "name": "P.Rivers",
         "val": 2512
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3797,
+      "passTD": 36,
+      "passINT": 13,
+      "sacksAllowed": 42,
+      "compPct": 59.4,
+      "ypa": 7.47,
+      "rushYds": 1137,
+      "rushTD": 10,
+      "ypc": 3.96,
+      "recYds": 3797,
+      "recTD": 36,
+      "defSacks": 35,
+      "defINT": 17,
+      "games": 17
     }
   },
   "775553030": {
     "teamName": "Tampa Bay Bucs",
+    "teamNick": "Bucs",
     "seasonIndex": 0,
     "pass": {
       "yds": 3482,
@@ -290,12 +417,15 @@
       "int": 12,
       "sacksTaken": 46,
       "comp": 316,
-      "att": 489
+      "att": 489,
+      "ypa": 7.12,
+      "compPct": 64.6
     },
     "rush": {
       "yds": 1383,
       "td": 9,
-      "att": 339
+      "att": 339,
+      "ypc": 4.08
     },
     "rec": {
       "yds": 3482,
@@ -326,10 +456,28 @@
         "name": "Baker Mayfield",
         "val": 3482
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3482,
+      "passTD": 23,
+      "passINT": 12,
+      "sacksAllowed": 46,
+      "compPct": 64.6,
+      "ypa": 7.12,
+      "rushYds": 1383,
+      "rushTD": 9,
+      "ypc": 4.08,
+      "recYds": 3482,
+      "recTD": 23,
+      "defSacks": 38,
+      "defINT": 10,
+      "games": 17
     }
   },
   "775553031": {
     "teamName": "Arizona Cardinals",
+    "teamNick": "Cardinals",
     "seasonIndex": 0,
     "pass": {
       "yds": 5223,
@@ -337,12 +485,15 @@
       "int": 15,
       "sacksTaken": 18,
       "comp": 329,
-      "att": 522
+      "att": 522,
+      "ypa": 10.01,
+      "compPct": 63
     },
     "rush": {
       "yds": 1525,
       "td": 11,
-      "att": 259
+      "att": 259,
+      "ypc": 5.89
     },
     "rec": {
       "yds": 5223,
@@ -373,10 +524,28 @@
         "name": "Kyler Murray",
         "val": 4843
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 5223,
+      "passTD": 62,
+      "passINT": 15,
+      "sacksAllowed": 18,
+      "compPct": 63,
+      "ypa": 10.01,
+      "rushYds": 1525,
+      "rushTD": 11,
+      "ypc": 5.89,
+      "recYds": 5223,
+      "recTD": 62,
+      "defSacks": 35,
+      "defINT": 19,
+      "games": 18
     }
   },
   "775553034": {
     "teamName": "Los Angeles Bolts",
+    "teamNick": "Bolts",
     "seasonIndex": 0,
     "pass": {
       "yds": 3302,
@@ -384,12 +553,15 @@
       "int": 34,
       "sacksTaken": 49,
       "comp": 272,
-      "att": 496
+      "att": 496,
+      "ypa": 6.66,
+      "compPct": 54.8
     },
     "rush": {
       "yds": 893,
       "td": 11,
-      "att": 222
+      "att": 222,
+      "ypc": 4.02
     },
     "rec": {
       "yds": 3299,
@@ -420,10 +592,28 @@
         "name": "Justin Herbert",
         "val": 3570
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3302,
+      "passTD": 18,
+      "passINT": 34,
+      "sacksAllowed": 49,
+      "compPct": 54.8,
+      "ypa": 6.66,
+      "rushYds": 893,
+      "rushTD": 11,
+      "ypc": 4.02,
+      "recYds": 3299,
+      "recTD": 19,
+      "defSacks": 46,
+      "defINT": 4,
+      "games": 17
     }
   },
   "775553035": {
     "teamName": "Kansas City Chiefs",
+    "teamNick": "Chiefs",
     "seasonIndex": 0,
     "pass": {
       "yds": 4187,
@@ -431,12 +621,15 @@
       "int": 14,
       "sacksTaken": 30,
       "comp": 357,
-      "att": 540
+      "att": 540,
+      "ypa": 7.75,
+      "compPct": 66.1
     },
     "rush": {
       "yds": 850,
       "td": 7,
-      "att": 248
+      "att": 248,
+      "ypc": 3.43
     },
     "rec": {
       "yds": 4187,
@@ -467,10 +660,28 @@
         "name": "Patrick Mahomes",
         "val": 4187
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 4187,
+      "passTD": 39,
+      "passINT": 14,
+      "sacksAllowed": 30,
+      "compPct": 66.1,
+      "ypa": 7.75,
+      "rushYds": 850,
+      "rushTD": 7,
+      "ypc": 3.43,
+      "recYds": 4187,
+      "recTD": 39,
+      "defSacks": 39,
+      "defINT": 16,
+      "games": 17
     }
   },
   "775553036": {
     "teamName": "Indianapolis Colts",
+    "teamNick": "Colts",
     "seasonIndex": 0,
     "pass": {
       "yds": 3923,
@@ -478,12 +689,15 @@
       "int": 19,
       "sacksTaken": 16,
       "comp": 279,
-      "att": 406
+      "att": 406,
+      "ypa": 9.66,
+      "compPct": 68.7
     },
     "rush": {
       "yds": 2033,
       "td": 24,
-      "att": 326
+      "att": 326,
+      "ypc": 6.24
     },
     "rec": {
       "yds": 3923,
@@ -514,10 +728,28 @@
         "name": "Anthony Richardson Sr",
         "val": 3923
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3923,
+      "passTD": 40,
+      "passINT": 19,
+      "sacksAllowed": 16,
+      "compPct": 68.7,
+      "ypa": 9.66,
+      "rushYds": 2033,
+      "rushTD": 24,
+      "ypc": 6.24,
+      "recYds": 3923,
+      "recTD": 40,
+      "defSacks": 56,
+      "defINT": 16,
+      "games": 17
     }
   },
   "775553037": {
     "teamName": "Washington Commanders",
+    "teamNick": "Commanders",
     "seasonIndex": 0,
     "pass": {
       "yds": 3670,
@@ -525,12 +757,15 @@
       "int": 8,
       "sacksTaken": 44,
       "comp": 320,
-      "att": 499
+      "att": 499,
+      "ypa": 7.35,
+      "compPct": 64.1
     },
     "rush": {
       "yds": 1332,
       "td": 14,
-      "att": 371
+      "att": 371,
+      "ypc": 3.59
     },
     "rec": {
       "yds": 3670,
@@ -561,10 +796,28 @@
         "name": "Jayden Daniels",
         "val": 3670
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3670,
+      "passTD": 28,
+      "passINT": 8,
+      "sacksAllowed": 44,
+      "compPct": 64.1,
+      "ypa": 7.35,
+      "rushYds": 1332,
+      "rushTD": 14,
+      "ypc": 3.59,
+      "recYds": 3670,
+      "recTD": 28,
+      "defSacks": 24,
+      "defINT": 11,
+      "games": 17
     }
   },
   "775553038": {
     "teamName": "Dallas Cowboys",
+    "teamNick": "Cowboys",
     "seasonIndex": 0,
     "pass": {
       "yds": 4080,
@@ -572,12 +825,15 @@
       "int": 11,
       "sacksTaken": 42,
       "comp": 317,
-      "att": 481
+      "att": 481,
+      "ypa": 8.48,
+      "compPct": 65.9
     },
     "rush": {
       "yds": 1416,
       "td": 15,
-      "att": 356
+      "att": 356,
+      "ypc": 3.98
     },
     "rec": {
       "yds": 4080,
@@ -608,10 +864,28 @@
         "name": "Dak Prescott",
         "val": 4080
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 4080,
+      "passTD": 33,
+      "passINT": 11,
+      "sacksAllowed": 42,
+      "compPct": 65.9,
+      "ypa": 8.48,
+      "rushYds": 1416,
+      "rushTD": 15,
+      "ypc": 3.98,
+      "recYds": 4080,
+      "recTD": 33,
+      "defSacks": 47,
+      "defINT": 9,
+      "games": 17
     }
   },
   "775553039": {
     "teamName": "Miami Phins",
+    "teamNick": "Phins",
     "seasonIndex": 0,
     "pass": {
       "yds": 3289,
@@ -619,12 +893,15 @@
       "int": 14,
       "sacksTaken": 47,
       "comp": 285,
-      "att": 457
+      "att": 457,
+      "ypa": 7.2,
+      "compPct": 62.4
     },
     "rush": {
       "yds": 1284,
       "td": 11,
-      "att": 335
+      "att": 335,
+      "ypc": 3.83
     },
     "rec": {
       "yds": 3289,
@@ -655,10 +932,28 @@
         "name": "Tua Tagovailoa",
         "val": 3289
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3289,
+      "passTD": 19,
+      "passINT": 14,
+      "sacksAllowed": 47,
+      "compPct": 62.4,
+      "ypa": 7.2,
+      "rushYds": 1284,
+      "rushTD": 11,
+      "ypc": 3.83,
+      "recYds": 3289,
+      "recTD": 19,
+      "defSacks": 29.5,
+      "defINT": 11,
+      "games": 17
     }
   },
   "775553040": {
     "teamName": "Philadelphia Eagles",
+    "teamNick": "Eagles",
     "seasonIndex": 0,
     "pass": {
       "yds": 3844,
@@ -666,12 +961,15 @@
       "int": 19,
       "sacksTaken": 43,
       "comp": 323,
-      "att": 519
+      "att": 519,
+      "ypa": 7.41,
+      "compPct": 62.2
     },
     "rush": {
       "yds": 1813,
       "td": 16,
-      "att": 368
+      "att": 368,
+      "ypc": 4.93
     },
     "rec": {
       "yds": 3844,
@@ -702,10 +1000,28 @@
         "name": "Jalen Hurts",
         "val": 3844
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 3844,
+      "passTD": 33,
+      "passINT": 19,
+      "sacksAllowed": 43,
+      "compPct": 62.2,
+      "ypa": 7.41,
+      "rushYds": 1813,
+      "rushTD": 16,
+      "ypc": 4.93,
+      "recYds": 3844,
+      "recTD": 33,
+      "defSacks": 47,
+      "defINT": 10,
+      "games": 18
     }
   },
   "775553041": {
     "teamName": "Atlanta Falcons",
+    "teamNick": "Falcons",
     "seasonIndex": 0,
     "pass": {
       "yds": 3842,
@@ -713,12 +1029,15 @@
       "int": 17,
       "sacksTaken": 23,
       "comp": 293,
-      "att": 472
+      "att": 472,
+      "ypa": 8.14,
+      "compPct": 62.1
     },
     "rush": {
       "yds": 2605,
       "td": 29,
-      "att": 398
+      "att": 398,
+      "ypc": 6.55
     },
     "rec": {
       "yds": 3836,
@@ -749,10 +1068,28 @@
         "name": "Michael Penix Jr",
         "val": 3842
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 3842,
+      "passTD": 43,
+      "passINT": 17,
+      "sacksAllowed": 23,
+      "compPct": 62.1,
+      "ypa": 8.14,
+      "rushYds": 2605,
+      "rushTD": 29,
+      "ypc": 6.55,
+      "recYds": 3836,
+      "recTD": 43,
+      "defSacks": 49,
+      "defINT": 35,
+      "games": 18
     }
   },
   "775553043": {
     "teamName": "New York G-Men",
+    "teamNick": "G-Men",
     "seasonIndex": 0,
     "pass": {
       "yds": 3841,
@@ -760,12 +1097,15 @@
       "int": 21,
       "sacksTaken": 28,
       "comp": 295,
-      "att": 449
+      "att": 449,
+      "ypa": 8.55,
+      "compPct": 65.7
     },
     "rush": {
       "yds": 2073,
       "td": 23,
-      "att": 405
+      "att": 405,
+      "ypc": 5.12
     },
     "rec": {
       "yds": 3841,
@@ -796,10 +1136,28 @@
         "name": "Jaxson Dart",
         "val": 3816
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 3841,
+      "passTD": 36,
+      "passINT": 21,
+      "sacksAllowed": 28,
+      "compPct": 65.7,
+      "ypa": 8.55,
+      "rushYds": 2073,
+      "rushTD": 23,
+      "ypc": 5.12,
+      "recYds": 3841,
+      "recTD": 36,
+      "defSacks": 41,
+      "defINT": 24,
+      "games": 18
     }
   },
   "775553045": {
     "teamName": "Jacksonville Jags",
+    "teamNick": "Jags",
     "seasonIndex": 0,
     "pass": {
       "yds": 3740,
@@ -807,12 +1165,15 @@
       "int": 10,
       "sacksTaken": 34,
       "comp": 285,
-      "att": 456
+      "att": 456,
+      "ypa": 8.2,
+      "compPct": 62.5
     },
     "rush": {
       "yds": 1310,
       "td": 8,
-      "att": 320
+      "att": 320,
+      "ypc": 4.09
     },
     "rec": {
       "yds": 3740,
@@ -843,10 +1204,28 @@
         "name": "Trevor Lawrence",
         "val": 3740
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3740,
+      "passTD": 35,
+      "passINT": 10,
+      "sacksAllowed": 34,
+      "compPct": 62.5,
+      "ypa": 8.2,
+      "rushYds": 1310,
+      "rushTD": 8,
+      "ypc": 4.09,
+      "recYds": 3740,
+      "recTD": 35,
+      "defSacks": 44,
+      "defINT": 14,
+      "games": 17
     }
   },
   "775553046": {
     "teamName": "New York Jets",
+    "teamNick": "Jets",
     "seasonIndex": 0,
     "pass": {
       "yds": 3264,
@@ -854,12 +1233,15 @@
       "int": 16,
       "sacksTaken": 51,
       "comp": 285,
-      "att": 466
+      "att": 466,
+      "ypa": 7,
+      "compPct": 61.2
     },
     "rush": {
       "yds": 1644,
       "td": 10,
-      "att": 326
+      "att": 326,
+      "ypc": 5.04
     },
     "rec": {
       "yds": 3264,
@@ -890,10 +1272,28 @@
         "name": "Justin Fields",
         "val": 3076
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3264,
+      "passTD": 21,
+      "passINT": 16,
+      "sacksAllowed": 51,
+      "compPct": 61.2,
+      "ypa": 7,
+      "rushYds": 1644,
+      "rushTD": 10,
+      "ypc": 5.04,
+      "recYds": 3264,
+      "recTD": 21,
+      "defSacks": 24,
+      "defINT": 7,
+      "games": 17
     }
   },
   "775553047": {
     "teamName": "Detroit Lions",
+    "teamNick": "Lions",
     "seasonIndex": 0,
     "pass": {
       "yds": 4013,
@@ -901,12 +1301,15 @@
       "int": 9,
       "sacksTaken": 48,
       "comp": 323,
-      "att": 486
+      "att": 486,
+      "ypa": 8.26,
+      "compPct": 66.5
     },
     "rush": {
       "yds": 1569,
       "td": 13,
-      "att": 351
+      "att": 351,
+      "ypc": 4.47
     },
     "rec": {
       "yds": 4013,
@@ -937,10 +1340,28 @@
         "name": "Jared Goff",
         "val": 4013
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 4013,
+      "passTD": 35,
+      "passINT": 9,
+      "sacksAllowed": 48,
+      "compPct": 66.5,
+      "ypa": 8.26,
+      "rushYds": 1569,
+      "rushTD": 13,
+      "ypc": 4.47,
+      "recYds": 4013,
+      "recTD": 35,
+      "defSacks": 48,
+      "defINT": 14,
+      "games": 17
     }
   },
   "775553049": {
     "teamName": "Green Bay Pack",
+    "teamNick": "Pack",
     "seasonIndex": 0,
     "pass": {
       "yds": 3944,
@@ -948,12 +1369,15 @@
       "int": 17,
       "sacksTaken": 43,
       "comp": 320,
-      "att": 492
+      "att": 492,
+      "ypa": 8.02,
+      "compPct": 65
     },
     "rush": {
       "yds": 2184,
       "td": 19,
-      "att": 384
+      "att": 384,
+      "ypc": 5.69
     },
     "rec": {
       "yds": 3944,
@@ -984,10 +1408,28 @@
         "name": "Jordan Love",
         "val": 3944
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 3944,
+      "passTD": 35,
+      "passINT": 17,
+      "sacksAllowed": 43,
+      "compPct": 65,
+      "ypa": 8.02,
+      "rushYds": 2184,
+      "rushTD": 19,
+      "ypc": 5.69,
+      "recYds": 3944,
+      "recTD": 35,
+      "defSacks": 47,
+      "defINT": 12,
+      "games": 18
     }
   },
   "775553050": {
     "teamName": "Carolina Panthers",
+    "teamNick": "Panthers",
     "seasonIndex": 0,
     "pass": {
       "yds": 2748,
@@ -995,12 +1437,15 @@
       "int": 15,
       "sacksTaken": 51,
       "comp": 252,
-      "att": 451
+      "att": 451,
+      "ypa": 6.09,
+      "compPct": 55.9
     },
     "rush": {
       "yds": 1362,
       "td": 10,
-      "att": 344
+      "att": 344,
+      "ypc": 3.96
     },
     "rec": {
       "yds": 2725,
@@ -1031,10 +1476,28 @@
         "name": "Bryce Young",
         "val": 2748
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 2748,
+      "passTD": 12,
+      "passINT": 15,
+      "sacksAllowed": 51,
+      "compPct": 55.9,
+      "ypa": 6.09,
+      "rushYds": 1362,
+      "rushTD": 10,
+      "ypc": 3.96,
+      "recYds": 2725,
+      "recTD": 12,
+      "defSacks": 43,
+      "defINT": 4,
+      "games": 17
     }
   },
   "775553051": {
     "teamName": "New England Pats",
+    "teamNick": "Pats",
     "seasonIndex": 0,
     "pass": {
       "yds": 3703,
@@ -1042,12 +1505,15 @@
       "int": 11,
       "sacksTaken": 32,
       "comp": 306,
-      "att": 473
+      "att": 473,
+      "ypa": 7.83,
+      "compPct": 64.7
     },
     "rush": {
       "yds": 1918,
       "td": 23,
-      "att": 432
+      "att": 432,
+      "ypc": 4.44
     },
     "rec": {
       "yds": 3703,
@@ -1078,10 +1544,28 @@
         "name": "Drake Maye",
         "val": 3703
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 3703,
+      "passTD": 24,
+      "passINT": 11,
+      "sacksAllowed": 32,
+      "compPct": 64.7,
+      "ypa": 7.83,
+      "rushYds": 1918,
+      "rushTD": 23,
+      "ypc": 4.44,
+      "recYds": 3703,
+      "recTD": 24,
+      "defSacks": 51.5,
+      "defINT": 11,
+      "games": 18
     }
   },
   "775553052": {
     "teamName": "Las Vegas Raiders",
+    "teamNick": "Raiders",
     "seasonIndex": 0,
     "pass": {
       "yds": 3151,
@@ -1089,12 +1573,15 @@
       "int": 11,
       "sacksTaken": 59,
       "comp": 279,
-      "att": 456
+      "att": 456,
+      "ypa": 6.91,
+      "compPct": 61.2
     },
     "rush": {
       "yds": 1224,
       "td": 11,
-      "att": 311
+      "att": 311,
+      "ypc": 3.94
     },
     "rec": {
       "yds": 3151,
@@ -1125,10 +1612,28 @@
         "name": "Kyle McCord",
         "val": 2768
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3151,
+      "passTD": 20,
+      "passINT": 11,
+      "sacksAllowed": 59,
+      "compPct": 61.2,
+      "ypa": 6.91,
+      "rushYds": 1224,
+      "rushTD": 11,
+      "ypc": 3.94,
+      "recYds": 3151,
+      "recTD": 20,
+      "defSacks": 32,
+      "defINT": 22,
+      "games": 17
     }
   },
   "775553053": {
     "teamName": "Los Angeles Rams",
+    "teamNick": "Rams",
     "seasonIndex": 0,
     "pass": {
       "yds": 3968,
@@ -1136,12 +1641,15 @@
       "int": 10,
       "sacksTaken": 44,
       "comp": 339,
-      "att": 505
+      "att": 505,
+      "ypa": 7.86,
+      "compPct": 67.1
     },
     "rush": {
       "yds": 1590,
       "td": 14,
-      "att": 341
+      "att": 341,
+      "ypc": 4.66
     },
     "rec": {
       "yds": 3968,
@@ -1172,10 +1680,28 @@
         "name": "Matthew Stafford",
         "val": 3940
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3968,
+      "passTD": 27,
+      "passINT": 10,
+      "sacksAllowed": 44,
+      "compPct": 67.1,
+      "ypa": 7.86,
+      "rushYds": 1590,
+      "rushTD": 14,
+      "ypc": 4.66,
+      "recYds": 3968,
+      "recTD": 27,
+      "defSacks": 30,
+      "defINT": 5,
+      "games": 17
     }
   },
   "775553054": {
     "teamName": "Baltimore Ravens",
+    "teamNick": "Ravens",
     "seasonIndex": 0,
     "pass": {
       "yds": 3929,
@@ -1183,12 +1709,15 @@
       "int": 9,
       "sacksTaken": 30,
       "comp": 308,
-      "att": 423
+      "att": 423,
+      "ypa": 9.29,
+      "compPct": 72.8
     },
     "rush": {
       "yds": 2094,
       "td": 28,
-      "att": 405
+      "att": 405,
+      "ypc": 5.17
     },
     "rec": {
       "yds": 3929,
@@ -1219,10 +1748,28 @@
         "name": "Lamar Jackson",
         "val": 3799
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 3929,
+      "passTD": 38,
+      "passINT": 9,
+      "sacksAllowed": 30,
+      "compPct": 72.8,
+      "ypa": 9.29,
+      "rushYds": 2094,
+      "rushTD": 28,
+      "ypc": 5.17,
+      "recYds": 3929,
+      "recTD": 38,
+      "defSacks": 47,
+      "defINT": 21,
+      "games": 18
     }
   },
   "775553055": {
     "teamName": "New Orleans Saints",
+    "teamNick": "Saints",
     "seasonIndex": 0,
     "pass": {
       "yds": 3700,
@@ -1230,12 +1777,15 @@
       "int": 22,
       "sacksTaken": 31,
       "comp": 260,
-      "att": 404
+      "att": 404,
+      "ypa": 9.16,
+      "compPct": 64.4
     },
     "rush": {
       "yds": 1678,
       "td": 14,
-      "att": 363
+      "att": 363,
+      "ypc": 4.62
     },
     "rec": {
       "yds": 3700,
@@ -1266,10 +1816,28 @@
         "name": "Chris Olave",
         "val": 1071
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3700,
+      "passTD": 37,
+      "passINT": 22,
+      "sacksAllowed": 31,
+      "compPct": 64.4,
+      "ypa": 9.16,
+      "rushYds": 1678,
+      "rushTD": 14,
+      "ypc": 4.62,
+      "recYds": 3700,
+      "recTD": 37,
+      "defSacks": 28,
+      "defINT": 17,
+      "games": 17
     }
   },
   "775553056": {
     "teamName": "Seattle Seahawks",
+    "teamNick": "Seahawks",
     "seasonIndex": 0,
     "pass": {
       "yds": 4738,
@@ -1277,12 +1845,15 @@
       "int": 12,
       "sacksTaken": 22,
       "comp": 311,
-      "att": 456
+      "att": 456,
+      "ypa": 10.39,
+      "compPct": 68.2
     },
     "rush": {
       "yds": 2044,
       "td": 28,
-      "att": 265
+      "att": 265,
+      "ypc": 7.71
     },
     "rec": {
       "yds": 4738,
@@ -1313,10 +1884,28 @@
         "name": "Ernest Jones IV",
         "val": 5
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 4738,
+      "passTD": 45,
+      "passINT": 12,
+      "sacksAllowed": 22,
+      "compPct": 68.2,
+      "ypa": 10.39,
+      "rushYds": 2044,
+      "rushTD": 28,
+      "ypc": 7.71,
+      "recYds": 4738,
+      "recTD": 45,
+      "defSacks": 26,
+      "defINT": 14,
+      "games": 17
     }
   },
   "775553057": {
     "teamName": "Pittsburgh Steelers",
+    "teamNick": "Steelers",
     "seasonIndex": 0,
     "pass": {
       "yds": 3445,
@@ -1324,12 +1913,15 @@
       "int": 13,
       "sacksTaken": 54,
       "comp": 291,
-      "att": 466
+      "att": 466,
+      "ypa": 7.39,
+      "compPct": 62.4
     },
     "rush": {
       "yds": 1342,
       "td": 16,
-      "att": 296
+      "att": 296,
+      "ypc": 4.53
     },
     "rec": {
       "yds": 3473,
@@ -1360,10 +1952,28 @@
         "name": "Aaron Rodgers",
         "val": 3083
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3445,
+      "passTD": 20,
+      "passINT": 13,
+      "sacksAllowed": 54,
+      "compPct": 62.4,
+      "ypa": 7.39,
+      "rushYds": 1342,
+      "rushTD": 16,
+      "ypc": 4.53,
+      "recYds": 3473,
+      "recTD": 21,
+      "defSacks": 37,
+      "defINT": 15,
+      "games": 17
     }
   },
   "775553058": {
     "teamName": "Houston Texans",
+    "teamNick": "Texans",
     "seasonIndex": 0,
     "pass": {
       "yds": 3693,
@@ -1371,12 +1981,15 @@
       "int": 13,
       "sacksTaken": 34,
       "comp": 313,
-      "att": 505
+      "att": 505,
+      "ypa": 7.31,
+      "compPct": 62
     },
     "rush": {
       "yds": 1572,
       "td": 11,
-      "att": 278
+      "att": 278,
+      "ypc": 5.65
     },
     "rec": {
       "yds": 3696,
@@ -1407,10 +2020,28 @@
         "name": "C.J. Stroud",
         "val": 3198
       }
+    },
+    "games": 18,
+    "labels": {
+      "passYds": 3693,
+      "passTD": 30,
+      "passINT": 13,
+      "sacksAllowed": 34,
+      "compPct": 62,
+      "ypa": 7.31,
+      "rushYds": 1572,
+      "rushTD": 11,
+      "ypc": 5.65,
+      "recYds": 3696,
+      "recTD": 29,
+      "defSacks": 37.5,
+      "defINT": 12,
+      "games": 18
     }
   },
   "775553059": {
     "teamName": "Tennessee Titans",
+    "teamNick": "Titans",
     "seasonIndex": 0,
     "pass": {
       "yds": 3609,
@@ -1418,12 +2049,15 @@
       "int": 15,
       "sacksTaken": 38,
       "comp": 283,
-      "att": 459
+      "att": 459,
+      "ypa": 7.86,
+      "compPct": 61.7
     },
     "rush": {
       "yds": 921,
       "td": 12,
-      "att": 270
+      "att": 270,
+      "ypc": 3.41
     },
     "rec": {
       "yds": 3609,
@@ -1454,10 +2088,28 @@
         "name": "Cam Ward",
         "val": 3598
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 3609,
+      "passTD": 23,
+      "passINT": 15,
+      "sacksAllowed": 38,
+      "compPct": 61.7,
+      "ypa": 7.86,
+      "rushYds": 921,
+      "rushTD": 12,
+      "ypc": 3.41,
+      "recYds": 3609,
+      "recTD": 23,
+      "defSacks": 36.5,
+      "defINT": 22,
+      "games": 17
     }
   },
   "775553060": {
     "teamName": "Minnesota Vikes",
+    "teamNick": "Vikes",
     "seasonIndex": 0,
     "pass": {
       "yds": 4412,
@@ -1465,12 +2117,15 @@
       "int": 20,
       "sacksTaken": 45,
       "comp": 352,
-      "att": 566
+      "att": 566,
+      "ypa": 7.8,
+      "compPct": 62.2
     },
     "rush": {
       "yds": 989,
       "td": 13,
-      "att": 215
+      "att": 215,
+      "ypc": 4.6
     },
     "rec": {
       "yds": 4412,
@@ -1501,6 +2156,23 @@
         "name": "J.J. McCarthy",
         "val": 4384
       }
+    },
+    "games": 17,
+    "labels": {
+      "passYds": 4412,
+      "passTD": 37,
+      "passINT": 20,
+      "sacksAllowed": 45,
+      "compPct": 62.2,
+      "ypa": 7.8,
+      "rushYds": 989,
+      "rushTD": 13,
+      "ypc": 4.6,
+      "recYds": 4412,
+      "recTD": 37,
+      "defSacks": 30,
+      "defINT": 9,
+      "games": 17
     }
   }
 }

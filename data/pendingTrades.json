@@ -369,5 +369,33 @@
       "670446898695503897": "approve",
       "1076243288056664234": "deny"
     }
+  },
+  "1477413782106931250": {
+    "trade": {
+      "tradeId": "builder_800545581760118816_1772313044840",
+      "proposerId": "800545581760118816",
+      "coachBId": "1460735407531626791",
+      "yourTeam": "New York Knicks",
+      "otherTeam": "Utah Jazz",
+      "assetsSent": "Landry Shamet (SG / SF) — 190.0\n2027 Round 2 — 56.0",
+      "assetsReceived": "Kyle Filipowski (PF / C) — 270.0",
+      "picksSent": [
+        "2027 Round 2"
+      ],
+      "picksReceived": [],
+      "notes": "",
+      "guildId": "1255691165265821747",
+      "status": "approved_pending_2k",
+      "postedToCommittee": true,
+      "submittedAt": 1772313109511,
+      "expiresAt": 1772399509511
+    },
+    "votes": {
+      "1076243288056664234": "approve",
+      "1123419957674385439": "deny",
+      "1195843329477328978": "approve",
+      "840269359578611753": "approve"
+    },
+    "proofRequested": true
   }
 }

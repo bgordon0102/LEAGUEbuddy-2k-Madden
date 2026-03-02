@@ -94,7 +94,9 @@ export const customId = /^game_complete_/;
 export async function execute(interaction) {
   if (!(interaction instanceof ButtonInteraction)) return;
   if (!canMarkComplete(interaction.member, interaction.channel)) {
-    await interaction.reply({ content: 'Only the two coaches in this game (or staff) can mark it complete.', ephemeral: true });
+    const payload = { content: 'Only the two coaches in this game (or staff) can mark it complete.' };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
   const thread = interaction.channel;
@@ -125,7 +127,9 @@ export async function execute(interaction) {
   }
 
   try {
-    await interaction.reply({ content: 'Game marked complete and announced to staff.', ephemeral: false });
+    const payload = { content: 'Game marked complete and announced to staff.' };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply(payload);
   } catch (err) {
     console.error('[game_complete_button] Failed to reply to button interaction:', err);
   }

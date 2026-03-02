@@ -232,37 +232,6 @@
       ]
     },
     {
-      "name": "Kyle Filipowski",
-      "position": "PF / C",
-      "height": "6'11\" (211cm)",
-      "weight": "250lbs (113kg)",
-      "archetype": "Crafty Stretch Four Cleaner",
-      "birthdate": "November 7, 2003",
-      "yearsInNBA": "2",
-      "wingspan": "6'11\" (211cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Kyle-Filipowski-2K-Rating.png",
-      "ovr": "77",
-      "prior_to_nba": "Duke",
-      "nationality": "United States",
-      "contractYears": [
-        {
-          "year": "2025-26",
-          "salary": "$3,000,000",
-          "option": null
-        },
-        {
-          "year": "2026-27",
-          "salary": "$3,000,000",
-          "option": null
-        },
-        {
-          "year": "2027-28",
-          "salary": "$3,000,000",
-          "option": "Team"
-        }
-      ]
-    },
-    {
       "name": "Kevin Love",
       "position": "C / PF",
       "height": "6'8\" (203cm)",
@@ -396,6 +365,27 @@
           "option": "Team"
         }
       ]
+    },
+    {
+      "name": "Landry Shamet",
+      "position": "SG / SF",
+      "height": "6'4\" (193cm)",
+      "weight": "190lbs (86kg)",
+      "archetype": "Shot-Creating Combo Guard",
+      "birthdate": "March 13, 1997",
+      "yearsInNBA": "8",
+      "wingspan": "6'7\" (201cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Landry-Shamet-2K-Rating.png",
+      "ovr": "77",
+      "prior_to_nba": "Wichita State",
+      "nationality": "United States",
+      "contractYears": [
+        {
+          "year": "2025-26",
+          "salary": "$2,296,274",
+          "option": null
+        }
+      ]
     }
   ],
   "picks": [
@@ -438,6 +428,10 @@
     {
       "pick": "2030 2nd",
       "value": 50
+    },
+    {
+      "pick": "2027 2nd (VIA New York Knicks)",
+      "value": 56
     }
   ]
 }

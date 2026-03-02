@@ -6,6 +6,7 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/m
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
+const PLAYOFF_RESULTS_FILE = path.join(process.cwd(), 'data', 'madden', 'playoff_results.json');
 
 function loadJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return {}; }
@@ -462,6 +463,11 @@ function winnerFromPair(pair, scores, seedMap) {
   return hs <= as ? h : a;
 }
 
+function loserFromPair(pair, scores, seedMap) {
+  const win = winnerFromPair(pair, scores, seedMap);
+  return win === pair.homeTeamId ? pair.awayTeamId : pair.homeTeamId;
+}
+
 function buildDivisionalPairs(confSeeds, wcWinners, scores, seedMap) {
   const seedsSorted = [...confSeeds].sort((a, b) => a.seed - b.seed);
   const oneSeed = seedsSorted.find(s => s.seed === 1);
@@ -494,6 +500,17 @@ function buildConferencePair(winners) {
 function buildSuperBowlPair(afcChamp, nfcChamp) {
   if (!afcChamp || !nfcChamp) return [];
   return [{ homeTeamId: afcChamp.teamId, awayTeamId: nfcChamp.teamId }];
+}
+
+function loadPlayoffResults() {
+  try { return JSON.parse(fs.readFileSync(PLAYOFF_RESULTS_FILE, 'utf8')); } catch { return {}; }
+}
+
+function savePlayoffResults(leagueId, payload) {
+  const existing = loadPlayoffResults();
+  existing[leagueId] = { ...(existing[leagueId] || {}), ...payload, updatedAt: Date.now() };
+  fs.mkdirSync(path.dirname(PLAYOFF_RESULTS_FILE), { recursive: true });
+  fs.writeFileSync(PLAYOFF_RESULTS_FILE, JSON.stringify(existing, null, 2));
 }
 
 function deriveWinnersByConference(games, seedsMap) {
@@ -599,6 +616,7 @@ async function execute(interaction) {
     const scoresDIV = scoresForWeek(snapshot, playoffWeekIdx.divisional).scores;
     const scoresCONF = scoresForWeek(snapshot, playoffWeekIdx.conference).scores;
     const scoresSB = scoresForWeek(snapshot, playoffWeekIdx.superbowl).scores;
+    const playoffResultsPatch = { leagueId, snapshotId: snapshot?.fetchedAt ?? Date.now() };
 
     if (playoffRound) {
       const winnersFromPairs = (pairs, scores) => pairs.map(p => {
@@ -610,6 +628,11 @@ async function execute(interaction) {
         const wcPairsAfc = wildcardPairs(seedsByConf.afc);
         const wcPairsNfc = wildcardPairs(seedsByConf.nfc);
         gamesFinal = [...wcPairsAfc, ...wcPairsNfc];
+        const wcLosers = [
+          ...wcPairsAfc.map(p => loserFromPair(p, scoresWC, seedMap)),
+          ...wcPairsNfc.map(p => loserFromPair(p, scoresWC, seedMap)),
+        ].filter(Boolean);
+        playoffResultsPatch.wcLosers = wcLosers;
       } else if (playoffRound === 'divisional') {
         const wcPairsAfc = wildcardPairs(seedsByConf.afc);
         const wcPairsNfc = wildcardPairs(seedsByConf.nfc);
@@ -618,6 +641,14 @@ async function execute(interaction) {
         const divPairsAfc = buildDivisionalPairs(seedsByConf.afc, wcWinnersAfc, scoresWC, seedMap);
         const divPairsNfc = buildDivisionalPairs(seedsByConf.nfc, wcWinnersNfc, scoresWC, seedMap);
         gamesFinal = [...divPairsAfc, ...divPairsNfc];
+        playoffResultsPatch.wcLosers = [
+          ...wcPairsAfc.map(p => loserFromPair(p, scoresWC, seedMap)),
+          ...wcPairsNfc.map(p => loserFromPair(p, scoresWC, seedMap)),
+        ].filter(Boolean);
+        playoffResultsPatch.divLosers = [
+          ...divPairsAfc.map(p => loserFromPair(p, scoresDIV, seedMap)),
+          ...divPairsNfc.map(p => loserFromPair(p, scoresDIV, seedMap)),
+        ].filter(Boolean);
       } else if (playoffRound === 'conference') {
         // winners from divisional games (week 20)
         const wcPairsAfc = wildcardPairs(seedsByConf.afc);
@@ -632,6 +663,15 @@ async function execute(interaction) {
           ...buildConferencePair(divWinnersAfc),
           ...buildConferencePair(divWinnersNfc),
         ];
+        playoffResultsPatch.wcLosers = [
+          ...wcPairsAfc.map(p => loserFromPair(p, scoresWC, seedMap)),
+          ...wcPairsNfc.map(p => loserFromPair(p, scoresWC, seedMap)),
+        ].filter(Boolean);
+        playoffResultsPatch.divLosers = [
+          ...divPairsAfc.map(p => loserFromPair(p, scoresDIV, seedMap)),
+          ...divPairsNfc.map(p => loserFromPair(p, scoresDIV, seedMap)),
+        ].filter(Boolean);
+        playoffResultsPatch.confLosers = gamesFinal.map(p => loserFromPair(p, scoresCONF, seedMap)).filter(Boolean);
       } else if (playoffRound === 'superbowl') {
         const wcPairsAfc = wildcardPairs(seedsByConf.afc);
         const wcPairsNfc = wildcardPairs(seedsByConf.nfc);
@@ -646,6 +686,22 @@ async function execute(interaction) {
         const confWinnerAfc = winnersFromPairs(confPairAfc, scoresCONF)[0];
         const confWinnerNfc = winnersFromPairs(confPairNfc, scoresCONF)[0];
         gamesFinal = buildSuperBowlPair(confWinnerAfc, confWinnerNfc);
+        playoffResultsPatch.wcLosers = [
+          ...wcPairsAfc.map(p => loserFromPair(p, scoresWC, seedMap)),
+          ...wcPairsNfc.map(p => loserFromPair(p, scoresWC, seedMap)),
+        ].filter(Boolean);
+        playoffResultsPatch.divLosers = [
+          ...divPairsAfc.map(p => loserFromPair(p, scoresDIV, seedMap)),
+          ...divPairsNfc.map(p => loserFromPair(p, scoresDIV, seedMap)),
+        ].filter(Boolean);
+        playoffResultsPatch.confLosers = [
+          ...buildConferencePair(divWinnersAfc).map(p => loserFromPair(p, scoresCONF, seedMap)),
+          ...buildConferencePair(divWinnersNfc).map(p => loserFromPair(p, scoresCONF, seedMap)),
+        ].filter(Boolean);
+        const sbWinner = gamesFinal.length ? winnerFromPair(gamesFinal[0], scoresSB, seedMap) : null;
+        const sbLoser = gamesFinal.length ? loserFromPair(gamesFinal[0], scoresSB, seedMap) : null;
+        if (sbWinner) playoffResultsPatch.sbWinner = sbWinner;
+        if (sbLoser) playoffResultsPatch.sbLoser = sbLoser;
       }
     }
 
@@ -777,6 +833,9 @@ async function execute(interaction) {
       console.warn('[madden-creategamethreads] Failed to post announcement:', e?.message || e);
     }
     await safeEditReply(interaction, { content: `Created ${created}/${gamesFinal.length} game threads for ${playoffRound ? playoffRound : `week ${wkNumeric}`}.` });
+    if (playoffRound) {
+      try { savePlayoffResults(leagueId, playoffResultsPatch); } catch (e) { console.warn('[madden-creategamethreads] savePlayoffResults failed', e?.message || e); }
+    }
   } catch (err) {
     await safeEditReply(interaction, { content: `Failed to create game threads: ${err.message || err}` });
   }

@@ -7,12 +7,16 @@ export const data = new SlashCommandBuilder()
   .setDescription('View the Madden draft big board (paged, 32 prospects per page)');
 
 export async function execute(interaction) {
+  if (!interaction.deferred && !interaction.replied) {
+    try { await interaction.deferReply({ flags: 64 }); } catch (_) {}
+  }
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
-    await interaction.reply({ content: 'No league set. Run /madden-set-league first.', ephemeral: true });
+    const payload = { content: 'No league set. Run /madden-set-league first.' };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
-  await interaction.deferReply({ ephemeral: true });
   try {
     const snapshot = loadLeagueSnapshot(leagueId);
     const calendarYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear;
@@ -32,7 +36,9 @@ export async function execute(interaction) {
     await interaction.editReply({ embeds: [embeds[0]], components });
   } catch (err) {
     console.error('[madden-bigboard] failed:', err);
-    await interaction.editReply({ content: 'Failed to load big board.' });
+    try {
+      await interaction.editReply({ content: 'Failed to load big board.' });
+    } catch (_) {}
   }
 }
 

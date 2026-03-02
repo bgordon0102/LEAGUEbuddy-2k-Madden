@@ -73,12 +73,21 @@ function teamEmoji(teamName, emojiMap) {
 function loadGradedWeek(leagueId, weekNumber) {
   const base = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId));
   const candidates = [
+    path.join(base, `week-${weekNumber}-top.json`),
     path.join(base, `week-${weekNumber}-all.json`),
     path.join(base, `week-${weekNumber}.json`)
   ];
+  // Also try 0-based alias (weekIndex) since top_players saves using that scheme
+  const zeroBased = Number(weekNumber) - 1;
+  if (zeroBased >= 0) {
+    candidates.push(path.join(base, `week-${zeroBased}-top.json`));
+    candidates.push(path.join(base, `week-${zeroBased}-all.json`));
+    candidates.push(path.join(base, `week-${zeroBased}.json`));
+  }
   for (const file of candidates) {
     try {
       const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (Array.isArray(data?.top100)) return data.top100;
       if (Array.isArray(data)) return data;
       if (Array.isArray(data?.top100)) return data.top100;
       if (Array.isArray(data?.players)) return data.players;
@@ -90,11 +99,9 @@ function loadGradedWeek(leagueId, weekNumber) {
 }
 
 function isRookie(player) {
-  // Per request: only players with yearsPro === 0 qualify as rookies
-  if (player?.yearsPro !== undefined && player?.yearsPro !== null) {
-    return Number(player.yearsPro) === 0;
-  }
-  return false;
+  // Treat yearsPro <= 1 or missing as rookie; Madden export sometimes omits yearsPro
+  if (player?.yearsPro === undefined || player?.yearsPro === null) return true;
+  return Number(player.yearsPro) <= 1;
 }
 
 export function gatherWeeklyStats(snapshot, weekIndex) {

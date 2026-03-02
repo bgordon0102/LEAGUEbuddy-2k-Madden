@@ -487,6 +487,11 @@ export function buildButtons(draftId) {
 }
 
 async function refreshBuilder(interaction, draft, snapshot) {
+  const doUpdate = async (payload) => {
+    if (interaction.deferred || interaction.replied) return interaction.editReply(payload);
+    return interaction.update(payload);
+  };
+
   if (draft.mode === '2k') {
     const summary = summarizeAssets2k(draft);
     const gap = summary.your.total - summary.other.total;
@@ -519,7 +524,7 @@ async function refreshBuilder(interaction, draft, snapshot) {
     draft.assetsSent = summary.your.lines.join('\n');
     draft.assetsReceived = summary.other.lines.join('\n');
     saveTradeDraft(draft.draftId, draft);
-    await interaction.update({
+    await doUpdate({
       content: null,
       embeds: [embed],
       components: buildButtons(draft.draftId),
@@ -553,7 +558,7 @@ async function refreshBuilder(interaction, draft, snapshot) {
   draft.assetsSent = summary.your.lines.join('\n');
   draft.assetsReceived = summary.other.lines.join('\n');
   saveTradeDraft(draft.draftId, draft);
-  await interaction.update({
+  await doUpdate({
     content: null,
     embeds: [embed],
     components: buildButtons(draft.draftId),
