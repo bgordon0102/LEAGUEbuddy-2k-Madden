@@ -1441,5 +1441,25 @@
     "postedToCommittee": false,
     "submittedAt": 1772321457321,
     "expiresAt": 1772407857321
+  },
+  "builder_1195843329477328978_1772462795650": {
+    "tradeId": "builder_1195843329477328978_1772462795650",
+    "proposerId": "1195843329477328978",
+    "coachBId": "1460736451473051739",
+    "yourTeam": "Miami Heat",
+    "otherTeam": "Minnesota Timberwolves",
+    "assetsSent": "2027 Round 2 — 56.0\n2029 Round 2 — 50.0",
+    "assetsReceived": "Terrence Shannon Jr. (SG / SF) — 130.0",
+    "picksSent": [
+      "2027 Round 2",
+      "2029 Round 2"
+    ],
+    "picksReceived": [],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1772463429142,
+    "expiresAt": 1772549829142
   }
 }

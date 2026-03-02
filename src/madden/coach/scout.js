@@ -169,11 +169,14 @@ export async function execute(interaction) {
     return;
   }
   const snapshot = loadLeagueSnapshot(leagueId);
-  const calendarYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear;
-  const currentWeek = snapshot?.currentWeek ?? snapshot?.info?.careerHubInfo?.seasonInfo?.displayWeek ?? 0;
-  const stage = snapshot?.stage ?? snapshot?.info?.careerHubInfo?.seasonInfo?.seasonWeekType ?? 0; // expected: 0=pre,1=reg,2=post,3=off
-  const isRegularOrPost = stage === 1 || stage === 2;
-  const isOffseason = stage === 3;
+  const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+  const calendarYear = seasonInfo.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear;
+  const currentWeek = snapshot?.currentWeek ?? seasonInfo.displayWeek ?? 0;
+  const seasonWeekType = seasonInfo.seasonWeekType ?? snapshot?.stage ?? 0; // 0=pre,1=reg,2=post,3=off,8=off
+  const seasonTitle = (seasonInfo.seasonTitle || '').toLowerCase();
+  const draftInactive = seasonInfo.isDraftActive === false && seasonInfo.isLeagueStarted === true && seasonWeekType !== 1;
+  const isRegularOrPost = seasonWeekType === 1 || seasonWeekType === 2;
+  const isOffseason = seasonWeekType === 3 || seasonWeekType === 8 || seasonTitle.includes('offseason') || draftInactive || !isRegularOrPost;
   const scoutingOpen = (isRegularOrPost && currentWeek >= 1) || isOffseason;
   if (!scoutingOpen) {
     const payload = { content: 'Scouting opens after the Week 1 regular-season update and stays open through playoffs and offseason.' };
@@ -211,6 +214,10 @@ export async function execute(interaction) {
   const userData = scoutData[userId];
   const weekKey = isOffseason ? `year_${calendarYear}_offseason_total` : `year_${calendarYear}_week_${currentWeek}`;
   const defaultPoints = isOffseason ? OFFSEASON_POINTS : POINTS_PER_WEEK;
+  // Ensure offseason pool is refreshed to full allotment before any spend
+  if (isOffseason) {
+    userData.weeklyPoints[weekKey] = OFFSEASON_POINTS;
+  }
   if (userData.weeklyPoints[weekKey] === undefined) userData.weeklyPoints[weekKey] = defaultPoints;
   let pointsLeft = Number(userData.weeklyPoints[weekKey]);
   if (!Number.isFinite(pointsLeft)) pointsLeft = defaultPoints;
@@ -249,7 +256,7 @@ export async function execute(interaction) {
     weekKey,
     seasonYear: calendarYear,
     currentWeek,
-    stage,
+    stage: seasonWeekType,
     pointsLeft,
   });
 

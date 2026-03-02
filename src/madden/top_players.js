@@ -1060,14 +1060,21 @@ function saveWeeklyAll(leagueId, weekIndex, list) {
 }
 
 function loadWeeklyHistory(leagueId) {
-  const dir = path.join(TOP_HISTORY_DIR, leagueId);
+  let dir = path.join(TOP_HISTORY_DIR, leagueId);
+  if (!fs.existsSync(dir)) {
+    const alt = path.join(TOP_HISTORY_DIR, `${leagueId}.json`);
+    if (fs.existsSync(alt)) dir = alt;
+  }
   if (!fs.existsSync(dir)) return [];
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
   const history = [];
   files.forEach(f => {
     try {
       const data = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
-      if (data?.players) history.push({ ...data, top100: (data.players || []).slice(0, 100) });
+      const players = data?.players || data?.top100;
+      if (Array.isArray(players)) {
+        history.push({ ...data, players, top100: players.slice(0, 100) });
+      }
     } catch { }
   });
   history.sort((a, b) => (Number(a.weekIndex) || 0) - (Number(b.weekIndex) || 0));
@@ -1169,27 +1176,114 @@ function computeSeasonTop100FromHistory(leagueId) {
     })();
     const std = Math.sqrt(variance);
     // Consistency > spikes: reward 90+ and 80+ streaks/occurrences, penalize variance
-    const streak90Bonus = v.streak90 * 1.0;
-    const streak80Bonus = v.streak80 * 0.4;
-    const weeks90Bonus = v.weeks90 * 0.6;
-    const weeks80Bonus = v.weeks80 * 0.25;
-    const streakBonus = v.streak * 0.25; // general presence streak
-    const appearanceBonus = v.appearances * 0.2;
-    const rankBonus = (101 - v.bestRank) * 0.04;
-    const injuryPenalty = v.injuryHits * 0.4;
-    const variancePenalty = std * 0.7; // higher std = more volatile, penalize
+    const streak90Bonus = v.streak90 * 1.1;
+    const streak80Bonus = v.streak80 * 0.3;
+    const weeks90Bonus = v.weeks90 * 0.9;
+    const weeks80Bonus = v.weeks80 * 0.2;
+    const streakBonus = v.streak * 0.2; // general presence streak
+    const appearanceBonus = v.appearances * 0.4; // reward sustained play, less OL bias
+    const rankBonus = (101 - v.bestRank) * 0.01; // mild single-week weight
+    const injuryPenalty = v.injuryHits * 0.3;
+    const variancePenalty = std * 1.0; // penalize volatility harder
     const score = avgGrade * 0.8
       + winPctAvg * 8
       + streak90Bonus + streak80Bonus + weeks90Bonus + weeks80Bonus
       + streakBonus + appearanceBonus + rankBonus
       - injuryPenalty - variancePenalty;
     // Derive a season grade (not just score) with caps
-    const rawGrade = avgGrade
+    let rawGrade = avgGrade
       + v.streak90 * 0.6
-      + v.weeks90 * 0.2
-      + v.streak80 * 0.2
-      - std * 0.5;
-    const seasonGrade = Math.max(70, Math.min(99, rawGrade));
+      + v.weeks90 * 0.3
+      + v.streak80 * 0.15
+      - std * 0.7;
+    // Penalize very low appearances; clamp spike merchants
+    // Appearance caps to avoid spike merchants, but keep a small spread
+    if (v.appearances < 7) {
+      rawGrade = Math.min(rawGrade, 84);
+    } else if (v.appearances < 9) {
+      rawGrade = Math.min(rawGrade, 88);
+    }
+    // Positional weighting
+    const pos = (v.position || '').toUpperCase();
+    const posAdj = (() => {
+      if (pos === 'QB') return 1.7;
+      if (pos === 'WR') return 1.2;
+      if (['TE'].includes(pos)) return -0.5;
+      if (['LT', 'LG', 'C', 'RG', 'RT', 'OL', 'HB', 'FB'].includes(pos)) return 0; // no nerf
+      if (['CB', 'FS', 'SS', 'S', 'REDGE', 'LEDGE', 'EDGE', 'DT', 'DL'].includes(pos)) return 1.5; // stronger defensive lift to get into top 20
+      if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
+        const base = v.appearances >= 10 ? 4.5 : v.appearances >= 8 ? 3.0 : v.appearances >= 6 ? 1.0 : 0;
+        const mult = 1 + 0.02 * v.weeks90 + 0.01 * v.streak90;
+        const rankPen = 0.1 * Math.max(0, (v.bestRank || 0));
+        let bonus = Math.max(0, Math.min(6, base * mult - rankPen));
+        const spread = Math.max(
+          -2,
+          Math.min(3, 0.12 * v.weeks90 + 0.04 * v.weeks80 - 0.05 * Math.max(0, v.bestRank || 0))
+        );
+        // Extra LB jitter to break clusters at the bottom
+        const lbJitter = Math.max(-1.5, Math.min(1.5, 0.2 * (v.weeks80 || 0) + 0.25 * (v.weeks90 || 0) - 0.05 * (v.bestRank || 0)));
+        // MIKE-specific bump to help top-range representation
+        if (pos === 'MIKE') bonus += 0.8;
+        return bonus + spread + lbJitter;
+      }
+      return 0;
+    })();
+    rawGrade += posAdj;
+    // Additional LB caps by elite weeks to avoid clustering
+    if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
+      const baseCap = v.appearances >= 10 ? 87 : 84;
+      if (v.weeks90 <= 1) rawGrade = Math.min(rawGrade, baseCap);
+      else if (v.weeks90 <= 2) rawGrade = Math.min(rawGrade, baseCap + 1);
+      if (v.appearances >= 10) {
+        const lift = 0.5 * (v.weeks80 || 0) + 0.6 * (v.weeks90 || 0);
+        rawGrade = Math.max(rawGrade, 85 + Math.min(3.0, lift));
+      }
+    }
+    // Volume star bonus for any player with strong availability and elite weeks
+    if (v.appearances >= 12 && v.weeks90 >= 4) {
+      rawGrade += 2.0;
+    }
+    // (Removed low weeks90 penalty to avoid flat grouping)
+    // Extra clamp for spike + very low appearances handled above
+    // Clamp short-season DL/EDGE/TE
+    if (['REDGE', 'LEDGE', 'EDGE', 'DT', 'DL', 'TE'].includes(pos) && v.appearances < 8) {
+      rawGrade = Math.min(rawGrade, 84);
+    }
+    // MVP-type bump for elite QB seasons
+    if (pos === 'QB' && v.bestRank === 1 && v.weeks90 >= 3) rawGrade += 5;
+    let seasonGrade = Math.max(70, Math.min(99, rawGrade));
+    // Tiny deterministic spread to avoid big tie blocks (mid tiers only)
+    if (seasonGrade < 90 && seasonGrade > 78) {
+      const spread = (v.weeks80 || 0) * 0.04 +
+        (v.weeks90 || 0) * 0.02 +
+        (v.appearances || 0) * 0.01 -
+        (v.bestRank || 0) * 0.01;
+      const jitter = Math.max(-1.2, Math.min(1.2, spread));
+      // Position micro-bias to break caps without huge swings
+      let micro = 0;
+      if (['LT', 'LG', 'C', 'RG', 'RT', 'OL'].includes(pos)) {
+        micro += (v.weeks80 || 0) * 0.12;
+      } else if (['CB', 'FS', 'SS', 'S'].includes(pos)) {
+        micro += (v.weeks80 || 0) * 0.10 + (v.weeks90 || 0) * 0.04;
+      } else if (['REDGE', 'LEDGE', 'EDGE', 'DT', 'DL'].includes(pos)) {
+        micro += (v.weeks90 || 0) * 0.08;
+      } else if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
+        micro += (v.weeks90 || 0) * 0.06;
+      } else if (['HB', 'FB'].includes(pos)) {
+        micro += (v.weeks90 || 0) * 0.05;
+      }
+      micro = Math.max(-1.2, Math.min(1.2, micro));
+      seasonGrade = Math.max(70, Math.min(99, seasonGrade + jitter + micro));
+    }
+    // Clamp score for low appearances to avoid high score ordering
+    let adjScore = score + (v.appearances * 0.02 - 0.1);
+    if (v.appearances < 7) {
+      adjScore = Math.min(adjScore, 84);
+      seasonGrade = Math.min(seasonGrade, 84);
+    } else if (v.appearances < 9) {
+      adjScore = Math.min(adjScore, 88);
+      seasonGrade = Math.min(seasonGrade, 88);
+    }
     seasonList.push({
       id: v.id,
       name: v.name,
@@ -1206,23 +1300,137 @@ function computeSeasonTop100FromHistory(leagueId) {
       streak: v.streak,
       bestRank: v.bestRank,
       injuryHits: v.injuryHits,
-      seasonScore: Number(score.toFixed(3)),
+      seasonScore: Number(adjScore.toFixed(3)),
       seasonGrade: Number(seasonGrade.toFixed(2))
     });
   });
 
   seasonList.sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0));
-  const top = seasonList.slice(0, 100);
-  // Cap elite grades so only 1–2 exceed 97
+  let top = seasonList.slice(0, 100);
+  // Cap elite grades so only 1–2 exceed ~97
   if (top.length) {
-    top[0].seasonGrade = Number(Math.min(top[0].seasonGrade || 0, 97.5).toFixed(2));
+    top[0].seasonGrade = Number(Math.min(top[0].seasonGrade || 0, 97.0).toFixed(2));
   }
   if (top.length > 1) {
-    top[1].seasonGrade = Number(Math.min(top[1].seasonGrade || 0, 97.0).toFixed(2));
+    top[1].seasonGrade = Number(Math.min(top[1].seasonGrade || 0, 96.5).toFixed(2));
   }
   for (let i = 2; i < top.length; i++) {
     const g = top[i].seasonGrade || 0;
-    top[i].seasonGrade = Number(Math.min(g, 96.5).toFixed(2));
+    top[i].seasonGrade = Number(Math.min(g, 95.8).toFixed(2));
+  }
+  // Sort by seasonGrade, then seasonScore
+  top.sort((a, b) => {
+    const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
+    if (Math.abs(g) > 0.0001) return g;
+    return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+  });
+  // Ensure a healthy defensive representation (~40 in top 100)
+  const DEF_POS = new Set(['CB', 'FS', 'SS', 'S', 'REDGE', 'LEDGE', 'EDGE', 'DT', 'DL', 'MIKE', 'WILL', 'SAM', 'LB']);
+  const defCount = top.filter(p => DEF_POS.has((p.position || '').toUpperCase())).length;
+  if (defCount < 40) {
+    const bump = Math.min(1.2, 0.3 + 0.05 * (40 - defCount)); // scaled bump toward target
+    top = top.map(p => {
+      if (DEF_POS.has((p.position || '').toUpperCase())) {
+        p.seasonGrade = Number(Math.min(99, (p.seasonGrade || 0) + bump).toFixed(2));
+      }
+      return p;
+    });
+    top.sort((a, b) => {
+      const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
+      if (Math.abs(g) > 0.0001) return g;
+      return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+    });
+  }
+  // Target top-30 defense: if defenders in top 30 < 8, bump best defenders in ranks 31–60
+  const top30Def = top.slice(0, 30).filter(p => DEF_POS.has((p.position || '').toUpperCase())).length;
+  if (top30Def < 8) {
+    const needs = 8 - top30Def;
+    const candidates = top
+      .map((p, idx) => ({ p, idx }))
+      .filter(({ p, idx }) => idx >= 30 && idx < 70 && DEF_POS.has((p.position || '').toUpperCase()))
+      .slice(0, needs * 3); // take up to 3x needed for smoothing
+    candidates.forEach(({ p }) => {
+      p.seasonGrade = Number(Math.min(96, (p.seasonGrade || 0) + 0.8).toFixed(2));
+    });
+    top.sort((a, b) => {
+      const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
+      if (Math.abs(g) > 0.0001) return g;
+      return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+    });
+  }
+  // Elite defense boost: top 10 defenders by seasonScore get a slight bump to help top-20 presence
+  const topDefByScore = [...top]
+    .filter(p => DEF_POS.has((p.position || '').toUpperCase()))
+    .sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0))
+    .slice(0, 10);
+  topDefByScore.forEach((p, idx) => {
+    const baseBump = 0.5;
+    const extra = idx < 5 ? 0.3 : 0; // extra bump for top 5 defenders
+    p.seasonGrade = Number(Math.min(97, (p.seasonGrade || 0) + baseBump + extra).toFixed(2));
+  });
+  // Push a few elite defenders into the very top if still under-represented
+  const top20Def = top.slice(0, 20).filter(p => DEF_POS.has((p.position || '').toUpperCase())).length;
+  if (top20Def < 5) {
+    const target = 5 - top20Def;
+    const eliteDefs = [...top]
+      .filter(p => DEF_POS.has((p.position || '').toUpperCase()))
+      .sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0))
+      .slice(0, Math.max(3, target + 2));
+    eliteDefs.forEach((p, idx) => {
+      const bump = 0.8 - idx * 0.1; // decreasing bump
+      p.seasonGrade = Number(Math.min(97, (p.seasonGrade || 0) + bump).toFixed(2));
+    });
+  }
+  // If still short on defenders in top 20, pull up a couple more from 21–40 when close in grade
+  const defTop20After = top.slice(0, 20).filter(p => DEF_POS.has((p.position || '').toUpperCase())).length;
+  if (defTop20After < 4) {
+    const need = 4 - defTop20After;
+    const candidates = top
+      .map((p, idx) => ({ p, idx }))
+      .filter(({ p, idx }) => idx >= 20 && idx < 40 && DEF_POS.has((p.position || '').toUpperCase()))
+      .sort((a, b) => (b.p.seasonScore || 0) - (a.p.seasonScore || 0))
+      .slice(0, need);
+    candidates.forEach(({ p }, i) => {
+      const bump = 0.4 - i * 0.05;
+      p.seasonGrade = Number(Math.min(97, (p.seasonGrade || 0) + bump).toFixed(2));
+    });
+  }
+  // Deterministic jitter to break the 84 wall
+  const jitter = (s, scale = 1.2) => {
+    const str = s || '';
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 100000;
+    return ((h / 100000) - 0.5) * 2 * scale;
+  };
+  top = top.map((p, idx) => {
+    const g = p.seasonGrade || 0;
+    if (g >= 82.5 && g <= 85.5) {
+      p.seasonGrade = Number((g + jitter(p.id || p.name || '', 0.8)).toFixed(2));
+    }
+    // Tiny rank-based offset to avoid equal grades
+    p.seasonGrade = Number((p.seasonGrade - idx * 0.0007).toFixed(3));
+    // Additional spread for lower ranks to avoid plateaus
+    if (idx >= 40) {
+      p.seasonGrade = Number((p.seasonGrade - (idx - 39) * 0.015).toFixed(3));
+    }
+    return p;
+  });
+  top.sort((a, b) => {
+    const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
+    if (Math.abs(g) > 0.0001) return g;
+    return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+  });
+  // Debug dump if enabled
+  if (process.env.TOP100_DEBUG) {
+    console.log('[seasonTop100][debug] weekly history files used:', history.length);
+    console.log('[seasonTop100][debug] top 20 preview:');
+    top.slice(0, 20).forEach((p, idx) => {
+      console.log(
+        `${idx + 1}. ${p.name} (${p.position}, ${p.team || p.teamId || 'UNK'}) ` +
+        `grade=${p.seasonGrade} score=${p.seasonScore} avg=${p.avgGrade} ` +
+        `bestRank=${p.bestRank} weeks90=${p.weeks90} streak90=${p.streak90} appearances=${p.appearances}`
+      );
+    });
   }
   return top;
 }
@@ -1246,7 +1454,7 @@ function buildPageEmbed(list, page, leagueId) {
   const lines = slice.map((p, idx) => {
     const rank = start + idx + 1;
     const gradeRaw = p.seasonGrade ?? p.grade ?? p.weeklyGrade ?? p.score ?? 0;
-    const grade = Number(gradeRaw).toFixed(1);
+    const grade = Number(gradeRaw).toFixed(2);
     const em = teamEmoji(p.team);
     return `${rank}. ${p.name} (${p.position}, ${p.team}) ${em ? em + ' ' : ''}— ${grade}`;
   });

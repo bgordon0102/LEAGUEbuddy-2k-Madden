@@ -177,10 +177,7 @@ async function execute(interaction) {
     const isOffseason = (seasonInfo.seasonWeekType === 8) ||
       (seasonInfo.seasonTitle || '').toLowerCase().includes('offseason') ||
       (seasonInfo.isDraftActive === false && seasonInfo.isLeagueStarted === true && seasonInfo.seasonWeekType !== 1);
-    const pickMap = buildPickMap(snapshot);
     const debug = process.env.MOCK_DEBUG === 'true';
-    const standingsByTeam = new Map();
-    standings.forEach(s => standingsByTeam.set(s.teamId, s));
 
     const lines = [];
     for (const t of teams) {
@@ -195,36 +192,7 @@ async function execute(interaction) {
         assigned = count > 0;
       }
       if (assigned) continue;
-      if (isOffseason) {
-        const nameFormatted = formatTeamName(t);
-        const keys = [
-          normalizeKey(nameFormatted),
-          normalizeKey((nameFormatted.split(/\s+/).pop()) || ''),
-          normalizeKey(t.nickName || ''),
-          normalizeKey((t.nickName || '').split(/\s+/).pop() || ''),
-        ].filter(Boolean);
-        const seen = new Set();
-        let merged = [];
-        for (const k of keys) {
-          if (seen.has(k)) continue;
-          seen.add(k);
-          const arr = pickMap.get(k);
-          if (arr && arr.length) merged = merged.concat(arr);
-        }
-        if (debug) console.log('[availableteams cmd] team', nameFormatted, 'keys', keys, 'picks', merged);
-        const deduped = uniqPicks(merged).sort((a, b) => a.num - b.num);
-        const pickText = deduped && deduped.length
-          ? deduped.map(p => p.via ? `${p.num} (via ${p.via})` : `${p.num}`).join(', ')
-          : 'none';
-        lines.push(`${nameFormatted} — Picks: ${pickText}`);
-      } else {
-        const rec = standingsByTeam.get(t.teamId);
-        const wins = rec?.totalWins ?? rec?.wins ?? 0;
-        const losses = rec?.totalLosses ?? rec?.losses ?? 0;
-        const ties = rec?.totalTies ?? rec?.ties ?? 0;
-        const record = ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
-        lines.push(`${formatTeamName(t)}: ${record}`);
-      }
+      lines.push(`${formatTeamName(t)} — Open`);
     }
 
     const embed = new EmbedBuilder()

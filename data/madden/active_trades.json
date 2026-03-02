@@ -1,0 +1,19 @@
+{
+  "trade_1772463708950": {
+    "yourTeam": "Cardinals",
+    "otherTeam": "Jets",
+    "assetsSent": "2027 Round 1, 2027 Round 3",
+    "assetsReceived": "Breece Hall, Cam Jones",
+    "notes": "",
+    "sendTotal": 383,
+    "recvTotal": 386.7,
+    "valueGap": -3.6999999999999886,
+    "unmatchedSend": [],
+    "unmatchedRecv": [],
+    "createdBy": "670446898695503897",
+    "createdAt": 1772463708950,
+    "status": "awaiting_coach_b",
+    "proposerId": "670446898695503897",
+    "expiresAt": 1772550108950
+  }
+}

@@ -14,7 +14,7 @@ import { updatePlayerChanges } from '../../../madden/player_changes.js';
 import { updateInjuries } from '../../../madden/injuries.js';
 import { Stage } from '../../../madden/ea_client.js';
 import { saveTradeCounts, updateTradeCountsEmbed } from '../../../shared/madden_trade_utils.js';
-import { updateAwards } from '../../../madden/awards.js';
+import { updateAwards, gatherWeeklyStats } from '../../../madden/awards.js';
 import { maybePostDraftGrades } from '../../../madden/draft_grades_auto.js';
 import { updateTopPlayers } from '../../../madden/top_players.js';
 import { hasStaffRole, loadRoleMap } from './staffUtils.js';
@@ -120,13 +120,19 @@ async function execute(interaction) {
       stage: w.stage !== undefined ? w.stage : (w.stageIndex !== undefined ? w.stageIndex : 0),
       playerCount: countPlayers(w)
     }));
+    const weekData = targetWeekIdx !== null && snap ? gatherWeeklyStats(snap, targetWeekIdx) : null;
+    const hasWeeklyPlayers = !!weekData;
     console.log('[madden-weeklyupdate] week targeting', {
       weekOverride,
       effectiveCurrentWeek,
       targetWeekIdx,
       stageForWeek,
-      stageInfo
+      stageInfo,
+      hasWeeklyPlayers
     });
+    if (!hasWeeklyPlayers && targetWeekIdx !== null) {
+      console.warn('[madden-weeklyupdate] no stage 1 player stats found for target week; skipping top players and awards if requested');
+    }
 
     // Open/reset scouting at Week 1 of the regular season
     if (!backfillOnlyAwards && stageForWeek === Stage.SEASON && currentWeekValue === 1) {
@@ -246,7 +252,7 @@ async function execute(interaction) {
       }
     }
     // Weekly Top 30 log + running Top 100 (use current formula even during backfill)
-    const allowTopPlayers = !inOffseason && !inPreseason;
+    const allowTopPlayers = !inOffseason && !inPreseason && hasWeeklyPlayers;
     if (allowTopPlayers) {
       try {
         await updateTopPlayers(interaction.client, leagueId, snap, effectiveCurrentWeek, {
@@ -259,8 +265,11 @@ async function execute(interaction) {
     }
     // Weekly awards (derived locally) — skip offseason and preseason
     try {
-      if (backfillOnlyAwards || (!inOffseason && !inPreseason && seasonInfo.isWeeklyAwardsPeriodActive !== false && effectiveCurrentWeek && effectiveCurrentWeek <= 23)) {
+      const canPostAwards = hasWeeklyPlayers && (backfillOnlyAwards || (!inOffseason && !inPreseason && seasonInfo.isWeeklyAwardsPeriodActive !== false && effectiveCurrentWeek && effectiveCurrentWeek <= 23));
+      if (canPostAwards) {
         await updateAwards(interaction.client, leagueId, effectiveCurrentWeek);
+      } else if (!hasWeeklyPlayers) {
+        console.warn('[madden-weeklyupdate] awards skipped: no player stats found for requested week');
       } else {
         console.warn('[madden-weeklyupdate] awards skipped (offseason, preseason, or awards period inactive)');
       }

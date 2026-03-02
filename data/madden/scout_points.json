@@ -1,1 +1,23 @@
-{}
+{
+  "1076243288056664234": {
+    "players": {
+      "cus_01": {
+        "Tyler Barrett": [
+          "arch"
+        ],
+        "Tyler Brock": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Imanif Saro-Wiwa": [
+          "arch"
+        ]
+      }
+    },
+    "weeklyPoints": {
+      "year_2025_week_4": 30,
+      "year_2025_offseason_total": 290
+    }
+  }
+}
