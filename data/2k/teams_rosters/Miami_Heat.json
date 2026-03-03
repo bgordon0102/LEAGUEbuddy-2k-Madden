@@ -91,6 +91,37 @@
       "nationality": "United States"
     },
     {
+      "name": "Jarred Vanderbilt",
+      "position": "PF / C",
+      "height": "6'8\" (203cm)",
+      "weight": "214lbs (96kg)",
+      "archetype": "Lockdown Defender",
+      "birthdate": "April 3, 1999",
+      "yearsInNBA": "8",
+      "wingspan": "7'1\" (216cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Jarred-Vanderbilt-2K-Rating-1.png",
+      "ovr": "77",
+      "prior_to_nba": "Kentucky",
+      "nationality": "United States",
+      "contractYears": [
+        {
+          "year": "2025-26",
+          "salary": "$11,571,429",
+          "option": null
+        },
+        {
+          "year": "2026-27",
+          "salary": "$12,428,571",
+          "option": null
+        },
+        {
+          "year": "2027-28",
+          "salary": "$13,285,714",
+          "option": "Player"
+        }
+      ]
+    },
+    {
       "name": "Cole Anthony",
       "position": "PG / SG",
       "height": "6'2\" (188cm)",
@@ -206,6 +237,52 @@
       "lastUpdatedAt": "2026-02-24T17:44:11.617Z"
     },
     {
+      "name": "Terrence Shannon Jr.",
+      "position": "SG / SF",
+      "height": "6'6\" (198cm)",
+      "weight": "215lbs (97kg)",
+      "archetype": "Inside-Out High-Flying Slasher",
+      "birthdate": "July 30, 2000",
+      "yearsInNBA": "2",
+      "wingspan": "6'8\" (203cm)",
+      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Terrence-Shannon-Jr-2K-Rating.png",
+      "ovr": "73",
+      "prior_to_nba": "Illinois",
+      "nationality": "United States",
+      "contractYears": [
+        {
+          "year": "2025-26",
+          "salary": "$2,674,080",
+          "option": null
+        },
+        {
+          "year": "2026-27",
+          "salary": "$2,801,640",
+          "option": "Team"
+        },
+        {
+          "year": "2027-28",
+          "salary": "$5,054,159",
+          "option": "Team"
+        }
+      ]
+    },
+    {
+      "name": "Bryce McGowens",
+      "position": "SG / PG",
+      "ovr": "73",
+      "age": 22,
+      "img": "https://www.2kratings.com/wp-content/uploads/Bryce-McGowens-2K-Rating.png",
+      "thumbnail": "https://www.2kratings.com/wp-content/uploads/Bryce-McGowens-2K-Rating.png",
+      "contractYearsText": "1",
+      "salaryPerYear": "Minimum",
+      "salaryText": "Minimum",
+      "val": 130,
+      "lastSigned": "in-season free agency",
+      "lastUpdatedBy": "1076243288056664234",
+      "lastUpdatedAt": "2026-03-03T17:08:49.945Z"
+    },
+    {
       "name": "Kessler Edwards",
       "position": "C / PF",
       "height": "6'7\" (201cm)",
@@ -250,68 +327,6 @@
           "year": "2027-28",
           "salary": "$8,763,216",
           "option": "Team"
-        }
-      ]
-    },
-    {
-      "name": "Terrence Shannon Jr.",
-      "position": "SG / SF",
-      "height": "6'6\" (198cm)",
-      "weight": "215lbs (97kg)",
-      "archetype": "Inside-Out High-Flying Slasher",
-      "birthdate": "July 30, 2000",
-      "yearsInNBA": "2",
-      "wingspan": "6'8\" (203cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Terrence-Shannon-Jr-2K-Rating.png",
-      "ovr": "73",
-      "prior_to_nba": "Illinois",
-      "nationality": "United States",
-      "contractYears": [
-        {
-          "year": "2025-26",
-          "salary": "$2,674,080",
-          "option": null
-        },
-        {
-          "year": "2026-27",
-          "salary": "$2,801,640",
-          "option": "Team"
-        },
-        {
-          "year": "2027-28",
-          "salary": "$5,054,159",
-          "option": "Team"
-        }
-      ]
-    },
-    {
-      "name": "Jarred Vanderbilt",
-      "position": "PF / C",
-      "height": "6'8\" (203cm)",
-      "weight": "214lbs (96kg)",
-      "archetype": "Lockdown Defender",
-      "birthdate": "April 3, 1999",
-      "yearsInNBA": "8",
-      "wingspan": "7'1\" (216cm)",
-      "imgUrl": "https://www.2kratings.com/wp-content/uploads/Jarred-Vanderbilt-2K-Rating-1.png",
-      "ovr": "77",
-      "prior_to_nba": "Kentucky",
-      "nationality": "United States",
-      "contractYears": [
-        {
-          "year": "2025-26",
-          "salary": "$11,571,429",
-          "option": null
-        },
-        {
-          "year": "2026-27",
-          "salary": "$12,428,571",
-          "option": null
-        },
-        {
-          "year": "2027-28",
-          "salary": "$13,285,714",
-          "option": "Player"
         }
       ]
     }

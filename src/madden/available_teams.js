@@ -93,19 +93,7 @@ function formatAssignments(guild, roles, opts = {}) {
       ? members.map(m => m.displayName || m.user?.username || m.user?.tag || m.id).join(', ')
       : 'Open';
     let value = names;
-    if (!members.length && isOffseason) {
-      const key = normalizeKey(r.team);
-      const picks = pickMap.get(key);
-      if (debug) {
-        console.log(`[available-teams] OFFSEASON open team=${r.team} key=${key} picks=`, picks);
-      }
-      if (picks && picks.length) {
-        const pickText = picks.map(p => p.via ? `${p.num} (via ${p.via})` : `${p.num}`).join(', ');
-        value = `Open — Picks: ${pickText}`;
-      } else {
-        value = 'Open — Picks: none';
-      }
-    }
+    // For the pin, do NOT show picks when open
     const emojiId = emojiMap[r.team];
     const emoji = emojiId ? `<:team_${r.team.toLowerCase()}:${emojiId}> ` : '';
     return { team: `${emoji}${r.team}`, value, rawTeam: r.team };

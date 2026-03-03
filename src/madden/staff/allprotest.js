@@ -23,13 +23,24 @@ const POS_ALIAS = {
   EDGE: 'REDG',
   REDGE: 'REDG',
   LEDGE: 'LEDG',
+  OT: 'RT',
+  T: 'RT',
+  OG: 'RG',
+  G: 'RG',
+  OL: 'RG', // generic OL slots collapse to guard so we can still place them
 };
+
+function normalizePos(pos) {
+  // Normalize whitespace/punctuation and map aliases so OL variants still count
+  const raw = (pos || '').toString().trim().toUpperCase();
+  const compact = raw.replace(/[^A-Z]/g, '');
+  return POS_ALIAS[compact] || compact;
+}
 
 function bestListByPos(players, needs, excludedIds = new Set()) {
   const grouped = {};
   players.forEach(p => {
-    let pos = (p.position || '').toUpperCase();
-    if (POS_ALIAS[pos]) pos = POS_ALIAS[pos];
+    const pos = normalizePos(p.position);
     if (!needs[pos]) return;
     const grade = Number(p.seasonGrade ?? p.grade ?? p.weeklyGrade ?? p.score ?? 0);
     if (!grouped[pos]) grouped[pos] = [];
@@ -37,12 +48,14 @@ function bestListByPos(players, needs, excludedIds = new Set()) {
   });
   Object.keys(grouped).forEach(k => grouped[k].sort((a, b) => b.grade - a.grade));
   const team = [];
-  const takePlayer = (p, pos) => {
-    team.push({ ...p, displayPos: pos, grade: p.grade });
+  const takePlayer = (p, slotPos) => {
+    const actualPos = (p.displayPos || p.position || '').toUpperCase();
+    const displayPos = slotPos || actualPos || 'UNK';
+    team.push({ ...p, displayPos, grade: p.grade });
     excludedIds.add(p.id || p.name);
   };
   for (const [pos, count] of Object.entries(needs)) {
-    const bucket = grouped[pos] || [];
+    let bucket = grouped[pos] || [];
     let taken = 0;
     for (const p of bucket) {
       if (excludedIds.has(p.id || p.name)) continue;
@@ -50,13 +63,12 @@ function bestListByPos(players, needs, excludedIds = new Set()) {
       taken += 1;
       if (taken >= count) break;
     }
-    // Fallback for OL slots: pull best remaining any-OL if still short
-    if (taken < count && ['LT','LG','C','RG','RT'].includes(pos)) {
+    // Fallback for OL slots ONLY when no players exist for that slot at all
+    if (taken < count && bucket.length === 0 && ['LT','LG','C','RG','RT'].includes(pos)) {
       const remaining = players
         .filter(p => !excludedIds.has(p.id || p.name))
         .filter(p => {
-          let pp = (p.position || '').toUpperCase();
-          if (POS_ALIAS[pp]) pp = POS_ALIAS[pp];
+          const pp = normalizePos(p.position);
           return ['LT','LG','C','RG','RT'].includes(pp);
         })
         .sort((a, b) => Number(b.seasonGrade ?? b.grade ?? 0) - Number(a.seasonGrade ?? a.grade ?? 0));
@@ -71,8 +83,7 @@ function bestListByPos(players, needs, excludedIds = new Set()) {
       const remaining = players
         .filter(p => !excludedIds.has(p.id || p.name))
         .filter(p => {
-          let pp = (p.position || '').toUpperCase();
-          if (POS_ALIAS[pp]) pp = POS_ALIAS[pp];
+          const pp = normalizePos(p.position);
           return ['SAM','MIKE','WILL','LB'].includes(pp);
         })
         .sort((a, b) => Number(b.seasonGrade ?? b.grade ?? 0) - Number(a.seasonGrade ?? a.grade ?? 0));
@@ -84,6 +95,50 @@ function bestListByPos(players, needs, excludedIds = new Set()) {
     }
   }
   return team;
+}
+
+function ensureCenter(team, players, excludedIds) {
+  // Ensure all five OL spots are filled with the best available unused linemen
+  const slots = ['LT', 'LG', 'C', 'RG', 'RT'];
+  const hasSlot = new Set(team.filter(p => slots.includes(p.displayPos)).map(p => p.displayPos));
+  const missing = slots.filter(s => !hasSlot.has(s));
+  if (!missing.length) return team;
+
+  const sorted = [...players].sort((a, b) => Number(b.seasonGrade ?? b.grade ?? 0) - Number(a.seasonGrade ?? a.grade ?? 0));
+  const tempUsed = new Set();
+
+  const canFill = (slot, pos) => {
+    if (slot === 'C') return ['C', 'LG', 'RG'].includes(pos); // never drop tackles at center
+    if (slot === 'LT') return ['LT', 'OT', 'T', 'OL'].includes(pos);
+    if (slot === 'RT') return ['RT', 'OT', 'T', 'OL'].includes(pos);
+    if (slot === 'LG') return ['LG', 'OG', 'G', 'OL'].includes(pos);
+    if (slot === 'RG') return ['RG', 'OG', 'G', 'OL'].includes(pos);
+    return false;
+  };
+
+  const pickForSlot = (slot, allowUsed = false) => sorted.find(p => {
+    const id = p.id || p.name;
+    if (!allowUsed && excludedIds.has(id)) return false;
+    if (tempUsed.has(id)) return false;
+    const pos = normalizePos(p.position);
+    return canFill(slot, pos);
+  });
+
+  const additions = [];
+  missing.forEach(slot => {
+    let cand = pickForSlot(slot, false);
+    // If no unused lineman is left, allow reuse as a last resort so the embed isn't missing a slot
+    if (!cand) cand = pickForSlot(slot, true);
+    if (cand) {
+      const id = cand.id || cand.name;
+      tempUsed.add(id);
+      excludedIds.add(id);
+      additions.push({ ...cand, displayPos: slot, grade: Number(cand.seasonGrade ?? cand.grade ?? 0) });
+    }
+  });
+
+  if (!additions.length) return team;
+  return [...team, ...additions];
 }
 
 function formatTeamName(team) {
@@ -125,9 +180,22 @@ function buildAllProEmbeds(firstTeam, secondTeam, leagueName, scopeLabel, roleMa
     const coach = getCoachMention(p.team, roleMap);
     return `${em ? em + ' ' : ''}${p.displayPos} — ${p.name} (${formatTeamName(p.team)}) • ${p.grade.toFixed(2)} ${coach}`;
   };
-  const firstOff = firstTeam.filter(p => ['QB','HB','FB','LT','LG','C','RG','RT','WR','TE'].includes(p.displayPos));
+  const orderOff = ['QB','HB','FB','LT','LG','C','RG','RT','WR','WR','WR','TE'];
+  const sortOff = (arr) => {
+    const orderIdx = (pos) => {
+      const i = orderOff.indexOf(pos);
+      return i === -1 ? 99 : i;
+    };
+    return [...arr].sort((a, b) => {
+      const oa = orderIdx(a.displayPos);
+      const ob = orderIdx(b.displayPos);
+      if (oa !== ob) return oa - ob;
+      return Number(b.grade || 0) - Number(a.grade || 0);
+    });
+  };
+  const firstOff = sortOff(firstTeam.filter(p => ['QB','HB','FB','LT','LG','C','RG','RT','WR','TE'].includes(p.displayPos)));
   const firstDef = firstTeam.filter(p => !firstOff.includes(p));
-  const secondOff = secondTeam.filter(p => ['QB','HB','FB','LT','LG','C','RG','RT','WR','TE'].includes(p.displayPos));
+  const secondOff = sortOff(secondTeam.filter(p => ['QB','HB','FB','LT','LG','C','RG','RT','WR','TE'].includes(p.displayPos)));
   const secondDef = secondTeam.filter(p => !secondOff.includes(p));
 
   const embed1 = new EmbedBuilder()
@@ -163,6 +231,63 @@ function loadWeeklyList(snapshot, weekIndex) {
   } catch {
     return [];
   }
+}
+
+// If the season Top-100 lacks enough true centers, pull the best centers from weekly history (e.g., Creed Humphrey)
+// so both All-Pro teams have real centers.
+function injectCentersIfNeeded(players, minCenters = 2, leagueId = null) {
+  const norm = (p) => POS_ALIAS[(p || '').toString().trim().toUpperCase().replace(/[^A-Z]/g, '')] ||
+    (p || '').toString().trim().toUpperCase().replace(/[^A-Z]/g, '');
+  const centers = players.filter(p => norm(p.position) === 'C');
+  if (centers.length >= minCenters) return players;
+
+  const harvested = [];
+  if (leagueId) {
+    try {
+      const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
+      const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
+      const pool = [];
+      files.forEach(f => {
+        try {
+          const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
+          const arr = data.players || data.top100 || [];
+          arr.forEach(p => {
+            if (norm(p.position) === 'C') {
+              pool.push({
+                ...p,
+                seasonGrade: Number(p.seasonGrade ?? p.grade ?? p.score ?? 0),
+                id: p.id || `${p.name}-${f}`,
+                name: p.name
+              });
+            }
+          });
+        } catch { /* ignore bad weekly file */ }
+      });
+      const grouped = new Map();
+      pool.forEach(p => {
+        const key = p.name || p.id;
+        const entry = grouped.get(key) || { ...p, best: 0 };
+        entry.best = Math.max(entry.best, Number(p.seasonGrade || 0));
+        grouped.set(key, entry);
+      });
+      const bestHist = [...grouped.values()].sort((a, b) => b.best - a.best);
+      harvested.push(...bestHist);
+    } catch { /* missing history dir */ }
+  }
+
+  const sortedAdds = harvested
+    .filter(Boolean)
+    .sort((a, b) => Number(b.seasonGrade ?? b.grade ?? 0) - Number(a.seasonGrade ?? a.grade ?? 0));
+  const needed = Math.max(0, minCenters - centers.length);
+  const toAdd = sortedAdds.slice(0, needed);
+  toAdd.forEach((c, idx) => {
+    const id = c.id || c.name || `center-${idx}`;
+    const exists = players.some(p => (p.id || p.name) === id);
+    const safeId = exists ? `${id}-inj${idx}` : id;
+    players.push({ ...c, id: safeId });
+  });
+
+  return players;
 }
 
 export const data = new SlashCommandBuilder()
@@ -237,6 +362,7 @@ export async function execute(interaction, options = {}) {
   } else {
     list = loadWeeklyList(snapshot, weekIdx);
   }
+  list = injectCentersIfNeeded(list, 2, leagueId);
   if (!list.length) {
     const msg = 'No player data found for that scope.';
     if (isButton) return interaction.update({ content: msg, components: [], embeds: [] });
@@ -248,8 +374,10 @@ export async function execute(interaction, options = {}) {
     .map(p => ({ ...p, grade: Number(p.seasonGrade ?? p.grade ?? p.weeklyGrade ?? p.score ?? 0) }))
     .sort((a, b) => b.grade - a.grade);
   const used = new Set();
-  const firstTeam = bestListByPos(sorted, POSITION_NEEDS, used);
-  const secondTeam = bestListByPos(sorted, POSITION_NEEDS, used);
+  let firstTeam = bestListByPos(sorted, POSITION_NEEDS, used);
+  firstTeam = ensureCenter(firstTeam, sorted, used);
+  let secondTeam = bestListByPos(sorted, POSITION_NEEDS, used);
+  secondTeam = ensureCenter(secondTeam, sorted, used);
 
   const scopeLabel = scope === 'season' ? 'Season' : `Week ${weekIdx + 1}`;
   const leagueName = leagueId === '16594549' ? 'Ghost Legacy' : leagueId;

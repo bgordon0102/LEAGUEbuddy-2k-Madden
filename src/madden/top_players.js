@@ -691,7 +691,8 @@ function computeWeeklyList(snapshot, weekIndex) {
       if (pos === 'QB') return 1.70;
       if (pos === 'WR' || pos === 'TE') return 1.38;
       if (pos === 'HB' || pos === 'FB' || pos === 'RB') return 1.35;
-      if (['LT', 'LG', 'C', 'RG', 'RT'].includes(pos)) return 1.22;
+      if (pos === 'C') return 1.32; // lift centers so at least two surface
+      if (['LT', 'LG', 'RG', 'RT'].includes(pos)) return 1.22;
       if (edgePositions.has(pos)) {
         if (impactCount < 1) return 0.75;
         if (impactCount < 3) return 1.0;
@@ -1089,6 +1090,21 @@ function computeSeasonTop100FromHistory(leagueId) {
     const week = Number(entry.weekIndex);
     (entry.top100 || []).forEach((p, idx) => {
       const id = p.id || `${p.name}-${p.teamId || ''}`;
+      const getVal = (obj, keys) => {
+        for (const k of keys) {
+          if (obj && obj[k] !== undefined && obj[k] !== null) return Number(obj[k]);
+        }
+        return 0;
+      };
+      const rushYds = getVal(p, ['rushYds', 'rushingYds']) || getVal(p.totals || {}, ['rushYds', 'rushingYds']);
+      const rushAtt = getVal(p, ['rushAtt', 'rushingAtt', 'rushAttempts']) || getVal(p.totals || {}, ['rushAtt', 'rushingAtt', 'rushAttempts']);
+      const recYds = getVal(p, ['recYds', 'receivingYds']) || getVal(p.totals || {}, ['recYds', 'receivingYds']);
+      const targets = getVal(p, ['recTgt', 'targets', 'recTargets']) || getVal(p.totals || {}, ['recTgt', 'targets', 'recTargets']);
+      const sacks = getVal(p, ['defSacks', 'sacks']) || getVal(p.totals || {}, ['defSacks', 'sacks']);
+      const tfl = getVal(p, ['defTacklesForLoss', 'tfl']) || getVal(p.totals || {}, ['defTacklesForLoss', 'tfl']);
+      const tackles = getVal(p, ['defTotalTackles', 'defTackles']) || getVal(p.totals || {}, ['defTotalTackles', 'defTackles']);
+      const ints = getVal(p, ['defInts', 'ints']) || getVal(p.totals || {}, ['defInts', 'ints']);
+      const pd = getVal(p, ['defPassDeflections', 'defPD', 'pd']) || getVal(p.totals || {}, ['defPassDeflections', 'defPD', 'pd']);
       const cur = agg.get(id) || {
         id,
         name: p.name,
@@ -1101,7 +1117,16 @@ function computeSeasonTop100FromHistory(leagueId) {
         bestRank: 999,
         winPctSum: 0,
         winPctCount: 0,
-        injuryHits: 0
+        injuryHits: 0,
+        rushYds: 0,
+        rushAtt: 0,
+        recYds: 0,
+        targets: 0,
+        sacks: 0,
+        tfl: 0,
+        tackles: 0,
+        ints: 0,
+        pd: 0,
       };
       cur.grades.push(Number(p.grade || 0));
       cur.appearances += 1;
@@ -1112,6 +1137,15 @@ function computeSeasonTop100FromHistory(leagueId) {
         cur.winPctCount += 1;
       }
       if (p.injuryStatus) cur.injuryHits += 1;
+      cur.rushYds += rushYds;
+      cur.rushAtt += rushAtt;
+      cur.recYds += recYds;
+      cur.targets += targets;
+      cur.sacks += sacks;
+      cur.tfl += tfl;
+      cur.tackles += tackles;
+      cur.ints += ints;
+      cur.pd += pd;
       agg.set(id, cur);
     });
   });
@@ -1166,6 +1200,7 @@ function computeSeasonTop100FromHistory(leagueId) {
 
   // scoring for season
   const seasonList = [];
+  const fallbackList = [];
   agg.forEach(v => {
     const avgGrade = v.grades.reduce((a, b) => a + b, 0) / Math.max(1, v.grades.length);
     const winPctAvg = v.winPctCount ? (v.winPctSum / v.winPctCount) : 0.5;
@@ -1209,7 +1244,12 @@ function computeSeasonTop100FromHistory(leagueId) {
       if (pos === 'QB') return 1.7;
       if (pos === 'WR') return 1.2;
       if (['TE'].includes(pos)) return -0.5;
-      if (['LT', 'LG', 'C', 'RG', 'RT', 'OL', 'HB', 'FB'].includes(pos)) return 0; // no nerf
+      if (['LT', 'LG', 'C', 'RG', 'RT', 'OL'].includes(pos)) {
+        // Give OL a modest lift to avoid being buried; bigger if durable
+        const dur = v.appearances >= 12 ? 1.8 : v.appearances >= 10 ? 1.4 : 0.8;
+        return dur;
+      }
+      if (['HB', 'FB'].includes(pos)) return 0; // handled by caps below
       if (['CB', 'FS', 'SS', 'S', 'REDGE', 'LEDGE', 'EDGE', 'DT', 'DL'].includes(pos)) return 1.5; // stronger defensive lift to get into top 20
       if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
         const base = v.appearances >= 10 ? 4.5 : v.appearances >= 8 ? 3.0 : v.appearances >= 6 ? 1.0 : 0;
@@ -1284,7 +1324,41 @@ function computeSeasonTop100FromHistory(leagueId) {
       adjScore = Math.min(adjScore, 88);
       seasonGrade = Math.min(seasonGrade, 88);
     }
-    seasonList.push({
+    // Usage gates to filter spike players by position
+    // Usage gates to filter spike players by position
+    const meetsUsage = (() => {
+      const pos = (v.position || '').toUpperCase();
+      // Offense
+      if (['HB', 'RB', 'FB'].includes(pos)) {
+        const rushYds = v.rushYds ?? 0;
+        const rushAtt = v.rushAtt ?? 0;
+        return rushAtt >= 80 || rushYds >= 500;
+      }
+      if (['WR', 'TE'].includes(pos)) {
+        const recYds = v.recYds ?? 0;
+        const targets = v.targets ?? v.recAtt ?? v.recTgt ?? 0;
+        return targets >= 40 || recYds >= 500;
+      }
+      // Defense
+      if (['REDGE', 'LEDGE', 'EDGE', 'DE', 'DL', 'DT'].includes(pos)) {
+        const sacks = v.sacks ?? 0;
+        const tfl = v.tfl ?? 0;
+        return v.appearances >= 6 && (sacks + tfl >= 6);
+      }
+      if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
+        const tackles = v.tackles ?? 0;
+        return v.appearances >= 6 && tackles >= 50;
+      }
+      if (['CB', 'FS', 'SS', 'S'].includes(pos)) {
+        const pd = v.pd ?? 0;
+        const ints = v.ints ?? 0;
+        const tackles = v.tackles ?? 0;
+        return v.appearances >= 6 && ((pd + ints) >= 5 || tackles >= 35);
+      }
+      return true;
+    })();
+
+    const entry = {
       id: v.id,
       name: v.name,
       position: v.position,
@@ -1301,11 +1375,21 @@ function computeSeasonTop100FromHistory(leagueId) {
       bestRank: v.bestRank,
       injuryHits: v.injuryHits,
       seasonScore: Number(adjScore.toFixed(3)),
-      seasonGrade: Number(seasonGrade.toFixed(2))
-    });
+      seasonGrade: Number(seasonGrade.toFixed(2)),
+      meetsUsage
+    };
+    if (v.appearances >= 6 && meetsUsage) seasonList.push(entry);
+    else fallbackList.push(entry);
   });
 
   seasonList.sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0));
+  fallbackList.sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0));
+  // Refill from fallback to reach 100; allow non-usage players but require at least some appearances
+  const eligibleFallback = fallbackList.filter(v => (v.appearances || 0) >= 2);
+  let fbIdx = 0;
+  while (seasonList.length < 100 && fbIdx < eligibleFallback.length) {
+    seasonList.push(eligibleFallback[fbIdx++]);
+  }
   let top = seasonList.slice(0, 100);
   // Cap elite grades so only 1–2 exceed ~97
   if (top.length) {
@@ -1420,6 +1504,119 @@ function computeSeasonTop100FromHistory(leagueId) {
     if (Math.abs(g) > 0.0001) return g;
     return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
   });
+  // Ensure OL spread: min counts per position using seasonScore/grade (not OVR)
+  const ensureOlMin = () => {
+    const desired = { C: 2, LG: 2, RG: 2, RT: 2, LT: 2 };
+    const currentCount = {};
+    top.forEach(p => {
+      const pos = (p.position || '').toUpperCase();
+      currentCount[pos] = (currentCount[pos] || 0) + 1;
+    });
+    // Build pool from season + fallback + historical weekly OL to surface elite centers like Creed Humphrey
+    const histOL = [];
+    try {
+      const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
+      const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
+      const grouped = new Map(); // name/id -> best entry
+      files.forEach(f => {
+        try {
+          const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
+          (data.players || data.top100 || []).forEach(p => {
+            const pos = (p.position || '').toUpperCase();
+            if (!['LT','LG','C','RG','RT','OL','OT','OG','T','G'].includes(pos)) return;
+            const id = p.id || `${p.name}-${f}`;
+            const best = grouped.get(id) || { ...p };
+            const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
+            const bestGrade = Number(best.seasonGrade ?? best.grade ?? best.score ?? 0);
+            if (g > bestGrade) {
+              grouped.set(id, { ...p, seasonGrade: g, id, name: p.name });
+            } else if (!grouped.has(id)) {
+              grouped.set(id, { ...p, seasonGrade: bestGrade, id, name: p.name });
+            }
+          });
+        } catch { /* ignore bad weekly file */ }
+      });
+      histOL.push(...grouped.values());
+    } catch { /* missing history is fine */ }
+
+    const pool = [...seasonList, ...fallbackList, ...histOL].filter(p => {
+      const pos = (p.position || '').toUpperCase();
+      return ['LT','LG','C','RG','RT'].includes(pos);
+    }).sort((a, b) => {
+      const sg = Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+      if (Math.abs(sg) > 0.0001) return sg;
+      return Number(b.seasonGrade || 0) - Number(a.seasonGrade || a.grade || 0);
+    });
+    const usedIds = new Set(top.map(p => p.id || p.name));
+    const replaceIdxFor = (targetPos) => {
+      const revIdx = [...top].reverse().findIndex(p => {
+        const pos = (p.position || '').toUpperCase();
+        return ['LT','LG','C','RG','RT','OL'].includes(pos) && pos !== targetPos;
+      });
+      if (revIdx >= 0) return top.length - 1 - revIdx;
+      return top.length - 1;
+    };
+    Object.entries(desired).forEach(([pos, min]) => {
+      while ((currentCount[pos] || 0) < min) {
+        const candidate = pool.find(p => (p.position || '').toUpperCase() === pos && !usedIds.has(p.id || p.name));
+        if (!candidate) break;
+        const idx = replaceIdxFor(pos);
+        top[idx] = { ...candidate };
+        usedIds.add(candidate.id || candidate.name);
+        currentCount[pos] = (currentCount[pos] || 0) + 1;
+      }
+    });
+    top.sort((a, b) => {
+      const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
+      if (Math.abs(g) > 0.0001) return g;
+      return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+    });
+  };
+  ensureOlMin();
+
+  // If we still lack enough true centers, pull the best historical centers (e.g., Creed Humphrey) so OL is represented.
+  const ensureHistCenters = () => {
+    const curCenters = top.filter(p => (p.position || '').toUpperCase() === 'C');
+    if (curCenters.length >= 2) return;
+    const histCenters = (() => {
+      try {
+        const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
+        const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
+        const grouped = new Map();
+        files.forEach(f => {
+          try {
+            const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
+            (data.players || data.top100 || []).forEach(p => {
+              const pos = (p.position || '').toUpperCase();
+              if (pos !== 'C') return;
+              const id = p.id || `${p.name}-${f}`;
+              const best = grouped.get(id) || { ...p, id, name: p.name, seasonGrade: 0 };
+              const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
+              if (g > Number(best.seasonGrade ?? 0)) grouped.set(id, { ...p, id, name: p.name, seasonGrade: g });
+            });
+          } catch { /* ignore bad weekly file */ }
+        });
+        return [...grouped.values()].sort((a, b) => Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0));
+      } catch {
+        return [];
+      }
+    })();
+    if (!histCenters.length) return;
+    const usedIds = new Set(top.map(p => p.id || p.name));
+    const add = histCenters.filter(c => !usedIds.has(c.id || c.name)).slice(0, 2 - curCenters.length);
+    add.forEach(c => {
+      // replace the last non-center to keep length 100
+      const replaceIdx = [...top].reverse().findIndex(p => (p.position || '').toUpperCase() !== 'C');
+      const idx = replaceIdx >= 0 ? top.length - 1 - replaceIdx : top.length - 1;
+      top[idx] = { ...c };
+    });
+    top.sort((a, b) => {
+      const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
+      if (Math.abs(g) > 0.0001) return g;
+      return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+    });
+  };
+  ensureHistCenters();
   // Debug dump if enabled
   if (process.env.TOP100_DEBUG) {
     console.log('[seasonTop100][debug] weekly history files used:', history.length);
