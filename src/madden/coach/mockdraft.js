@@ -1,7 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 
+let currentCalendarYear = 2025;
+let staffClassOverride = null;
 // Utility: pick latest league snapshot
 function getLatestLeagueFile() {
   const dir = path.join(process.cwd(), 'data', 'madden', 'leagues');
@@ -501,11 +504,19 @@ function applyPickTrades(order) {
 function loadDraftClass() {
   const dir = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
   if (!fs.existsSync(dir)) return [];
-  const files = fs.readdirSync(dir)
-    .filter(f => f.toLowerCase().includes('cus') && f.toLowerCase().includes('big board') && f.endsWith('.json'))
+  // choose file by classId for current calendar year
+  const classIdForSeason = (calendarYear) => {
+    const idx = Math.max(1, (calendarYear || 2025) - 2025 + 1);
+    return `cus_${String(idx).padStart(2, '0')}`;
+  };
+  const calendarYear = staffClassOverride?.season || currentCalendarYear;
+  const classId = (staffClassOverride?.classId) || classIdForSeason(calendarYear);
+  const target = fs.readdirSync(dir)
+    .filter(f => f.toLowerCase().includes(classId.replace('_', '')) && f.toLowerCase().endsWith('.json'))
     .sort();
-  if (!files.length) return [];
-  const data = JSON.parse(fs.readFileSync(path.join(dir, files[files.length - 1]), 'utf8'));
+  const pickFile = target.length ? target[0] : null;
+  if (!pickFile) return [];
+  const data = JSON.parse(fs.readFileSync(path.join(dir, pickFile), 'utf8'));
   const players = Object.values(data).filter(p => p && p.name);
   players.sort((a, b) => (a.RNK || a.rank || a.order || 9999) - (b.RNK || b.rank || b.order || 9999));
   return players;
@@ -809,13 +820,31 @@ function prospectGroup(player) {
 
 export const data = new SlashCommandBuilder()
   .setName('madden-mockdraft')
-  .setDescription('Show a mock draft for the top 32 picks using current standings and the latest draft class');
+  .setDescription('Show a mock draft for the top 32 picks using current standings and the latest draft class')
+  .addStringOption(opt =>
+    opt.setName('class_id')
+      .setDescription('[Staff] Override draft class id (e.g., cus_02)')
+      .setRequired(false))
+  .addIntegerOption(opt =>
+    opt.setName('season')
+      .setDescription('[Staff] Override calendar year (e.g., 2026)')
+      .setMinValue(2025)
+      .setMaxValue(2035)
+      .setRequired(false));
 
 export async function execute(interaction) {
   // Defer immediately to avoid interaction timeout; use flags for ephemeral-like behavior
   if (!interaction.deferred && !interaction.replied) {
     await interaction.deferReply({ flags: 64 });
   }
+  // Staff-only overrides
+  const staff = interaction.member?.permissions?.has?.('Administrator') || false;
+  const seasonOverride = staff ? interaction.options.getInteger('season') : null;
+  const classOverride = staff ? interaction.options.getString('class_id') : null;
+  staffClassOverride = {
+    season: seasonOverride || null,
+    classId: classOverride || null,
+  };
 
   const leagueFile = getLatestLeagueFile();
   if (!leagueFile) {
@@ -825,6 +854,10 @@ export async function execute(interaction) {
     return;
   }
   const league = JSON.parse(fs.readFileSync(leagueFile, 'utf8'));
+  currentCalendarYear = league?.info?.careerHubInfo?.seasonInfo?.calendarYear
+    || league?.info?.calendarYear
+    || league?.calendarYear
+    || 2025;
   const rawOrder = draftOrder(league);
   const order = applyPickTrades(rawOrder);
   const needs = deriveTeamNeeds(league);

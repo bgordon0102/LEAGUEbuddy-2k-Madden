@@ -7,16 +7,470 @@
         ],
         "Tyler Brock": [
           "arch",
+          "ovr"
+        ],
+        "Imanif Saro-Wiwa": [
+          "arch"
+        ],
+        "LaRon Williams": [
+          "arch",
           "ovr",
           "dev"
         ],
-        "Imanif Saro-Wiwa": [
+        "Hali'a Nalani": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Ebrajabdi Nyamba": [
+          "arch",
+          "ovr"
+        ],
+        "Micah Howard": [
+          "arch"
+        ],
+        "Jake Osborn": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Brandon Williams": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jahdae Brown": [
+          "arch"
+        ],
+        "Terry Churchill Jr": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jaden Henning Jr.": [
           "arch"
         ]
       }
     },
     "weeklyPoints": {
       "year_2025_week_4": 30,
+      "year_2025_offseason_total": 290
+    }
+  },
+  "1003814203825602630": {
+    "players": {
+      "cus_01": {
+        "Ben Montague": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Qu'wan Smith": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Malik Hall": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Arron Higgins": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jake Dolan": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jalen Farnsworth": [
+          "arch"
+        ],
+        "Hali'a Nalani": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Kadrick Richards Jr.": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Karl Davis Jr.": [
+          "arch",
+          "ovr"
+        ],
+        "LaRon Williams": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jake Osborn": [
+          "arch",
+          "ovr"
+        ],
+        "McKinley Jennings": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Donald Smallwood": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Malik Muhammed": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jahdae Brown": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Brenden Anguiano": [
+          "arch"
+        ],
+        "Keon Davis": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Kaemon Jones": [
+          "arch",
+          "ovr"
+        ],
+        "Jaylen Kelly": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Cam Thompson": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Willie Shelton": [
+          "arch",
+          "ovr"
+        ],
+        "Micah Howard": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jake DePofi": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Hokuaonani Alohilani": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Marquis Hall": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Johnathan Sierra": [
+          "arch",
+          "ovr"
+        ],
+        "Makai Williams": [
+          "arch",
+          "ovr"
+        ],
+        "Jaylin Medina": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Brandon Williams": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Nick Mulligan": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "DeVonte Jones": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Demonte Stokes": [
+          "arch"
+        ],
+        "Nicolas Ordonez": [
+          "arch",
+          "ovr"
+        ],
+        "Trevon Williams": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jayvon Moss": [
+          "arch"
+        ],
+        "Latrell Myrick": [
+          "arch"
+        ],
+        "Nico Desroches": [
+          "arch",
+          "ovr"
+        ],
+        "Kaden Reed": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Dederick Johnson": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Will Schwenke": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Mikey Varley": [
+          "arch"
+        ],
+        "Christopher Whitt": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Isiah Flowers": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Mack Roberson": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Nic Poindexter": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Nalani Williams": [
+          "arch",
+          "ovr"
+        ],
+        "Ahmir Richards": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jake Kuykendall": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Ty Manning": [
+          "arch",
+          "ovr"
+        ],
+        "James Evans-Scott": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Lucas Oberg": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Willie Banks": [
+          "arch",
+          "ovr"
+        ]
+      }
+    },
+    "weeklyPoints": {
+      "year_2025_offseason_total": 290
+    }
+  },
+  "472219952472915969": {
+    "players": {
+      "cus_01": {
+        "Brayden Cantrell": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Lonny Coleman": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Sufyan Joseph": [
+          "arch"
+        ],
+        "Aries Johnson": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Willie Shelton": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Micah Howard": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Ben Montague": [
+          "arch"
+        ],
+        "Kaden Reed": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "McKinley Jennings": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jayvon Moss": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Tristram Jennings": [
+          "arch"
+        ],
+        "Zareen Jones": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Isaiah Green": [
+          "arch"
+        ],
+        "Tony Collier": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Sincere Jackson": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Taj Jenkins": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jake Dolan": [
+          "arch",
+          "ovr",
+          "dev"
+        ]
+      }
+    },
+    "weeklyPoints": {
+      "year_2025_offseason_total": 290
+    }
+  },
+  "422227963292155904": {
+    "players": {
+      "cus_01": {
+        "Trevon Williams": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jamarcus Buckner": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Quavean Smalls": [
+          "arch",
+          "ovr"
+        ],
+        "Nic Poindexter": [
+          "arch",
+          "ovr"
+        ],
+        "Ian Okumuringa": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jerquis Grant": [
+          "arch",
+          "ovr"
+        ],
+        "Jonosch Heinrich": [
+          "arch",
+          "ovr"
+        ],
+        "Khamisi Bamgboshe": [
+          "arch",
+          "ovr"
+        ],
+        "Jonathan Gunnarsson": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Tony Collier": [
+          "arch"
+        ],
+        "Cam Thompson": [
+          "arch",
+          "ovr"
+        ],
+        "Jaylen Kelly": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Sincere Jackson": [
+          "arch",
+          "ovr"
+        ],
+        "Isiah Whitaker": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jaxtyn Chandler": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jaleel Richards": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Jake Dolan": [
+          "arch",
+          "ovr",
+          "dev"
+        ]
+      }
+    },
+    "weeklyPoints": {
       "year_2025_offseason_total": 290
     }
   }

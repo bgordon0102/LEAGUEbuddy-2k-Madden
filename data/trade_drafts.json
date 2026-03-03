@@ -1,1 +1,41 @@
-{}
+{
+  "builder_1076243288056664234_1772550073320": {
+    "draftId": "builder_1076243288056664234_1772550073320",
+    "userId": "1076243288056664234",
+    "guildId": "1255691165265821747",
+    "leagueId": "16594549",
+    "yourTeamId": 775553028,
+    "otherTeamId": "775553034",
+    "yourTeamName": "Broncos",
+    "otherTeamName": "Chargers",
+    "assets": {
+      "your": [
+        {
+          "type": "pick",
+          "raw": "2026 Round 1 Pick 26",
+          "year": 2026,
+          "round": 1,
+          "pickNum": 26,
+          "value": 295,
+          "label": "Round 1 Pick 26 (2026)"
+        }
+      ],
+      "other": [
+        {
+          "type": "pick",
+          "raw": "2026 Round 1 Pick 1",
+          "year": 2026,
+          "round": 1,
+          "pickNum": 1,
+          "value": 800,
+          "label": "Round 1 Pick 1 (2026)"
+        }
+      ]
+    },
+    "savedAt": 1772550159555,
+    "yourTeam": "Broncos",
+    "otherTeam": "Chargers",
+    "assetsSent": "2026 Round 1 Pick 26 — 295.0",
+    "assetsReceived": "2026 Round 1 Pick 1 — 800.0"
+  }
+}

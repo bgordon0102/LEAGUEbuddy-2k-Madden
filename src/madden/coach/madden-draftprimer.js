@@ -2,9 +2,22 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { deriveTeamNeeds, loadTeamEmojis, formatTeamEmoji, draftOrder, applyPickTrades } from './mockdraft.js';
+import { computeSeasonTop100FromHistory } from '../top_players.js';
 
 const ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const PLAYER_STATS_PATH = path.join(process.cwd(), 'data', 'madden', 'player_stats.json');
+const POS_ALIAS = { EDGE: 'REDG', REDGE: 'REDG', LEDGE: 'LEDG' };
+const POSITION_NEEDS = {
+    // Offense
+    QB: 1, HB: 1, FB: 1,
+    LT: 1, LG: 1, C: 1, RG: 1, RT: 1,
+    WR: 3, TE: 1,
+    // Defense
+    LEDG: 1, REDG: 1,
+    DT: 2,
+    SAM: 1, MIKE: 1, WILL: 1,
+    CB: 3, FS: 1, SS: 1,
+};
 
 function normalizeName(name = '') {
     return name.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -32,8 +45,54 @@ function getCoachTeam(member) {
     return null;
 }
 
+function buildAllProTeams(list) {
+    const grouped = {};
+    list.forEach(p => {
+        let pos = (p.position || p.displayPos || '').toUpperCase();
+        if (POS_ALIAS[pos]) pos = POS_ALIAS[pos];
+        if (!POSITION_NEEDS[pos]) return;
+        const grade = Number(p.seasonGrade ?? p.grade ?? p.weeklyGrade ?? p.score ?? 0);
+        if (!grouped[pos]) grouped[pos] = [];
+        grouped[pos].push({ ...p, displayPos: pos, grade });
+    });
+    Object.keys(grouped).forEach(k => grouped[k].sort((a, b) => b.grade - a.grade));
+    const first = [];
+    const excluded = new Set();
+    const take = (arr, pos, count) => {
+        let taken = 0;
+        for (const p of arr || []) {
+            const id = p.id || `${p.name}-${p.teamId || ''}`;
+            if (excluded.has(id)) continue;
+            first.push(p);
+            excluded.add(id);
+            taken += 1;
+            if (taken >= count) break;
+        }
+    };
+    for (const [pos, cnt] of Object.entries(POSITION_NEEDS)) {
+        take(grouped[pos], pos, cnt);
+    }
+    const second = [];
+    const takeSecond = (arr, pos, count) => {
+        let taken = 0;
+        for (const p of arr || []) {
+            const id = p.id || `${p.name}-${p.teamId || ''}`;
+            if (excluded.has(id)) continue;
+            second.push(p);
+            excluded.add(id);
+            taken += 1;
+            if (taken >= count) break;
+        }
+    };
+    for (const [pos, cnt] of Object.entries(POSITION_NEEDS)) {
+        takeSecond(grouped[pos], pos, cnt);
+    }
+    return { first, second };
+}
+
 function mapPositionToNeed(player) {
     const pos = (player.position || player.position_1 || '').trim().toUpperCase();
+    if (POS_ALIAS[pos]) pos = POS_ALIAS[pos];
     if (pos === 'QB') return 'QB';
     if (['LT', 'RT'].includes(pos)) return 'OT';
     if (['LG', 'C', 'RG'].includes(pos)) return 'IOL';
@@ -159,6 +218,7 @@ export async function execute(interaction) {
         return;
     }
     const league = JSON.parse(fs.readFileSync(leagueFile, 'utf8'));
+    const leagueId = league?.info?.leagueId || league?.leagueId || league?.info?.leagueInfo?.leagueId || 'default';
 
     // Resolve teamId early (used throughout)
     const leagueTeamsAll = league?.teams?.leagueTeamInfoList || [];
@@ -533,6 +593,14 @@ export async function execute(interaction) {
     const needPickCount = Object.create(null);
     const seen = new Set();
     const mapNeed = p => mapPositionToNeed(p);
+    const projectedRound = (p) => Math.max(1, Math.floor(((p?.__idx ?? 0)) / 32) + 1);
+    const withinRound = (p, round) => {
+        const pr = projectedRound(p);
+        // Tighten to the projected round; for R7 allow any 7+
+        if (round === 7) return pr >= 7;
+        return pr === round;
+    };
+
     let picks = [];
     const top3Needs = (needs.length ? needs.slice(0, 3) : ['BPA']).filter(Boolean);
 
@@ -549,16 +617,17 @@ export async function execute(interaction) {
         let window = draftClass.filter((p, idx) => {
             const rank = (p.__idx ?? idx) + 1;
             return rank >= low && rank <= high;
-        });
+        }).filter(p => withinRound(p, round));
         if (!window.length) window = draftClass.filter((p, idx) => {
             const rank = (p.__idx ?? idx) + 1;
             return rank >= basePick - 15 && rank <= basePick + 25;
-        });
+        }).filter(p => withinRound(p, round));
 
         const teamNormLower = normalizeName(teamName);
 
         const canTake = (p) => {
             if (!p || seen.has(p.name)) return false;
+            if (!withinRound(p, round)) return false;
             const n = mapNeed(p);
             if (n === 'WR' && wrCount >= maxWR) return false;
             if (n === 'QB') {
@@ -594,8 +663,14 @@ export async function execute(interaction) {
 
         if (!target) target = pickForNeeds(window, needPriority);
         if (!target) target = pickForNeeds(window, ['BPA']);
-        if (!target) target = pickForNeeds(draftClass, needPriority);
-        if (!target) target = draftClass.find(p => canTake(p));
+        if (!target) {
+            const roundFiltered = draftClass.filter(p => withinRound(p, round));
+            target = pickForNeeds(roundFiltered, needPriority);
+        }
+        if (!target) {
+            const roundFiltered = draftClass.filter(p => withinRound(p, round));
+            target = roundFiltered.find(p => canTake(p));
+        }
 
         if (target) {
             seen.add(target.name);
@@ -606,7 +681,7 @@ export async function execute(interaction) {
         }
         const school = target?.college || target?.College || target?.school || target?.schoolName || 'N/A';
         picks.push(target
-            ? `${round}. ${target.name} (${target.position || target.position_1 || 'POS'}) — ${school} (Proj R${round})`
+            ? `${round}. ${target.name} (${target.position || target.position_1 || 'POS'}) — ${school} (Proj R${projectedRound(target)})`
             : `${round}. No suggestion`);
     }
 
@@ -621,11 +696,15 @@ export async function execute(interaction) {
         let repIdx = 0;
         for (let i = 2; i < wrIndices.length; i++) {
             const targetIdx = wrIndices[i].idx;
-            const rep = replacementPool[repIdx++];
+            let rep = replacementPool[repIdx++];
             if (!rep) break;
+            // ensure replacement still roughly matches that round
+            if (!withinRound(rep, targetIdx + 1)) {
+                rep = replacementPool.find(p => withinRound(p, targetIdx + 1) && !usedNames.has(p.name)) || rep;
+            }
             usedNames.add(rep.name);
             const school = rep.college || rep.College || rep.school || rep.schoolName || 'N/A';
-            picks[targetIdx] = `${targetIdx + 1}. ${rep.name} (${rep.position || rep.position_1 || 'POS'}) — ${school} (Proj R${targetIdx + 1})`;
+            picks[targetIdx] = `${targetIdx + 1}. ${rep.name} (${rep.position || rep.position_1 || 'POS'}) — ${school} (Proj R${projectedRound(rep)})`;
         }
     }
     if (process.env.MOCK_DEBUG) console.log('[WR COUNT]', teamName, wrCount);
@@ -1254,22 +1333,36 @@ export async function execute(interaction) {
         const pickIdx = Math.min(Math.max(pool.length - 1, 0), Math.floor((1 - weight) * Math.max(pool.length - 1, 0)));
         const primary = stat || pool[pickIdx] || '';
 
-        // For the #1 need, force two sentences: stat/primary + an extra urgency/support line
-        if (idx === 0) {
-            // choose a different line for variety
-            const altPool = pool.filter(line => line !== primary);
-            const secondary = altPool.length ? altPool[seededRand(pos, 777, altPool.length)] : pickRandom(phrases.BPA);
-            return [primary, secondary].filter(Boolean).join(' ');
-        }
         return primary;
     }
 
+    // Show only the top 3 needs to keep the primer concise
+    const needsDisplay = (topNeedsFinal.length >= 3 ? topNeedsFinal : [...topNeedsFinal, ...Array(3 - topNeedsFinal.length).fill('BPA')]).slice(0, 3);
     const needBlurbs = needs.length
-        ? needs.slice(0, 3).map((pos, idx) => buildNeedLine(pos, idx)).filter(Boolean)
+        ? needsDisplay.map((pos, idx) => buildNeedLine(pos, idx)).filter(Boolean)
         : [pickRandom(phrases.BPA)];
+
     // Use deterministic-but-varied selection per team to avoid repeated blurbs across teams
+    // Pull top-100 season grades for this team to weave into blurb
+    const seasonTop = computeSeasonTop100FromHistory(leagueId) || [];
+    const { first: allProFirst, second: allProSecond } = buildAllProTeams(seasonTop);
+    const teamTop = seasonTop.filter(p =>
+        (teamId != null && Number(p.teamId) === Number(teamId)) ||
+        normalizeName(p.team || '') === normalizeName(teamName));
+    const topStar = teamTop.slice().sort((a,b)=>Number(b.grade||0)-Number(a.grade||0))[0];
+    const lowStar = teamTop.slice().sort((a,b)=>Number(a.grade||0)-Number(b.grade||0))[0];
+    const apFirstHit = allProFirst.find(p =>
+        (teamId != null && Number(p.teamId) === Number(teamId)) ||
+        normalizeName(p.team || '') === normalizeName(teamName));
+    const apSecondHit = allProSecond.find(p =>
+        (teamId != null && Number(p.teamId) === Number(teamId)) ||
+        normalizeName(p.team || '') === normalizeName(teamName));
+
+    const top100Count = teamTop.length;
+    const apFirstCount = allProFirst.filter(p => (teamId != null && Number(p.teamId) === Number(teamId)) || normalizeName(p.team || '') === normalizeName(teamName)).length;
+    const apSecondCount = allProSecond.filter(p => (teamId != null && Number(p.teamId) === Number(teamId)) || normalizeName(p.team || '') === normalizeName(teamName)).length;
+
     const blurb = (() => {
-        const base = needBlurbs.join(' ');
         const endings = [
             "Attack your biggest weaknesses early, then look for value and depth in later rounds.",
             "Front-load premium positions in the first three rounds, then draft BPA for depth.",
@@ -1279,12 +1372,64 @@ export async function execute(interaction) {
             "Secure starters early, then grab a capable backup QB/OL to protect your season.",
             "Address marquee needs up top, then target role players who upgrade sub-packages."
         ];
+        const closing = endings[seededRand(teamName, 'ending', endings.length)];
         const end = endings[seededRand(teamName, 'ending', endings.length)];
-        return `${base} ${end}`;
+        const topGradeVal = (obj) => Number(obj?.seasonGrade ?? obj?.grade ?? obj?.avgGrade ?? 0);
+        const posLabel = (p) => {
+            const n = mapNeed(p);
+            const map = {
+                QB: 'QB',
+                WR: 'receiver',
+                TE: 'tight end',
+                RB: 'runner', HB: 'runner',
+                OT: 'tackle',
+                IOL: 'interior lineman',
+                OL: 'lineman',
+                EDGE: 'edge rusher',
+                DT: 'interior defender',
+                LB: 'linebacker',
+                SAM: 'linebacker',
+                MIKE: 'linebacker',
+                WILL: 'linebacker',
+                CB: 'corner',
+                S: 'safety',
+            };
+            return map[n] || needsDisplay[0] || 'unit';
+        };
+        const needSet = new Set(needsDisplay);
+        const allProLine = (() => {
+            if (apFirstHit && needSet.has(mapNeed(apFirstHit))) {
+                const g = topGradeVal(apFirstHit).toFixed(1);
+                return `First-team All-Pro ${apFirstHit.name} (${g}) anchors your ${posLabel(apFirstHit)} group—add another ${posLabel(apFirstHit)} to keep it elite.`;
+            }
+            if (apSecondHit && needSet.has(mapNeed(apSecondHit))) {
+                const g = topGradeVal(apSecondHit).toFixed(1);
+                return `Second-team All-Pro ${apSecondHit.name} (${g}) needs a complementary ${posLabel(apSecondHit)} so defenses can’t key on him.`;
+            }
+            if (topStar && needSet.has(mapNeed(topStar)) && topGradeVal(topStar) > 70) {
+                const g = topGradeVal(topStar).toFixed(1);
+                return `${topStar.name} graded ${g}; add another ${posLabel(topStar)} to maximize that advantage.`;
+            }
+            return '';
+        })();
+        const lowLine = (() => {
+            if (lowStar && lowStar !== topStar && needSet.has(mapNeed(lowStar))) {
+                const lg = topGradeVal(lowStar);
+                if (lg > 0 && lg < 85) {
+                    return `${lowStar.name} is at ${lg.toFixed(1)} — upgrade the ${posLabel(lowStar)} spot with a starting-caliber prospect.`;
+                }
+            }
+            return '';
+        })();
+        const lines = [];
+        if (allProLine) lines.push(allProLine);
+        if (needBlurbs[0]) lines.push(needBlurbs[0]);
+        if (needBlurbs[1]) lines.push(needBlurbs[1]);
+        if (needBlurbs[2]) lines.push(needBlurbs[2]);
+        if (lowLine) lines.push(lowLine);
+        lines.push(closing);
+        return lines.filter(Boolean).join(' ');
     })();
-
-    // Show only the top 3 needs to keep the primer concise
-    const needsDisplay = (topNeedsFinal.length >= 3 ? topNeedsFinal : [...topNeedsFinal, ...Array(3 - topNeedsFinal.length).fill('BPA')]).slice(0, 3);
 
     // Final safety: if displayed needs do NOT include QB, strip any QB still lingering in picks
     if (!needsDisplay.includes('QB')) {
@@ -1319,6 +1464,7 @@ export async function execute(interaction) {
         .addFields(
             { name: 'Top Team Needs', value: needsDisplay.map((n, i) => `${i + 1}. ${n}`).join('\n') },
             { name: 'Last Season Record', value: recordStr },
+            { name: 'Roster Accolades', value: `Top 100: ${top100Count}\nAll-Pro 1st: ${apFirstCount}\nAll-Pro 2nd: ${apSecondCount}` },
             { name: 'Strategy', value: blurb }
         )
         .setColor(0x00b0f4);

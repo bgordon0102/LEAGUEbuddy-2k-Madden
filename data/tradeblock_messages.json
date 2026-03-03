@@ -205,12 +205,6 @@
       "threadId": "1470806941923278849"
     }
   },
-  "Miami Heat": {
-    "Davion Mitchell": {
-      "messageId": "1476762008509616279",
-      "threadId": "1470806986688954370"
-    }
-  },
   "New York Knicks": {
     "Karl-Anthony Towns": {
       "messageId": "1477477445396467906",
@@ -235,6 +229,16 @@
     "Brandin Podziemski": {
       "messageId": "1477918719442423889",
       "threadId": "1470806997275508937"
+    }
+  },
+  "Washington Wizards": {
+    "Bilal Coulibaly": {
+      "messageId": "1478116190311157770",
+      "threadId": "1470806974810820751"
+    },
+    "D’Angelo Russell": {
+      "messageId": "1478116259563442286",
+      "threadId": "1470806974810820751"
     }
   }
 }

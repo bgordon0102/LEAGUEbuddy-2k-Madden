@@ -178,6 +178,7 @@ async function execute(interaction) {
       (seasonInfo.seasonTitle || '').toLowerCase().includes('offseason') ||
       (seasonInfo.isDraftActive === false && seasonInfo.isLeagueStarted === true && seasonInfo.seasonWeekType !== 1);
     const debug = process.env.MOCK_DEBUG === 'true';
+    const pickMap = buildPickMap(snapshot);
 
     const lines = [];
     for (const t of teams) {
@@ -192,7 +193,31 @@ async function execute(interaction) {
         assigned = count > 0;
       }
       if (assigned) continue;
-      lines.push(`${formatTeamName(t)} — Open`);
+      if (isOffseason) {
+        const nameFormatted = formatTeamName(t);
+        const keys = [
+          normalizeKey(nameFormatted),
+          normalizeKey((nameFormatted.split(/\s+/).pop()) || ''),
+          normalizeKey(t.nickName || ''),
+          normalizeKey((t.nickName || '').split(/\s+/).pop() || ''),
+        ].filter(Boolean);
+        const seen = new Set();
+        let merged = [];
+        for (const k of keys) {
+          if (seen.has(k)) continue;
+          seen.add(k);
+          const arr = pickMap.get(k);
+          if (arr && arr.length) merged = merged.concat(arr);
+        }
+        if (debug) console.log('[availableteams cmd] team', nameFormatted, 'keys', keys, 'picks', merged);
+        const deduped = uniqPicks(merged).sort((a, b) => a.num - b.num);
+        const pickText = deduped && deduped.length
+          ? deduped.map(p => p.via ? `${p.num} (via ${p.via})` : `${p.num}`).join(', ')
+          : 'none';
+        lines.push(`${nameFormatted} — Picks: ${pickText}`);
+      } else {
+        lines.push(`${formatTeamName(t)} — Open`);
+      }
     }
 
     const embed = new EmbedBuilder()

@@ -16,9 +16,7 @@
     "Kristaps Porzingis",
     "Brandin Podziemski"
   ],
-  "Miami Heat": [
-    "Davion Mitchell"
-  ],
+  "Miami Heat": [],
   "Orlando Magic": [
     "Franz Wagner",
     "Jalen Suggs",
@@ -86,5 +84,9 @@
   ],
   "Indiana Pacers": [
     "T.J. McConnell"
+  ],
+  "Washington Wizards": [
+    "Bilal Coulibaly",
+    "D’Angelo Russell"
   ]
 }

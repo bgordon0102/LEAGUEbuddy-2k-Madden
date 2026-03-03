@@ -197,28 +197,19 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
 function summarizeAssets(draft, valueMap, seasonYear) {
   // Madden path (default)
   const currentPickValue = (round, pickNum) => {
-    const r = Number(round);
-    const p = Math.min(32, Math.max(1, Number(pickNum) || 1));
-    if (r === 1) {
-      if (p === 1) return 400;
-      if (p === 2) return 350;
-      if (p === 3) return 300;
-      const start = 280;
-      const end = 150;
-      const t = (p - 4) / (32 - 4);
-      return start + (end - start) * t;
-    }
-    const curves = {
-      2: { start: 170, end: 120 },
-      3: { start: 125, end: 85 },
-      4: { start: 95, end: 65 },
-      5: { start: 70, end: 45 },
-      6: { start: 50, end: 30 },
-      7: { start: 32, end: 18 },
-    };
-    const curve = curves[r] || { start: 20, end: 10 };
-    const t = (p - 1) / 31;
-    return curve.start + (curve.end - curve.start) * t;
+    // Piecewise: hand-tune top 5, then smooth decay from pick 6 onward.
+    const r = Math.max(1, Number(round) || 1);
+    const p = Math.max(1, Number(pickNum) || 1);
+    const overall = Math.min(224, (r - 1) * 32 + p);
+    if (overall === 1) return 800;
+    if (overall === 2) return 525;
+    if (overall === 3) return 475;
+    if (overall === 4) return 425;
+    if (overall === 5) return 400;
+    // decay starting at pick 6: 400 * exp(-k*(overall-5)), k tuned so pick 224 ~ 10
+    const k = 0.0145;
+    const val = 400 * Math.exp(-k * (overall - 5));
+    return Math.max(10, val);
   };
 
   const summarize = (arr) => {
@@ -247,7 +238,8 @@ function summarizeAssets(draft, valueMap, seasonYear) {
           } else {
             // future or round-only
             const floorMap = { 1: 150, 2: 110, 3: 85, 4: 65, 5: 50, 6: 35, 7: 25 };
-            const futureBaseChart = { 1: 300, 2: 200, 3: 150, 4: 110, 5: 80, 6: 60, 7: 40 };
+            // Future picks: round averages aligned to new current curve (slightly discounted)
+            const futureBaseChart = { 1: 275, 2: 165, 3: 120, 4: 90, 5: 65, 6: 45, 7: 32 };
             const floor = floorMap[rnd] || 10;
             const diff = yr - currentYear;
             if (diff > 0) {
@@ -774,10 +766,15 @@ export async function execute(interaction) {
       await interaction.reply({ content: 'Trade builder expired. Start again.', ephemeral: true });
       return;
     }
+    if (!leagueId) {
+      await interaction.reply({ content: 'No league configured. Run /madden-set-league first.', ephemeral: true });
+      return;
+    }
+    const snapshot = loadLeagueSnapshot(leagueId);
     const rawInput = interaction.fields.getTextInputValue('pickLabel') || '';
     const parsed = draft.mode === '2k'
       ? parsePickValue2k(rawInput, draft.seasonYear)
-      : parsePickValue(rawInput, loadLeagueSnapshot(leagueId)?.info?.careerHubInfo?.seasonInfo?.seasonYear);
+      : parsePickValue(rawInput, snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear);
     if (!parsed) {
       await interaction.reply({ content: 'Could not parse that pick. Try formats like \"2026 Round 1\" or \"2026 Round 1 Pick 5\".', ephemeral: true });
       return;

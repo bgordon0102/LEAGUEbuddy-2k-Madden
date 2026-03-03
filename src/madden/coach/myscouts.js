@@ -79,75 +79,73 @@ function getSchoolLogo(school) {
   return null;
 }
 
-export const data = new SlashCommandBuilder()
-  .setName('madden-myscouts')
-  .setDescription('View the prospects you have scouted this season.')
-  .setDMPermission(false);
-
-export async function execute(interaction) {
-  const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
-  if (!leagueId) {
-    await interaction.reply({ content: 'No league set. Run /madden-setleague first.', ephemeral: true });
-    return;
-  }
+function buildPagesForUser(userId, guildId) {
+  const leagueId = resolveLeagueIdWithConfig(guildId);
+  if (!leagueId) return { error: 'No league set. Run /madden-setleague first.' };
   const snapshot = loadLeagueSnapshot(leagueId);
   const calendarYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear;
-  const classId = classIdForSeason(calendarYear);
-  const { data: draftData, resolvedId: resolvedClassId } = loadDraftClass(classId);
-  const classKey = resolvedClassId || classId;
-  if (!draftData) {
-    await interaction.reply({ content: `Draft class ${classKey} not found. Add a JSON under data/draft_classes/madden.`, ephemeral: true });
-    return;
-  }
+  const currentClassId = classIdForSeason(calendarYear);
+  const currentNorm = currentClassId.toLowerCase();
 
   const scoutData = safeReadJSON(SCOUT_PATH, {});
   const devEmojis = safeReadJSON(DEV_EMOJI_PATH, {});
-  const userId = interaction.user.id;
-  const userData = scoutData[userId];
+  const userData = scoutData[userId] || {};
+  userData.players = userData.players || {};
+  if (!Object.keys(userData.players).length) {
+    return { error: 'You have not scouted any players yet.' };
+  }
 
-  // Try current class first, then fall back to the most recent class the user has entries for.
-  let playersByClass = userData && userData.players && (userData.players[classKey] || userData.players[classId]);
-  if (!playersByClass && userData?.players) {
-    const classes = Object.keys(userData.players);
-    if (classes.length) {
-      // Pick the latest class ID (lexicographically works with cus_XX)
-      const latest = classes.sort().pop();
+  const pages = [];
+
+  // Prefer current class; if empty, fall back to latest class with data (still one class only)
+  const availableClassKeys = Object.keys(userData.players).sort();
+  let targetClassId = currentClassId;
+  let playersByClass = userData.players[currentClassId] || userData.players[currentNorm];
+  if (!playersByClass || !Object.keys(playersByClass).length) {
+    const latest = availableClassKeys[availableClassKeys.length - 1];
+    if (latest) {
+      targetClassId = latest;
       playersByClass = userData.players[latest];
     }
   }
-  // Hydrate from scout log if still empty
+
+  const { data: draftData, resolvedId } = loadDraftClass(targetClassId);
+  if (!draftData) return { error: `Draft class ${targetClassId} not found.` };
+  const resolvedClassKey = (resolvedId || targetClassId).toLowerCase();
+  if (!playersByClass) playersByClass = userData.players[resolvedClassKey];
+
+  // Merge in any scout_log entries for this class (regular + postseason)
+  const logMerge = hydrateFromLog(userId, resolvedClassKey);
+  if (logMerge && Object.keys(logMerge).length) {
+    playersByClass = { ...(playersByClass || {}), ...logMerge };
+    userData.players[resolvedClassKey] = playersByClass;
+    userData.players[currentNorm] = userData.players[currentNorm] || playersByClass; // keep under current key too
+    fs.writeFileSync(SCOUT_PATH, JSON.stringify(scoutData, null, 2));
+  }
   if (!playersByClass) {
-    const fromLog = hydrateFromLog(userId, classKey);
+    const fromLog = hydrateFromLog(userId, resolvedClassKey);
     if (fromLog && Object.keys(fromLog).length) {
-      if (!scoutData[userId]) scoutData[userId] = { players: {}, weeklyPoints: {} };
-      if (!scoutData[userId].players) scoutData[userId].players = {};
-      scoutData[userId].players[classKey] = fromLog;
+      userData.players[resolvedClassKey] = fromLog;
       playersByClass = fromLog;
-      // persist backfill
       fs.writeFileSync(SCOUT_PATH, JSON.stringify(scoutData, null, 2));
     }
   }
-
-  if (!playersByClass) {
-    await interaction.reply({ content: 'You have not scouted any players yet this season.', ephemeral: true });
-    return;
+  if (!playersByClass || !Object.keys(playersByClass).length) {
+    return { error: 'You have not scouted any players yet for the current class.' };
   }
 
   const entries = Object.entries(playersByClass);
   const items = entries.map(([name, unlocked]) => {
     const p = Object.values(draftData).find(pl => pl.name === name);
-    const parts = [];
     if (!p) return null;
+    const parts = [];
     const hasArch = unlocked.includes('arch') || unlocked.includes('arch1') || unlocked.includes('arch2');
     if (hasArch) parts.push(`Arch: ${p.archetype_1 || p.archetype_2 || 'N/A'}`);
     if (unlocked.includes('ovr')) parts.push(`OVR: ${p.overall ?? 'N/A'}`);
     if (unlocked.includes('dev')) parts.push(`Dev: ${formatDev(p.dev_trait, devEmojis)}`);
     const meta = [];
     if (p.position) meta.push(p.position);
-    if (p.jersey) {
-      const jerseyNum = p.jersey.toString().replace(/^#+/, '');
-      meta.push(`#${jerseyNum}`);
-    }
+    if (p.jersey) meta.push(`#${p.jersey.toString().replace(/^#+/, '')}`);
     if (p.year) meta.push(p.year);
     if (p.school) meta.push(p.school);
     if (p.height || p.weight) meta.push(`${p.height || 'N/A'} / ${p.weight ? `${p.weight} lbs` : 'N/A'}`);
@@ -159,58 +157,73 @@ export async function execute(interaction) {
     return { line, boardKey, name };
   }).filter(Boolean);
 
-  // Sort by board position, then name
   items.sort((a, b) => {
     if (a.boardKey !== b.boardKey) return a.boardKey - b.boardKey;
     return (a.name || '').localeCompare(b.name || '');
   });
   const desc = items.map(i => i.line);
+  if (!desc.length) return { error: 'You have not scouted any players yet for the current class.' };
 
-  if (!desc.length) {
-    await interaction.reply({ content: 'You have not scouted any players yet this season.', ephemeral: true });
-    return;
+  // Chunk by count (10 per page) to keep navigation consistent
+  const PAGE_SIZE = 10;
+  const classPages = [];
+  for (let i = 0; i < desc.length; i += PAGE_SIZE) {
+    const slice = desc.slice(i, i + PAGE_SIZE).map((line, idx) => `${i + idx + 1}. ${line}`);
+    classPages.push(slice);
   }
 
-  // Chunk if long
-  const chunks = [];
-  const logos = [];
-  let current = [];
-  let len = 0;
-  for (const line of desc) {
-    const addLen = line.length + 2;
-    if (len + addLen > 3500 && current.length) {
-      chunks.push(current);
-      logos.push(null);
-      current = [];
-      len = 0;
-    }
-    current.push(line);
-    len += addLen;
-  }
-  if (current.length) {
-    chunks.push(current);
-    logos.push(null);
-  }
-
-  const embeds = chunks.map((lines, idx) => {
-    const embed = new EmbedBuilder()
-      .setTitle(`Your Scouted Players — ${classKey.toUpperCase()}${chunks.length > 1 ? ` (Page ${idx + 1}/${chunks.length})` : ''}`)
-      .setDescription(lines.join('\n\n'))
-      .setColor(0x1e90ff);
-    // Add a logo for the first entry on this page if available
-    const firstLine = lines[0];
-    const school = firstLine?.split('•').map(s => s.trim()).find(m => m && !m.toLowerCase().startsWith('board #') && m.includes(' '));
-    const logo = school ? getSchoolLogo(school) : null;
-    if (logo) {
-      embed.setImage(`attachment://${logo.name}`);
-      logos[idx] = logo;
-    }
-    return embed;
+  classPages.forEach((lines, idx) => {
+    pages.push({
+      embed: new EmbedBuilder()
+        .setTitle(`Your Scouted Players — ${resolvedClassKey.toUpperCase()}${classPages.length > 1 ? ` (Page ${idx + 1}/${classPages.length})` : ''}`)
+        .setDescription(lines.join('\n\n'))
+        .setColor(0x1e90ff),
+    });
   });
 
-  const files = logos.filter(Boolean).map(l => ({ attachment: l.attachment, name: l.name }));
-
-  await interaction.reply({ embeds, files, ephemeral: true });
+  if (!pages.length) return { error: 'You have not scouted any players yet.' };
+  return { pages };
 }
+
+export const data = new SlashCommandBuilder()
+  .setName('madden-myscouts')
+  .setDescription('View the prospects you have scouted (regular + postseason).')
+  .setDMPermission(false);
+
+export async function execute(interaction) {
+  if (!interaction.deferred && !interaction.replied) {
+    try { await interaction.deferReply({ flags: 64 }); } catch (_) {}
+  }
+  const userId = interaction.user.id;
+  const { pages, error } = buildPagesForUser(userId, interaction.guildId);
+  if (error) {
+    await interaction.editReply({ content: error, ephemeral: true });
+    return;
+  }
+  const total = pages.length;
+  const pageIndex = 0;
+  const { ButtonBuilder, ButtonStyle, ActionRowBuilder } = await import('discord.js');
+  const rowNeeded = total > 1;
+  const row = rowNeeded ? new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`madden_myscouts_page|${userId}|${pageIndex - 1}`)
+      .setLabel('Prev')
+      .setStyle(ButtonStyle.Secondary)
+      .setDisabled(true),
+    new ButtonBuilder()
+      .setCustomId(`madden_myscouts_page|${userId}|${pageIndex + 1}`)
+      .setLabel('Next')
+      .setStyle(ButtonStyle.Primary)
+      .setDisabled(total <= 1),
+  ) : null;
+
+  await interaction.editReply({
+    embeds: [pages[pageIndex].embed],
+    components: row ? [row] : [],
+    ephemeral: true,
+  });
+}
+
+export { buildPagesForUser };
 
 export default { data, execute };
