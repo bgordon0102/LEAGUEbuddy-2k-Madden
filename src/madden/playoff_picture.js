@@ -109,16 +109,13 @@ export async function updatePlayoffPicture(client, leagueId) {
   };
 
   const pinId = getPinId('playoff_picture');
-  if (pinId) {
-    const msg = await channel.messages.fetch(pinId).catch(() => null);
-    if (msg) {
-      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
-      return;
-    }
+  if (!pinId) return;
+  const msg = await channel.messages.fetch(pinId).catch(() => null);
+  if (!msg) {
+    console.warn('[playoff_picture] pin not found; skipping create');
+    return;
   }
-  const msg = await channel.send({ embeds: [embed] });
-  try { await msg.pin(); } catch { /* ignore */ }
-  setPinId('playoff_picture', msg.id);
+  await msg.edit({ embeds: [embed], content: null }).catch(() => null);
 }
 
 export async function resetPlayoffPicture(client) {
@@ -136,16 +133,13 @@ export async function resetPlayoffPicture(client) {
   };
 
   const pinId = getPinId('playoff_picture');
-  if (pinId) {
-    const msg = await channel.messages.fetch(pinId).catch(() => null);
-    if (msg) {
-      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
-      return;
-    }
+  if (!pinId) return;
+  const msg = await channel.messages.fetch(pinId).catch(() => null);
+  if (!msg) {
+    console.warn('[playoff_picture] pin not found; skipping create');
+    return;
   }
-  const msg = await channel.send({ embeds: [embed] });
-  try { await msg.pin(); } catch { /* ignore */ }
-  setPinId('playoff_picture', msg.id);
+  await msg.edit({ embeds: [embed], content: null }).catch(() => null);
 }
 
 export default { updatePlayoffPicture };

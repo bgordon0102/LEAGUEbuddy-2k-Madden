@@ -578,7 +578,11 @@ export async function execute(interaction) {
 
     // Build 7 targets (1 per round) guided by true draft slot and team needs
     // Derive pick slots (after trades) for realism
-    const tradedOrder = applyPickTrades(draftOrder(league));
+    const seasonYear =
+        league?.info?.careerHubInfo?.seasonInfo?.calendarYear ||
+        league?.info?.calendarYear ||
+        league?.calendarYear;
+    const tradedOrder = applyPickTrades(draftOrder(league), seasonYear);
     const teamNorm = normalizeName(teamName);
     const teamSlots = tradedOrder
         .map((p, i) => ({ slot: i + 1, norm: normalizeName(p.name || p.nick || ''), via: p.via }))

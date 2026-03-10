@@ -104,21 +104,42 @@ function formatScheduleLines(snapshot, team) {
   const schedules = snapshot?.schedule?.schedules || [];
   const teamId = team?.teamId;
   const current = currentWeek(snapshot) ?? 1;
+  const currentStage = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonWeekType ?? snapshot?.stage ?? 1; // 0=pre,1=reg
   const lines = [];
-  // regular season (stageIndex 1)
+  // Determine latest season by seasonYear/seasonIndex; fall back to max gameId if missing
+  const seasons = schedules.map(g => Number(g.seasonIndex ?? g.seasonId ?? g.seasonYear ?? 0));
+  const latestSeason = seasons.length ? Math.max(...seasons) : 0;
+  const latestYear = Math.max(
+    Number(snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear ?? 0),
+    Number(snapshot?.info?.calendarYear ?? 0),
+    0
+  );
+
+  // Include preseason (stageIndex 0) and regular season (stageIndex 1) for the latest season/year
   schedules
-    .filter(g => Number(g.stageIndex ?? g.stage ?? 1) === 1)
-    .sort((a, b) => (a.weekIndex ?? a.seasonWeek ?? 0) - (b.weekIndex ?? b.seasonWeek ?? 0))
+    .filter(g => (g.homeTeamId === teamId || g.awayTeamId === teamId))
+    .filter(g => {
+      const sIdx = Number(g.seasonIndex ?? g.seasonId ?? g.seasonYear ?? 0);
+      const year = Number(g.seasonYear ?? g.calendarYear ?? g.year ?? latestYear);
+      return (sIdx === latestSeason) || (year === latestYear);
+    })
+    .filter(g => [0, 1].includes(Number(g.stageIndex ?? g.stage ?? 1)))
+    .sort((a, b) => {
+      const stageA = Number(a.stageIndex ?? a.stage ?? 1);
+      const stageB = Number(b.stageIndex ?? b.stage ?? 1);
+      if (stageA !== stageB) return stageA - stageB;
+      return (a.weekIndex ?? a.seasonWeek ?? 0) - (b.weekIndex ?? b.seasonWeek ?? 0);
+    })
     .forEach(g => {
-      if (g.homeTeamId !== teamId && g.awayTeamId !== teamId) return;
-      const weekIdx = Number(g.weekIndex ?? g.seasonWeek ?? g.seasonWeekIndex ?? g.week ?? 0);
-      const weekNum = weekIdx + 1;
+      const weekIdxRaw = Number(g.weekIndex ?? g.seasonWeek ?? g.seasonWeekIndex ?? g.week ?? 0);
+      const stage = Number(g.stageIndex ?? g.stage ?? 1); // 0 preseason, 1 regular
+      const weekLabel = stage === 0 ? `PS${weekIdxRaw + 1}` : `W${weekIdxRaw + 1}`;
       const isHome = g.homeTeamId === teamId;
       const oppId = isHome ? g.awayTeamId : g.homeTeamId;
       const opp = teamMap[oppId] || 'Opponent';
-      const marker = weekNum === current ? '➡️ ' : '';
+      const marker = (stage === currentStage && weekIdxRaw + 1 === current) ? '➡️ ' : '';
       const prefix = isHome ? 'vs' : '@';
-      lines.push(`${marker}W${weekNum}: ${prefix} ${opp}`);
+      lines.push(`${marker}${weekLabel}: ${prefix} ${opp}`);
     });
   return { lines, current };
 }

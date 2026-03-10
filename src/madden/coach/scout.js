@@ -8,7 +8,10 @@ const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.jso
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
 const LOGO_DIR = path.join(process.cwd(), 'college football logos');
-const POINTS_PER_WEEK = 60; // regular & postseason (back to standard)
+const POINTS_PER_WEEK = 60; // regular & postseason
+const BONUS_STEP = 10;
+const BONUS_CAP = 60; // additional, so max 120 total
+const TOTAL_CAP = 120;
 const COST_PER_REVEAL = 10;
 const OFFSEASON_POINTS = 300; // full offseason pool
 // Preferred position order for autocomplete (canonical names)
@@ -210,15 +213,25 @@ export async function execute(interaction) {
   // Load scouting data
   const scoutData = safeReadJSON(SCOUT_PATH, {});
   const userId = interaction.user.id;
-  if (!scoutData[userId]) scoutData[userId] = { players: {}, weeklyPoints: {} };
+  if (!scoutData[userId]) scoutData[userId] = { players: {}, weeklyPoints: {}, bonus: {} };
   const userData = scoutData[userId];
+  userData.bonus = userData.bonus || {};
+  const seasonKey = `year_${calendarYear}`;
+  const currentBonus = Math.min(Number(userData.bonus[seasonKey]) || 0, BONUS_CAP);
   const weekKey = isOffseason ? `year_${calendarYear}_offseason_total` : `year_${calendarYear}_week_${currentWeek}`;
-  const defaultPoints = isOffseason ? OFFSEASON_POINTS : POINTS_PER_WEEK;
+  const defaultPoints = isOffseason ? OFFSEASON_POINTS : Math.min(POINTS_PER_WEEK + currentBonus, TOTAL_CAP);
   // Ensure offseason pool is refreshed to full allotment before any spend
   if (isOffseason) {
     userData.weeklyPoints[weekKey] = OFFSEASON_POINTS;
   }
-  if (userData.weeklyPoints[weekKey] === undefined) userData.weeklyPoints[weekKey] = defaultPoints;
+  if (userData.weeklyPoints[weekKey] === undefined) {
+    userData.weeklyPoints[weekKey] = defaultPoints;
+  } else {
+    // If the coach has a bonus and the week was seeded with the base 60, top it up to the correct bonus amount
+    if (!isOffseason && currentBonus > 0 && userData.weeklyPoints[weekKey] === POINTS_PER_WEEK) {
+      userData.weeklyPoints[weekKey] = defaultPoints;
+    }
+  }
   let pointsLeft = Number(userData.weeklyPoints[weekKey]);
   if (!Number.isFinite(pointsLeft)) pointsLeft = defaultPoints;
   const unlocked = userData.players[classKey]?.[player.name] || [];
@@ -276,7 +289,7 @@ export async function execute(interaction) {
   const embed = new EmbedBuilder()
     .setTitle(`${player.position} ${player.name}${yearLabel}`)
     .setDescription(fields.join('\n') || 'No info unlocked yet.')
-    .setFooter({ text: `Used 10 pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason (300 total)' : 'this week (60)'}. Class ${classId.toUpperCase()}` })
+    .setFooter({ text: `Used 10 pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason (300 total)' : `this week (${defaultPoints})`}. Class ${classId.toUpperCase()}` })
     .setColor(0x1e90ff);
   const metaFields = [];
   const boardPos = player.RNK ?? player.rank ?? player.order ?? player['#'];
@@ -312,6 +325,21 @@ export async function execute(interaction) {
   const payload = { embeds: [embed], files };
   if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
   else await interaction.reply({ ...payload, flags: 64 });
+
+  // Bonus accrual: if regular/post season and user spent entire allotment this week, grant +10 (cap 120) for future weeks
+  if (!isOffseason && pointsLeft <= 0) {
+    const newBonus = Math.min(currentBonus + BONUS_STEP, BONUS_CAP);
+    if (newBonus > currentBonus) {
+      userData.bonus[seasonKey] = newBonus;
+      saveJSON(SCOUT_PATH, scoutData);
+      const bonusMsg = `Bonus unlocked: +${BONUS_STEP} scouting points weekly for the rest of the season (now ${Math.min(POINTS_PER_WEEK + newBonus, TOTAL_CAP)} max, cap ${TOTAL_CAP}).`;
+      try {
+        await interaction.followUp({ content: bonusMsg, flags: 64 });
+      } catch {}
+    } else {
+      saveJSON(SCOUT_PATH, scoutData);
+    }
+  }
 }
 
 export default { data, execute, autocomplete };

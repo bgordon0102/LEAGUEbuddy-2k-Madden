@@ -49,13 +49,13 @@ export function computePlayerValue2k(player) {
   let mult = 1;
 
   // Age curve – heavier premium for young, steeper decay for vets
-  if (age <= 22) mult += 0.32;
-  else if (age <= 25) mult += 0.24;
-  else if (age <= 27) mult += 0.10;
-  else if (age <= 30) mult += 0.00;
-  else if (age <= 32) mult -= 0.12;
-  else if (age <= 34) mult -= 0.20;
-  else mult -= 0.40;
+  if (age <= 22) mult += 0.40;
+  else if (age <= 25) mult += 0.26;
+  else if (age <= 27) mult += 0.12;
+  else if (age <= 30) mult -= 0.05;
+  else if (age <= 32) mult -= 0.25;
+  else if (age <= 34) mult -= 0.35;
+  else mult -= 0.55;
 
   // Position scarcity (slight boost to creators and elite bigs)
   const posAdj = { PG: 0.08, SG: 0.05, SF: 0.03, PF: 0.00, C: 0.07 };
@@ -237,9 +237,9 @@ export function computePlayerValue2k(player) {
 
   // Senior decline to keep mid/late-30s vets below rising cores
   let seniorPenalty = 1;
-  if (age >= 36) seniorPenalty = 0.72;
-  else if (age >= 34) seniorPenalty = 0.82;
-  else if (age >= 32) seniorPenalty = 0.90;
+  if (age >= 36) seniorPenalty = 0.65;
+  else if (age >= 34) seniorPenalty = 0.78;
+  else if (age >= 32) seniorPenalty = 0.88;
 
   const raw = Math.round(base * mult * tier * youthUplift * prodigyBoost * risingStarBoost * youngHighUpside * youngCoreBoost * youngEliteBoost * primeBoost * eliteBoost * superTierBoost * upperMidBoost * guardPrimeBoost * guardAllStarBoost * youthGuardBoost * youthBigBoost * eliteBigBoost * wingPrimeBoost * lowBandBoost * rookieBoost * seniorPenalty * 10) / 10;
   // Scale down overall to align 2K top values with Madden top values; hard cap at 1000
@@ -290,7 +290,7 @@ export function computePlayerValue2k(player) {
     : 0;
   // Floor for young rising players (75–79 OVR, ≤22) so they aren't lumped with older role guys
   const youngFloor = (ovr >= 75 && ovr <= 79 && age <= 22)
-    ? 220 + Math.max(0, ovr - 75) * 25 // 75→220, 79→320
+    ? 280 + Math.max(0, ovr - 75) * 28 // 75→280, 79→392
     : 0;
   // Premium floor for under-22 high-upside starters (82–86 OVR) to surface above mid-prime vets
   const youthPremiumFloor = (age <= 22 && ovr >= 82 && ovr <= 86)
@@ -311,7 +311,7 @@ export function computePlayerValue2k(player) {
     ? 40 + Math.max(0, (ovr - 67)) * 15 // 67→40, 70→85, 74→145, 78→205, 79→220
     : 0;
 
-  return Math.round(Math.max(
+  let val = Math.max(
     capped,
     vetFloor,
     primeFloor,
@@ -326,7 +326,46 @@ export function computePlayerValue2k(player) {
     lowFloor,
     curveFloor,
     globalFloor
-  ) * 10) / 10;
+  );
+
+  // Age adjustment: young > old
+  let ageAdj = 1;
+  if (age <= 22) ageAdj = 1.30;
+  else if (age <= 24) ageAdj = 1.20;
+  else if (age <= 27) ageAdj = 1.10;
+  else if (age <= 30) ageAdj = 1.00;
+  else if (age <= 32) ageAdj = 0.90;
+  else if (age <= 34) ageAdj = 0.78;
+  else if (age <= 36) ageAdj = 0.66;
+  else ageAdj = 0.55;
+
+  // Salary adjustment: cheap > expensive
+  const capHitAdj = capHit; // reuse computed cap hit
+  let salaryAdj = 1;
+  if (capHitAdj <= 1) salaryAdj = 1.05;
+  else if (capHitAdj <= 1.5) salaryAdj = 1.00;
+  else if (capHitAdj <= 2) salaryAdj = 0.92;
+  else if (capHitAdj <= 3) salaryAdj = 0.84;
+  else if (capHitAdj <= 4) salaryAdj = 0.70;
+  else salaryAdj = 0.58;
+
+  // Soften salary drag for true stars (88+ OVR)
+  let salaryMult = salaryAdj;
+  if (ovr >= 88) {
+    salaryMult = 1 - (1 - salaryAdj) * 0.45; // cut penalty by 55% for stars
+  }
+
+  // Prime-star boost so 26-29 y/o elite players don't trail raw-upside kids
+  let primeStar = 1;
+  if (ovr >= 88 && age >= 26 && age <= 29) {
+    primeStar = 1.18;
+  } else if (ovr >= 85 && age >= 26 && age <= 29) {
+    primeStar = 1.10;
+  }
+
+  val *= ageAdj * salaryMult * primeStar;
+
+  return Math.round(val * 10) / 10;
 }
 
 // --- NBA 2K draft pick valuation ---

@@ -6,11 +6,16 @@ export async function execute(interaction) {
   console.log('[madden_top100test_next] Button handler called:', interaction.customId);
   if (!interaction.isButton()) return;
   try {
+    const parts = (interaction.customId || '').split('|');
+    const scope = parts[1] || 'season';
+    const week = parts[2] === 'null' ? null : Number(parts[2]);
+    const page = Number(parts[3] || 1);
+    const isPublic = parts[4] === '1';
     const mod = await import('../commands/madden/staff/top100test.js');
     const top100test = mod?.execute || mod?.default;
     if (typeof top100test !== 'function') throw new Error('top100test handler missing');
-    console.log('[madden_top100test_next] Calling top100test handler...');
-    await top100test(interaction);
+    console.log('[madden_top100test_next] Calling top100test handler...', { scope, week, page, isPublic });
+    await top100test(interaction, { scope, week, page, public: isPublic });
     console.log('[madden_top100test_next] top100test handler completed.');
   } catch (err) {
     console.error('[madden_top100test_next] failed:', err);

@@ -579,6 +579,7 @@ export async function execute(interaction) {
       return;
     }
     if (!leagueId) return;
+    const snapshot = loadLeagueSnapshot(leagueId);
     await refreshBuilder(interaction, draft, snapshot);
     return;
   }

@@ -69,6 +69,9 @@ async function execute(interaction) {
         : (seasonInfo.displayWeek && seasonInfo.displayWeek > 0
           ? seasonInfo.displayWeek
           : derivedWeekFromStats));
+    // Define effectiveCurrentWeek for downstream use
+    // Use currentWeekValue as the effective current week
+    const effectiveCurrentWeek = currentWeekValue;
     const currentWeekIndex = currentWeekValue > 0 ? currentWeekValue - 1 : null;
     const weekEntry = snap?.weeklyStats?.find(w => w.weekIndex === currentWeekIndex);
     const seasonWeekType = seasonInfo.seasonWeekType;
@@ -97,15 +100,9 @@ async function execute(interaction) {
       stageForWeek = Stage.SEASON;
       inOffseason = false;
     }
-    const inPreseason = stageForWeek === Stage.PRESEASON && currentWeekValue < 1;
-    const inRegularSeason = stageForWeek === Stage.SEASON && currentWeekValue >= 1 && currentWeekValue <= 18 && !inOffseason && !inPreseason;
-    const isWildcard = currentWeekValue === 19; // allow one last pull to capture Week 18 data
-    // Update pins during regular season and Wild Card week; freeze afterward
-    const backfillOnlyAwards = !!weekOverride; // when a week is passed, keep pins optional but still allow awards/top100
-    const allowPinnedUpdates = !backfillOnlyAwards && (inRegularSeason || isWildcard) && !inOffseason && !inPreseason;
-    const effectiveCurrentWeek = currentWeekValue;
-    // Debug: log week targeting and available stages for that week
-    const targetWeekIdx = effectiveCurrentWeek ? effectiveCurrentWeek - 1 : null;
+    // Determine effective target and week using available stats
+    // (effectiveTargetWeekIdx/effectiveCurrentWeekUsed computed later after we know if we have stats)
+    const targetWeekIdx = currentWeekValue ? currentWeekValue - 1 : null;
     const countPlayers = (wk) => {
       const buckets = [
         wk?.passing?.playerPassingStatInfoList,
@@ -122,17 +119,51 @@ async function execute(interaction) {
     }));
     const weekData = targetWeekIdx !== null && snap ? gatherWeeklyStats(snap, targetWeekIdx) : null;
     const hasWeeklyPlayers = !!weekData;
+    // Fallback: if the current week has no stats, use the latest Stage 1 week with stats
+    const latestStage1WithStats = (() => {
+      const weeks = (snap?.weeklyStats || [])
+        .filter(w => Number(w.stage ?? w.stageIndex ?? 0) === 1)
+        .filter(w => {
+          const buckets = [
+            w?.passing?.playerPassingStatInfoList,
+            w?.rushing?.playerRushingStatInfoList,
+            w?.receiving?.playerReceivingStatInfoList,
+            w?.defense?.playerDefensiveStatInfoList,
+          ];
+          return buckets.some(b => Array.isArray(b) && b.length > 0);
+        })
+        .map(w => Number(w.weekIndex));
+      if (!weeks.length) return null;
+      return Math.max(...weeks);
+    })();
+    const effectiveTargetWeekIdx = hasWeeklyPlayers ? targetWeekIdx : latestStage1WithStats;
+    const effectiveCurrentWeekUsed = hasWeeklyPlayers
+      ? currentWeekValue
+      : (latestStage1WithStats != null ? latestStage1WithStats + 1 : currentWeekValue);
+    const hasWeeklyPlayersEffective = effectiveTargetWeekIdx != null
+      ? !!gatherWeeklyStats(snap, effectiveTargetWeekIdx)
+      : false;
+    const backfillOnlyAwards = !!weekOverride;
+
     console.log('[madden-weeklyupdate] week targeting', {
       weekOverride,
-      effectiveCurrentWeek,
+      effectiveCurrentWeek: currentWeekValue,
+      effectiveCurrentWeekUsed,
       targetWeekIdx,
+      effectiveTargetWeekIdx,
       stageForWeek,
       stageInfo,
-      hasWeeklyPlayers
+      hasWeeklyPlayers,
+      hasWeeklyPlayersEffective
     });
-    if (!hasWeeklyPlayers && targetWeekIdx !== null) {
-      console.warn('[madden-weeklyupdate] no stage 1 player stats found for target week; skipping top players and awards if requested');
+    if (!hasWeeklyPlayersEffective && effectiveTargetWeekIdx !== null) {
+      console.warn('[madden-weeklyupdate] no stage 1 player stats found for selected week; skipping top players and awards if requested');
     }
+
+    // Determine if we are in preseason (stageForWeek is PRESEASON and week is 0 or 1)
+    const inPreseason = stageForWeek === Stage.PRESEASON || currentWeekValue === 0;
+    // Allow pin updates when in regular season or when a week override was provided
+    const allowPinnedUpdates = !inPreseason || backfillOnlyAwards;
 
     // Open/reset scouting at Week 1 of the regular season
     if (!backfillOnlyAwards && stageForWeek === Stage.SEASON && currentWeekValue === 1) {
@@ -244,23 +275,27 @@ async function execute(interaction) {
       console.warn('[madden-weeklyupdate] bye week between Conference and Super Bowl: skipping player changes/injuries/awards');
     }
     // Draft grades auto-post (after draft recap)
-    if (!backfillOnlyAwards) {
-      try {
-        await maybePostDraftGrades(interaction.client, leagueId);
-      } catch (e) {
-        console.warn('[madden-weeklyupdate] draft grades skipped:', e?.message || e);
-      }
-    }
+    // Skip automatic draft grades; post only manually if needed
     // Weekly Top 30 log + running Top 100 (use current formula even during backfill)
     const allowTopPlayers = !inOffseason && !inPreseason && hasWeeklyPlayers;
     if (allowTopPlayers) {
+      // If user passed a specific week, clear old history so Top100 reflects that week only
+      if (weekOverride && leagueId) {
+        try {
+          const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId));
+          fs.rmSync(histDir, { recursive: true, force: true });
+          console.log('[madden-weeklyupdate] cleared top_players_history for override week', { leagueId, weekOverride });
+        } catch (e) {
+          console.warn('[madden-weeklyupdate] failed to clear top_players_history:', e?.message || e);
+        }
+      }
       try {
         await updateTopPlayers(interaction.client, leagueId, snap, effectiveCurrentWeek, {
           isWildcard,
           postChannelId: '1462629502864851069'
         });
       } catch (e) {
-      console.warn('[madden-weeklyupdate] top players update skipped:', e?.message || e);
+        console.warn('[madden-weeklyupdate] top players update skipped:', e?.message || e);
       }
     }
     // Weekly awards (derived locally) — skip offseason and preseason
@@ -313,7 +348,7 @@ async function execute(interaction) {
     });
     const weekLabel = (stage, wk, offSeasonStage = 0, seasonWeekType = stage) => {
       const st = seasonWeekType !== undefined ? seasonWeekType : stage;
-      if (offSeasonStage > 0) return `Offseason Stage ${offSeasonStage}`;
+      if (offSeasonStage > 0 && st === Stage.PRESEASON) return `Offseason Stage ${offSeasonStage}`;
       if (st === Stage.PRESEASON && wk >= 0 && wk <= 3) return `Preseason Week ${wk + 1}`;
       const display = wk + 1;
       if (st === Stage.SEASON && display >= 1 && display <= 18) return `Week ${display}`;
@@ -326,7 +361,7 @@ async function execute(interaction) {
     };
     const displayWeekLabel = (stage, currentWeek, offSeasonStage = 0, seasonWeekType = stage) => {
       const st = seasonWeekType !== undefined ? seasonWeekType : stage;
-      if (offSeasonStage > 0) return `Offseason Stage ${offSeasonStage}`;
+      if (offSeasonStage > 0 && st === Stage.PRESEASON) return `Offseason Stage ${offSeasonStage}`;
       if (currentWeek === null || currentWeek === undefined) return 'unknown';
       const wkIdx = Math.max(0, Number(currentWeek) - 1);
       return weekLabel(st !== undefined ? st : 1, wkIdx, offSeasonStage, st);
@@ -338,14 +373,15 @@ async function execute(interaction) {
       missingField = 'Offseason – no weekly player stats expected';
     }
 
+    const offStageShown = inOffseason ? (summary.offSeasonStage !== undefined ? summary.offSeasonStage : (seasonInfo.offSeasonStage !== undefined ? seasonInfo.offSeasonStage : 0)) : 0;
     const weekLabelPretty = effectiveCurrentWeek
       ? displayWeekLabel(
         stageForWeek !== undefined ? stageForWeek : summary.stage,
         effectiveCurrentWeek,
-        summary.offSeasonStage !== undefined ? summary.offSeasonStage : (seasonInfo.offSeasonStage !== undefined ? seasonInfo.offSeasonStage : 0),
+        offStageShown,
         seasonInfo.seasonWeekType !== undefined ? seasonInfo.seasonWeekType : (stageForWeek !== undefined ? stageForWeek : summary.stage)
       )
-      : (inOffseason ? `Offseason Stage ${summary.offSeasonStage !== undefined ? summary.offSeasonStage : (seasonInfo.offSeasonStage !== undefined ? seasonInfo.offSeasonStage : 'unknown')}` : 'unknown');
+      : (inOffseason ? `Offseason Stage ${offStageShown || 'unknown'}` : 'unknown');
     const weekFieldValue = weekLabelPretty;
 
     const embed = new EmbedBuilder()

@@ -237,14 +237,28 @@ export async function updateStatLeaders(client, leagueId) {
   }
   const emojiMap = loadJson(TEAM_EMOJIS_FILE, {});
   const teams = teamMap(snapshot, emojiMap);
-  // Only include regular-season weeks up to the current week; ignore preseason/postseason so totals don’t inflate
-  const weeklyStats = (snapshot?.weeklyStats || []).filter(w => {
-    const wkStage = w?.stage ?? w?.stageIndex ?? Stage.SEASON;
-    const wkIdx = w?.weekIndex ?? 0;
-    const isReg = wkStage === Stage.SEASON;
-    const withinCurrent = currentWeekIndex === null ? true : wkIdx <= Math.min(currentWeekIndex, 17); // cap at week 18 (index 17)
-    return isReg && withinCurrent;
-  });
+  // Use only the latest regular-season week with stats to avoid mixing old-season data
+  const stage1Weeks = (snapshot?.weeklyStats || [])
+    .filter(w => Number(w?.stage ?? w?.stageIndex ?? 0) === 1)
+    .filter(w => {
+      const buckets = [
+        w?.passing?.playerPassingStatInfoList,
+        w?.rushing?.playerRushingStatInfoList,
+        w?.receiving?.playerReceivingStatInfoList,
+        w?.defense?.playerDefensiveStatInfoList,
+      ];
+      return buckets.some(b => Array.isArray(b) && b.length > 0);
+    });
+  const latestStage1 = stage1Weeks.length ? Math.max(...stage1Weeks.map(w => Number(w.weekIndex))) : null;
+  const weeklyStats = latestStage1 != null
+    ? stage1Weeks.filter(w => Number(w.weekIndex) === latestStage1)
+    : stage1Weeks;
+  if (latestStage1 != null) {
+    const maxPass = Math.max(...weeklyStats.flatMap(w => (w.passing?.playerPassingStatInfoList || []).map(p => Number(p.passYds || 0))));
+    console.log('[stat_leaders] using week', latestStage1 + 1, 'entries', weeklyStats.length, 'maxPassYds', maxPass);
+  } else {
+    console.log('[stat_leaders] no stage1 weeks with stats found');
+  }
   const fields = [];
 
   const sections = [
@@ -281,16 +295,13 @@ export async function updateStatLeaders(client, leagueId) {
   };
 
   const pinId = getPinId('stat_leaders');
-  if (pinId) {
-    const msg = await channel.messages.fetch(pinId).catch(() => null);
-    if (msg) {
-      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
-      return;
-    }
+  if (!pinId) return;
+  const msg = await channel.messages.fetch(pinId).catch(() => null);
+  if (!msg) {
+    console.warn('[stat_leaders] pin not found; skipping create');
+    return;
   }
-  const msg = await channel.send({ embeds: [embed] });
-  try { await msg.pin(); } catch { /* ignore */ }
-  setPinId('stat_leaders', msg.id);
+  await msg.edit({ embeds: [embed], content: null }).catch(() => null);
 }
 
 export async function resetStatLeaders(client) {
@@ -317,14 +328,11 @@ export async function resetStatLeaders(client) {
     timestamp: new Date().toISOString(),
   };
   const pinId = getPinId('stat_leaders');
-  if (pinId) {
-    const msg = await channel.messages.fetch(pinId).catch(() => null);
-    if (msg) {
-      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
-      return;
-    }
+  if (!pinId) return;
+  const msg = await channel.messages.fetch(pinId).catch(() => null);
+  if (!msg) {
+    console.warn('[stat_leaders] pin not found; skipping create');
+    return;
   }
-  const msg = await channel.send({ embeds: [embed] });
-  try { await msg.pin(); } catch { /* ignore */ }
-  setPinId('stat_leaders', msg.id);
+  await msg.edit({ embeds: [embed], content: null }).catch(() => null);
 }

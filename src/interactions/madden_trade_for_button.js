@@ -91,17 +91,21 @@ export async function execute(interaction) {
   const { team: otherTeamInit } = parseTeamAndPlayer(interaction.customId);
   const yourTeamName = getCoachTeamFromRoles(interaction, snapshot) || '';
   const teams = snapshot?.teams?.leagueTeamInfoList || [];
+  const norm = (s = '') => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const matchTeam = (name) => {
-    const target = (name || '').toLowerCase();
-    return teams.find(t => {
-      const cands = [
-        t.displayName,
-        t.nickName,
-        t.abbrName,
-        t.cityName,
-      ].map(x => (x || '').toLowerCase());
-      return cands.includes(target) || cands.some(c => c && target && (c.includes(target) || target.includes(c)));
+    const target = norm(name);
+    if (!target) return null;
+    // Pass 1: strict match on names or exact abbreviation
+    const exact = teams.find(t => {
+      const cands = [t.displayName, t.nickName, t.cityName].map(norm);
+      return cands.includes(target) || norm(t.abbrName) === target;
     });
+    if (exact) return exact;
+    // Pass 2: loose contains check (exclude abbreviations to avoid CAR vs Cardinals collisions)
+    return teams.find(t => {
+      const cands = [t.displayName, t.nickName, t.cityName].map(norm);
+      return cands.some(c => c && (c.includes(target) || target.includes(c)));
+    }) || null;
   };
   const optionsAll = teams.map(t => ({
     label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',

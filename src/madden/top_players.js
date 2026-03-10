@@ -360,15 +360,24 @@ function scoreOffense(p) {
     // High-output skill line kicker to lift into 90s
     const totalYds = (t.recYds || 0) + (t.rushYds || 0) + (pos === 'QB' ? (t.passYds || 0) * 0.25 : 0);
     const totalTDs = (t.recTDs || 0) + (t.rushTDs || 0) + (pos === 'QB' ? (t.passTDs || 0) : 0);
-    if (totalYds >= 180 && totalTDs >= 2) {
-      base *= 1.18;
-      base += 6;
-    } else if (totalYds >= 140 && totalTDs >= 2) {
-      base *= 1.12;
-      base += 4;
-    } else if (totalYds >= 110 && totalTDs >= 2) {
-      base *= 1.08;
-      base += 3;
+    if (pos !== 'QB' && totalYds >= 200 && totalTDs >= 3) {
+      base = base * 1.25 + 18;
+    } else if (pos !== 'QB' && totalYds >= 175 && totalTDs >= 3) {
+      base = base * 1.18 + 12;
+    } else if (pos !== 'QB' && totalYds >= 150 && totalTDs >= 2) {
+      base = base * 1.12 + 10;
+    } else {
+      // Retain lighter boost for solid lines
+      if (totalYds >= 180 && totalTDs >= 2) {
+        base *= 1.14;
+        base += 5;
+      } else if (totalYds >= 140 && totalTDs >= 2) {
+        base *= 1.10;
+        base += 3;
+      } else if (totalYds >= 110 && totalTDs >= 2) {
+        base *= 1.06;
+        base += 2;
+      }
     }
     // Skill TD/yard floors into 90s
     if (totalTDs >= 3 && totalYds >= 175) base = Math.max(base, base * 1.1 + 10);
@@ -450,22 +459,22 @@ function scoreDefense(p) {
 
   // Tackle weight (slightly higher for interior/edge DL)
   const dlPositions = new Set(['LE', 'RE', 'LDE', 'RDE', 'DE', 'DT', 'EDGE', 'EDG', 'LEDGE', 'REDGE']);
-  const tackleWeight = dlPositions.has(pos) ? 1.05 : 0.85;
+  const tackleWeight = dlPositions.has(pos) ? 1.05 : 0.9;
   score += tackles * tackleWeight;
   const sackPositions = new Set(['LE', 'RE', 'LDE', 'RDE', 'DE', 'DT', 'EDGE', 'EDG', 'LEDGE', 'REDGE', 'WILL', 'MIKE', 'SAM', 'OLB', 'ILB']);
-  const sackWeight = sackPositions.has(pos) ? 9.0 : 8;
+  const sackWeight = sackPositions.has(pos) ? 15.0 : 13.0;
   score += sacks * sackWeight; // heavier weight for sack leaders
-  score += tfl * (dlPositions.has(pos) ? 4.5 : 4);
+  score += tfl * (dlPositions.has(pos) ? 9.0 : 7.0);
   const dbPositions = new Set(['CB', 'FS', 'SS']);
-  const intWeight = dbPositions.has(pos) ? 0.25 : 4.5;
+  const intWeight = dbPositions.has(pos) ? 22.0 : 16.0;
   score += ints * intWeight;
-  score += ff * 5;
-  score += fr * 3;
-  const pdWeight = dbPositions.has(pos) ? 2.0 : 1.5;
+  score += ff * 12;
+  score += fr * 8;
+  const pdWeight = dbPositions.has(pos) ? 6.0 : 4.0;
   score += pd * pdWeight;
-  score += td * 10;
+  score += td * 14;
   score += winBonus(p);
-  const impact = sacks * 6 + tfl * 3 + ints * 8 + ff * 5 + fr * 3 + pd * 1.5 + td * 8;
+  const impact = sacks * 8 + tfl * 4 + ints * 10 + ff * 7 + fr * 5 + pd * 2 + td * 10;
   const impactCount = (t.defSacks || 0) + (t.defTacklesForLoss || 0) + (t.defInts || 0) + (t.defForcedFumbles || 0) +
     (t.defRecoveredFumbles || 0) + (t.defPassDeflections || 0) + (t.defTDs || 0);
   if (impact < 6 && tackles < 6) {
@@ -475,15 +484,18 @@ function scoreDefense(p) {
     // No impact plays at all: extra clamp
     score *= 0.25;
   } else {
-    score *= 1 + Math.min(0.6, impact / 25);
+    score *= 1 + Math.min(0.9, impact / 18);
   }
   // Sack leader boost for edges: if 2+ sacks, add a bonus
   const isEdgeRole = ['LE', 'RE', 'ROLB', 'LOLB', 'EDGE', 'EDG', 'LEDG', 'REDG', 'REDGE', 'LEDGE', 'EDGE_R', 'EDGE_L', 'EDGE-R', 'EDGE-L', 'LDE', 'RDE', 'DE', 'OLB'].includes((p.position || '').toUpperCase());
   if (isEdgeRole && sacks >= 2) {
-    score *= 1.15;
-    score += 6; // extra bump
+    score *= 1.22;
+    score += 8; // extra bump
   }
-  score *= 1.0; // modest defensive multiplier
+  // Impact-count kicker: multi-impact games should vault the list
+  if (impactCount >= 5) score *= 1.55;
+  else if (impactCount >= 3) score *= 1.35;
+  score *= 1.05; // modest defensive multiplier
   return score;
 }
 
@@ -672,7 +684,11 @@ function computeWeeklyList(snapshot, weekIndex) {
       const ydsPenalty = Math.min(0.25, Math.max(-0.15, (yds - 320) / 400));
       const ptsPenalty = Math.min(0.25, Math.max(-0.10, (pts - 23) / 30));
       const penaltyFactor = 1 - (ydsPenalty * 0.6 + ptsPenalty * 0.4);
-      baseScore *= Math.max(0.6, penaltyFactor);
+      const defImpactPlays = (p.totals?.defSacks || 0) + (p.totals?.defTacklesForLoss || 0) + (p.totals?.defInts || 0) +
+        (p.totals?.defForcedFumbles || 0) + (p.totals?.defRecoveredFumbles || 0) + (p.totals?.defPassDeflections || 0) + (p.totals?.defTDs || 0);
+      if (defImpactPlays < 3) {
+        baseScore *= Math.max(0.6, penaltyFactor);
+      }
     }
     // If edge/defender has no impact stats, clamp hard
     const impactCount = (p.totals?.defSacks || 0) + (p.totals?.defTacklesForLoss || 0) + (p.totals?.defInts || 0) +
@@ -741,9 +757,9 @@ function computeWeeklyList(snapshot, weekIndex) {
     }
     // Global offense/defense tilt to satisfy band splits
     if (isOffPos(pos)) {
-      baseScore *= 1.6; // stronger lift for offense so skill/QB/OL compete
+      baseScore *= 1.45; // tilt offense, but leave room for huge defensive lines
     } else {
-      baseScore *= 0.6; // heavier nerf on defense to flatten out edge/DL dominance
+      baseScore *= 0.72; // lighter nerf so high-impact defenders can climb
       // Edge min impact guard: if no sacks/TFL/INT/FF/FR/PD/TD, cap it
       if (edgePositions.has(pos)) {
         const impact = (p.totals?.defSacks || 0) + (p.totals?.defTacklesForLoss || 0) + (p.totals?.defInts || 0) + (p.totals?.defForcedFumbles || 0) + (p.totals?.defRecoveredFumbles || 0) + (p.totals?.defPassDeflections || 0) + (p.totals?.defTDs || 0);
@@ -1574,6 +1590,72 @@ function computeSeasonTop100FromHistory(leagueId) {
   };
   ensureOlMin();
 
+  // Ensure LB spread so MIKE and SAM are represented (All-Pro needs each)
+  const ensureLbMin = () => {
+    // Need enough LBs to field both All-Pro teams (one MIKE and one SAM per team)
+    const desired = { MIKE: 2, SAM: 2 };
+    const currentCount = {};
+    top.forEach(p => {
+      const pos = (p.position || '').toUpperCase();
+      currentCount[pos] = (currentCount[pos] || 0) + 1;
+    });
+    const histLB = [];
+    try {
+      const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
+      const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
+      const grouped = new Map();
+      files.forEach(f => {
+        try {
+          const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
+          (data.players || data.top100 || []).forEach(p => {
+            const pos = (p.position || '').toUpperCase();
+            if (!['MIKE','SAM','WILL','LB'].includes(pos)) return;
+            const id = p.id || `${p.name}-${f}`;
+            const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
+            const best = grouped.get(id);
+            if (!best || g > Number(best.seasonGrade ?? best.grade ?? best.score ?? 0)) {
+              grouped.set(id, { ...p, seasonGrade: g, id, name: p.name });
+            }
+          });
+        } catch { /* ignore bad weekly file */ }
+      });
+      histLB.push(...grouped.values());
+    } catch { /* missing history ok */ }
+
+    const pool = [...top, ...histLB]
+      .filter(p => ['MIKE','SAM','WILL','LB'].includes((p.position || '').toUpperCase()))
+      .sort((a, b) => Number(b.seasonGrade || b.grade || 0) - Number(a.seasonGrade || a.grade || 0));
+
+    const usedIds = new Set(top.map(p => p.id || p.name));
+    const replaceIdxFor = (targetPos) => {
+      // replace the last non-matching LB/DB/WR/etc. to minimize impact on other scarce spots
+      const revIdx = [...top].reverse().findIndex(p => {
+        const pos = (p.position || '').toUpperCase();
+        return pos !== targetPos;
+      });
+      if (revIdx >= 0) return top.length - 1 - revIdx;
+      return top.length - 1;
+    };
+
+    Object.entries(desired).forEach(([pos, min]) => {
+      while ((currentCount[pos] || 0) < min) {
+        const cand = pool.find(p => (p.position || '').toUpperCase() === pos && !usedIds.has(p.id || p.name));
+        if (!cand) break;
+        const idx = replaceIdxFor(pos);
+        top[idx] = { ...cand };
+        usedIds.add(cand.id || cand.name);
+        currentCount[pos] = (currentCount[pos] || 0) + 1;
+      }
+    });
+
+    top.sort((a, b) => {
+      const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
+      if (Math.abs(g) > 0.0001) return g;
+      return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+    });
+  };
+  ensureLbMin();
+
   // If we still lack enough true centers, pull the best historical centers (e.g., Creed Humphrey) so OL is represented.
   const ensureHistCenters = () => {
     const curCenters = top.filter(p => (p.position || '').toUpperCase() === 'C');
@@ -1617,6 +1699,112 @@ function computeSeasonTop100FromHistory(leagueId) {
     });
   };
   ensureHistCenters();
+
+  // Final safety: guarantee at least one MIKE and one SAM by pulling best historical LBs if missing.
+  const ensureHistLinebackers = () => {
+    const desiredCounts = { MIKE: 2, SAM: 2 };
+    const counts = {};
+    top.forEach(p => {
+      const pos = (p.position || '').toUpperCase();
+      counts[pos] = (counts[pos] || 0) + 1;
+    });
+    const needAny = Object.entries(desiredCounts).some(([pos, min]) => (counts[pos] || 0) < min);
+    if (!needAny) return;
+
+    const histLB = [];
+    try {
+      const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
+      const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
+      const grouped = new Map();
+      files.forEach(f => {
+        try {
+          const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
+          (data.players || data.top100 || []).forEach(p => {
+            const pos = (p.position || '').toUpperCase();
+            if (!['MIKE','SAM','WILL','LB'].includes(pos)) return;
+            const id = p.id || `${p.name}-${f}`;
+            const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
+            const best = grouped.get(id);
+            if (!best || g > Number(best.seasonGrade ?? best.grade ?? best.score ?? 0)) {
+              grouped.set(id, { ...p, seasonGrade: g, id, name: p.name });
+            }
+          });
+        } catch { /* ignore bad weekly file */ }
+      });
+      histLB.push(...grouped.values());
+    } catch { /* missing history is fine */ }
+
+    const usedIds = new Set(top.map(p => p.id || p.name));
+    const pick = (pos) => histLB
+      .filter(p => (p.position || '').toUpperCase() === pos && !usedIds.has(p.id || p.name))
+      .sort((a, b) => Number(b.seasonGrade || b.grade || 0) - Number(a.seasonGrade || a.grade || 0))[0];
+
+    Object.entries(desiredCounts).forEach(([pos, min]) => {
+      while ((counts[pos] || 0) < min) {
+        const cand = pick(pos);
+        if (!cand) break;
+        const replaceIdx = top.length - 1; // replace lowest-ranked entry (already sorted)
+        top[replaceIdx] = { ...cand };
+        usedIds.add(cand.id || cand.name);
+        counts[pos] = (counts[pos] || 0) + 1;
+        top.sort((a, b) => {
+          const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
+          if (Math.abs(g) > 0.0001) return g;
+          return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+        });
+      }
+    });
+  };
+  ensureHistLinebackers();
+
+  // Ensure enough cornerbacks (need 3 per All-Pro team => 6 total)
+  const ensureCornerMin = () => {
+    const minCB = 6;
+    const countCB = top.filter(p => (p.position || '').toUpperCase() === 'CB').length;
+    if (countCB >= minCB) return;
+
+    const histCB = [];
+    try {
+      const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
+      const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
+      const grouped = new Map();
+      files.forEach(f => {
+        try {
+          const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
+          (data.players || data.top100 || []).forEach(p => {
+            const pos = (p.position || '').toUpperCase();
+            if (pos !== 'CB') return;
+            const id = p.id || `${p.name}-${f}`;
+            const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
+            const best = grouped.get(id);
+            if (!best || g > Number(best.seasonGrade ?? best.grade ?? best.score ?? 0)) {
+              grouped.set(id, { ...p, seasonGrade: g, id, name: p.name });
+            }
+          });
+        } catch { /* ignore bad weekly file */ }
+      });
+      histCB.push(...grouped.values());
+    } catch { /* missing history ok */ }
+
+    const usedIds = new Set(top.map(p => p.id || p.name));
+    const candidates = histCB
+      .filter(p => !usedIds.has(p.id || p.name))
+      .sort((a, b) => Number(b.seasonGrade || b.grade || 0) - Number(a.seasonGrade || a.grade || 0));
+
+    while (top.filter(p => (p.position || '').toUpperCase() === 'CB').length < minCB && candidates.length) {
+      const cand = candidates.shift();
+      // replace lowest-ranked non-CB to keep list length 100
+      const replaceIdx = top.length - 1;
+      top[replaceIdx] = { ...cand };
+      usedIds.add(cand.id || cand.name);
+      top.sort((a, b) => {
+        const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
+        if (Math.abs(g) > 0.0001) return g;
+        return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
+      });
+    }
+  };
+  ensureCornerMin();
   // Debug dump if enabled
   if (process.env.TOP100_DEBUG) {
     console.log('[seasonTop100][debug] weekly history files used:', history.length);

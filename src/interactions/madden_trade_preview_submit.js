@@ -22,6 +22,7 @@ import {
   getTradeDraft,
   deleteTradeDraft,
 } from '../shared/trade_draft_store.js';
+import { addPickOverridesFromTrade } from '../madden/pick_overrides_store.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 
@@ -96,6 +97,8 @@ export async function execute(interaction) {
     const yourTeam = draft.yourTeam || draft.yourTeamName || draft.yourTeamId || draft.yourTeamRaw;
     const otherTeam = draft.otherTeam || draft.otherTeamName || draft.otherTeamId || draft.otherTeamRaw;
     const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear || draft.seasonYear;
+    const yourStructAssets = draft.assets?.your || [];
+    const theirStructAssets = draft.assets?.other || [];
 
     // Prefer structured assets from the builder if available
     const pickValFromStruct = (item) => {
@@ -218,6 +221,18 @@ export async function execute(interaction) {
       expiresAt: Date.now() + 24 * 60 * 60 * 1000,
     };
     saveActiveTrades(trades);
+    // Persist first-round pick ownership if picks were traded via builder
+    try {
+      addPickOverridesFromTrade({
+        fromTeam: yourTeam,
+        toTeam: otherTeam,
+        fromAssets: yourStructAssets,
+        toAssets: theirStructAssets,
+        seasonYear,
+      });
+    } catch (e) {
+      console.warn('[pick overrides] could not update from trade', e?.message || e);
+    }
     deleteTradeDraft(draftId);
 
     // DM other coach (role members or user) with approve/deny buttons

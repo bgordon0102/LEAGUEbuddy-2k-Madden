@@ -164,19 +164,14 @@ export async function updateStandings(client, leagueId) {
     timestamp: new Date().toISOString(),
   };
 
-  // Try existing pin by saved id
   const pinId = getPinId('standings');
-  if (pinId) {
-    const msg = await channel.messages.fetch(pinId).catch(() => null);
-    if (msg) {
-      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
-      return;
-    }
+  if (!pinId) return;
+  const msg = await channel.messages.fetch(pinId).catch(() => null);
+  if (!msg) {
+    console.warn('[standings] pin not found; skipping create');
+    return;
   }
-  // If saved id missing/invalid, post and pin a new one
-  const msg = await channel.send({ embeds: [embed] });
-  try { await msg.pin(); } catch { /* ignore */ }
-  setPinId('standings', msg.id);
+  await msg.edit({ embeds: [embed], content: null }).catch(() => null);
 }
 
 export async function resetStandings(client) {
@@ -194,16 +189,10 @@ export async function resetStandings(client) {
   };
 
   const pinId = getPinId('standings');
-  if (pinId) {
-    const msg = await channel.messages.fetch(pinId).catch(() => null);
-    if (msg) {
-      await msg.edit({ embeds: [placeholder], content: null }).catch(() => null);
-      return;
-    }
-  }
-  const msg = await channel.send({ embeds: [placeholder] });
-  try { await msg.pin(); } catch { /* ignore */ }
-  setPinId('standings', msg.id);
+  if (!pinId) return;
+  const msg = await channel.messages.fetch(pinId).catch(() => null);
+  if (!msg) return;
+  await msg.edit({ embeds: [placeholder], content: null }).catch(() => null);
 }
 
 export default { updateStandings };

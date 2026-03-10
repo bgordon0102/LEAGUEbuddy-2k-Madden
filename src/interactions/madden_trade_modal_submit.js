@@ -50,9 +50,11 @@ function yearsAdj(yearsLeftRaw) {
   return Math.min(years, 4) * 0.015;
 }
 
-function capAdj(cap) {
+function capAdj(cap, isRookie = false) {
   const c = Number(cap || 0);
   if (!Number.isFinite(c) || c <= 0) return 0;
+  // Rookies: soften cap penalty so high signing bonuses don't crater value
+  if (isRookie) return -Math.min(c / 200, 0.05);
   // Penalize large cap hits; scaled to ~0.2 at 30M+
   return -Math.min(c / 150, 0.2);
 }
@@ -61,6 +63,7 @@ export function computePlayerValue(p) {
   if (!p) return 0;
   const ovr = p.overallRating ?? p.playerBestOvr ?? p.ovrRating ?? 0;
   const age = p.age ?? 26;
+  const yearsPro = Number(p.yearsPro ?? 0);
   const cap = Number(p.contractSalary || 0) + Number(p.contractBonus || 0);
   const yearsLeft = p.contractYearsLeft ?? p.contractLengthRemaining ?? p.contractLength ?? p.yearsRemaining ?? 0;
   const attr = (keys) => {
@@ -87,12 +90,15 @@ export function computePlayerValue(p) {
   const passRushBoost = (isEdge || isDT) ? Math.max(0, (rushMove / 2 - 75) / 40) : 0;
   const cover = attr(['manCoverageRating', 'pressCoverageRating', 'zoneCoverageRating', 'mcv', 'zcv']);
   const coverBoost = isDB ? Math.max(0, (cover - 75) / 45) : 0;
+  const draftRound = Number(p.draftRound ?? p.draftYearRound ?? p.collegeDraftRound ?? 0);
+  const draftPick = Number(p.draftPick ?? p.draftSelection ?? p.pickNumber ?? 0);
+  const isRookie = p.isRookie === true || yearsPro === 0 || age <= 22;
 
   const pos = posAdj(p.position);
   const ageFactor = ageAdj(age);
   const dev = devAdj(p.devTrait);
   const yrs = yearsAdj(yearsLeft);
-  const capHit = capAdj(cap);
+  const capHit = capAdj(cap, isRookie);
   // Heavier weight for franchise QBs in prime window (ages 26-32) with high OVR/dev
   let qbPrimeBoost = 0;
   const isQB = p.position === 'QB';
@@ -113,6 +119,17 @@ export function computePlayerValue(p) {
     const qbAth = Math.max(0, ((spd + acc) / 2) - 80) / 40; // mobile QB bump slightly larger
     qbPrimeBoost += qbAth;
   }
+  // Rookie pedigree bump: top-round rookies carry extra value even at lower OVR
+  let rookiePedigree = 0;
+  if (isRookie && draftRound === 1) {
+    if (draftPick > 0 && draftPick <= 5) rookiePedigree += 0.35;
+    else if (draftPick > 0 && draftPick <= 10) rookiePedigree += 0.25;
+    else rookiePedigree += 0.18;
+    if (p.devTrait >= 2) rookiePedigree += 0.08;
+    // Extra bump for skill positions taken very high
+    const isSkill = ['QB', 'WR', 'HB', 'RB', 'TE'].includes(p.position);
+    if (isSkill && draftPick > 0 && draftPick <= 3) rookiePedigree += 0.06;
+  }
   // Veteran decay for high OVR past prime
   let vetDrag = 0;
   if (age >= 30 && ovr >= 88) vetDrag -= 0.18;
@@ -128,6 +145,7 @@ export function computePlayerValue(p) {
     + capHit
     + qbPrimeBoost
     + youthUpside
+    + rookiePedigree
     + vetDrag
     + (athBoost * (isOffSkill || isDB || isEdge ? 1.1 : 0.6))
     + blockBoost
@@ -148,6 +166,33 @@ export function computePlayerValue(p) {
   // Elite veteran floor: keep high-OVR vets from cratering
   if (ovr >= 95 && age >= 34 && value < 250) {
     value = 250 + (ovr - 95) * 12; // 95 -> 250, 99 -> 298
+  }
+  // Rookie pedigree floors (keep top picks from looking cheap)
+  if (isRookie && draftRound === 1 && draftPick > 0 && draftPick <= 5) {
+    const floor = p.position === 'QB' ? 425 : 325;
+    if (value < floor) value = floor + Math.max(0, (ovr - 70) * 4);
+  } else if (isRookie && draftRound === 1 && draftPick > 0 && draftPick <= 10) {
+    const floor = p.position === 'QB' ? 360 : 300;
+    if (value < floor) value = floor + Math.max(0, (ovr - 70) * 3);
+  }
+  // Fallback rookie QB franchise floor (for cases missing draft data)
+  if (isQB && isRookie && age <= 22 && p.devTrait >= 2) {
+    const qbRookieFloor = 420 + Math.max(0, (ovr - 74) * 5); // 76 OVR -> 430
+    if (value < qbRookieFloor) value = qbRookieFloor;
+  }
+  // Fallback rookie top-pick floor for non-QB skill positions when draft data present
+  if (isRookie && !isQB && ['WR', 'HB', 'RB', 'TE'].includes(p.position) && draftRound === 1 && draftPick > 0) {
+    let floor = 0;
+    if (draftPick === 1) floor = 360;
+    else if (draftPick <= 5) floor = 340;
+    else if (draftPick <= 10) floor = 310;
+    if (floor > 0 && value < floor) value = floor + Math.max(0, (ovr - 70) * 3);
+  }
+  // Fallback floor for elite rookie skill players when draft data missing
+  if (isRookie && !isQB && ['WR', 'HB', 'RB', 'TE'].includes(p.position) && draftRound === 0 && draftPick === 0) {
+    const baseFloor = (p.devTrait >= 2) ? 330 : 300;
+    const uplift = Math.max(0, (ovr - 70) * 3);
+    if (value < baseFloor) value = baseFloor + uplift;
   }
   // Clamp to global bounds to align with cross-sport scale
   value = Math.min(1000, value);

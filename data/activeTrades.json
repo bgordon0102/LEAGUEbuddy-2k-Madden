@@ -1512,5 +1512,24 @@
     "postedToCommittee": true,
     "submittedAt": 1772493689713,
     "expiresAt": 1772580089713
+  },
+  "builder_1126312455111458849_1772764276485": {
+    "tradeId": "builder_1126312455111458849_1772764276485",
+    "proposerId": "1126312455111458849",
+    "coachBId": "1460734967934877902",
+    "yourTeam": "Oklahoma City Thunder",
+    "otherTeam": "Boston Celtics",
+    "assetsSent": "Jalen Williams (SF / PF) — 620.0\nLuguentz Dort (SG / SF) — 380.0\nIsaiah Hartenstein (C) — 425.0",
+    "assetsReceived": "Jaylen Brown (SF / PF) — 885.0\nPayton Pritchard (PG) — 425.0\n2026 Round 2 — 86.0",
+    "picksSent": [],
+    "picksReceived": [
+      "2026 Round 2"
+    ],
+    "notes": "",
+    "guildId": "1255691165265821747",
+    "status": "committee",
+    "postedToCommittee": true,
+    "submittedAt": 1772764383070,
+    "expiresAt": 1772850783070
   }
 }

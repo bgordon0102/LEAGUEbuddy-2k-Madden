@@ -1,0 +1,44 @@
+{
+  "overrides": [
+    {
+      "from": "Cardinals",
+      "to": "Jets",
+      "via": "CAR",
+      "year": 2026,
+      "round": 1,
+      "updatedAt": "2026-03-05T15:53:47.886Z"
+    },
+    {
+      "from": "Browns",
+      "to": "Jets",
+      "via": "BRO",
+      "year": 2026,
+      "round": 1,
+      "updatedAt": "2026-03-05T19:16:21.111Z"
+    },
+    {
+      "from": "Cardinals",
+      "to": "Lions",
+      "via": "CAR",
+      "year": 2027,
+      "round": 1,
+      "updatedAt": "2026-03-05T23:01:23.448Z"
+    },
+    {
+      "from": "Cardinals",
+      "to": "Lions",
+      "via": "CAR",
+      "year": 2028,
+      "round": 1,
+      "updatedAt": "2026-03-05T23:01:23.449Z"
+    },
+    {
+      "from": "Bears",
+      "to": "Lions",
+      "via": "BEA",
+      "year": 2026,
+      "round": 1,
+      "updatedAt": "2026-03-05T23:19:31.046Z"
+    }
+  ]
+}

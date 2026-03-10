@@ -53,7 +53,11 @@ function buildPickMap(league) {
   if (!league) return new Map();
   let order = [];
   try {
-    order = applyPickTrades(draftOrder(league));
+    const seasonYear =
+      league?.info?.careerHubInfo?.seasonInfo?.calendarYear ||
+      league?.info?.calendarYear ||
+      league?.calendarYear;
+    order = applyPickTrades(draftOrder(league), seasonYear);
   } catch {
     return new Map();
   }
@@ -123,17 +127,7 @@ function chunkFields(fields) {
 }
 
 export async function updateAvailableTeamsPin(client, guildId, options = {}) {
-  const allowCreate = options.allowCreate === true;
-  const delayMs = options.delayMs || 0;
-  const retries = options.retries || 0;
-  const retryDelayMs = options.retryDelayMs || 1000;
-  const guildOverride = options.guild;
-  const skipMemberFetch = options.skipMemberFetch === true;
-
   const attempt = async () => {
-    if (delayMs > 0) {
-      await new Promise(res => setTimeout(res, delayMs));
-    }
     const roleMap = loadJson(ROLE_MAP_FILE);
     const channelMap = loadJson(CHANNEL_MAP_FILE);
     const channelId = channelMap['Available Teams'];
@@ -141,15 +135,12 @@ export async function updateAvailableTeamsPin(client, guildId, options = {}) {
       console.warn('[available-teams] Channel ID missing in madden_channel_ids.json');
       return false;
     }
-    const guild = guildOverride || await client.guilds.fetch(guildId).catch(() => null);
+    const guild = await client.guilds.fetch(guildId).catch(() => null);
     if (!guild) {
       console.warn('[available-teams] Guild not found');
       return false;
     }
-    // Refresh member cache so role membership is accurate
-    if (!skipMemberFetch) {
-      try { await guild.members.fetch(); } catch { }
-    }
+    try { await guild.members.fetch(); } catch { }
     const channel = await guild.channels.fetch(channelId).catch(() => null);
     if (!channel || !channel.isTextBased()) {
       console.warn('[available-teams] Channel not text-based or missing');
@@ -200,56 +191,17 @@ export async function updateAvailableTeamsPin(client, guildId, options = {}) {
       return false;
     }
 
-    const pinState = loadJson(PIN_FILE);
-    let botPin = null;
-    if (pinState.messageId) {
-      botPin = await channel.messages.fetch(pinState.messageId).catch(() => null);
-    }
+    const pinId = '1479545575903858791';
+    const botPin = await channel.messages.fetch(pinId).catch(() => null);
     if (!botPin) {
-      const pins = await channel.messages.fetchPins().catch(() => null);
-      const list = pins && typeof pins.values === 'function' ? Array.from(pins.values()) : [];
-      for (const m of list) {
-        if (m?.author?.id === client.user.id) { botPin = m; break; }
-      }
-      if (botPin && !pinState.messageId) {
-        saveJson(PIN_FILE, { messageId: botPin.id });
-      }
-    }
-
-    if (!botPin) {
-      if (!allowCreate) {
-        console.warn('[available-teams] No existing bot pin found; skipping update (will not create a new pin).');
-        return false;
-      }
-      // Create new pin
-      const msg = await channel.send({ embeds, content: null }).catch(() => null);
-      if (!msg) {
-        console.warn('[available-teams] Failed to create new pin message.');
-        return false;
-      }
-      try { await msg.pin(); } catch {}
-      saveJson(PIN_FILE, { messageId: msg.id });
-      return true;
-    }
-
-    const edited = await botPin.edit({ embeds, content: null }).catch(() => null);
-    if (!edited) {
-      console.warn('[available-teams] Failed to edit existing pin.');
+      console.warn('[available-teams] No existing pin found; skipping update.');
       return false;
     }
-    if (!pinState.messageId) {
-      saveJson(PIN_FILE, { messageId: botPin.id });
-    }
+    await botPin.edit({ embeds, content: null }).catch(() => null);
     return true;
   };
 
-  let ok = await attempt();
-  let tries = 0;
-  while (!ok && tries < retries) {
-    tries += 1;
-    await new Promise(res => setTimeout(res, retryDelayMs));
-    ok = await attempt();
-  }
+  await attempt();
 }
 
 export default { updateAvailableTeamsPin };

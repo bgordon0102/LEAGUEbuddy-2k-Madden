@@ -8,6 +8,9 @@ const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.jso
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
 const LOGO_DIR = path.join(process.cwd(), 'college football logos');
+const POINTS_PER_WEEK = 60;
+const BONUS_CAP = 60; // additional, so max 120
+const TOTAL_CAP = 120;
 
 function safeReadJSON(file, fallback) {
   try {
@@ -70,6 +73,16 @@ function hydrateFromLog(userId, classKey) {
   }
 }
 
+function logClassIdsForUser(userId) {
+  try {
+    const log = JSON.parse(fs.readFileSync(SCOUT_LOG_PATH, 'utf8'));
+    if (!Array.isArray(log)) return [];
+    return Array.from(new Set(log.filter(e => e.userId === userId && e.classId).map(e => e.classId.toLowerCase()))).sort();
+  } catch {
+    return [];
+  }
+}
+
 function getSchoolLogo(school) {
   if (!school) return null;
   const base = school.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
@@ -91,14 +104,28 @@ function buildPagesForUser(userId, guildId) {
   const devEmojis = safeReadJSON(DEV_EMOJI_PATH, {});
   const userData = scoutData[userId] || {};
   userData.players = userData.players || {};
-  if (!Object.keys(userData.players).length) {
-    return { error: 'You have not scouted any players yet.' };
-  }
+  userData.weeklyPoints = userData.weeklyPoints || {};
+  userData.bonus = userData.bonus || {};
 
   const pages = [];
 
   // Prefer current class; if empty, fall back to latest class with data (still one class only)
-  const availableClassKeys = Object.keys(userData.players).sort();
+  let availableClassKeys = Object.keys(userData.players).sort();
+  // If nothing in scout_points yet, seed from scout_log for the latest class this user has entries for
+  if (!availableClassKeys.length) {
+    const logClasses = logClassIdsForUser(userId);
+    const seedClass = logClasses[logClasses.length - 1] || currentNorm;
+    const seedFromLog = hydrateFromLog(userId, seedClass);
+    if (seedFromLog && Object.keys(seedFromLog).length) {
+      userData.players[seedClass] = seedFromLog;
+      availableClassKeys = Object.keys(userData.players).sort();
+      scoutData[userId] = userData;
+      fs.writeFileSync(SCOUT_PATH, JSON.stringify(scoutData, null, 2));
+    }
+  }
+  if (!availableClassKeys.length) {
+    return { error: 'You have not scouted any players yet.' };
+  }
   let targetClassId = currentClassId;
   let playersByClass = userData.players[currentClassId] || userData.players[currentNorm];
   if (!playersByClass || !Object.keys(playersByClass).length) {
@@ -134,7 +161,19 @@ function buildPagesForUser(userId, guildId) {
     return { error: 'You have not scouted any players yet for the current class.' };
   }
 
-  const entries = Object.entries(playersByClass);
+  // Build/ensure ordering list for this class
+  userData.order = userData.order || {};
+  const orderList = Array.isArray(userData.order[resolvedClassKey]) ? [...userData.order[resolvedClassKey]] : [];
+  const names = Object.keys(playersByClass);
+  // add any missing names to order list at the end
+  names.forEach(n => { if (!orderList.includes(n)) orderList.push(n); });
+  // drop any stale names
+  const filteredOrder = orderList.filter(n => names.includes(n));
+  userData.order[resolvedClassKey] = filteredOrder;
+  scoutData[userId] = userData;
+  fs.writeFileSync(SCOUT_PATH, JSON.stringify(scoutData, null, 2));
+
+  const entries = filteredOrder.map(name => [name, playersByClass[name]]);
   const items = entries.map(([name, unlocked]) => {
     const p = Object.values(draftData).find(pl => pl.name === name);
     if (!p) return null;
@@ -157,19 +196,18 @@ function buildPagesForUser(userId, guildId) {
     return { line, boardKey, name };
   }).filter(Boolean);
 
-  items.sort((a, b) => {
-    if (a.boardKey !== b.boardKey) return a.boardKey - b.boardKey;
-    return (a.name || '').localeCompare(b.name || '');
-  });
   const desc = items.map(i => i.line);
+  const orderedNames = items.map(i => i.name);
   if (!desc.length) return { error: 'You have not scouted any players yet for the current class.' };
 
   // Chunk by count (10 per page) to keep navigation consistent
   const PAGE_SIZE = 10;
   const classPages = [];
+  const classNames = [];
   for (let i = 0; i < desc.length; i += PAGE_SIZE) {
     const slice = desc.slice(i, i + PAGE_SIZE).map((line, idx) => `${i + idx + 1}. ${line}`);
     classPages.push(slice);
+    classNames.push(orderedNames.slice(i, i + PAGE_SIZE));
   }
 
   classPages.forEach((lines, idx) => {
@@ -178,11 +216,33 @@ function buildPagesForUser(userId, guildId) {
         .setTitle(`Your Scouted Players — ${resolvedClassKey.toUpperCase()}${classPages.length > 1 ? ` (Page ${idx + 1}/${classPages.length})` : ''}`)
         .setDescription(lines.join('\n\n'))
         .setColor(0x1e90ff),
+      players: classNames[idx] || [],
     });
   });
 
   if (!pages.length) return { error: 'You have not scouted any players yet.' };
-  return { pages };
+  // Points header
+  const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+  const currentWeek = snapshot?.currentWeek ?? seasonInfo.displayWeek ?? 0;
+  const seasonWeekType = seasonInfo.seasonWeekType ?? snapshot?.stage ?? 0;
+  const seasonTitle = (seasonInfo.seasonTitle || '').toLowerCase();
+  const draftInactive = seasonInfo.isDraftActive === false && seasonInfo.isLeagueStarted === true && seasonWeekType !== 1;
+  const isRegularOrPost = seasonWeekType === 1 || seasonWeekType === 2;
+  const isOffseason = seasonWeekType === 3 || seasonWeekType === 8 || seasonTitle.includes('offseason') || draftInactive || !isRegularOrPost;
+  const seasonKey = `year_${calendarYear}`;
+  const bonus = Math.min(Number(userData.bonus[seasonKey]) || 0, BONUS_CAP);
+  const allowance = isOffseason ? 300 : Math.min(POINTS_PER_WEEK + bonus, TOTAL_CAP);
+  const weekKey = isOffseason ? `year_${calendarYear}_offseason_total` : `year_${calendarYear}_week_${currentWeek}`;
+  const remainingRaw = userData.weeklyPoints[weekKey];
+  const remaining = Number.isFinite(remainingRaw) ? Number(remainingRaw) : allowance;
+
+  pages.forEach((p) => {
+    const header = `**Points:** ${remaining}/${allowance} (bonus +${bonus}, cap ${TOTAL_CAP})`;
+    const desc = p.embed.data.description || '';
+    p.embed.setDescription([header, desc].filter(Boolean).join('\n\n'));
+  });
+
+  return { pages, classKey: resolvedClassKey, order: filteredOrder };
 }
 
 export const data = new SlashCommandBuilder()
@@ -195,14 +255,14 @@ export async function execute(interaction) {
     try { await interaction.deferReply({ flags: 64 }); } catch (_) {}
   }
   const userId = interaction.user.id;
-  const { pages, error } = buildPagesForUser(userId, interaction.guildId);
+  const { pages, error, classKey } = buildPagesForUser(userId, interaction.guildId);
   if (error) {
     await interaction.editReply({ content: error, ephemeral: true });
     return;
   }
   const total = pages.length;
   const pageIndex = 0;
-  const { ButtonBuilder, ButtonStyle, ActionRowBuilder } = await import('discord.js');
+  const { ButtonBuilder, ButtonStyle, ActionRowBuilder, StringSelectMenuBuilder } = await import('discord.js');
   const rowNeeded = total > 1;
   const row = rowNeeded ? new ActionRowBuilder().addComponents(
     new ButtonBuilder()
@@ -217,9 +277,23 @@ export async function execute(interaction) {
       .setDisabled(total <= 1),
   ) : null;
 
+  const moveRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`madden_myscouts_move|${userId}|${classKey}|${pageIndex}|up`).setStyle(ButtonStyle.Secondary).setLabel('↑'),
+    new ButtonBuilder().setCustomId(`madden_myscouts_move|${userId}|${classKey}|${pageIndex}|down`).setStyle(ButtonStyle.Secondary).setLabel('↓'),
+    new ButtonBuilder().setCustomId(`madden_myscouts_move|${userId}|${classKey}|${pageIndex}|top`).setStyle(ButtonStyle.Secondary).setLabel('Top'),
+    new ButtonBuilder().setCustomId(`madden_myscouts_move|${userId}|${classKey}|${pageIndex}|bottom`).setStyle(ButtonStyle.Secondary).setLabel('Bottom'),
+  );
+
+  const selectRow = new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(`madden_myscouts_select|${userId}|${classKey}|${pageIndex}`)
+      .setPlaceholder('Pick a player to move')
+      .addOptions((pages[0].players || []).map(p => ({ label: p.slice(0, 100), value: p })))
+  );
+
   await interaction.editReply({
     embeds: [pages[pageIndex].embed],
-    components: row ? [row] : [],
+    components: [moveRow, selectRow].concat(row ? [row] : []),
     ephemeral: true,
   });
 }

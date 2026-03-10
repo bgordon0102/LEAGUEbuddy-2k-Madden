@@ -120,12 +120,14 @@ export async function runSync(leagueId, provider, options = {}) {
     }
     const client = await createEAClientFromEnv({ ...process.env, EA_ACCESS_TOKEN: tokens.accessToken, EA_REFRESH_TOKEN: tokens.refreshToken, EA_ACCESS_TOKEN_EXPIRES_AT: tokens.expiry, EA_CONSOLE: tokens.console, EA_BLAZE_ID: tokens.blazeId, EA_GAME_YEAR: tokens.gameYear });
     let info = null;
+    let seasonInfo = null;
     let currentWeek = null;
     let stage = Stage.SEASON;
     if (provider) {
       try {
         const wk = await provider.getCurrentWeek(String(leagueId));
         currentWeek = wk.week;
+        seasonInfo = wk.seasonInfo || seasonInfo;
         stage = wk.stage === 'preseason' ? Stage.PRESEASON : Stage.SEASON;
       } catch (e) {
         console.warn('[madden-sync] provider getCurrentWeek failed, falling back to EA hub:', e?.message || e);
@@ -133,7 +135,7 @@ export async function runSync(leagueId, provider, options = {}) {
     }
     if (!info || currentWeek === null || currentWeek === undefined || currentWeek <= 0) {
       info = await client.getLeagueInfo(Number(leagueId));
-      const seasonInfo = info?.careerHubInfo?.seasonInfo || {};
+      seasonInfo = seasonInfo || info?.careerHubInfo?.seasonInfo || {};
       const infoDisplayWeek = seasonInfo.displayWeek;
       const infoWeek = seasonInfo.seasonWeek;
       // Madden hub appears to store seasonWeek as 0-based; displayWeek is already 1-based.
@@ -146,6 +148,7 @@ export async function runSync(leagueId, provider, options = {}) {
       const infoStage = seasonInfo.seasonWeekType ?? seasonInfo.seasonStage;
       stage = infoStage === 0 ? Stage.PRESEASON : Stage.SEASON;
     }
+    if (!seasonInfo) seasonInfo = {};
     // Fallback: parse from getLeagues seasonText if still unset/zero.
     if (currentWeek === null || currentWeek === undefined || currentWeek <= 0) {
       try {
@@ -176,6 +179,17 @@ export async function runSync(leagueId, provider, options = {}) {
       } catch (e) {
         console.warn('[madden-sync] provider getFullSchedule failed, falling back to EA:', e?.message || e);
       }
+    }
+    // If preseason or early regular season and provider data looks stale (seasonIndex<=0 or missing week0 stage1),
+    // force an EA refetch of the schedule to capture the new year.
+    const seasonWeekType = seasonInfo?.seasonWeekType ?? 1; // 0=preseason, 1=regular
+    const seasonIdx = seasonInfo?.seasonIndex ?? 1;
+    const schedSeasons = (schedule?.schedules || []).map(g => Number(g.seasonIndex ?? g.seasonId ?? g.seasonYear ?? 0));
+    const maxSchedSeason = schedSeasons.length ? Math.max(...schedSeasons) : -1;
+    const hasWeek0Reg = (schedule?.schedules || []).some(g => Number(g.stageIndex ?? g.stage ?? 1) === 1 && Number(g.weekIndex ?? g.week ?? 0) === 0);
+    const scheduleLooksStale = (!schedSeasons.length) || (maxSchedSeason < seasonIdx) || (!hasWeek0Reg && seasonWeekType <= 1);
+    if (scheduleLooksStale && seasonWeekType <= 1) {
+      schedule = { schedules: [] };
     }
     const weekBuckets = {
       preseason: [0, 1, 2, 3],
@@ -321,9 +335,24 @@ export async function runSync(leagueId, provider, options = {}) {
         await collectWeek(m.weekIndex, m.stage);
       }
     }
+    // Debug: log collected week counts
+    try {
+      const collectedSummary = Array.from(collectedByKey.values()).map(e => ({
+        weekIndex: e.weekIndex,
+        stage: e.stage,
+        playerCount: e.playerCount ?? countPlayers(e),
+      }));
+      console.log('[sync] collected weeks summary', collectedSummary);
+    } catch {}
 
     // If schedule fetch returned empty, fall back to previous snapshot schedule if available from file
     let finalSchedule = schedule;
+
+    // If this looks like the first week of a new regular season, discard old weekly stats to avoid cross-season bleed
+    if ((seasonInfo?.seasonWeekType === 1) && (seasonInfo?.seasonWeek === 1 || currentWeek === 1) && !weekOverride) {
+      existingSnapshot = existingSnapshot || {};
+      existingSnapshot.weeklyStats = [];
+    }
 
     // Merge collected weeks with existing weekly stats, picking the richer entry per week/stage
     const mergedWeekly = (() => {
@@ -365,7 +394,7 @@ export async function runSync(leagueId, provider, options = {}) {
       }).sort((a, b) => (a.stage - b.stage) || (a.weekIndex - b.weekIndex));
     })();
 
-    const seasonInfo = info?.careerHubInfo?.seasonInfo || existingSnapshot?.info?.careerHubInfo?.seasonInfo || {};
+    const seasonInfoFinal = info?.careerHubInfo?.seasonInfo || existingSnapshot?.info?.careerHubInfo?.seasonInfo || {};
     const snapshot = {
       fetchedAt: new Date().toISOString(),
       leagueId,
@@ -422,7 +451,7 @@ export async function runSync(leagueId, provider, options = {}) {
         playerCount: w.playerCount ?? 0,
       })),
       outPath,
-      offSeasonStage: seasonInfo.offSeasonStage ?? 0,
+      offSeasonStage: seasonInfoFinal.offSeasonStage ?? 0,
     };
   } catch (err) {
     console.error('❌ Madden sync failed:', err);

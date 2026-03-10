@@ -5,10 +5,15 @@ export const customId = /^madden_top100test_prev/;
 export async function execute(interaction) {
   if (!interaction.isButton()) return;
   try {
+    const parts = (interaction.customId || '').split('|');
+    const scope = parts[1] || 'season';
+    const week = parts[2] === 'null' ? null : Number(parts[2]);
+    const page = Number(parts[3] || 1);
+    const isPublic = parts[4] === '1';
     const mod = await import('../commands/madden/staff/top100test.js');
     const top100test = mod?.execute || mod?.default;
     if (typeof top100test !== 'function') throw new Error('top100test handler missing');
-    await top100test(interaction);
+    await top100test(interaction, { scope, week, page, public: isPublic });
   } catch (err) {
     console.error('[madden_top100test_prev] failed:', err);
     if (!interaction.replied && !interaction.deferred) {

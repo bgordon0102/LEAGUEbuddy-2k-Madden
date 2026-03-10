@@ -1,17 +1,19 @@
 {
-  "builder_1008524627980595281_1772564917197": {
-    "draftId": "builder_1008524627980595281_1772564917197",
-    "userId": "1008524627980595281",
+  "builder_1076243288056664234_1772949920120": {
+    "draftId": "builder_1076243288056664234_1772949920120",
+    "userId": "1076243288056664234",
     "guildId": "1255691165265821747",
     "leagueId": "16594549",
-    "yourTeamId": 775553024,
-    "otherTeamId": 775553054,
-    "yourTeamName": "49ers",
+    "yourTeamId": 775553028,
+    "otherTeamId": "775553054",
+    "yourTeamName": "Broncos",
     "otherTeamName": "Ravens",
     "assets": {
       "your": [],
       "other": []
     },
-    "savedAt": 1772564917197
+    "savedAt": 1772949924472,
+    "yourTeam": "Broncos",
+    "otherTeam": "Ravens"
   }
 }

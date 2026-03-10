@@ -6,6 +6,7 @@ import { draftOrder, applyPickTrades } from '../coach/mockdraft.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
+const TEAM_EMOJI_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
 const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
 // Specific fallback pin/message id provided by user
 const FALLBACK_PIN_ID = '1469153107207393465';
@@ -68,6 +69,15 @@ function formatTeamName(team) {
   return nick || city || `Team ${team?.teamId}`;
 }
 
+function teamEmoji(team, emojiMap = {}) {
+  const name = normalizeName(team?.displayName) || normalizeName(team?.nickName) || '';
+  const key = name || (team?.cityName || '').trim();
+  const emojiId = emojiMap[key] || emojiMap[name];
+  if (!emojiId) return '';
+  const safeName = `team_${(key || name).toLowerCase().replace(/\s+/g, '_')}`;
+  return `<:${safeName}:${emojiId}> `;
+}
+
 function resolveRoleId(team, roleMap) {
   const nick = normalizeName(team?.displayName) || normalizeName(team?.nickName) || '';
   const city = team?.cityName || '';
@@ -107,7 +117,13 @@ function normalizeKey(name = '') {
 function buildPickMap(snapshot) {
   if (!snapshot) return new Map();
   let order = [];
-  try { order = applyPickTrades(draftOrder(snapshot)); } catch { return new Map(); }
+  try {
+    const seasonYear =
+      snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear ||
+      snapshot?.info?.calendarYear ||
+      snapshot?.calendarYear;
+    order = applyPickTrades(draftOrder(snapshot), seasonYear);
+  } catch { return new Map(); }
   const map = new Map();
   order.forEach((pick, idx) => {
     const ownerName = pick.name || pick.nick || '';
@@ -171,6 +187,9 @@ async function execute(interaction) {
     }
 
     const snapshot = loadLeagueSnapshot(leagueId);
+    const emojiMap = (() => {
+      try { return JSON.parse(fs.readFileSync(TEAM_EMOJI_FILE, 'utf8')); } catch { return {}; }
+    })();
     const teams = snapshot?.teams?.leagueTeamInfoList || [];
     const standings = snapshot?.standings?.teamStandingInfoList || [];
     const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
@@ -195,6 +214,7 @@ async function execute(interaction) {
       if (assigned) continue;
       if (isOffseason) {
         const nameFormatted = formatTeamName(t);
+        const prefix = teamEmoji(t, emojiMap);
         const keys = [
           normalizeKey(nameFormatted),
           normalizeKey((nameFormatted.split(/\s+/).pop()) || ''),
@@ -214,9 +234,10 @@ async function execute(interaction) {
         const pickText = deduped && deduped.length
           ? deduped.map(p => p.via ? `${p.num} (via ${p.via})` : `${p.num}`).join(', ')
           : 'none';
-        lines.push(`${nameFormatted} — Picks: ${pickText}`);
+        lines.push(`${prefix}${nameFormatted} — Picks: ${pickText}`);
       } else {
-        lines.push(`${formatTeamName(t)} — Open`);
+        const prefix = teamEmoji(t, emojiMap);
+        lines.push(`${prefix}${formatTeamName(t)} — Open`);
       }
     }
 

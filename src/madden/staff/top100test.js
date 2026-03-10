@@ -85,6 +85,7 @@ export async function execute(interaction, options = {}) {
     return { scope, week, page, isPublic: isPublicParsed };
   };
   const parsed = isButton ? parseButtonState() : {};
+  console.log('[top100test] parsed', parsed, { isButton });
   if (isButton && (parsed.page === undefined || parsed.scope === undefined)) {
     try {
       await interaction.update({ content: 'Interaction expired. Please rerun `/madden-top100test`.', components: [], embeds: [] });
@@ -107,8 +108,23 @@ export async function execute(interaction, options = {}) {
     else await interaction.update({ content: 'Could not load league data.', components: [], embeds: [] });
     return;
   }
-  const scope = parsed.scope || interaction.options?.getString?.('scope') || options.scope || 'season';
-  const weekOpt = parsed.week ?? interaction.options?.getInteger?.('week') ?? options.week;
+  const scope = options.scope || parsed.scope || interaction.options?.getString?.('scope') || 'season';
+  const weekOpt = options.week ?? parsed.week ?? interaction.options?.getInteger?.('week');
+  console.log('[top100test] start', { scope, weekOpt, parsedWeek: parsed.week, isButton, isPublic, leagueId });
+  const snapshotPath = path.join(process.cwd(), 'data', 'madden', 'leagues', `${leagueId}.json`);
+  let snapshotMtime = null;
+  try { snapshotMtime = fs.statSync(snapshotPath).mtimeMs; } catch {}
+  const historyDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId));
+  const historyFresh = () => {
+    try {
+      const files = fs.readdirSync(historyDir).filter(f => f.endsWith('.json'));
+      if (!files.length || !snapshotMtime) return false;
+      const newest = Math.max(...files.map(f => fs.statSync(path.join(historyDir, f)).mtimeMs));
+      return newest >= snapshotMtime - 2000; // allow slight clock drift
+    } catch {
+      return false;
+    }
+  };
   // Defer after knowing visibility
   if (!isButton) {
     try {
@@ -127,68 +143,42 @@ export async function execute(interaction, options = {}) {
 
   let allPlayers;
   if (scope === 'season') {
-    // Prefer history (covers week_*.json and week-*.json)
-    try {
-      allPlayers = computeSeasonTop100FromHistory(leagueId) || [];
-    } catch {
-      allPlayers = [];
-    }
-    // Fallback: saved season file
-    if (!allPlayers.length) {
+    // Prefer fresh history; if stale/missing, compute from current snapshot's latest Stage 1 week
+    if (historyFresh()) {
       try {
-        const data = JSON.parse(fs.readFileSync(SEASON_FILE, 'utf8'));
-        const leagueBlob = data?.[leagueId] || data; // tolerate legacy shape
-        allPlayers = Array.isArray(leagueBlob?.seasonTop100)
-          ? leagueBlob.seasonTop100
-          : Array.isArray(leagueBlob?.top100)
-            ? leagueBlob.top100
-            : Array.isArray(data)
-              ? data
-              : [];
+        allPlayers = computeSeasonTop100FromHistory(leagueId) || [];
       } catch {
         allPlayers = [];
       }
     }
     if (!allPlayers.length) {
-      const msg = 'No season Top 100 saved yet. Run the season exporter first.';
+      // compute from latest stage1 week in snapshot
+      const stage1Weeks = (snapshot?.weeklyStats || [])
+        .filter(w => Number(w.stage ?? w.stageIndex ?? 0) === 1)
+        .filter(w => {
+          const buckets = [
+            w?.passing?.playerPassingStatInfoList,
+            w?.rushing?.playerRushingStatInfoList,
+            w?.receiving?.playerReceivingStatInfoList,
+            w?.defense?.playerDefensiveStatInfoList,
+          ];
+          return buckets.some(b => Array.isArray(b) && b.length > 0);
+        })
+        .map(w => Number(w.weekIndex));
+      const latest = stage1Weeks.length ? Math.max(...stage1Weeks) : null;
+      if (latest != null) {
+        allPlayers = computeWeeklyList(snapshot, latest);
+      }
+    }
+    if (!allPlayers.length) {
+      const msg = 'No season Top 100 available yet. Run weekly update first.';
       if (!isButton) await interaction.editReply(msg); else await interaction.update({ content: msg, components: [], embeds: [] });
       return;
     }
   } else {
-    const historyDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId));
-    const file = path.join(historyDir, `week-${week}.json`);
-    const allFile = path.join(historyDir, `week-${week}-all.json`);
-    const fileUnderscore = path.join(historyDir, `week_${week}.json`);
-    const allFileUnderscore = path.join(historyDir, `week_${week}_all.json`);
-    let loaded = [];
-    try {
-      const data = JSON.parse(fs.readFileSync(allFile, 'utf8'));
-      if (Array.isArray(data?.players)) loaded = data.players;
-    } catch { }
-    if (!loaded.length) {
-      try {
-        const data = JSON.parse(fs.readFileSync(file, 'utf8'));
-        if (Array.isArray(data?.top100)) loaded = data.top100;
-      } catch { }
-    }
-    if (!loaded.length) {
-      try {
-        const data = JSON.parse(fs.readFileSync(allFileUnderscore, 'utf8'));
-        const arr = Array.isArray(data?.players) ? data.players : data?.top100;
-        if (Array.isArray(arr)) loaded = arr;
-      } catch { }
-    }
-    if (!loaded.length) {
-      try {
-        const data = JSON.parse(fs.readFileSync(fileUnderscore, 'utf8'));
-        const arr = Array.isArray(data?.top100) ? data.top100 : data?.players;
-        if (Array.isArray(arr)) loaded = arr;
-      } catch { }
-    }
-    if (!loaded.length) {
-      loaded = computeWeeklyList(snapshot, week);
-    }
-    allPlayers = loaded;
+    // For weekly scope always compute from the current snapshot to avoid stale history bleed
+    console.log('[top100test] computing weekly list from snapshot', { week });
+    allPlayers = computeWeeklyList(snapshot, week);
   }
   if (!allPlayers.length) {
     if (!isButton) await interaction.editReply('No player stats found for the latest week.');
@@ -210,7 +200,7 @@ export async function execute(interaction, options = {}) {
   // Only show the top 100
   allPlayers = allPlayers.slice(0, 100);
   // Accept page override from options (for button handlers)
-  let page = parsed.page || options.page || 1;
+  let page = options.page || parsed.page || 1;
   const perPage = 10;
   const totalPages = Math.ceil(allPlayers.length / perPage);
   if (page < 1) page = 1;
@@ -275,6 +265,7 @@ export async function execute(interaction, options = {}) {
   const getPageEmbed = (pageNum) => {
     const start = (pageNum - 1) * perPage;
     const slice = allPlayers.slice(start, start + perPage);
+    console.log('[top100test] render page', { scope, week, pageNum, totalPlayers: allPlayers.length, start, end: start + perPage });
     const lines = slice.map((p, idx) => {
       const normalizedTeam = normalizeTeamName(p.team);
       const emoji = getTeamEmoji(normalizedTeam);

@@ -160,20 +160,13 @@ export async function updatePowerRankings(client, leagueId) {
   };
 
   const pinId = getPinId('power_rankings');
-  if (pinId) {
-    const msg = await channel.messages.fetch(pinId).catch(() => null);
-    if (msg) {
-      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
-    } else {
-      const newMsg = await channel.send({ embeds: [embed] });
-      try { await newMsg.pin(); } catch { /* ignore */ }
-      setPinId('power_rankings', newMsg.id);
-    }
-  } else {
-    const msg = await channel.send({ embeds: [embed] });
-    try { await msg.pin(); } catch { /* ignore */ }
-    setPinId('power_rankings', msg.id);
+  if (!pinId) return;
+  const msg = await channel.messages.fetch(pinId).catch(() => null);
+  if (!msg) {
+    console.warn('[power_rankings] pin not found; skipping create');
+    return;
   }
+  await msg.edit({ embeds: [embed], content: null }).catch(() => null);
 
   // Tag new entrants separately
   if (newEntrants.length && channel?.isTextBased()) {
@@ -215,16 +208,10 @@ export async function resetPowerRankings(client) {
   };
 
   const pinId = getPinId('power_rankings');
-  if (pinId) {
-    const msg = await channel.messages.fetch(pinId).catch(() => null);
-    if (msg) {
-      await msg.edit({ embeds: [embed], content: null }).catch(() => null);
-      return;
-    }
-  }
-  const msg = await channel.send({ embeds: [embed] });
-  try { await msg.pin(); } catch { /* ignore */ }
-  setPinId('power_rankings', msg.id);
+  if (!pinId) return;
+  const msg = await channel.messages.fetch(pinId).catch(() => null);
+  if (!msg) return;
+  await msg.edit({ embeds: [embed], content: null }).catch(() => null);
 }
 
 export default { updatePowerRankings };

@@ -1,9 +1,10 @@
-import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, PermissionFlagsBits, PermissionsBitField } from 'discord.js';
 import { updateAvailable2KTeamsPin } from '../../../2k/available_teams.js';
 import fs from 'fs';
 import path from 'path';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json');
+const STAFF_MAP_FILE = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
 
 const NBA_TEAMS = [
     'Hawks', 'Celtics', 'Nets', 'Hornets', 'Bulls', 'Cavaliers', 'Mavericks', 'Nuggets', 'Pistons',
@@ -11,7 +12,23 @@ const NBA_TEAMS = [
     'Pelicans', 'Knicks', 'Thunder', 'Magic', '76ers', 'Suns', 'Trail Blazers', 'Kings', 'Spurs', 'Raptors', 'Jazz', 'Wizards'
 ];
 
-const STAFF_ROLES = ['Commish', 'Schedule Tracker', 'Gameplay Mod', 'Ghost Paradise'];
+const STAFF_ROLES = ['Paradise Commish', 'Paradise Co-Commish', 'Schedule Tracker', 'Gameplay Mod', 'Ghost Paradise'];
+
+function loadStaffIds() {
+    try {
+        return JSON.parse(fs.readFileSync(STAFF_MAP_FILE, 'utf8'));
+    } catch {
+        return {};
+    }
+}
+
+function isStaff(member) {
+    const staffMap = loadStaffIds();
+    const allowedIds = STAFF_ROLES.map(name => staffMap[name]).filter(Boolean);
+    if (allowedIds.some(id => member.roles.cache.has(id))) return true;
+    // Fallback to ManageChannels/Admin if mapping missing
+    return member.permissions.has(PermissionsBitField.Flags.ManageChannels) || member.permissions.has(PermissionsBitField.Flags.Administrator);
+}
 
 export const data = new SlashCommandBuilder()
     .setName('2k-assignrole')
@@ -30,7 +47,7 @@ export const data = new SlashCommandBuilder()
             .setDescription('The second role to assign (optional)')
             .setRequired(false)
             .setAutocomplete(true))
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+    .setDefaultMemberPermissions(null);
 
 export async function execute(interaction) {
     if (!interaction.isChatInputCommand()) {
@@ -67,6 +84,11 @@ export async function execute(interaction) {
     const user = interaction.options.getUser('user');
     const roleName1 = interaction.options.getString('role1');
     const roleName2 = interaction.options.getString('role2');
+    const invoker = interaction.guild.members.cache.get(interaction.user.id);
+    if (!invoker || !isStaff(invoker)) {
+        await replyMethod('Only Commish/Co-Commish staff can use this command.');
+        return;
+    }
     const member = interaction.guild.members.cache.get(user.id);
     if (!member) {
         await replyMethod('User not found in this server.');

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { loadPickOverrides as loadPickOverridesFile } from '../pick_overrides_store.js';
 
 let currentCalendarYear = 2025;
 let staffClassOverride = null;
@@ -484,19 +485,47 @@ export function draftOrder(league) {
 }
 
 // Pick trades/forfeitures (manual overrides)
-function applyPickTrades(order) {
-  // map: original pick owner nickname -> new owner (full name) plus via tag
-  const overrides = {
-    Falcons: { owner: 'Los Angeles Rams', via: 'ATL' },
-    Jaguars: { owner: 'Cleveland Browns', via: 'JAX' },
-    Jags: { owner: 'Cleveland Browns', via: 'JAX' },
-    Colts: { owner: 'New York Jets', via: 'IND' },
-    Pack: { owner: 'Dallas Cowboys', via: 'GB' },
-    Packers: { owner: 'Dallas Cowboys', via: 'GB' },
-  };
+function normalizeTeamKey(name = '') {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function loadPickOverridesList(seasonYear) {
+  const file = path.join(process.cwd(), 'data', 'madden', 'pick_overrides.json');
+  try {
+    const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const list = Array.isArray(raw?.overrides) ? raw.overrides : [];
+    return list.filter(o =>
+      (!o.year || Number(o.year) === Number(seasonYear)) &&
+      (!o.round || Number(o.round) === 1) // only care about R1 for mock
+    );
+  } catch {
+    return [];
+  }
+}
+
+// Pick trades/forfeitures (manual overrides)
+function applyPickTrades(order, seasonYear = currentCalendarYear) {
+  // Load persisted overrides; fall back to legacy hardcoded list
+  const fileOverrides = loadPickOverridesList(seasonYear).concat(loadPickOverridesFile());
+  const legacy = [
+    { from: 'Falcons', to: 'Los Angeles Rams', via: 'ATL' },
+    { from: 'Jaguars', to: 'Cleveland Browns', via: 'JAX' },
+    { from: 'Jags', to: 'Cleveland Browns', via: 'JAX' },
+    { from: 'Colts', to: 'New York Jets', via: 'IND' },
+    { from: 'Pack', to: 'Dallas Cowboys', via: 'GB' },
+    { from: 'Packers', to: 'Dallas Cowboys', via: 'GB' },
+  ];
+  const overrides = [...fileOverrides, ...legacy];
+  const map = new Map();
+  overrides.forEach(o => {
+    const key = normalizeTeamKey(o.from || o.owner || '');
+    if (!key) return;
+    map.set(key, { owner: o.to || o.owner, via: o.via || (o.from && o.from.slice(0,3).toUpperCase()) });
+  });
+
   return order.map(pick => {
-    const key = pick.name || pick.nick || '';
-    const o = overrides[key] || overrides[key?.trim?.()];
+    const key = normalizeTeamKey(pick.name || pick.nick || '');
+    const o = map.get(key);
     return o ? { ...pick, name: o.owner, via: o.via } : pick;
   });
 }
@@ -504,18 +533,26 @@ function applyPickTrades(order) {
 function loadDraftClass() {
   const dir = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
   if (!fs.existsSync(dir)) return [];
-  // choose file by classId for current calendar year
-  const classIdForSeason = (calendarYear) => {
-    const idx = Math.max(1, (calendarYear || 2025) - 2025 + 1);
-    return `cus_${String(idx).padStart(2, '0')}`;
-  };
   const calendarYear = staffClassOverride?.season || currentCalendarYear;
-  const classId = (staffClassOverride?.classId) || classIdForSeason(calendarYear);
-  const target = fs.readdirSync(dir)
-    .filter(f => f.toLowerCase().includes(classId.replace('_', '')) && f.toLowerCase().endsWith('.json'))
-    .sort();
-  const pickFile = target.length ? target[0] : null;
-  if (!pickFile) return [];
+  const yearShort = Number(String(calendarYear || 2025).slice(-2));
+  const files = fs.readdirSync(dir).filter(f => f.toLowerCase().endsWith('.json'));
+  if (!files.length) return [];
+
+  const parsed = files.map(f => {
+    const m = f.match(/madden(\d+)_cus(\d+)/i);
+    const mYear = m ? Number(m[1]) : null;
+    return { f, mYear, cus: m?.[2] || null, time: fs.statSync(path.join(dir, f)).mtimeMs };
+  });
+
+  // Prefer the file whose Madden year is the closest at/above the current cycle; fallback to newest
+  const ranked = parsed
+    .filter(p => p.mYear !== null)
+    .sort((a, b) => {
+      const diffA = Math.abs((a.mYear || 0) - yearShort);
+      const diffB = Math.abs((b.mYear || 0) - yearShort);
+      return diffA - diffB || (b.time - a.time);
+    });
+  const pickFile = (ranked[0]?.f) || parsed.sort((a,b)=>b.time-a.time)[0].f;
   const data = JSON.parse(fs.readFileSync(path.join(dir, pickFile), 'utf8'));
   const players = Object.values(data).filter(p => p && p.name);
   players.sort((a, b) => (a.RNK || a.rank || a.order || 9999) - (b.RNK || b.rank || b.order || 9999));
@@ -759,6 +796,17 @@ function deriveTeamNeeds(league) {
         // Manual nudge list (smaller)
         if (RB_MANUAL.has(normTeam)) score += 10;
       }
+      if (group === 'DT') {
+        // Many fronts play two DTs; treat sub-3 depth as a real need
+        const depth = stat.count || 0;
+        if (depth < 4) score += 10; // want at least a rotation piece
+        if (depth < 3) score += 18; // no true backup for 2-starter fronts
+        if (depth < 2) score += 28; // glaring hole
+        if ((stat.avgOvr || 0) < 76) score += 10; // middling talent bumps urgency
+        const paR = paRank[tid];
+        if (paR && paR <= 10) score += 8; // bottom-10 scoring defense → shore up interior
+        else if (paR && paR >= 24) score -= 6; // strong defense can deprioritize slightly
+      }
       // EDGE tuning: avoid over-flagging if room is already deep/solid
       if (group === 'EDGE') {
         if ((stat.count || 0) >= 5) score -= 25;
@@ -821,10 +869,6 @@ function prospectGroup(player) {
 export const data = new SlashCommandBuilder()
   .setName('madden-mockdraft')
   .setDescription('Show a mock draft for the top 32 picks using current standings and the latest draft class')
-  .addStringOption(opt =>
-    opt.setName('class_id')
-      .setDescription('[Staff] Override draft class id (e.g., cus_02)')
-      .setRequired(false))
   .addIntegerOption(opt =>
     opt.setName('season')
       .setDescription('[Staff] Override calendar year (e.g., 2026)')
@@ -840,10 +884,8 @@ export async function execute(interaction) {
   // Staff-only overrides
   const staff = interaction.member?.permissions?.has?.('Administrator') || false;
   const seasonOverride = staff ? interaction.options.getInteger('season') : null;
-  const classOverride = staff ? interaction.options.getString('class_id') : null;
   staffClassOverride = {
     season: seasonOverride || null,
-    classId: classOverride || null,
   };
 
   const leagueFile = getLatestLeagueFile();
@@ -859,7 +901,7 @@ export async function execute(interaction) {
     || league?.calendarYear
     || 2025;
   const rawOrder = draftOrder(league);
-  const order = applyPickTrades(rawOrder);
+  const order = applyPickTrades(rawOrder, currentCalendarYear);
   const needs = deriveTeamNeeds(league);
   const prospects = loadDraftClass();
   if (!prospects.length) {
@@ -1005,10 +1047,17 @@ const template = [
     for (let i = 0; i < available.length; i++) {
       if (i >= boardWindow) break; // limit reach
       const p = available[i];
+      const nameLower = (p.name || '').toLowerCase();
       const g = prospectGroup(p);
+      const isKeonDavis = nameLower === 'keon davis';
       // Always allow top-5 board into first 10 picks regardless of needs
       const eliteBoard = (i < 5 && pickNumber <= 10);
       if (eliteBoard) {
+        candidateIndices.push(i);
+        continue;
+      }
+      // DTs often start two; don't let a first-round DT like Keon Davis fall out of window
+      if (isKeonDavis && pickNumber <= 32) {
         candidateIndices.push(i);
         continue;
       }
@@ -1063,6 +1112,12 @@ const template = [
       if (isRams && (p.name || '').toLowerCase().includes('cam thompson') && pickNumber >= 14 && pickNumber <= 20) {
         score -= 120;
       }
+      // Elevate DTs (especially Keon Davis) to reflect 2-starter interiors
+      if (g === 'DT') {
+        if (effectiveNeeds?.has('DT') || teamNeeds.includes('DT')) score -= 18;
+        if (pickNumber <= 24 && i <= 25) score -= 8;
+        if (nameLower === 'keon davis') score -= 40;
+      }
 
       debugRows.push({ idx: i, name: p.name, pos: g, score });
 
@@ -1071,6 +1126,12 @@ const template = [
         bestIdx = i;
       }
       if (i > 70 && bestIdx !== -1) break;
+    }
+
+    // Hard failsafe: keep Keon Davis inside Round 1 even if board/needs got weird
+    if (pickNumber >= 28 && pickNumber <= 32 && bestIdx !== -1) {
+      const keonIdx = available.findIndex(p => (p.name || '').toLowerCase() === 'keon davis');
+      if (keonIdx !== -1) bestIdx = keonIdx;
     }
 
     // If no candidate (e.g., thin needs), allow BPA

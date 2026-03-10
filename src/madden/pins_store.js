@@ -2,6 +2,13 @@ import fs from 'fs';
 import path from 'path';
 
 const PINS_FILE = path.join(process.cwd(), 'data', 'madden', 'pins.json');
+const STATIC_PINS = {
+  available_teams: '1479545575903858791',
+  stat_leaders: '1479314025002045676',
+  standings: '1479314692999479326',
+  playoff_picture: '1479314696728346654',
+  power_rankings: '1479314701732282480',
+};
 
 export function loadPins() {
   try {
@@ -17,11 +24,13 @@ export function savePins(pins) {
 }
 
 export function getPinId(key) {
+  if (STATIC_PINS[key]) return STATIC_PINS[key];
   const pins = loadPins();
   return pins[key] || null;
 }
 
 export function setPinId(key, id) {
+  if (STATIC_PINS[key]) return; // do not overwrite fixed pins
   const pins = loadPins();
   pins[key] = id;
   savePins(pins);

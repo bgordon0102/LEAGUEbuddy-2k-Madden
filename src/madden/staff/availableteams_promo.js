@@ -78,7 +78,13 @@ function normalizeKey(name = '') {
 function buildPickMap(snapshot) {
   if (!snapshot) return new Map();
   let order = [];
-  try { order = applyPickTrades(draftOrder(snapshot)); } catch { return new Map(); }
+  try {
+    const seasonYear =
+      snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear ||
+      snapshot?.info?.calendarYear ||
+      snapshot?.calendarYear;
+    order = applyPickTrades(draftOrder(snapshot), seasonYear);
+  } catch { return new Map(); }
   const map = new Map();
   order.forEach((pick, idx) => {
     const ownerName = pick.name || pick.nick || '';

@@ -27,17 +27,7 @@ function isStaff(member) {
 
 export const data = new SlashCommandBuilder()
   .setName('madden-bigboard')
-  .setDescription('View the Madden draft big board (paged, 32 prospects per page)')
-  .addIntegerOption(opt =>
-    opt.setName('season')
-      .setDescription('[Staff] Override calendar year (e.g., 2026)')
-      .setMinValue(2025)
-      .setMaxValue(2035)
-      .setRequired(false))
-  .addStringOption(opt =>
-    opt.setName('class_id')
-      .setDescription('[Staff] Override draft class id (e.g., cus_02)')
-      .setRequired(false));
+  .setDescription('View the Madden draft big board (paged, 32 prospects per page)');
 
 export async function execute(interaction) {
   if (!interaction.deferred && !interaction.replied) {
@@ -52,16 +42,12 @@ export async function execute(interaction) {
   }
   try {
     const snapshot = loadLeagueSnapshot(leagueId);
-    const staff = isStaff(interaction.member);
-    const seasonOverride = staff ? interaction.options.getInteger('season') : null;
-    const classOverride = staff ? interaction.options.getString('class_id') : null;
-
-    const calendarYear = seasonOverride
-      || snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear
+    const calendarYear =
+      snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear
       || snapshot?.info?.calendarYear
       || snapshot?.calendarYear;
 
-    const classId = classOverride || classIdForSeason(calendarYear);
+    const classId = classIdForSeason(calendarYear);
     const { embeds, baseId } = buildPages(snapshot, classId, leagueId);
 
     const components = [];

@@ -2,12 +2,18 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 
-const RECRUITING_PATH = path.resolve('data/draft_classes/madden/Madden26_CUS01 - Recruiting.json');
+const RECRUITING_DIR = path.resolve('data/draft_classes/madden');
+const CURRENT_CLASS_ID = 'CUS02';
 const PAGE_SIZE = 10;
 
 const safeLoadRecruiting = () => {
   try {
-    const raw = fs.readFileSync(RECRUITING_PATH, 'utf-8');
+    const target = fs.readdirSync(RECRUITING_DIR)
+      .filter(f => f.toLowerCase().includes(`${CURRENT_CLASS_ID.toLowerCase()} - recruiting`.toLowerCase()))
+      .sort();
+    const file = target[0];
+    if (!file) return null;
+    const raw = fs.readFileSync(path.join(RECRUITING_DIR, file), 'utf-8');
     const data = JSON.parse(raw);
     const recruits = Object.values(data || {}).filter(Boolean);
     return recruits.sort((a, b) => {
