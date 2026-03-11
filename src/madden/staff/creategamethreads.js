@@ -2,6 +2,8 @@ import { SlashCommandBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } fro
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { draftOrder, applyPickTrades } from '../coach/mockdraft.js';
+import { registerThread } from '../../shared/madden_thread_notifier.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -721,29 +723,7 @@ async function execute(interaction) {
       return;
     }
     const teams = teamMap(snapshot);
-    const weeklyAgg = aggregateWeeklyTeamStats(snapshot);
-    const baseRanks = buildRankMaps(snapshot);
-    const isWeekOne = !playoffRound && Number(wkNumeric) <= 1;
-    // Blend: keep PPG from weeklyAgg (most accurate), but use standings-based metrics for other stats
-    const ranks = { values: {}, ranks: baseRanks.ranks || {}, standings: baseRanks.standings || {} };
-    const copyMetric = (src, key) => {
-      Object.entries(src.values || {}).forEach(([tid, vals]) => {
-        ranks.values[tid] = ranks.values[tid] || {};
-        if (vals[key] !== undefined) ranks.values[tid][key] = vals[key];
-      });
-    };
-    // Always seed with base (standings) metrics
-    ['offPtsPerG', 'defPtsPerG', 'offPassYds', 'offRushYds', 'defPassYds', 'defRushYds'].forEach(k => copyMetric(baseRanks, k));
-    // Override PPG with weekly aggregates when available
-    if (weeklyAgg) {
-      copyMetric(weeklyAgg, 'offPtsPerG');
-      copyMetric(weeklyAgg, 'defPtsPerG');
-    }
-    // Week 1: treat as unranked (keep values, drop ranks)
-    if (isWeekOne) {
-      ranks.ranks = {};
-    }
-    const playoffAvgs = playoffRound ? buildPlayoffAverages(snapshot) : null;
+    // Stats removed per request; keep flow lean and focused on buttons/strike instructions.
     let created = 0;
     const deadline = Math.floor((Date.now() + 48 * 3600 * 1000) / 1000);
     for (const game of gamesFinal) {
@@ -754,60 +734,43 @@ async function execute(interaction) {
           autoArchiveDuration: 10080, // 7 days
           reason: `Game thread for ${weekLabel}`,
         });
-        const { text: mentionText, ids: mentionIds } = teamMentions(game, teams, roleMap);
+        const { text: mentionTextRaw, ids: mentionIdsRaw } = teamMentions(game, teams, roleMap);
+        const commishIds = ['1460399404241522759', '1460399405436768431'].filter(Boolean);
+        const mentionText = [mentionTextRaw, commishIds.map(id => `<@&${id}>`).join(' ')].filter(Boolean).join(' ').trim();
+        const mentionIds = [...new Set([...(mentionIdsRaw || []), ...commishIds].filter(Boolean))];
         const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId(`madden_game_complete_${thread.id}`)
-            .setLabel('Mark Game Complete')
-            .setStyle(ButtonStyle.Success)
+          new ButtonBuilder().setCustomId(`madden_game_status_complete|${thread.id}`).setLabel('Game Completed 🏁').setStyle(ButtonStyle.Success),
+          new ButtonBuilder().setCustomId(`madden_game_status_fairsim|${thread.id}`).setLabel('Fair Sim ⚖️').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`madden_game_status_homewin|${thread.id}`).setLabel('Home Win 🏠').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`madden_game_status_awaywin|${thread.id}`).setLabel('Away Win 🛫').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`madden_game_status_cpu|${thread.id}`).setLabel('CPU 🤖').setStyle(ButtonStyle.Secondary),
         );
-        const statLine = (tid) => {
-          if (playoffAvgs && playoffAvgs[tid]) {
-            const v = playoffAvgs[tid];
-            const fmt = (val, decimals = 1) => val != null ? (Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals)).toString() : '–';
-            return [
-              `Off Pts/G — ${fmt(v.offPtsPerG)} (PO)`,
-              `Pass Yds — ${fmt(v.offPassYds, 0)} (PO)`,
-              `Rush Yds — ${fmt(v.offRushYds, 0)} (PO)`,
-              `Opp Pts/G — ${fmt(v.defPtsPerG)} (PO)`,
-              `Opp Pass — ${fmt(v.defPassYds, 0)} (PO)`,
-              `Opp Rush — ${fmt(v.defRushYds, 0)} (PO)`,
-            ].join('\n');
-          }
-          const v = ranks.values[tid] || {};
-          const r = ranks.ranks;
-          const s = ranks.standings[tid] || {};
-          const fmt = (val, decimals = 1) => val != null ? (Math.round(val * Math.pow(10, decimals)) / Math.pow(10, decimals)).toString() : '–';
-          const offPts = v.offPtsPerG ?? s.ptsFor ?? s.pointsFor ?? s.offPts;
-          const defPts = v.defPtsPerG ?? s.ptsAgainst ?? s.pointsAgainst ?? s.defPtsAllowed;
-          const passO = v.offPassYds ?? s.offPassYds;
-          const rushO = v.offRushYds ?? s.offRushYds;
-          const passD = v.defPassYds ?? s.defPassYds;
-          const rushD = v.defRushYds ?? s.defRushYds;
-          const hasValue = [offPts, defPts, passO, rushO, passD, rushD].some(n => Number(n) > 0);
-          const forceUnranked = isWeekOne || !hasValue;
-          const line = (label, val, rank) => `${label}: ${forceUnranked ? 'R–' : `R${rank ?? '–'}`} — ${fmt(val)}`;
-          return [
-            line('Off Pts/G', offPts, r?.offPtsPerG?.[tid] || s.ptsForRank),
-            line('Pass Yds', passO, r?.offPassYds?.[tid] || s.offPassYdsRank),
-            line('Rush Yds', rushO, r?.offRushYds?.[tid] || s.offRushYdsRank),
-            line('Opp Pts/G', defPts, r?.defPtsPerG?.[tid] || s.ptsAgainstRank),
-            line('Opp Pass', passD, r?.defPassYds?.[tid] || s.defPassYdsRank),
-            line('Opp Rush', rushD, r?.defRushYds?.[tid] || s.defRushYdsRank),
-          ].join('\n');
-        };
+        const staffRow = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikeaway|${thread.id}`).setLabel('Staff Strike Away 🚫').setStyle(ButtonStyle.Danger),
+          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikehome|${thread.id}`).setLabel('Staff Strike Home 🚫').setStyle(ButtonStyle.Danger),
+        );
         const embed = {
-          title: 'Matchup Thread',
-          description: `Welcome!\nUse this thread to coordinate your matchup and mark it complete when done.\n\n${teams[game.awayTeamId] || 'Away'} stats:\n${statLine(game.awayTeamId)}\n\n${teams[game.homeTeamId] || 'Home'} stats:\n${statLine(game.homeTeamId)}\n\nDeadline: <t:${deadline}:R> (<t:${deadline}:f>)`,
+          title: 'LEAGUEbuddy Matchup',
+          description: [
+            `Schedule and play your game. Use the buttons when needed:`,
+            `🏁 Game Completed — both coaches press; clears reminders.`,
+            `⚖️ Fair Sim — both coaches press; each gets 1 sim strike (max 5/season).`,
+            `🏠 Home Win — only the AWAY coach or staff may press; HOME ready, AWAY couldn’t play (away gets 1 strike).`,
+            `🛫 Away Win — only the HOME coach or staff may press; AWAY ready, HOME couldn’t play (home gets 1 strike).`,
+            `🤖 CPU — for CPU matchups; no strikes, just stops reminders.`,
+            `🚫 Staff Strike — staff-only; adds 1 strike to the chosen team when unresponsive.`,
+            `Deadline: <t:${deadline}:R> (<t:${deadline}:f>)`
+          ].join('\n'),
           color: 0x00b0f4,
           timestamp: new Date().toISOString(),
         };
         await thread.send({
           content: mentionText || null,
           embeds: [embed],
-          components: [row],
+          components: [row, staffRow],
           allowedMentions: mentionIds?.length ? { roles: mentionIds, parse: [] } : { parse: ['roles'] },
         });
+        try { registerThread(thread.id, mentionText || ''); } catch (e) { console.warn('[madden-creategamethreads] registerThread failed', e?.message || e); }
         created += 1;
       } catch (e) {
         console.warn('[madden-creategamethreads] Failed to create thread', name, e?.message || e);

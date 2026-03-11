@@ -507,13 +507,12 @@ function loadPickOverridesList(seasonYear) {
 function applyPickTrades(order, seasonYear = currentCalendarYear) {
   // Load persisted overrides; fall back to legacy hardcoded list
   const fileOverrides = loadPickOverridesList(seasonYear).concat(loadPickOverridesFile());
+  // Legacy overrides for current cycle (R1 only)
   const legacy = [
-    { from: 'Falcons', to: 'Los Angeles Rams', via: 'ATL' },
-    { from: 'Jaguars', to: 'Cleveland Browns', via: 'JAX' },
-    { from: 'Jags', to: 'Cleveland Browns', via: 'JAX' },
-    { from: 'Colts', to: 'New York Jets', via: 'IND' },
-    { from: 'Pack', to: 'Dallas Cowboys', via: 'GB' },
-    { from: 'Packers', to: 'Dallas Cowboys', via: 'GB' },
+    { from: 'Cardinals', to: 'Detroit Lions', via: 'ARI' },   // ARI -> DET
+    { from: 'Packers', to: 'Dallas Cowboys', via: 'GB' },     // GB -> DAL
+    { from: 'Colts', to: 'New York Jets', via: 'IND' },       // IND -> NYJ
+    { from: 'Cowboys', to: 'New York Jets', via: 'DAL' },     // DAL -> NYJ
   ];
   const overrides = [...fileOverrides, ...legacy];
   const map = new Map();

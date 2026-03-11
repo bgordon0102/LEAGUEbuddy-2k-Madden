@@ -1,19 +1,31 @@
 {
-  "builder_1076243288056664234_1772949920120": {
-    "draftId": "builder_1076243288056664234_1772949920120",
-    "userId": "1076243288056664234",
+  "builder_817610144460308501_1773254314431": {
+    "draftId": "builder_817610144460308501_1773254314431",
+    "userId": "817610144460308501",
     "guildId": "1255691165265821747",
     "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553054",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Ravens",
+    "yourTeamId": 775553025,
+    "otherTeamId": 775553058,
+    "yourTeamName": "Bears",
+    "otherTeamName": "Texans",
     "assets": {
-      "your": [],
+      "your": [
+        {
+          "type": "pick",
+          "raw": "2 2nd",
+          "year": 1,
+          "round": 2,
+          "pickNum": 2,
+          "value": 263,
+          "label": "Round 2 Pick 2 (1)"
+        }
+      ],
       "other": []
     },
-    "savedAt": 1772949924472,
-    "yourTeam": "Broncos",
-    "otherTeam": "Ravens"
+    "savedAt": 1773254515363,
+    "yourTeam": "Bears",
+    "otherTeam": "Texans",
+    "assetsSent": "1 Round 2 Pick 2 — 262.7",
+    "assetsReceived": ""
   }
 }

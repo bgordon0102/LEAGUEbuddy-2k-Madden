@@ -9,6 +9,7 @@ import { startAuthServer } from './madden/auth_server.js';
 import { startExportWebhook } from './madden/export_webhook.js';
 import { startAutoSync } from './madden/auto_sync.js';
 import { startLocalSidecar } from './madden/local_sidecar.js';
+import { initNotifier } from './shared/madden_thread_notifier.js';
 
 dotenv.config();
 
@@ -192,6 +193,7 @@ client.once('clientReady', (readyClient) => {
   console.log(`📊 Logged in as ${readyClient.user.tag}`);
   console.log(`🏟️  Serving ${readyClient.guilds.cache.size} server(s)`);
   console.log(`⚡ Loaded ${client.commands.size} commands`);
+  try { initNotifier(client); } catch (e) { console.warn('[notifier] init failed', e?.message || e); }
 });
 
 

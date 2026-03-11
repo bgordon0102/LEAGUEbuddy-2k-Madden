@@ -2,6 +2,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { updateAvailableTeamsPin } from '../../../madden/available_teams.js';
+import { updateFairSimBoard } from '../../shared/fairsim_board.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
@@ -92,6 +93,8 @@ export async function execute(interaction) {
     } catch (e) {
       console.warn('[madden-assignteam] available teams pin update skipped:', e?.message || e);
     }
+    // Refresh sim strike board to reflect new coach assignment
+    try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[madden-assignteam] fair sim board update skipped:', e?.message || e); }
   } catch (err) {
     await interaction.editReply({ content: `Failed to assign roles: ${err.message || err}` });
   }

@@ -125,7 +125,16 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
       const ovrB = b.overallRating ?? b.playerBestOvr ?? b.playerSchemeOvr ?? b.teamSchemeOvr ?? b.ovrRating ?? 0;
       return ovrB - ovrA;
     });
-  const year = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear
+  const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+  const seasonTitle = (seasonInfo.seasonTitle || '').toLowerCase();
+  const weekTypeRaw = seasonInfo.seasonWeekType ?? seasonInfo.seasonWeekTypeId ?? seasonInfo.weekType;
+  const weekType = Number.isFinite(Number(weekTypeRaw)) ? Number(weekTypeRaw) : 1; // default to regular-season
+  const isRegularOrPost = weekType === 1 || weekType === 2;
+  const isOffseason =
+    weekType === 8 || // explicit offseason code
+    seasonTitle.includes('offseason') ||
+    (seasonInfo.isDraftActive === false && seasonInfo.isLeagueStarted === true && !isRegularOrPost);
+  const year = seasonInfo?.seasonYear
     || snapshot?.info?.calendarYear
     || new Date().getFullYear();
 
@@ -180,15 +189,17 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
         .addOptions(opts)
     ));
   if (futurePickRow) rows.push(futurePickRow);
-  // manual current-year pick entry button row
-  rows.push(
-    new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`trade_builder_pick_manual|${side}|${draftId}`)
-        .setLabel('Type current-year pick')
-        .setStyle(ButtonStyle.Secondary)
-    )
-  );
+  // Manual pick entry is offseason-only; in-season use menu averages
+  if (isOffseason) {
+    rows.push(
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`trade_builder_pick_manual|${side}|${draftId}`)
+          .setLabel('Type current-year pick')
+          .setStyle(ButtonStyle.Secondary)
+      )
+    );
+  }
   // enforce Discord max 5 rows
   return rows.slice(0, 5);
   return rows;

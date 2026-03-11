@@ -1,0 +1,56 @@
+{
+  "775553028": [
+    {
+      "rosterId": 553388549,
+      "name": "Patrick Surtain II",
+      "position": "CB",
+      "ovr": 98,
+      "age": 26,
+      "dev": "<:dev_2:1460377399089958942>",
+      "messageId": "1481091852085235724",
+      "threadId": "1460483210176626850"
+    }
+  ],
+  "775553058": [
+    {
+      "rosterId": 553387825,
+      "name": "Joe Mixon",
+      "position": "HB",
+      "ovr": 88,
+      "age": 30,
+      "dev": "<:dev_3:1460377365094994016>",
+      "messageId": "1481116547522232411",
+      "threadId": "1460483306947612735"
+    },
+    {
+      "rosterId": 553387288,
+      "name": "Derwin James Jr",
+      "position": "SS",
+      "ovr": 93,
+      "age": 30,
+      "dev": "<:dev_2:1460377399089958942>",
+      "messageId": "1481116750165573672",
+      "threadId": "1460483306947612735"
+    },
+    {
+      "rosterId": 553387146,
+      "name": "Jamal Hill",
+      "position": "WILL",
+      "ovr": 68,
+      "age": 25,
+      "dev": "<:dev_0:1460377231179382814>",
+      "messageId": "1481116816934830223",
+      "threadId": "1460483306947612735"
+    },
+    {
+      "rosterId": 553388439,
+      "name": "Jaylin Smith",
+      "position": "FS",
+      "ovr": 74,
+      "age": 22,
+      "dev": "<:dev_1:1460377266017145071>",
+      "messageId": "1481117390170493010",
+      "threadId": "1460483306947612735"
+    }
+  ]
+}
