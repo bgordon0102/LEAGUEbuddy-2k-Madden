@@ -147,10 +147,24 @@ client.on('interactionCreate', async interaction => {
       }
       return;
     }
-    // Route set_game_info_modal_ modal submits to execute_modal_set_game_info handler.
+    // Route Madden set_game_info_ legacy modal submits
     if (interaction.isModalSubmit() && interaction.customId.startsWith('set_game_info_modal_')) {
       const setGameInfo = await import('./interactions/set_game_info.js');
       await setGameInfo.execute_modal_set_game_info(interaction);
+      return;
+    }
+    // Route 2K set_game_info| modals
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('set_game_info_modal|')) {
+      console.log('[router] 2K set_game_info modal', interaction.customId);
+      const setGameInfo2k = await import('./2k/set_game_info.js');
+      await setGameInfo2k.execute_modal(interaction);
+      return;
+    }
+    // Route 2K set_game_info| button
+    if (interaction.isButton() && interaction.customId.startsWith('set_game_info|')) {
+      console.log('[router] 2K set_game_info button', interaction.customId);
+      const setGameInfo2k = await import('./2k/set_game_info.js');
+      await setGameInfo2k.execute(interaction);
       return;
     }
     let foundHandler = null;

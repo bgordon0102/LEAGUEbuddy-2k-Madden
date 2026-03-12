@@ -736,18 +736,30 @@ async function execute(interaction) {
         });
         const { text: mentionTextRaw, ids: mentionIdsRaw } = teamMentions(game, teams, roleMap);
         const commishIds = ['1460399404241522759', '1460399405436768431'].filter(Boolean);
-        const mentionText = [mentionTextRaw, commishIds.map(id => `<@&${id}>`).join(' ')].filter(Boolean).join(' ').trim();
         const mentionIds = [...new Set([...(mentionIdsRaw || []), ...commishIds].filter(Boolean))];
+        const mentionText = mentionIds.length
+          ? Array.from(new Set(mentionIds.map(id => `<@&${id}>`))).join(' ')
+          : (mentionTextRaw || '').trim();
+        const cleanName = (name) => (name || '').replace(/\bcoach\b/ig, '').trim();
+        const short = (name) => {
+          const cleaned = cleanName(name);
+          if (!cleaned) return 'Team';
+          const parts = cleaned.split(/\s+/);
+          const mascot = parts[parts.length - 1] || cleaned;
+          return mascot.length > 18 ? `${mascot.slice(0, 16)}…` : mascot;
+        };
+        const homeShort = short(teams[game.homeTeamId]);
+        const awayShort = short(teams[game.awayTeamId]);
         const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId(`madden_game_status_complete|${thread.id}`).setLabel('Game Completed 🏁').setStyle(ButtonStyle.Success),
-          new ButtonBuilder().setCustomId(`madden_game_status_fairsim|${thread.id}`).setLabel('Fair Sim ⚖️').setStyle(ButtonStyle.Secondary),
-          new ButtonBuilder().setCustomId(`madden_game_status_homewin|${thread.id}`).setLabel('Home Win 🏠').setStyle(ButtonStyle.Secondary),
-          new ButtonBuilder().setCustomId(`madden_game_status_awaywin|${thread.id}`).setLabel('Away Win 🛫').setStyle(ButtonStyle.Secondary),
-          new ButtonBuilder().setCustomId(`madden_game_status_cpu|${thread.id}`).setLabel('CPU 🤖').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`madden_game_status_complete|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel('Game Completed 🏁').setStyle(ButtonStyle.Success),
+          new ButtonBuilder().setCustomId(`madden_game_status_fairsim|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel('Fair Sim ⚖️').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`madden_game_status_homewin|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`${homeShort} Win 🏠`).setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`madden_game_status_awaywin|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`${awayShort} Win 🛫`).setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`madden_game_status_cpu|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel('CPU 🤖').setStyle(ButtonStyle.Secondary),
         );
         const staffRow = new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikeaway|${thread.id}`).setLabel('Staff Strike Away 🚫').setStyle(ButtonStyle.Danger),
-          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikehome|${thread.id}`).setLabel('Staff Strike Home 🚫').setStyle(ButtonStyle.Danger),
+          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikeaway|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`Staff Strike ${awayShort} 🚫`).setStyle(ButtonStyle.Danger),
+          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikehome|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`Staff Strike ${homeShort} 🚫`).setStyle(ButtonStyle.Danger),
         );
         const embed = {
           title: 'LEAGUEbuddy Matchup',

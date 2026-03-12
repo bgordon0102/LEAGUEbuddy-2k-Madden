@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, PermissionFlagsBits, PermissionsBitField } from 'discord.js';
 import { updateAvailable2KTeamsPin } from '../../../2k/available_teams.js';
+import { updateFairSimBoard } from '../../shared/2k_fairsim_board.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -130,6 +131,8 @@ export async function execute(interaction) {
         } catch (pinErr) {
             console.error('[2k-assignrole] Failed to update available teams pin:', pinErr);
         }
+        // Refresh sim strike board
+        try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.error('[2k-assignrole] Failed to update sim board:', e); }
     } catch (err) {
         console.error('Error assigning role:', err);
         await replyMethod('Error assigning role. Check bot permissions.');

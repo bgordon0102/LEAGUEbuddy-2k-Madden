@@ -1,31 +1,19 @@
 {
-  "builder_817610144460308501_1773254314431": {
-    "draftId": "builder_817610144460308501_1773254314431",
-    "userId": "817610144460308501",
+  "builder_564228061529374730_1773277969314": {
+    "draftId": "builder_564228061529374730_1773277969314",
+    "userId": "564228061529374730",
     "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553025,
-    "otherTeamId": 775553058,
-    "yourTeamName": "Bears",
-    "otherTeamName": "Texans",
+    "mode": "2k",
+    "yourTeamName": null,
+    "yourTeamId": null,
+    "otherTeamName": "Boston Celtics",
+    "seasonYear": 2026,
     "assets": {
-      "your": [
-        {
-          "type": "pick",
-          "raw": "2 2nd",
-          "year": 1,
-          "round": 2,
-          "pickNum": 2,
-          "value": 263,
-          "label": "Round 2 Pick 2 (1)"
-        }
-      ],
+      "your": [],
       "other": []
     },
-    "savedAt": 1773254515363,
-    "yourTeam": "Bears",
-    "otherTeam": "Texans",
-    "assetsSent": "1 Round 2 Pick 2 — 262.7",
-    "assetsReceived": ""
+    "savedAt": 1773278150492,
+    "otherTeamId": "Boston Celtics",
+    "otherTeam": "Boston Celtics"
   }
 }

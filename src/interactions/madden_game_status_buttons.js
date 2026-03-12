@@ -175,11 +175,11 @@ async function sendWarnings(thread, users, seasonData, commishMention) {
   }
 }
 
-export const customId = /^madden_game_status_(complete|fairsim|homewin|awaywin|cpu|staffstrikeaway|staffstrikehome)\|(.+)$/;
+export const customId = /^madden_game_status_(complete|fairsim|homewin|awaywin|cpu|staffstrikeaway|staffstrikehome)\|([^|]+)(?:\|([^|]+)\|([^|]+))?$/;
 
 export async function execute(interaction) {
   if (!(interaction instanceof ButtonInteraction)) return;
-  const [, action, threadId] = interaction.customId.match(customId) || [];
+  const [, action, threadId, awayEnc, homeEnc] = interaction.customId.match(customId) || [];
   const roleMap = loadRoleMap();
   const thread = interaction.channel;
   if (!thread || String(thread.id) !== threadId) {
@@ -188,15 +188,24 @@ export async function execute(interaction) {
   }
 
   const member = await interaction.guild.members.fetch(interaction.user.id);
-  const { away, home } = parseTeams(thread.name || '');
+  let { away, home } = parseTeams(thread.name || '');
+  if (awayEnc || homeEnc) {
+    away = awayEnc ? decodeURIComponent(awayEnc) : away;
+    home = homeEnc ? decodeURIComponent(homeEnc) : home;
+  }
   console.log('[game_status] thread', { thread: thread.name, away, home, action, user: interaction.user.id });
   let awayCoachRoles = coachRoleIds(away, roleMap);
   let homeCoachRoles = coachRoleIds(home, roleMap);
   // Fallback: use first-message mentions if no roles found (helps test threads)
   if (!awayCoachRoles.length || !homeCoachRoles.length) {
     const mentionRoles = rolesFromMessageMentions(thread);
-    if (!awayCoachRoles.length && mentionRoles.length) awayCoachRoles = mentionRoles;
-    if (!homeCoachRoles.length && mentionRoles.length) homeCoachRoles = mentionRoles;
+    if (mentionRoles.length) {
+      if (!awayCoachRoles.length && mentionRoles[0]) awayCoachRoles = [mentionRoles[0]];
+      if (!homeCoachRoles.length && mentionRoles[1]) homeCoachRoles = [mentionRoles[1]];
+      // If only one role was mentioned, fall back to all mentions for the missing side
+      if (!homeCoachRoles.length && mentionRoles.length === 1) homeCoachRoles = mentionRoles;
+      if (!awayCoachRoles.length && mentionRoles.length === 1) awayCoachRoles = mentionRoles;
+    }
   }
   const staffRoles = [roleMap['Ghost Legacy Commish'], roleMap['Ghost Legacy Co-Commish'], ...COMMISH_ROLE_IDS].filter(Boolean);
   const hasRole = (roles) => roles.some(rid => member.roles.cache.has(rid));
@@ -278,7 +287,13 @@ export async function execute(interaction) {
   if (action === 'complete') {
     // Require both sides (staff included)
     const side = isAwayCoach ? 'away' : isHomeCoach ? 'home' : 'staff';
-    const pending = setPendingFair(threadId + ':complete', side);
+    const key = threadId + ':complete';
+    const existing = pendingFair.get(key) || { away: false, home: false };
+    if ((side === 'away' && existing.away) || (side === 'home' && existing.home)) {
+      await interaction.reply({ content: 'Still waiting for the other side to press Game Completed.', ephemeral: true });
+      return;
+    }
+    const pending = setPendingFair(key, side);
     if (!(pending.away && pending.home)) {
       const waitMsg = 'Game Completed pending. Waiting for the other side to press Game Completed.';
       await interaction.reply({ content: waitMsg, ephemeral: true });
@@ -314,6 +329,11 @@ export async function execute(interaction) {
   if (action === 'fairsim') {
     // Everyone (staff too) must two-step confirm
     const side = isAwayCoach ? 'away' : isHomeCoach ? 'home' : 'staff';
+    const existing = pendingFair.get(threadId) || { away: false, home: false };
+    if ((side === 'away' && existing.away) || (side === 'home' && existing.home)) {
+      await interaction.reply({ content: 'Still waiting for the other side to press Fair Sim.', ephemeral: true });
+      return;
+    }
     const pending = setPendingFair(threadId, side);
     if (!(pending.away && pending.home)) {
       const waitMsg = 'Fair sim pending. Waiting for the other side to press Fair Sim.';

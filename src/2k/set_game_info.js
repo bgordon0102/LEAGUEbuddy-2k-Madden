@@ -1,152 +1,40 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
+import { ActionRowBuilder, ButtonInteraction, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 
-console.log('[set_game_info] File loaded and ready');
-
-// Button to prompt for in-game date
-export const customId = /^set_game_info_/;
-
-// Modal submit handler id
-export const customId_modal_set_game_info = /^set_game_info_modal_/;
+console.log('[set_game_info_2k] File loaded and ready');
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json');
+const COMMISH_FALLBACK = ['1460734128935665817', '1460734222238220326'];
 
-function loadRoleMap() {
+const loadRoleMap = () => {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
-}
+};
 
-async function resolveCommishRoles(interaction, roleMap) {
-  const ids = [roleMap['Ghost Paradise Commish'], roleMap['Ghost Paradise Co-Commish']].filter(Boolean);
-  if (ids.length) return ids;
-  // Fallback: search by name in guild
-  try {
-    const guild = interaction.guild;
-    if (!guild) return ids;
-    const commishRoles = guild.roles.cache.filter(r => /commish/i.test(r.name) && /paradise/i.test(r.name));
-    if (commishRoles.size) return Array.from(commishRoles.keys());
-  } catch {
-    // ignore
-  }
-  return ids;
-}
+const resolveCommishRoleIds = () => {
+  const roleMap = loadRoleMap();
+  return Array.from(new Set([
+    roleMap['Ghost Paradise Commish'],
+    roleMap['Ghost Paradise Co-Commish'],
+    ...COMMISH_FALLBACK,
+  ].filter(Boolean)));
+};
 
-// Handles the modal submit for setting game info in a thread
-export async function execute_modal_set_game_info(interaction) {
-  console.log('[set_game_info] execute_modal_set_game_info called');
-  try {
-    if (!interaction.isModalSubmit()) return;
-    const threadId = interaction.customId.split('set_game_info_')[1] || interaction.customId.replace('set_game_info_modal_', '');
-    const dateText = interaction.fields.getTextInputValue('ingame_date')?.trim();
-    if (!dateText) {
-      console.log('[set_game_info][modal_submit] No dateText provided.', {
-        interactionCustomId: interaction?.customId,
-        channelId: interaction?.channelId,
-        userId: interaction?.user?.id
-      });
-      try { await interaction.reply({ content: 'Please provide an in-game date.', flags: 64 }); } catch { }
-      return;
-    }
+const resolveCommishMentions = () => {
+  const ids = resolveCommishRoleIds();
+  return ids.map(id => `<@&${id}>`);
+};
 
-    let message = interaction.message;
-    if (!message && interaction.channel?.messages?.fetchPinned) {
-      try {
-        const pinned = await interaction.channel.messages.fetchPinned();
-        message = pinned.find(m =>
-          m.components?.some(row =>
-            row.components?.some(btn => btn.customId?.startsWith('set_game_info_'))
-          )
-        );
-      } catch (err) {
-        console.error('[set_game_info] Failed to fetch pinned messages:', err);
-      }
-    }
-    if (!message) {
-      try {
-        message = await interaction.channel.send('Thread game info');
-      } catch (err) {
-        console.error('[set_game_info] Could not create fallback message:', err);
-        try { await interaction.reply({ content: 'Could not update the thread message.', flags: 64 }); } catch { }
-        return;
-      }
-    }
-    if (!message) {
-      console.log('[set_game_info][modal_submit] No message found or created.', {
-        interactionCustomId: interaction?.customId,
-        channelId: interaction?.channelId,
-        userId: interaction?.user?.id
-      });
-      try { await interaction.reply({ content: 'Could not find or create the thread message.', flags: 64 }); } catch { }
-      return;
-    }
-
-    // Update embed with in-game date; leave content (tags) unchanged
-    const embeds = (message.embeds || []).map(e => e.toJSON());
-    if (embeds.length) {
-      const embed = embeds[0];
-      const desc = embed.description || '';
-      if (/\*\*In-game date:\*\*/i.test(desc)) {
-        embed.description = desc.replace(/\*\*In-game date:\*\*.*?(?=\n|$)/i, `**In-game date:** **${dateText}**`);
-      } else {
-        embed.description = [desc.trim(), `**In-game date:** **${dateText}**`].filter(Boolean).join('\n');
-      }
-      embeds[0] = embed;
-    }
-
-    const components = [
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`game_complete_${threadId}`)
-          .setLabel('Mark Game Complete')
-          .setStyle(ButtonStyle.Success)
-      )
-    ];
-
-    console.log('[set_game_info][modal_submit] Editing message:', {
-      messageId: message?.id,
-      channelId: message?.channelId,
-      authorId: message?.author?.id,
-      embeds,
-      components
-    });
-    await message.edit({ content: message.content, embeds, components });
-    await interaction.reply({ content: 'Game info set. Mark Game Complete is now available.', flags: 64 });
-
-    // Notify commish roles in the thread/channel
-    try {
-      const roleMap = loadRoleMap();
-      const commishIds = await resolveCommishRoles(interaction, roleMap);
-      if (interaction.channel?.isTextBased()) {
-        const mentionContent = commishIds.length ? commishIds.map(id => `<@&${id}>`).join(' ') : 'Game info is set.';
-        await interaction.channel.send({
-          content: commishIds.length ? `${mentionContent} Game info is set.` : mentionContent,
-          allowedMentions: { parse: ['roles'], roles: commishIds },
-        }).catch(() => null);
-      }
-    } catch (notifyErr) {
-      console.error('[set_game_info][modal_submit] Failed to notify commish roles:', notifyErr);
-    }
-  } catch (err) {
-    console.error('[set_game_info][modal_submit] Uncaught error:', err, {
-      threadId: interaction?.customId,
-      dateText: interaction?.fields?.getTextInputValue?.('ingame_date'),
-      channelId: interaction?.channelId,
-      userId: interaction?.user?.id
-    });
-    try {
-      await interaction.reply({ content: 'Something went wrong while setting game info. Please try again or contact staff.', flags: 64 });
-    } catch { }
-  }
-}
+export const customId = /^set_game_info\|(.+)$/;
+export const customId_modal = /^set_game_info_modal\|(.+)$/;
 
 export async function execute(interaction) {
-  console.log('[set_game_info] execute called');
-  if (!interaction.isButton()) return;
-  const threadId = interaction.customId.split('set_game_info_')[1];
+  if (!(interaction instanceof ButtonInteraction)) return;
+  const [, threadId] = interaction.customId.match(customId) || [];
+  if (!threadId) return;
 
-  // Show the modal for entering game info
   const modal = new ModalBuilder()
-    .setCustomId(`set_game_info_modal_${threadId}`)
+    .setCustomId(`set_game_info_modal|${threadId}`)
     .setTitle('Set Game Info')
     .addComponents(
       new ActionRowBuilder().addComponents(
@@ -159,12 +47,76 @@ export async function execute(interaction) {
       )
     );
 
-  try {
-    await interaction.showModal(modal);
-  } catch (err) {
-    console.error('[set_game_info][button] Failed to show modal:', err);
-    try { await interaction.reply({ content: 'Could not open modal.', flags: 64 }); } catch { }
+  try { await interaction.showModal(modal); }
+  catch (err) {
+    console.error('[set_game_info_2k][button] Failed to show modal:', err);
+    try { await interaction.reply({ content: 'Could not open modal.', flags: 64 }); } catch {}
   }
 }
 
-export default { customId, execute, customId_modal_set_game_info, execute_modal_set_game_info };
+export async function execute_modal(interaction) {
+  if (!interaction.isModalSubmit()) return;
+  const [, threadId] = interaction.customId.match(customId_modal) || [];
+  if (!threadId) return;
+
+  const dateText = interaction.fields.getTextInputValue('ingame_date')?.trim();
+  if (!dateText) {
+    try { await interaction.reply({ content: 'Please provide an in-game date.', flags: 64 }); } catch {}
+    return;
+  }
+
+  let msg = interaction.message;
+  if (!msg && interaction.channel?.messages?.fetch) {
+    try {
+      const fetched = await interaction.channel.messages.fetch({ limit: 5 });
+      msg = fetched?.first();
+    } catch {}
+  }
+  if (!msg) {
+    try { await interaction.reply({ content: 'Could not find the message to update.', flags: 64 }); } catch {}
+    return;
+  }
+
+  const embeds = (msg.embeds || []).map(e => e.toJSON());
+  if (embeds.length) {
+    const embed = embeds[0];
+    const desc = embed.description || '';
+    if (/\*\*In-game date:\*\*/i.test(desc)) {
+      embed.description = desc.replace(/\*\*In-game date:\*\*.*?(?=\n|$)/i, `**In-game date:** **${dateText}**`);
+    } else {
+      embed.description = [desc.trim(), `**In-game date:** **${dateText}**`].filter(Boolean).join('\n');
+    }
+    embeds[0] = embed;
+  }
+
+  const commishMentions = resolveCommishMentions();
+  const existingMentions = msg.content ? msg.content.match(/<@&?\d+>/g) || [] : [];
+  const mentionSet = new Set([...existingMentions, ...commishMentions]);
+  const mentionList = Array.from(mentionSet);
+
+  // Keep any non-mention text but ensure required mentions are present once
+  const nonMentionText = (msg.content || '').replace(/<@&?\d+>/g, '').trim();
+  const newContentParts = [];
+  if (mentionList.length) newContentParts.push(mentionList.join(' '));
+  if (nonMentionText) newContentParts.push(nonMentionText);
+  const newContent = newContentParts.join(' ').trim() || null;
+
+  try {
+    await msg.edit({ content: newContent, embeds });
+  } catch (err) {
+    console.error('[set_game_info_2k][modal] message.edit failed:', err);
+    try { await interaction.reply({ content: 'Failed to update the thread message.', flags: 64 }); } catch {}
+    return;
+  }
+
+  const mergedMentions = mentionList.join(' ');
+  try { await interaction.reply({ content: 'Game info set.', flags: 64 }); } catch {}
+  try {
+    await interaction.channel.send({
+      content: mergedMentions ? `${mergedMentions} Game info is set.` : 'Game info is set.',
+      allowedMentions: { parse: ['roles', 'users'] },
+    });
+  } catch {}
+}
+
+export default { customId, execute, customId_modal, execute_modal };

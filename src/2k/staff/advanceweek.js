@@ -94,7 +94,7 @@ async function sendInitialWelcome(thread, teamA, teamB, deadlineHours) {
     const mentions = [];
     if (teamARole) mentions.push(`<@&${teamARole}>`);
     if (teamBRole) mentions.push(`<@&${teamBRole}>`);
-    const coachMentions = mentions.join(' ') || `${teamA} Coach & ${teamB} Coach`;
+    const coachMentions = mentions.join(' ');
     const hours = Number.isFinite(deadlineHours) ? deadlineHours : DEFAULT_CONFIG.deadlineHours;
     const deadline = Math.floor((Date.now() + hours * 60 * 60 * 1000) / 1000); // UNIX seconds
     // Tag commish roles every time a game thread is created
@@ -104,36 +104,62 @@ async function sendInitialWelcome(thread, teamA, teamB, deadlineHours) {
         const roleMap = JSON.parse(fs.readFileSync(roleMapPath, 'utf8'));
         const commishRoles = [
             roleMap['Ghost Paradise Commish'],
-            roleMap['Ghost Paradise Co-Commish']
+            roleMap['Ghost Paradise Co-Commish'],
+            '1460734128935665817',
+            '1460734222238220326',
         ].filter(Boolean);
-        if (commishRoles.length) {
-            commishMentions = commishRoles.map(id => `<@&${id}>`).join(' ');
-        }
+        const unique = [...new Set(commishRoles)];
+        if (unique.length) commishMentions = unique.map(id => `<@&${id}>`).join(' ');
     } catch (err) {
         console.warn('[sendInitialWelcome] Could not load commish roles for tagging:', err);
     }
 
-    const welcomeMsg = [commishMentions, coachMentions].filter(Boolean).join(' ');
+    // Build mention text like Madden: both coaches + commish, uniqed
+    const welcomeMsg = Array.from(new Set([commishMentions, coachMentions].filter(Boolean).join(' ').split(/\s+/).filter(Boolean))).join(' ');
     const embed = {
         title: `${teamA} vs ${teamB}`,
         description: [
-            'Use this thread to coordinate your matchup, share availability, and confirm tip-off.',
-            '',
-            '**In-game date:** _not set (tap Set Game Info below)_',
-            `**Deadline:** <t:${deadline}:F> (<t:${deadline}:R>)`
+            'Schedule and play your game. Use the buttons when needed:',
+            '🏁 Game Completed — both coaches press; clears reminders.',
+            '⚖️ Fair Sim — both coaches press; each gets 1 sim strike (max 5/season).',
+            '🏠 Team A Win — only Team B coach or staff may press; Team A ready, Team B couldn’t (Team B gets 1 strike).',
+            '🛫 Team B Win — only Team A coach or staff may press; Team B ready, Team A couldn’t (Team A gets 1 strike).',
+            '🤖 CPU — for CPU matchups; no strikes, just stops reminders.',
+            '🚫 Staff Strike — staff-only; adds 1 strike to a team when unresponsive.',
+            `Deadline: <t:${deadline}:R> (<t:${deadline}:F>)`
         ].join('\n'),
         color: 0x1E90FF
     };
     // Debug logging
     console.log(`[sendInitialWelcome] Attempting to send welcome message to thread: ${thread.name}`);
     try {
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId(`set_game_info_${thread.id}`)
-                .setLabel('Set Game Info')
-                .setStyle(ButtonStyle.Primary)
+        const short = (name) => {
+            if (!name) return 'Team';
+            const parts = name.trim().split(/\s+/);
+            const mascot = parts[parts.length - 1] || name;
+            return mascot.length > 18 ? `${mascot.slice(0, 16)}…` : mascot;
+        };
+        const statusRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`2k_game_status_complete|${thread.id}|${encodeURIComponent(teamA)}|${encodeURIComponent(teamB)}`).setLabel('Game Completed 🏁').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId(`2k_game_status_fairsim|${thread.id}|${encodeURIComponent(teamA)}|${encodeURIComponent(teamB)}`).setLabel('Fair Sim ⚖️').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`2k_game_status_teamawin|${thread.id}|${encodeURIComponent(teamA)}|${encodeURIComponent(teamB)}`).setLabel(`${short(teamA)} Win 🛫`).setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`2k_game_status_teambwin|${thread.id}|${encodeURIComponent(teamA)}|${encodeURIComponent(teamB)}`).setLabel(`${short(teamB)} Win 🏠`).setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId(`2k_game_status_cpu|${thread.id}|${encodeURIComponent(teamA)}|${encodeURIComponent(teamB)}`).setLabel('CPU 🤖').setStyle(ButtonStyle.Secondary),
         );
-        const sentMsg = await thread.send({ content: welcomeMsg || null, embeds: [embed], components: [row] });
+        const staffRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`2k_game_status_staffstrikea|${thread.id}|${encodeURIComponent(teamA)}|${encodeURIComponent(teamB)}`).setLabel(`Staff Strike ${short(teamA)}`).setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId(`2k_game_status_staffstrikeb|${thread.id}|${encodeURIComponent(teamA)}|${encodeURIComponent(teamB)}`).setLabel(`Staff Strike ${short(teamB)}`).setStyle(ButtonStyle.Danger),
+            new ButtonBuilder().setCustomId(`set_game_info|${thread.id}`).setLabel('Set Game Info').setStyle(ButtonStyle.Primary),
+        );
+        const mentionIds = Array.from(new Set([...mentions, ...commishMentions.split(/\s+/)]))
+          .filter(tok => /^<@&\d+>$/.test(tok))
+          .map(tok => tok.replace(/[^0-9]/g, ''));
+        const sentMsg = await thread.send({
+            content: welcomeMsg || null,
+            embeds: [embed],
+            components: [statusRow, staffRow],
+            allowedMentions: mentionIds.length ? { roles: mentionIds, parse: [] } : { parse: ['roles'] },
+        });
         console.log(`[sendInitialWelcome] Message sent to thread: ${thread.name}, messageId: ${sentMsg.id}`);
         await sentMsg.pin();
         console.log(`[sendInitialWelcome] Message pinned in thread: ${thread.name}`);

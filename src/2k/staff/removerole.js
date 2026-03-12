@@ -2,6 +2,7 @@ import { SlashCommandBuilder, PermissionsBitField } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { updateAvailable2KTeamsPin } from '../../../2k/available_teams.js';
+import { updateFairSimBoard } from '../../shared/2k_fairsim_board.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json');
 const STAFF_MAP_FILE = path.join(process.cwd(), 'data', 'staffRoleMap.main.json');
@@ -90,6 +91,7 @@ export async function execute(interaction) {
     } catch (pinErr) {
       console.error('[2k-removerole] Failed to update available teams pin:', pinErr);
     }
+    try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.error('[2k-removerole] Failed to update sim board:', e); }
   } catch (err) {
     await interaction.editReply({ content: `Failed to remove roles: ${err.message || err}` });
   }
