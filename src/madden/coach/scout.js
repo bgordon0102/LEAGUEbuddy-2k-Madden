@@ -253,6 +253,12 @@ export async function execute(interaction) {
   pointsLeft -= cost;
   if (!userData.players[classKey]) userData.players[classKey] = {};
   userData.players[classKey][player.name] = newUnlocked;
+  // Ensure new scouted players are appended to the end of the user's board order
+  userData.order = userData.order || {};
+  userData.order[classKey] = Array.isArray(userData.order[classKey]) ? userData.order[classKey] : [];
+  if (!userData.order[classKey].includes(player.name)) {
+    userData.order[classKey].push(player.name);
+  }
   userData.weeklyPoints[weekKey] = pointsLeft;
   saveJSON(SCOUT_PATH, scoutData);
   // backend log only

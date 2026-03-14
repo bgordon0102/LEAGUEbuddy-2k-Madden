@@ -10,7 +10,28 @@ const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_id
 const FAIR_FILE = path.join(process.cwd(), 'data', 'madden', 'fairsims.json');
 const COMMISH_ROLE_IDS = ['1460399404241522759', '1460399405436768431']; // Legacy commish roles
 const SIM_LIMIT = 5;
+const PENDING_FILE = path.join(process.cwd(), 'data', 'madden', 'pending.json');
 const pendingFair = new Map(); // threadId or threadId:complete -> { away: bool, home: bool }
+
+function loadPendingFile() {
+  try {
+    const data = JSON.parse(fs.readFileSync(PENDING_FILE, 'utf8'));
+    Object.entries(data || {}).forEach(([k, v]) => {
+      if (v && (v.away || v.home)) pendingFair.set(k, { away: !!v.away, home: !!v.home });
+    });
+  } catch { /* ignore */ }
+}
+
+function savePendingFile() {
+  const obj = {};
+  pendingFair.forEach((v, k) => { obj[k] = v; });
+  try {
+    fs.mkdirSync(path.dirname(PENDING_FILE), { recursive: true });
+    fs.writeFileSync(PENDING_FILE, JSON.stringify(obj, null, 2));
+  } catch (e) { console.warn('[game_status] failed to persist pending file', e?.message || e); }
+}
+
+loadPendingFile();
 
 function loadRoleMap() {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
@@ -47,9 +68,22 @@ function parseTeams(threadName) {
 
 function coachRoleIds(team, roleMap) {
   if (!team) return [];
-  const normTeam = normalize(team.replace(/coach/ig, '').trim());
+  const norm = (str) => normalize(str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normTeam = norm(team.replace(/coach/ig, '').trim());
+  const mascotTeam = norm(team.split(/\s+/).pop());
   return Object.entries(roleMap)
-    .filter(([k]) => /coach$/i.test(k) && normalize(k.replace(/coach$/i, '').trim()) === normTeam)
+    .filter(([k]) => /coach$/i.test(k))
+    .filter(([k]) => {
+      const base = k.replace(/coach$/i, '').trim();
+      const normBase = norm(base);
+      const mascotBase = norm(base.split(/\s+/).pop());
+      return (
+        normBase === normTeam ||
+        mascotBase === mascotTeam ||
+        normBase.includes(normTeam) ||
+        normTeam.includes(normBase)
+      );
+    })
     .map(([, id]) => id)
     .filter(Boolean);
 }
@@ -73,7 +107,17 @@ async function coachUserIds(guild, team, roleMap) {
   for (const roleId of ids) {
     const role = guild.roles.cache.get(roleId) || await guild.roles.fetch(roleId).catch(() => null);
     if (!role) continue;
-    role.members.forEach(m => users.push(m.id));
+    // Use cached members first; if empty, fetch all members and filter by role to avoid cache misses.
+    if (role.members?.size) {
+      role.members.forEach(m => users.push(m.id));
+    } else {
+      try {
+        const all = await guild.members.fetch();
+        all.filter(m => m.roles.cache.has(roleId)).forEach(m => users.push(m.id));
+      } catch {
+        // ignore fetch failures; fallback is empty
+      }
+    }
   }
   return users;
 }
@@ -153,12 +197,14 @@ function disableButtons(interaction) {
 
 function clearPendingFair(threadId) {
   pendingFair.delete(threadId);
+  savePendingFile();
 }
 
 function setPendingFair(threadId, side) {
   const entry = pendingFair.get(threadId) || { away: false, home: false };
   entry[side] = true;
   pendingFair.set(threadId, entry);
+  savePendingFile();
   return entry;
 }
 
@@ -256,10 +302,7 @@ export async function execute(interaction) {
     }
     const targetTeam = action === 'staffstrikeaway' ? away : home;
     const targetUsers = await coachUserIds(interaction.guild, targetTeam, roleMap);
-    if (!targetUsers.length) {
-      await interaction.reply({ content: 'No coach found for that team.', ephemeral: true });
-      return;
-    }
+    const teamOnly = !targetUsers.length;
     const over = fairCountExceeded(targetUsers, seasonData);
     if (over.length) {
       const names = over.map(id => `<@${id}>`).join(', ');
@@ -271,15 +314,24 @@ export async function execute(interaction) {
     incrementFair(targetUsers, fairData, seasonKey, [targetTeam].filter(Boolean));
     saveFair(fairData);
     markThreadDone(threadId, action);
-    const remaining = remainingFair(targetUsers, ensureSeason(fairData, seasonKey));
-    const remLine = Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem,0)} sim strikes left this season`).join('\n');
+    const seasonDataAfter = ensureSeason(fairData, seasonKey);
+    const remaining = remainingFair(targetUsers, seasonDataAfter);
+    const remLine = targetUsers.length
+      ? Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem,0)} sim strikes left this season`).join('\n')
+      : 'Team strike recorded (no coach role members found).';
     const label = action === 'staffstrikeaway' ? 'Staff Strike (Away)' : 'Staff Strike (Home)';
-    baseEmbed.setTitle(label).setColor(0xED4245).setDescription(`Issued by ${interaction.user}\nTeam: ${targetTeam || 'Unknown'}`).addFields({ name: 'Remaining', value: remLine || 'N/A', inline: false });
+    baseEmbed
+      .setTitle(label)
+      .setColor(0xED4245)
+      .setDescription(`Issued by ${interaction.user}\nTeam: ${targetTeam || 'Unknown'}`)
+      .addFields({ name: 'Remaining', value: remLine || 'N/A', inline: false });
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
-    await sendWarnings(thread, targetUsers, ensureSeason(fairData, seasonKey), commishMention);
+    if (targetUsers.length) {
+      await sendWarnings(thread, targetUsers, seasonDataAfter, commishMention);
+    }
     try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
     try { await disableButtons(interaction); } catch {}
-    await interaction.reply({ content: 'Strike issued and recorded.', ephemeral: true });
+    await interaction.reply({ content: teamOnly ? 'Strike recorded for the team (no coach users found in the role).' : 'Strike issued and recorded.', ephemeral: true });
     clearPendingFair(threadId);
     return;
   }

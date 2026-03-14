@@ -753,8 +753,8 @@ async function execute(interaction) {
         const row = new ActionRowBuilder().addComponents(
           new ButtonBuilder().setCustomId(`madden_game_status_complete|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel('Game Completed 🏁').setStyle(ButtonStyle.Success),
           new ButtonBuilder().setCustomId(`madden_game_status_fairsim|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel('Fair Sim ⚖️').setStyle(ButtonStyle.Secondary),
-          new ButtonBuilder().setCustomId(`madden_game_status_homewin|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`${homeShort} Win 🏠`).setStyle(ButtonStyle.Secondary),
-          new ButtonBuilder().setCustomId(`madden_game_status_awaywin|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`${awayShort} Win 🛫`).setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`madden_game_status_homewin|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`FW ${homeShort} 🏠`).setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId(`madden_game_status_awaywin|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`FW ${awayShort} 🛫`).setStyle(ButtonStyle.Secondary),
           new ButtonBuilder().setCustomId(`madden_game_status_cpu|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel('CPU 🤖').setStyle(ButtonStyle.Secondary),
         );
         const staffRow = new ActionRowBuilder().addComponents(
@@ -767,8 +767,7 @@ async function execute(interaction) {
             `Schedule and play your game. Use the buttons when needed:`,
             `🏁 Game Completed — both coaches press; clears reminders.`,
             `⚖️ Fair Sim — both coaches press; each gets 1 sim strike (max 5/season).`,
-            `🏠 Home Win — only the AWAY coach or staff may press; HOME ready, AWAY couldn’t play (away gets 1 strike).`,
-            `🛫 Away Win — only the HOME coach or staff may press; AWAY ready, HOME couldn’t play (home gets 1 strike).`,
+            `🏳️ Opponent Win (Forfeit) — press the button with your opponent’s team name when they were ready and your side couldn’t play, or if you need to forfeit early; your side gets 1 strike.`,
             `🤖 CPU — for CPU matchups; no strikes, just stops reminders.`,
             `🚫 Staff Strike — staff-only; adds 1 strike to the chosen team when unresponsive.`,
             `Deadline: <t:${deadline}:R> (<t:${deadline}:f>)`

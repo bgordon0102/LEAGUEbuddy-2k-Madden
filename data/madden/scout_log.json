@@ -9566,5 +9566,53 @@
     "currentWeek": 3,
     "stage": 1,
     "pointsLeft": 0
+  },
+  {
+    "ts": 1773427170278,
+    "userId": "522832067843850251",
+    "username": "seamen1576",
+    "guildId": "1255691165265821747",
+    "classId": "cus_02",
+    "player": "Dylan Fredericks",
+    "position": "HB",
+    "school": "BYU",
+    "unlockedCategory": "arch",
+    "weekKey": "year_2026_week_3",
+    "seasonYear": 2026,
+    "currentWeek": 3,
+    "stage": 1,
+    "pointsLeft": 50
+  },
+  {
+    "ts": 1773427201485,
+    "userId": "522832067843850251",
+    "username": "seamen1576",
+    "guildId": "1255691165265821747",
+    "classId": "cus_02",
+    "player": "Dylan Fredericks",
+    "position": "HB",
+    "school": "BYU",
+    "unlockedCategory": "ovr",
+    "weekKey": "year_2026_week_3",
+    "seasonYear": 2026,
+    "currentWeek": 3,
+    "stage": 1,
+    "pointsLeft": 40
+  },
+  {
+    "ts": 1773427212407,
+    "userId": "522832067843850251",
+    "username": "seamen1576",
+    "guildId": "1255691165265821747",
+    "classId": "cus_02",
+    "player": "Dylan Fredericks",
+    "position": "HB",
+    "school": "BYU",
+    "unlockedCategory": "dev",
+    "weekKey": "year_2026_week_3",
+    "seasonYear": 2026,
+    "currentWeek": 3,
+    "stage": 1,
+    "pointsLeft": 30
   }
 ]

@@ -41,11 +41,36 @@ function mascotOnly(name) {
 }
 
 function loadCoachRoleMap() {
-    try {
-        return JSON.parse(fs.readFileSync('./data/coachRoleMap.json', 'utf8'));
-    } catch (err) {
-        return {};
+    const candidates = [
+        './data/coachRoleMap.json',           // legacy path
+        './src/data/coachRoleMap.json',       // new path used in repo
+    ];
+    for (const p of candidates) {
+        try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (err) {}
     }
+    return {};
+}
+
+const normalizeTeam = (name = '') => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+function fallbackCoachRoleId(teamName, nbaRoleMap) {
+    if (!teamName) return null;
+    // direct match (team names in nba_role_ids.json are without "Coach")
+    if (nbaRoleMap[teamName]) return nbaRoleMap[teamName];
+    // mascot-only and mascot + Coach (e.g., "Hawks", "Hawks Coach")
+    const mascot = mascotOnly(teamName);
+    if (nbaRoleMap[mascot]) return nbaRoleMap[mascot];
+    if (nbaRoleMap[`${mascot} Coach`]) return nbaRoleMap[`${mascot} Coach`];
+    // city + mascot Coach (e.g., "Atlanta Hawks Coach")
+    const cityMascotCoach = `${teamName} Coach`;
+    if (nbaRoleMap[cityMascotCoach]) return nbaRoleMap[cityMascotCoach];
+    // partial match on mascot token
+    const normMasc = normalizeTeam(mascot);
+    const entry = Object.entries(nbaRoleMap || {}).find(([k]) => {
+        const nk = normalizeTeam(k);
+        return nk.includes(normMasc) || normMasc.includes(nk);
+    });
+    return entry ? entry[1] : null;
 }
 
 function findCoachRoleId(teamName, coachRoleMap) {
@@ -86,15 +111,42 @@ function findCoachRoleId(teamName, coachRoleMap) {
     return contains ? contains.id : null;
 }
 
+async function filterExistingRoleIds(guild, roleIds = []) {
+    const out = [];
+    for (const rid of roleIds) {
+        if (!rid) continue;
+        const role = guild.roles.cache.get(rid) || await guild.roles.fetch(rid).catch(() => null);
+        if (role) out.push(rid);
+        else console.warn('[advanceweek][welcome] role id missing in guild', rid);
+    }
+    return Array.from(new Set(out));
+}
+
 async function sendInitialWelcome(thread, teamA, teamB, deadlineHours) {
     const coachRoleMap = loadCoachRoleMap();
-    const teamARole = findCoachRoleId(teamA, coachRoleMap);
-    const teamBRole = findCoachRoleId(teamB, coachRoleMap);
+    let nbaRoleMap = {};
+    try {
+        nbaRoleMap = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json'), 'utf8'));
+    } catch {}
+    let teamARole = findCoachRoleId(teamA, coachRoleMap);
+    let teamBRole = findCoachRoleId(teamB, coachRoleMap);
+    if (!teamARole) teamARole = coachRoleMap[`${mascotOnly(teamA)} Coach`];
+    if (!teamBRole) teamBRole = coachRoleMap[`${mascotOnly(teamB)} Coach`];
     console.log(`[sendInitialWelcome] Role lookup: ${teamA} -> ${teamARole || 'none'}, ${teamB} -> ${teamBRole || 'none'}`);
-    const mentions = [];
-    if (teamARole) mentions.push(`<@&${teamARole}>`);
-    if (teamBRole) mentions.push(`<@&${teamBRole}>`);
-    const coachMentions = mentions.join(' ');
+    const coachRoleIds = [];
+    if (teamARole) coachRoleIds.push(teamARole);
+    else {
+        const fbA = fallbackCoachRoleId(teamA, nbaRoleMap);
+        if (fbA) coachRoleIds.push(fbA);
+    }
+    if (teamBRole) coachRoleIds.push(teamBRole);
+    else {
+        const fbB = fallbackCoachRoleId(teamB, nbaRoleMap);
+        if (fbB) coachRoleIds.push(fbB);
+    }
+    // Debug: log resolved roles
+    console.log('[advanceweek][welcome] coach role ids', { teamA, teamB, coachRoleIds });
+    const coachMentions = coachRoleIds.map(id => `<@&${id}>`).join(' ');
     const hours = Number.isFinite(deadlineHours) ? deadlineHours : DEFAULT_CONFIG.deadlineHours;
     const deadline = Math.floor((Date.now() + hours * 60 * 60 * 1000) / 1000); // UNIX seconds
     // Tag commish roles every time a game thread is created
@@ -114,8 +166,14 @@ async function sendInitialWelcome(thread, teamA, teamB, deadlineHours) {
         console.warn('[sendInitialWelcome] Could not load commish roles for tagging:', err);
     }
 
-    // Build mention text like Madden: both coaches + commish, uniqed
-    const welcomeMsg = Array.from(new Set([commishMentions, coachMentions].filter(Boolean).join(' ').split(/\s+/).filter(Boolean))).join(' ');
+    // Build mention text like Madden: both coaches + commish, uniqed; filter to numeric IDs and existing roles
+    const mentionIdsRaw = Array.from(new Set([
+        ...coachRoleIds,
+        ...commishMentions.split(/\s+/).filter(tok => /^<@&\d+>$/.test(tok)).map(tok => tok.replace(/\D/g, '')),
+    ].filter(id => id && /^\d+$/.test(id))));
+    const mentionIds = await filterExistingRoleIds(thread.guild, mentionIdsRaw);
+    console.log('[advanceweek][welcome] mentionIds (coaches+commish)', mentionIdsRaw, 'filtered', mentionIds);
+    const welcomeMsg = mentionIds.map(id => `<@&${id}>`).join(' ');
     const embed = {
         title: `${teamA} vs ${teamB}`,
         description: [
@@ -151,9 +209,6 @@ async function sendInitialWelcome(thread, teamA, teamB, deadlineHours) {
             new ButtonBuilder().setCustomId(`2k_game_status_staffstrikeb|${thread.id}|${encodeURIComponent(teamA)}|${encodeURIComponent(teamB)}`).setLabel(`Staff Strike ${short(teamB)}`).setStyle(ButtonStyle.Danger),
             new ButtonBuilder().setCustomId(`set_game_info|${thread.id}`).setLabel('Set Game Info').setStyle(ButtonStyle.Primary),
         );
-        const mentionIds = Array.from(new Set([...mentions, ...commishMentions.split(/\s+/)]))
-          .filter(tok => /^<@&\d+>$/.test(tok))
-          .map(tok => tok.replace(/[^0-9]/g, ''));
         const sentMsg = await thread.send({
             content: welcomeMsg || null,
             embeds: [embed],
@@ -310,17 +365,26 @@ export async function execute(interaction) {
             const deadline = Math.floor((Date.now() + hours * 60 * 60 * 1000) / 1000);
             // Tag Ghost Paradise role if available
             let ghostTag = '';
+            let ghostId = '';
             try {
                 const roleMapPath = path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json');
                 const roleMap = JSON.parse(fs.readFileSync(roleMapPath, 'utf8'));
-                if (roleMap['Ghost Paradise']) ghostTag = `<@&${roleMap['Ghost Paradise']}> `;
+                if (roleMap['Ghost Paradise']) {
+                    ghostId = roleMap['Ghost Paradise'];
+                    ghostTag = `<@&${ghostId}> `;
+                }
             } catch { /* ignore */ }
             const embed = new EmbedBuilder()
                 .setTitle(`Week ${weekNum} Threads Live`)
                 .setDescription(`All game threads are posted. Set your in-game date in your thread and confirm tip-off.\n\nDeadline: <t:${deadline}:F> (<t:${deadline}:R>)`)
                 .setColor(0x1E90FF);
+            const mentionIds = Array.from(new Set([
+                advanceCfg.leagueRoleId,
+                ghostId || (ghostTag ? ghostTag.replace(/\\D/g, '') : null),
+            ].filter(id => id && /^\\d+$/.test(id))));
+            console.log('[advanceweek][announce] mentionIds', mentionIds, { leagueRoleId: advanceCfg.leagueRoleId, ghostId });
             await announceChannel.send({
-                content: `${ghostTag}<@&${advanceCfg.leagueRoleId}>`,
+                content: mentionIds.map(id => `<@&${id}>`).join(' '),
                 embeds: [embed]
             });
         }

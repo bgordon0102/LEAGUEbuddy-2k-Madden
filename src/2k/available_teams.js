@@ -2,10 +2,20 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder, ChannelType } from 'discord.js';
 
-const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'coachRoleMap.json');
+const ROLE_MAP_FILE = path.join(process.cwd(), 'data', '2k', 'nba_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', '2k', '2k_channel_ids.json');
 const EMOJI_MAP_FILE = path.join(process.cwd(), 'data', '2k', 'team_emojis.json');
 const PIN_FILE = path.join(process.cwd(), 'data', '2k', 'pins_available_teams.json');
+
+const mascotOnly = (name = '') => {
+    const n = (name || '').trim();
+    if (!n) return 'Team';
+    if (/trail\s*blazers/i.test(n)) return 'Trail Blazers';
+    if (/timberwolves/i.test(n)) return 'Timberwolves';
+    if (/76ers|seventy\s*sixers/i.test(n)) return '76ers';
+    const parts = n.split(/\s+/);
+    return parts[parts.length - 1] || n;
+};
 
 const CONFERENCES = {
     East: new Set([
@@ -28,7 +38,11 @@ function saveJson(file, data) {
 function teamRoles(roleMap) {
     return Object.entries(roleMap)
         .filter(([name]) => name.endsWith(' Coach'))
-        .map(([name, id]) => ({ team: name.replace(/ Coach$/, ''), roleId: id }));
+        .map(([name, id]) => {
+            const base = name.replace(/ Coach$/, '');
+            const mascot = mascotOnly(base);
+            return { team: mascot, rawTeam: base, roleId: id };
+        });
 }
 
 function formatAssignments(guild, roles) {

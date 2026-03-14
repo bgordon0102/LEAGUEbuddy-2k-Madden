@@ -83,15 +83,15 @@ export async function execute(interaction) {
   const deadline = Math.floor((Date.now() + 48 * 3600 * 1000) / 1000);
   const embed = {
     title: 'LEAGUEbuddy Matchup (TEST)',
-    fields: [
-      { name: 'Game Completed', value: '🏁 Both coaches press; clears reminders.', inline: false },
-      { name: 'Fair Sim', value: '⚖️ Both coaches press; each gets 1 sim strike (max 5/season).', inline: false },
-      { name: 'Home Win', value: '🏠 Only the AWAY coach or staff may press; HOME ready, AWAY couldn’t (away gets 1 strike).', inline: false },
-      { name: 'Away Win', value: '🛫 Only the HOME coach or staff may press; AWAY ready, HOME couldn’t (home gets 1 strike).', inline: false },
-      { name: 'CPU', value: '🤖 For CPU matchups; no strikes, just stops reminders.', inline: false },
-      { name: 'Staff Strike', value: '🚫 Staff-only; adds 1 strike to the chosen team when unresponsive.', inline: false },
-      { name: 'Deadline', value: `<t:${deadline}:R> (<t:${deadline}:F>)`, inline: false },
-    ],
+    description: [
+      `Schedule and play your game. Use the buttons when needed:`,
+      `🏁 Game Completed — both coaches press; clears reminders.`,
+      `⚖️ Fair Sim — both coaches press; each gets 1 sim strike (max 5/season).`,
+      `🏳️ Opponent Win (Forfeit) — press the button with your opponent’s team name when they were ready and your side couldn’t play, or if you need to forfeit early; your side gets 1 strike.`,
+      `🤖 CPU — for CPU matchups; no strikes, just stops reminders.`,
+      `🚫 Staff Strike — staff-only; adds 1 strike to the chosen team when unresponsive.`,
+      `Deadline: <t:${deadline}:R> (<t:${deadline}:f>)`
+    ].join('\n'),
     color: 0x00b0f4,
     timestamp: new Date().toISOString(),
   };
@@ -101,8 +101,8 @@ export async function execute(interaction) {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`madden_game_status_complete|${thread.id}|${encAway}|${encHome}`).setLabel('Game Completed 🏁').setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId(`madden_game_status_fairsim|${thread.id}|${encAway}|${encHome}`).setLabel('Fair Sim ⚖️').setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`madden_game_status_homewin|${thread.id}|${encAway}|${encHome}`).setLabel(`${homeLabel} Win 🏠`).setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`madden_game_status_awaywin|${thread.id}|${encAway}|${encHome}`).setLabel(`${awayLabel} Win 🛫`).setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`madden_game_status_homewin|${thread.id}|${encAway}|${encHome}`).setLabel(`FW ${homeLabel} 🏠`).setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`madden_game_status_awaywin|${thread.id}|${encAway}|${encHome}`).setLabel(`FW ${awayLabel} 🛫`).setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId(`madden_game_status_cpu|${thread.id}|${encAway}|${encHome}`).setLabel('CPU 🤖').setStyle(ButtonStyle.Secondary),
   );
   const staffRow = new ActionRowBuilder().addComponents(

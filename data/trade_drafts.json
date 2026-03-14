@@ -1,19 +1,46 @@
 {
-  "builder_564228061529374730_1773277969314": {
-    "draftId": "builder_564228061529374730_1773277969314",
-    "userId": "564228061529374730",
+  "builder_1076243288056664234_1773461415644": {
+    "draftId": "builder_1076243288056664234_1773461415644",
+    "userId": "1076243288056664234",
     "guildId": "1255691165265821747",
-    "mode": "2k",
-    "yourTeamName": null,
-    "yourTeamId": null,
-    "otherTeamName": "Boston Celtics",
-    "seasonYear": 2026,
+    "leagueId": "16594549",
+    "yourTeamId": 775553028,
+    "otherTeamId": null,
+    "yourTeamName": "Broncos",
+    "otherTeamName": null,
     "assets": {
       "your": [],
       "other": []
     },
-    "savedAt": 1773278150492,
-    "otherTeamId": "Boston Celtics",
-    "otherTeam": "Boston Celtics"
+    "savedAt": 1773461415644
+  },
+  "builder_1003814203825602630_1773466781903": {
+    "draftId": "builder_1003814203825602630_1773466781903",
+    "userId": "1003814203825602630",
+    "guildId": "1255691165265821747",
+    "leagueId": "16594549",
+    "yourTeamId": 775553034,
+    "otherTeamId": "775553035",
+    "yourTeamName": "Chargers",
+    "otherTeamName": "Chiefs",
+    "assets": {
+      "your": [],
+      "other": [
+        {
+          "type": "pick",
+          "raw": "1 Round 1 Pick 6",
+          "year": 1,
+          "round": 1,
+          "pickNum": 6,
+          "value": 394,
+          "label": "Round 1 Pick 6 (1)"
+        }
+      ]
+    },
+    "savedAt": 1773467016370,
+    "yourTeam": "Chargers",
+    "otherTeam": "Chiefs",
+    "assetsSent": "",
+    "assetsReceived": "1 Round 1 Pick 6 — 394.2"
   }
 }
