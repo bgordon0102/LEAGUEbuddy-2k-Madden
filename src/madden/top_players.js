@@ -3,6 +3,7 @@ import fs from 'fs';
 import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { loadJson, saveJson } from '../shared/json.js';
 import { gatherWeeklyStats } from './awards.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const TOP_FILE = path.join(process.cwd(), 'data', 'madden', 'top_players.json');
 const TOP_HISTORY_DIR = path.join(process.cwd(), 'data', 'madden', 'top_players_history');
@@ -165,7 +166,7 @@ function conferenceMap(snapshot) {
 function teamNameMap(snapshot) {
   const map = {};
   (snapshot?.teams?.leagueTeamInfoList || []).forEach(t => {
-    const name = [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim();
+    const name = getFullTeamName(t, `Team ${t.teamId}`);
     map[t.teamId] = name || `Team ${t.teamId}`;
   });
   return map;
@@ -513,6 +514,33 @@ function formatLine(p) {
   return parts.join('\n') || 'No stats';
 }
 
+function hasEligibleOffenseStats(p) {
+  const t = p?.totals || {};
+  return (
+    Number(t.passYds || 0) > 0 ||
+    Number(t.passTDs || 0) > 0 ||
+    Number(t.rushYds || 0) > 0 ||
+    Number(t.rushTDs || 0) > 0 ||
+    Number(t.recYds || 0) > 0 ||
+    Number(t.recTDs || 0) > 0 ||
+    Number(t.recCatches || 0) > 0
+  );
+}
+
+function hasEligibleDefenseStats(p) {
+  const t = p?.totals || {};
+  return (
+    Number(t.defTotalTackles || 0) > 1 ||
+    Number(t.defSacks || 0) > 0 ||
+    Number(t.defTacklesForLoss || 0) > 0 ||
+    Number(t.defInts || 0) > 0 ||
+    Number(t.defForcedFumbles || 0) > 0 ||
+    Number(t.defRecoveredFumbles || 0) > 0 ||
+    Number(t.defPassDeflections || 0) > 0 ||
+    Number(t.defTDs || 0) > 0
+  );
+}
+
 function computeOlTeamScore(teamStats, winPct = 0.5) {
   const passAtt = Math.max(1, teamStats.passAtt || 0);
   const rushAtt = Math.max(1, teamStats.rushAtt || 0);
@@ -592,57 +620,47 @@ function applyBanding(list, bandDefs) {
   return graded;
 }
 
-function computeWeeklyList(snapshot, weekIndex) {
-  console.log('[top_players] computeWeeklyList start', { weekIndex });
-  const awardsStore = (() => {
-    try { return JSON.parse(fs.readFileSync(AWARDS_FILE, 'utf8')); } catch { return {}; }
-  })();
-  const awardWinners = (() => {
-    const leagueAwards = awardsStore?.[snapshot?.leagueId] || {};
-    const wk = leagueAwards?.[weekIndex]
-      || leagueAwards?.[weekIndex + 1] // tolerate off-by-one between game week vs award week key
-      || leagueAwards?.[weekIndex - 1];
-    if (!wk) return [];
-    return Object.entries(wk)
-      .filter(([, v]) => Boolean(v))
-      .map(([key, val]) => ({ ...val, __awardKey: key }));
-  })();
-  // Band definitions for grading (global OVR scale)
-  const bandDefs = [
-    { min: 97.0, max: 99.9, minCount: 1, maxCount: 1 },
-    { min: 95.0, max: 96.9, minCount: 2, maxCount: 3 },
-    { min: 90.0, max: 94.9, minCount: 5, maxCount: 7 },
-    { min: 85.1, max: 89.9, minCount: 30, maxCount: 35 },
-    { min: 80.0, max: 85.0, minCount: 30, maxCount: 35 },
-    { min: 79.0, max: 79.9, minCount: 8, maxCount: 10 },
-    { min: 78.0, max: 78.9, minCount: 8, maxCount: 10 },
-    { min: 77.0, max: 77.9, minCount: 6, maxCount: 8 },
-    { min: 76.0, max: 76.9, minCount: 0, maxCount: 5 },
-    { min: 60.0, max: 75.9, minCount: 0, maxCount: 999 }
-  ];
-  const weekly = gatherWeeklyStats(snapshot, weekIndex);
-  if (weekly) {
-    const stageVal = weekly.stage !== undefined ? weekly.stage : (weekly.stageIndex !== undefined ? weekly.stageIndex : 0);
-    const countPlayers = (wk) => {
-      const buckets = [
-        wk?.passing?.playerPassingStatInfoList,
-        wk?.rushing?.playerRushingStatInfoList,
-        wk?.receiving?.playerReceivingStatInfoList,
-        wk?.defense?.playerDefensiveStatInfoList,
-        wk?.kicking?.playerKickingStatInfoList,
-        wk?.punting?.playerPuntingStatInfoList,
-      ];
-      return buckets.reduce((acc, b) => acc + (Array.isArray(b) ? b.length : 0), 0);
-    };
-    console.log('[top_players] weekly stats', {
-      requestedWeekIdx: weekIndex,
-      returnedWeekIdx: weekly.weekIndex,
-      stage: stageVal,
-      playerCount: countPlayers(weekly)
-    });
-  } else {
-    console.warn('[top_players] weekly stats missing for week', weekIndex);
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function safeDiv(num, den) {
+  return den ? num / den : 0;
+}
+
+function getPositionGroup(posRaw = '') {
+  const pos = (posRaw || '').toUpperCase();
+  if (pos === 'QB') return 'QB';
+  if (['HB', 'RB', 'FB', 'TB'].includes(pos)) return 'RB';
+  if (pos === 'WR') return 'WR';
+  if (pos === 'TE') return 'TE';
+  if (['LT', 'LG', 'C', 'RG', 'RT'].includes(pos)) return 'OL';
+  if (['LE', 'RE', 'ROLB', 'LOLB', 'EDGE', 'EDG', 'LEDG', 'REDG', 'REDGE', 'LEDGE', 'EDGE_R', 'EDGE_L', 'EDGE-R', 'EDGE-L', 'LDE', 'RDE', 'DE', 'OLB'].includes(pos) || /EDGE/.test(pos)) return 'EDG';
+  if (['MLB', 'ILB', 'LB', 'SAM', 'MIKE', 'WILL'].includes(pos)) return 'LB';
+  if (['CB', 'FS', 'SS'].includes(pos)) return 'DB';
+  if (['K', 'P'].includes(pos)) return 'SPECIAL';
+  return 'OTHER';
+}
+
+function computePffStyleGrade(scoreNorm, rankNorm, opts = {}) {
+  const min = opts.min ?? 69;
+  const max = opts.max ?? 97.5;
+  const scoreWeight = opts.scoreWeight ?? 0.7;
+  const rankWeight = opts.rankWeight ?? 0.3;
+  const rankPower = opts.rankPower ?? 0.68;
+  const eliteFloor = opts.eliteFloor ?? 0.95;
+  const eliteBump = opts.eliteBump ?? 1.2;
+  const shapedRank = Math.pow(clamp(rankNorm, 0, 1), rankPower);
+  const blended = clamp(scoreNorm, 0, 1) * scoreWeight + shapedRank * rankWeight;
+  let grade = min + blended * (max - min);
+  if (scoreNorm >= eliteFloor) {
+    grade += ((scoreNorm - eliteFloor) / Math.max(0.0001, 1 - eliteFloor)) * eliteBump;
   }
+  return Number(clamp(grade, min, max).toFixed(1));
+}
+
+function computeWeeklyList(snapshot, weekIndex) {
+  const weekly = gatherWeeklyStats(snapshot, weekIndex);
   if (!weekly) return [];
   const confMap = conferenceMap(snapshot);
   const teamMap = teamNameMap(snapshot);
@@ -651,136 +669,126 @@ function computeWeeklyList(snapshot, weekIndex) {
   const rosterLookup = buildRosterLookup(snapshot);
   const richestEntries = buildRichestPlayerEntries(snapshot);
   enrichWeeklyWithRichest(weekly, richestEntries);
-  // Enrich award winners with roster-derived position if missing
-  awardWinners.forEach(w => {
-    if (w && w.rosterId && (!w.position || !w.displayPos)) {
-      const r = rosterLookup.get(w.rosterId);
-      if (r?.position) {
-        w.position = r.position;
-        w.displayPos = r.position;
-      }
-    }
-  });
   const teamStats = aggregateTeamOffense(weekly);
   const players = mergePlayerStats(weekly);
-  // Build raw scored list (all players) for grading
   const rawList = [];
-  const list = [];
-  const posScores = new Map();
   const isOffPos = (pos) => ['QB', 'HB', 'RB', 'TB', 'WR', 'TE', 'FB', 'LT', 'LG', 'C', 'RG', 'RT', 'K', 'P'].includes(pos);
-  const isDefPos = (pos) => !isOffPos(pos);
+  const teamDefenseTotals = new Map();
+
+  players.forEach((p) => {
+    const rosterEntry = rosterLookup.get(p.rosterId);
+    const pos = (p.position || rosterEntry?.position || 'UNK').toString().trim().toUpperCase();
+    if (isOffPos(pos)) return;
+    const t = p.totals || {};
+    const teamId = Number(p.teamId);
+    const cur = teamDefenseTotals.get(teamId) || {
+      tackles: 0,
+      sacks: 0,
+      tfl: 0,
+      ints: 0,
+      ff: 0,
+      fr: 0,
+      pd: 0,
+      td: 0,
+      impact: 0,
+    };
+    cur.tackles += Number(t.defTotalTackles || 0);
+    cur.sacks += Number(t.defSacks || 0);
+    cur.tfl += Number(t.defTacklesForLoss || 0);
+    cur.ints += Number(t.defInts || 0);
+    cur.ff += Number(t.defForcedFumbles || 0);
+    cur.fr += Number(t.defRecoveredFumbles || 0);
+    cur.pd += Number(t.defPassDeflections || 0);
+    cur.td += Number(t.defTDs || 0);
+    cur.impact += Number(t.defSacks || 0) * 7
+      + Number(t.defTacklesForLoss || 0) * 3
+      + Number(t.defInts || 0) * 9
+      + Number(t.defForcedFumbles || 0) * 6
+      + Number(t.defRecoveredFumbles || 0) * 4
+      + Number(t.defPassDeflections || 0) * 2
+      + Number(t.defTDs || 0) * 10;
+    teamDefenseTotals.set(teamId, cur);
+  });
 
   for (const p of players.values()) {
     const rosterEntry = rosterLookup.get(p.rosterId);
-    const posRaw = (p.position || rosterEntry?.position || 'UNK').toString().trim();
-    const pos = posRaw.toUpperCase();
+    const pos = (p.position || rosterEntry?.position || 'UNK').toString().trim().toUpperCase();
     const isDefense = ['CB', 'FS', 'SS', 'ROLB', 'LOLB', 'MLB', 'LB', 'RE', 'LE', 'DT'].includes(pos);
+    if (isDefense ? !hasEligibleDefenseStats(p) : !hasEligibleOffenseStats(p)) {
+      continue;
+    }
+    const t = p.totals || {};
+    const teamId = Number(p.teamId);
+    const teamOff = teamStats.get(teamId) || {};
+    const teamDef = teamDefenseTotals.get(teamId) || {};
+    const allow = defAllow.get(teamId) || {};
     let baseScore = isDefense ? scoreDefense(p) : scoreOffense(p);
+    let contextScore = 0;
+    let efficiencyScore = 0;
+    let usageScore = 0;
+
     if (isDefense) {
-      baseScore = baseScore * 1.4 + 6; // heavier weight for defense to surface 35-40 defenders in Top 100
-      const allow = defAllow.get(p.teamId) || {};
-      const yds = allow.defYds || 350;
-      const pts = allow.defPts || 24;
-      const ydsPenalty = Math.min(0.25, Math.max(-0.15, (yds - 320) / 400));
-      const ptsPenalty = Math.min(0.25, Math.max(-0.10, (pts - 23) / 30));
-      const penaltyFactor = 1 - (ydsPenalty * 0.6 + ptsPenalty * 0.4);
-      const defImpactPlays = (p.totals?.defSacks || 0) + (p.totals?.defTacklesForLoss || 0) + (p.totals?.defInts || 0) +
-        (p.totals?.defForcedFumbles || 0) + (p.totals?.defRecoveredFumbles || 0) + (p.totals?.defPassDeflections || 0) + (p.totals?.defTDs || 0);
-      if (defImpactPlays < 3) {
-        baseScore *= Math.max(0.6, penaltyFactor);
+      const impact = Number(t.defSacks || 0) * 7
+        + Number(t.defTacklesForLoss || 0) * 3
+        + Number(t.defInts || 0) * 9
+        + Number(t.defForcedFumbles || 0) * 6
+        + Number(t.defRecoveredFumbles || 0) * 4
+        + Number(t.defPassDeflections || 0) * 2
+        + Number(t.defTDs || 0) * 10;
+      const impactShare = safeDiv(impact, teamDef.impact || 0);
+      const tackleShare = safeDiv(Number(t.defTotalTackles || 0), teamDef.tackles || 0);
+      usageScore += impactShare * 22 + tackleShare * 8;
+      efficiencyScore += Number(t.defSacks || 0) * 3.5 + Number(t.defInts || 0) * 4.5 + Number(t.defPassDeflections || 0) * 1.4;
+      if ((allow.defPts || 99) <= 17) contextScore += 5;
+      else if ((allow.defPts || 99) <= 21) contextScore += 3;
+      if ((allow.defYds || 999) <= 300) contextScore += 3;
+      else if ((allow.defYds || 999) <= 340) contextScore += 1.5;
+      const impactCount = Number(t.defSacks || 0) + Number(t.defTacklesForLoss || 0) + Number(t.defInts || 0)
+        + Number(t.defForcedFumbles || 0) + Number(t.defRecoveredFumbles || 0) + Number(t.defPassDeflections || 0) + Number(t.defTDs || 0);
+      if (impactCount < 1 && Number(t.defTotalTackles || 0) < 5) {
+        baseScore *= 0.45;
       }
+    } else if (pos === 'QB') {
+      const passYds = Number(t.passYds || 0);
+      const passTDs = Number(t.passTDs || 0);
+      const passInts = Number(t.passInts || 0);
+      const passAtt = Number(t.passAtt || 0);
+      const rushYds = Number(t.rushYds || 0);
+      const ypa = safeDiv(passYds, passAtt);
+      usageScore += safeDiv(passYds, teamOff.passYds || 0) * 18;
+      usageScore += clamp((passYds - 235) * 0.04, -2, 12);
+      efficiencyScore += clamp((ypa - 7.0) * 5.2, -8, 14);
+      efficiencyScore += clamp((passTDs - passInts) * 2.0, -8, 15);
+      efficiencyScore += clamp((rushYds - 20) * 0.08, -2, 5);
+      if (passYds >= 275) contextScore += 3;
+      if (passYds >= 325) contextScore += 4;
+      if (passTDs >= 3) contextScore += 4;
+      if (passTDs >= 4) contextScore += 3;
+      if (passInts === 0 && passTDs >= 2 && passYds >= 250) contextScore += 4;
+      else if (passInts <= 1 && passTDs >= 3) contextScore += 2;
+    } else if (['HB', 'RB', 'FB', 'TB'].includes(pos)) {
+      const rushYds = Number(t.rushYds || 0);
+      const rushAtt = Number(t.rushAtt || 0);
+      const recYds = Number(t.recYds || 0);
+      usageScore += safeDiv(rushYds, teamOff.rushYds || 0) * 16;
+      usageScore += safeDiv(recYds, teamOff.passYds || 0) * 6;
+      efficiencyScore += clamp((safeDiv(rushYds, rushAtt) - 4.1) * 5, -6, 10);
+      efficiencyScore += clamp((rushYds + recYds - 90) * 0.06, -3, 8);
+    } else if (['WR', 'TE'].includes(pos)) {
+      const recYds = Number(t.recYds || 0);
+      const recCatches = Number(t.recCatches || 0);
+      const recTDs = Number(t.recTDs || 0);
+      usageScore += safeDiv(recYds, teamOff.passYds || 0) * 22;
+      usageScore += safeDiv(recCatches, Math.max(1, teamOff.passAtt || 0)) * 18;
+      efficiencyScore += clamp((safeDiv(recYds, recCatches) - 10.5) * 2.5, -4, 10);
+      efficiencyScore += recTDs * 1.8;
     }
-    // If edge/defender has no impact stats, clamp hard
-    const impactCount = (p.totals?.defSacks || 0) + (p.totals?.defTacklesForLoss || 0) + (p.totals?.defInts || 0) +
-      (p.totals?.defForcedFumbles || 0) + (p.totals?.defRecoveredFumbles || 0) + (p.totals?.defPassDeflections || 0) + (p.totals?.defTDs || 0);
-    const isEdgeRole = ['LE', 'RE', 'ROLB', 'LOLB', 'EDGE', 'EDG', 'LEDG', 'REDG', 'REDGE', 'LEDGE', 'EDGE_R', 'EDGE_L', 'EDGE-R', 'EDGE-L', 'LDE', 'RDE', 'DE', 'OLB'].includes(pos);
-    if (isEdgeRole && impactCount < 1) {
-      baseScore *= 0.3;
-    }
-    // Position bump/nerf
-    const edgePositions = new Set([
-      'LE', 'RE', 'ROLB', 'LOLB', 'EDGE', 'EDG', 'LEDG', 'REDG', 'REDGE', 'LEDGE',
-      'EDGE_R', 'EDGE_L', 'EDGE-R', 'EDGE-L', 'LDE', 'RDE', 'DE', 'OLB'
-    ]);
-    const posBump = (() => {
-      // Tilt offense high, cap edges unless impact is real
-      if (pos === 'QB') return 1.70;
-      if (pos === 'WR' || pos === 'TE') return 1.38;
-      if (pos === 'HB' || pos === 'FB' || pos === 'RB') return 1.35;
-      if (pos === 'C') return 1.32; // lift centers so at least two surface
-      if (['LT', 'LG', 'RG', 'RT'].includes(pos)) return 1.22;
-      if (edgePositions.has(pos)) {
-        if (impactCount < 1) return 0.75;
-        if (impactCount < 3) return 1.0;
-        return 1.08;
-      }
-      if (['CB'].includes(pos)) {
-        if (impactCount < 1) return 0.80;
-        return 0.95;
-      }
-      if (['FS', 'SS'].includes(pos)) {
-        if (impactCount < 1) return 0.80;
-        return 0.95;
-      }
-      if (['DT', 'MLB', 'ILB', 'LB', 'SAM', 'MIKE', 'WILL'].includes(pos)) {
-        if (impactCount < 1) return 1.1;
-        if (impactCount < 2) return 1.28;
-        return 1.4;
-      }
-      if (pos === 'K' || pos === 'P') return 1.05;
-      return 1.0;
-    })();
-    baseScore *= posBump;
-    // Slightly boost good QBs for Top 100 weighting
-    if (pos === 'QB' && baseScore > 50) {
-      baseScore *= 1.12;
-    }
-    // Boost non-DB defenders that produced impact plays
-    const isDb = pos === 'CB' || pos === 'FS' || pos === 'SS';
-    if (!isDb && isDefense) {
-      const impactPlays = (p.totals?.defSacks || 0) + (p.totals?.defTacklesForLoss || 0) + (p.totals?.defInts || 0) +
-        (p.totals?.defForcedFumbles || 0) + (p.totals?.defRecoveredFumbles || 0) + (p.totals?.defTDs || 0);
-      if (impactPlays >= 1) baseScore *= 1.12;
-      if (impactPlays >= 3) baseScore *= 1.06;
-      const isInteriorLb = ['DT', 'MLB', 'ILB', 'LB', 'SAM', 'MIKE', 'WILL'].includes(pos);
-      if (isInteriorLb && impactPlays >= 2) {
-        baseScore *= 1.12;
-        baseScore += impactPlays * 2;
-      }
-      if (['DT', 'SAM', 'MIKE', 'WILL', 'MLB', 'ILB', 'LB'].includes(pos)) {
-        const tfl = p.totals?.defTacklesForLoss || 0;
-        const sacks = p.totals?.defSacks || 0;
-        if (tfl >= 3 || sacks >= 2) baseScore = baseScore * 1.2 + 8;
-        else if (tfl >= 2 || sacks >= 1) baseScore = baseScore * 1.12 + 4;
-        else baseScore *= 1.05; // modest lift for DT/LB even with light impact
-      }
-    }
-    // Global offense/defense tilt to satisfy band splits
-    if (isOffPos(pos)) {
-      baseScore *= 1.45; // tilt offense, but leave room for huge defensive lines
-    } else {
-      baseScore *= 0.72; // lighter nerf so high-impact defenders can climb
-      // Edge min impact guard: if no sacks/TFL/INT/FF/FR/PD/TD, cap it
-      if (edgePositions.has(pos)) {
-        const impact = (p.totals?.defSacks || 0) + (p.totals?.defTacklesForLoss || 0) + (p.totals?.defInts || 0) + (p.totals?.defForcedFumbles || 0) + (p.totals?.defRecoveredFumbles || 0) + (p.totals?.defPassDeflections || 0) + (p.totals?.defTDs || 0);
-        if (impact < 1) baseScore = Math.min(baseScore, 70);
-      }
-    }
-    // Edge sack floor: multi-sack games must punch through the mix
-    if (edgePositions.has(pos)) {
-      const sacks = p.totals?.defSacks || 0;
-      const tfl = p.totals?.defTacklesForLoss || 0;
-      if (sacks >= 3) {
-        // Softer floor for multi-sack games to keep offense competitive
-        baseScore = Math.max(baseScore, 80 + sacks * 2.5 + tfl * 1.2);
-      } else if (sacks >= 2) {
-        baseScore = Math.max(baseScore, 70 + sacks * 1.8 + tfl * 1.0);
-      }
-    }
+
     const winPct = (winMap[p.teamId] !== undefined && winMap[p.teamId] !== null) ? winMap[p.teamId] : 0.5;
-    const score = baseScore * (1 + 0.12 * winPct) + (winPct * 8); // explicit win% bonus
+    const ovr = Number(p.playerBestOvr || p.playerSchemeOvr || p.ovr || rosterEntry?.playerBestOvr || 0);
+    const qualityScore = clamp((ovr - 78) * 0.35, -4, 7);
+    const score = baseScore + usageScore + efficiencyScore + contextScore + qualityScore + (winPct * 5.5);
     const rosterInfo = rosterEntry || rosterLookup.get(p.rosterId);
-    const ovr = p.playerBestOvr || p.playerSchemeOvr || p.ovr || null;
     const yearsPro = rosterInfo?.yearsPro ?? p.yearsPro;
     const isRookie = yearsPro !== undefined && yearsPro !== null ? Number(yearsPro) === 0 : (p.isRookie ?? undefined);
     const common = {
@@ -800,83 +808,13 @@ function computeWeeklyList(snapshot, weekIndex) {
       isRookie: isRookie
     };
     rawList.push({ ...common, score });
-    if (!posScores.has(pos)) posScores.set(pos, []);
-    posScores.get(pos).push(score);
   }
-  // Blend with position z-score to mix positions
-  const posStats = {};
-  posScores.forEach((arr, pos) => {
-    const mean = arr.reduce((a, b) => a + b, 0) / Math.max(1, arr.length);
-    const variance = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / Math.max(1, arr.length);
-    const std = Math.sqrt(variance) || 1;
-    posStats[pos] = { mean, std };
-  });
-  rawList.forEach(p => {
-    const st = posStats[p.position] || { mean: 0, std: 1 };
-    const z = (p.score - st.mean) / st.std;
-    p.score = p.score * 0.5 + (z * 10) * 0.5;
-  });
-  // Small positional spread to avoid identical grades for same-line stat edges/front-7
-  const spreadKey = (p) => `${p.position}-${p.totals?.defSacks || 0}-${p.totals?.defTacklesForLoss || 0}-${p.totals?.defInts || 0}-${p.totals?.defTDs || 0}`;
-  const spreadBuckets = new Map();
-  rawList.forEach(p => {
-    const k = spreadKey(p);
-    if (!spreadBuckets.has(k)) spreadBuckets.set(k, []);
-    spreadBuckets.get(k).push(p);
-  });
-  spreadBuckets.forEach(list => {
-    list.sort((a, b) => (b.score || 0) - (a.score || 0));
-    list.forEach((p, idx) => {
-      p.score = (p.score || 0) - idx * 0.15; // nudge similar stat lines apart
-    });
-  });
-  // Champion bonus per position group so any role can surface at the very top
-  const groupOf = (posRaw) => {
-    const pos = (posRaw || '').toUpperCase();
-    if (pos === 'QB') return 'QB';
-    if (['HB', 'RB', 'FB', 'TB'].includes(pos)) return 'RB';
-    if (pos === 'WR') return 'WR';
-    if (pos === 'TE') return 'TE';
-    if (['LT', 'LG', 'C', 'RG', 'RT'].includes(pos)) return 'OL';
-    if (['MLB', 'ILB', 'LB', 'SAM', 'MIKE', 'WILL'].includes(pos)) return 'LB';
-    const edge = ['LE', 'RE', 'ROLB', 'LOLB', 'EDGE', 'EDG', 'LEDG', 'REDG', 'REDGE', 'LEDGE', 'EDGE_R', 'EDGE_L', 'EDGE-R', 'EDGE-L', 'LDE', 'RDE', 'DE', 'OLB'];
-    if (edge.includes(pos) || /EDGE/.test(pos)) return 'EDG';
-    if (['CB', 'FS', 'SS'].includes(pos)) return 'DB';
-    if (['K', 'P'].includes(pos)) return 'SPECIAL';
-    return 'OTHER';
-  };
-  const grouped = new Map();
-  rawList.forEach(p => {
-    const g = groupOf(p.position);
-    if (!grouped.has(g)) grouped.set(g, []);
-    grouped.get(g).push(p);
-  });
-  grouped.forEach(list => list.sort((a, b) => (b.score || 0) - (a.score || 0)));
-  grouped.forEach(list => {
-    if (!list.length) return;
-    const top = list[0];
-    const group = groupOf(top.position);
-    const championBoost = group === 'DB' ? 1.0 : 1.06; // no extra boost for DB champion
-    top.score = (top.score || 0) * championBoost + 6;
-    // Only DB champion gets a bump; no runner boost for DBs
-    if (list[1] && group !== 'DB') {
-      const runnerBoost = 1.03;
-      list[1].score = (list[1].score || 0) * runnerBoost + 3;
-    }
-  });
-  // Light QB boost to ensure 3-6 QBs surface
-  const qbs = rawList.filter(p => (p.position || '').toUpperCase() === 'QB').sort((a, b) => (b.score || 0) - (a.score || 0));
-  qbs.slice(0, 8).forEach((p, i) => { p.score = (p.score || 0) * 1.18; if (i < 4) p.score += 8; });
 
   rawList.sort((a, b) => {
     const as = a.score !== undefined && a.score !== null ? a.score : 0;
     const bs = b.score !== undefined && b.score !== null ? b.score : 0;
     return bs - as;
   });
-  const gradedAllPlayers = rawList.map((p, idx) => ({
-    ...p,
-    grade: computeGradeFromRank(idx, rawList.length)
-  }));
   // Add OL starters per team (5 slots) with differentiated scores
   const rosterTeams = snapshot?.rosters?.teams || {};
   Object.entries(rosterTeams).forEach(([teamId, roster]) => {
@@ -922,11 +860,11 @@ function computeWeeklyList(snapshot, weekIndex) {
         const ovrB = Number(b.pl.playerBestOvr || b.pl.playerSchemeOvr || 0);
         return ovrB - ovrA;
       })
-      .slice(0, 1);
+      .slice(0, 2);
     starters.forEach((entry, idx) => {
       const { pl, playerScore } = entry;
       const pos = pl.position;
-      const finalScore = Math.max(30, playerScore - idx * 5);
+      const finalScore = Math.max(34, playerScore - idx * 4);
       rawList.push({
         id: pl.rosterId || `${pl.firstName || ''}-${pl.lastName || ''}-${teamId}-${pos}`,
         name: `${pl.firstName || ''} ${pl.lastName || ''}`.trim() || pos,
@@ -941,90 +879,74 @@ function computeWeeklyList(snapshot, weekIndex) {
       });
     });
   });
-  // --- Simplified positional balancing & rescale ---
   rawList.sort((a, b) => (b.score || 0) - (a.score || 0));
+  const groupMin = { QB: 4, RB: 6, WR: 12, TE: 4, OL: 6, EDG: 8, LB: 8, DB: 12 };
+  const groupCap = { QB: 12, RB: 14, WR: 24, TE: 8, OL: 10, EDG: 16, LB: 16, DB: 24, SPECIAL: 4, OTHER: 8 };
+  const grouped = new Map();
+  rawList.forEach((p) => {
+    const group = getPositionGroup(p.position);
+    if (!grouped.has(group)) grouped.set(group, []);
+    grouped.get(group).push(p);
+  });
+  grouped.forEach((list) => list.sort((a, b) => (b.score || 0) - (a.score || 0)));
 
-  const groupOfSimple = (posRaw = '') => {
-    const pos = (posRaw || '').toUpperCase();
-    if (pos === 'QB') return 'QB';
-    if (['HB','RB','FB','TB'].includes(pos)) return 'RB';
-    if (pos === 'WR') return 'WR';
-    if (pos === 'TE') return 'TE';
-    if (['LT','LG','C','RG','RT'].includes(pos)) return 'OL';
-    const edge = ['LE','RE','ROLB','LOLB','EDGE','EDG','LEDG','REDG','REDGE','LEDGE','EDGE_R','EDGE_L','EDGE-R','EDGE-L','LDE','RDE','DE','OLB'];
-    if (edge.includes(pos) || /EDGE/.test(pos)) return 'EDG';
-    if (['MLB','ILB','LB','SAM','MIKE','WILL'].includes(pos)) return 'LB';
-    if (['CB','FS','SS'].includes(pos)) return 'DB';
-    if (['K','P'].includes(pos)) return 'SPECIAL';
-    return 'OTHER';
+  const selected = [];
+  const used = new Set();
+  const capCount = {};
+  const addPlayer = (p) => {
+    const id = p.id || `${p.name}-${p.teamId || ''}`;
+    if (used.has(id)) return false;
+    const group = getPositionGroup(p.position);
+    if ((capCount[group] || 0) >= (groupCap[group] ?? 100)) return false;
+    used.add(id);
+    capCount[group] = (capCount[group] || 0) + 1;
+    selected.push(p);
+    return true;
   };
 
-  const groupCap = { QB:10, RB:12, WR:20, TE:10, OL:8, EDG:14, LB:12, DB:20, SPECIAL:3, OTHER:6 };
-  const capCount = {};
-  const capped = [];
-  for (const p of rawList) {
-    const g = groupOfSimple(p.position);
-    const cap = groupCap[g];
-    if (cap !== undefined) {
-      capCount[g] = (capCount[g] || 0);
-      if (capCount[g] >= cap) continue;
-      capCount[g] += 1;
+  Object.entries(groupMin).forEach(([group, minCount]) => {
+    const list = grouped.get(group) || [];
+    for (let i = 0; i < list.length && (capCount[group] || 0) < minCount; i += 1) {
+      addPlayer(list[i]);
     }
-    capped.push(p);
-    if (capped.length >= 200) break;
-  }
-
-  const queues = new Map();
-  capped.forEach(p => {
-    const g = groupOfSimple(p.position);
-    if (!queues.has(g)) queues.set(g, []);
-    queues.get(g).push(p);
   });
-  const pattern = ['QB','RB','WR','WR','TE','OL','EDG','LB','DB','DB','SPECIAL','OTHER'];
-  const balanced = [];
-  while (balanced.length < 100) {
-    let added = false;
-    for (const g of pattern) {
-      const q = queues.get(g);
-      if (q && q.length) {
-        balanced.push(q.shift());
-        added = true;
-        if (balanced.length >= 100) break;
-      }
-    }
-    if (!added) break;
+  for (const p of rawList) {
+    if (selected.length >= 100) break;
+    addPlayer(p);
   }
-  if (balanced.length < 100) {
-    const rem = [];
-    queues.forEach(q => rem.push(...q));
-    rem.sort((a,b) => (b.score||0)-(a.score||0));
-    balanced.push(...rem.slice(0, 100 - balanced.length));
+  if (selected.length < 100) {
+    for (const p of rawList) {
+      const id = p.id || `${p.name}-${p.teamId || ''}`;
+      if (used.has(id)) continue;
+      used.add(id);
+      selected.push(p);
+      if (selected.length >= 100) break;
+    }
   }
 
-  const graded = balanced.map((p, idx) => ({ ...p, grade: computeGradeFromRank(idx + 1, balanced.length) }));
-  const top100Raw = graded.slice(0, 100);
-  const leader = top100Raw[0];
-  const leaderGrade = Math.min(95, leader ? (leader.grade ?? leader.score ?? 95) : 95);
-  const floor = 78;
-  const ninetyCutCount = 12;
-  const ninetyFloor = 90;
+  const top100Raw = selected.slice(0, 100);
+  const scoreValues = top100Raw
+    .map((p) => Number(p.score || 0))
+    .filter((score) => Number.isFinite(score));
+  const topScore = scoreValues.length ? Math.max(...scoreValues) : 0;
+  const bottomScore = scoreValues.length ? Math.min(...scoreValues) : 0;
+  const scoreSpan = Math.max(1, topScore - bottomScore);
   const rescaled = top100Raw.map((p, idx, arr) => {
-    if (arr.length <= ninetyCutCount) {
-      const norm = idx / Math.max(1, arr.length - 1);
-      const spanAll = Math.max(1, leaderGrade - floor);
-      const gradeAll = leaderGrade - norm * spanAll;
-      return { ...p, grade: Number(gradeAll.toFixed(1)) };
-    }
-    if (idx < ninetyCutCount) {
-      const normTop = idx / Math.max(1, ninetyCutCount - 1);
-      const spanTop = Math.max(0.1, leaderGrade - ninetyFloor);
-      const gradeTop = leaderGrade - normTop * spanTop;
-      return { ...p, grade: Number(gradeTop.toFixed(1)) };
-    }
-    const normTail = (idx - ninetyCutCount) / Math.max(1, (arr.length - ninetyCutCount - 1));
-    const spanTail = Math.max(0.1, ninetyFloor - floor);
-    const gradeTail = ninetyFloor - normTail * spanTail;
-    return { ...p, grade: Number(gradeTail.toFixed(1)) };
+    const score = Number(p.score || 0);
+    const scoreNorm = Math.min(1, Math.max(0, (score - bottomScore) / scoreSpan));
+    const rankNorm = arr.length <= 1 ? 1 : 1 - (idx / (arr.length - 1));
+    return {
+      ...p,
+      grade: computePffStyleGrade(scoreNorm, rankNorm, {
+        min: 69.5,
+        max: 97.8,
+        scoreWeight: 0.74,
+        rankWeight: 0.26,
+        rankPower: 0.62,
+        eliteFloor: 0.96,
+        eliteBump: 0.9,
+      }),
+    };
   });
   if (process.env.MOCK_DEBUG) {
     const posTop = {}; rescaled.forEach(p => { posTop[p.position] = (posTop[p.position] || 0) + 1; });
@@ -1114,8 +1036,13 @@ function computeSeasonTop100FromHistory(leagueId) {
       };
       const rushYds = getVal(p, ['rushYds', 'rushingYds']) || getVal(p.totals || {}, ['rushYds', 'rushingYds']);
       const rushAtt = getVal(p, ['rushAtt', 'rushingAtt', 'rushAttempts']) || getVal(p.totals || {}, ['rushAtt', 'rushingAtt', 'rushAttempts']);
+      const rushTDs = getVal(p, ['rushTDs', 'rushingTDs']) || getVal(p.totals || {}, ['rushTDs', 'rushingTDs']);
       const recYds = getVal(p, ['recYds', 'receivingYds']) || getVal(p.totals || {}, ['recYds', 'receivingYds']);
+      const recTDs = getVal(p, ['recTDs', 'receivingTDs']) || getVal(p.totals || {}, ['recTDs', 'receivingTDs']);
       const targets = getVal(p, ['recTgt', 'targets', 'recTargets']) || getVal(p.totals || {}, ['recTgt', 'targets', 'recTargets']);
+      const passYds = getVal(p, ['passYds', 'passingYds']) || getVal(p.totals || {}, ['passYds', 'passingYds']);
+      const passTDs = getVal(p, ['passTDs', 'passingTDs']) || getVal(p.totals || {}, ['passTDs', 'passingTDs']);
+      const passInts = getVal(p, ['passInts', 'passingInts']) || getVal(p.totals || {}, ['passInts', 'passingInts']);
       const sacks = getVal(p, ['defSacks', 'sacks']) || getVal(p.totals || {}, ['defSacks', 'sacks']);
       const tfl = getVal(p, ['defTacklesForLoss', 'tfl']) || getVal(p.totals || {}, ['defTacklesForLoss', 'tfl']);
       const tackles = getVal(p, ['defTotalTackles', 'defTackles']) || getVal(p.totals || {}, ['defTotalTackles', 'defTackles']);
@@ -1134,9 +1061,14 @@ function computeSeasonTop100FromHistory(leagueId) {
         winPctSum: 0,
         winPctCount: 0,
         injuryHits: 0,
+        passYds: 0,
+        passTDs: 0,
+        passInts: 0,
         rushYds: 0,
         rushAtt: 0,
+        rushTDs: 0,
         recYds: 0,
+        recTDs: 0,
         targets: 0,
         sacks: 0,
         tfl: 0,
@@ -1153,9 +1085,14 @@ function computeSeasonTop100FromHistory(leagueId) {
         cur.winPctCount += 1;
       }
       if (p.injuryStatus) cur.injuryHits += 1;
+      cur.passYds += passYds;
+      cur.passTDs += passTDs;
+      cur.passInts += passInts;
       cur.rushYds += rushYds;
       cur.rushAtt += rushAtt;
+      cur.rushTDs += rushTDs;
       cur.recYds += recYds;
+      cur.recTDs += recTDs;
       cur.targets += targets;
       cur.sacks += sacks;
       cur.tfl += tfl;
@@ -1214,11 +1151,31 @@ function computeSeasonTop100FromHistory(leagueId) {
     v.streak80 = best80;
   });
 
-  // scoring for season
+  const getUsageGate = (v) => {
+    const pos = (v.position || '').toUpperCase();
+    if (['HB', 'RB', 'FB'].includes(pos)) {
+      return (v.rushAtt || 0) >= 60 || (v.rushYds || 0) >= 400;
+    }
+    if (['WR', 'TE'].includes(pos)) {
+      return (v.targets || 0) >= 30 || (v.recYds || 0) >= 400;
+    }
+    if (['REDGE', 'LEDGE', 'EDGE', 'DE', 'DL', 'DT'].includes(pos)) {
+      return v.appearances >= 5 && ((v.sacks || 0) + (v.tfl || 0)) >= 5;
+    }
+    if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
+      return v.appearances >= 5 && (v.tackles || 0) >= 40;
+    }
+    if (['CB', 'FS', 'SS', 'S'].includes(pos)) {
+      return v.appearances >= 5 && (((v.pd || 0) + (v.ints || 0)) >= 4 || (v.tackles || 0) >= 30);
+    }
+    return true;
+  };
+
   const seasonList = [];
   const fallbackList = [];
   agg.forEach(v => {
     const avgGrade = v.grades.reduce((a, b) => a + b, 0) / Math.max(1, v.grades.length);
+    const peakGrade = Math.max(...v.grades, avgGrade);
     const winPctAvg = v.winPctCount ? (v.winPctSum / v.winPctCount) : 0.5;
     const variance = (() => {
       const mean = avgGrade;
@@ -1226,153 +1183,70 @@ function computeSeasonTop100FromHistory(leagueId) {
       return varSum / Math.max(1, v.grades.length);
     })();
     const std = Math.sqrt(variance);
-    // Consistency > spikes: reward 90+ and 80+ streaks/occurrences, penalize variance
-    const streak90Bonus = v.streak90 * 1.1;
-    const streak80Bonus = v.streak80 * 0.3;
-    const weeks90Bonus = v.weeks90 * 0.9;
-    const weeks80Bonus = v.weeks80 * 0.2;
-    const streakBonus = v.streak * 0.2; // general presence streak
-    const appearanceBonus = v.appearances * 0.4; // reward sustained play, less OL bias
-    const rankBonus = (101 - v.bestRank) * 0.01; // mild single-week weight
-    const injuryPenalty = v.injuryHits * 0.3;
-    const variancePenalty = std * 1.0; // penalize volatility harder
-    const score = avgGrade * 0.8
-      + winPctAvg * 8
-      + streak90Bonus + streak80Bonus + weeks90Bonus + weeks80Bonus
-      + streakBonus + appearanceBonus + rankBonus
-      - injuryPenalty - variancePenalty;
-    // Derive a season grade (not just score) with caps
-    let rawGrade = avgGrade
-      + v.streak90 * 0.6
-      + v.weeks90 * 0.3
-      + v.streak80 * 0.15
-      - std * 0.7;
-    // Penalize very low appearances; clamp spike merchants
-    // Appearance caps to avoid spike merchants, but keep a small spread
-    if (v.appearances < 7) {
-      rawGrade = Math.min(rawGrade, 84);
-    } else if (v.appearances < 9) {
-      rawGrade = Math.min(rawGrade, 88);
-    }
-    // Positional weighting
-    const pos = (v.position || '').toUpperCase();
-    const posAdj = (() => {
-      if (pos === 'QB') return 1.7;
-      if (pos === 'WR') return 1.2;
-      if (['TE'].includes(pos)) return -0.5;
-      if (['LT', 'LG', 'C', 'RG', 'RT', 'OL'].includes(pos)) {
-        // Give OL a modest lift to avoid being buried; bigger if durable
-        const dur = v.appearances >= 12 ? 1.8 : v.appearances >= 10 ? 1.4 : 0.8;
-        return dur;
-      }
-      if (['HB', 'FB'].includes(pos)) return 0; // handled by caps below
-      if (['CB', 'FS', 'SS', 'S', 'REDGE', 'LEDGE', 'EDGE', 'DT', 'DL'].includes(pos)) return 1.5; // stronger defensive lift to get into top 20
-      if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
-        const base = v.appearances >= 10 ? 4.5 : v.appearances >= 8 ? 3.0 : v.appearances >= 6 ? 1.0 : 0;
-        const mult = 1 + 0.02 * v.weeks90 + 0.01 * v.streak90;
-        const rankPen = 0.1 * Math.max(0, (v.bestRank || 0));
-        let bonus = Math.max(0, Math.min(6, base * mult - rankPen));
-        const spread = Math.max(
-          -2,
-          Math.min(3, 0.12 * v.weeks90 + 0.04 * v.weeks80 - 0.05 * Math.max(0, v.bestRank || 0))
+    const rankBonus = ((101 - Math.min(100, v.bestRank || 100)) / 100) * 6;
+    const appearanceBonus = Math.min(10, v.appearances * 0.9);
+    const posGroup = getPositionGroup(v.position);
+    const productionBonus = (() => {
+      if (posGroup === 'QB') {
+        const passEfficiency = v.passTDs >= 1 ? (v.passTDs / Math.max(1, v.passInts + 1)) : 0;
+        return clamp(
+          v.passYds / 260
+          + v.passTDs * 2.2
+          - v.passInts * 0.7
+          + passEfficiency * 1.2,
+          0,
+          24
         );
-        // Extra LB jitter to break clusters at the bottom
-        const lbJitter = Math.max(-1.5, Math.min(1.5, 0.2 * (v.weeks80 || 0) + 0.25 * (v.weeks90 || 0) - 0.05 * (v.bestRank || 0)));
-        // MIKE-specific bump to help top-range representation
-        if (pos === 'MIKE') bonus += 0.8;
-        return bonus + spread + lbJitter;
       }
-      return 0;
+      if (posGroup === 'RB') {
+        return clamp(v.rushYds / 110 + v.rushTDs * 1.7 + v.recYds / 220, 0, 14);
+      }
+      if (posGroup === 'WR' || posGroup === 'TE') {
+        return clamp(v.recYds / 120 + v.recTDs * 1.9 + v.targets / 18, 0, 14);
+      }
+      if (posGroup === 'EDG' || posGroup === 'OTHER') {
+        return clamp(v.sacks * 2.8 + v.tfl * 0.5, 0, 14);
+      }
+      if (posGroup === 'LB') {
+        return clamp(v.tackles / 18 + v.sacks * 1.9 + v.ints * 3.5 + v.tfl * 0.45, 0, 13);
+      }
+      if (posGroup === 'DB') {
+        return clamp(v.ints * 4.2 + v.pd * 0.9 + v.tackles / 22, 0, 13);
+      }
+      if (posGroup === 'OL') {
+        return clamp(v.appearances * 1.2 + v.bestRank * -0.03 + 5, 0, 10);
+      }
+      return clamp(v.appearances * 0.8, 0, 8);
     })();
-    rawGrade += posAdj;
-    // Additional LB caps by elite weeks to avoid clustering
-    if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
-      const baseCap = v.appearances >= 10 ? 87 : 84;
-      if (v.weeks90 <= 1) rawGrade = Math.min(rawGrade, baseCap);
-      else if (v.weeks90 <= 2) rawGrade = Math.min(rawGrade, baseCap + 1);
-      if (v.appearances >= 10) {
-        const lift = 0.5 * (v.weeks80 || 0) + 0.6 * (v.weeks90 || 0);
-        rawGrade = Math.max(rawGrade, 85 + Math.min(3.0, lift));
-      }
-    }
-    // Volume star bonus for any player with strong availability and elite weeks
-    if (v.appearances >= 12 && v.weeks90 >= 4) {
-      rawGrade += 2.0;
-    }
-    // (Removed low weeks90 penalty to avoid flat grouping)
-    // Extra clamp for spike + very low appearances handled above
-    // Clamp short-season DL/EDGE/TE
-    if (['REDGE', 'LEDGE', 'EDGE', 'DT', 'DL', 'TE'].includes(pos) && v.appearances < 8) {
-      rawGrade = Math.min(rawGrade, 84);
-    }
-    // MVP-type bump for elite QB seasons
-    if (pos === 'QB' && v.bestRank === 1 && v.weeks90 >= 3) rawGrade += 5;
-    let seasonGrade = Math.max(70, Math.min(99, rawGrade));
-    // Tiny deterministic spread to avoid big tie blocks (mid tiers only)
-    if (seasonGrade < 90 && seasonGrade > 78) {
-      const spread = (v.weeks80 || 0) * 0.04 +
-        (v.weeks90 || 0) * 0.02 +
-        (v.appearances || 0) * 0.01 -
-        (v.bestRank || 0) * 0.01;
-      const jitter = Math.max(-1.2, Math.min(1.2, spread));
-      // Position micro-bias to break caps without huge swings
-      let micro = 0;
-      if (['LT', 'LG', 'C', 'RG', 'RT', 'OL'].includes(pos)) {
-        micro += (v.weeks80 || 0) * 0.12;
-      } else if (['CB', 'FS', 'SS', 'S'].includes(pos)) {
-        micro += (v.weeks80 || 0) * 0.10 + (v.weeks90 || 0) * 0.04;
-      } else if (['REDGE', 'LEDGE', 'EDGE', 'DT', 'DL'].includes(pos)) {
-        micro += (v.weeks90 || 0) * 0.08;
-      } else if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
-        micro += (v.weeks90 || 0) * 0.06;
-      } else if (['HB', 'FB'].includes(pos)) {
-        micro += (v.weeks90 || 0) * 0.05;
-      }
-      micro = Math.max(-1.2, Math.min(1.2, micro));
-      seasonGrade = Math.max(70, Math.min(99, seasonGrade + jitter + micro));
-    }
-    // Clamp score for low appearances to avoid high score ordering
-    let adjScore = score + (v.appearances * 0.02 - 0.1);
-    if (v.appearances < 7) {
-      adjScore = Math.min(adjScore, 84);
-      seasonGrade = Math.min(seasonGrade, 84);
-    } else if (v.appearances < 9) {
-      adjScore = Math.min(adjScore, 88);
-      seasonGrade = Math.min(seasonGrade, 88);
-    }
-    // Usage gates to filter spike players by position
-    // Usage gates to filter spike players by position
-    const meetsUsage = (() => {
-      const pos = (v.position || '').toUpperCase();
-      // Offense
-      if (['HB', 'RB', 'FB'].includes(pos)) {
-        const rushYds = v.rushYds ?? 0;
-        const rushAtt = v.rushAtt ?? 0;
-        return rushAtt >= 80 || rushYds >= 500;
-      }
-      if (['WR', 'TE'].includes(pos)) {
-        const recYds = v.recYds ?? 0;
-        const targets = v.targets ?? v.recAtt ?? v.recTgt ?? 0;
-        return targets >= 40 || recYds >= 500;
-      }
-      // Defense
-      if (['REDGE', 'LEDGE', 'EDGE', 'DE', 'DL', 'DT'].includes(pos)) {
-        const sacks = v.sacks ?? 0;
-        const tfl = v.tfl ?? 0;
-        return v.appearances >= 6 && (sacks + tfl >= 6);
-      }
-      if (['MIKE', 'WILL', 'SAM', 'LB'].includes(pos)) {
-        const tackles = v.tackles ?? 0;
-        return v.appearances >= 6 && tackles >= 50;
-      }
-      if (['CB', 'FS', 'SS', 'S'].includes(pos)) {
-        const pd = v.pd ?? 0;
-        const ints = v.ints ?? 0;
-        const tackles = v.tackles ?? 0;
-        return v.appearances >= 6 && ((pd + ints) >= 5 || tackles >= 35);
-      }
-      return true;
-    })();
+    const qbSeasonBonus = posGroup === 'QB'
+      ? clamp(v.passYds / 520 + v.passTDs * 0.55 - v.passInts * 0.18 + v.weeks90 * 0.5, 0, 12)
+      : 0;
+    const score = avgGrade * 0.64
+      + peakGrade * 0.14
+      + appearanceBonus
+      + productionBonus
+      + qbSeasonBonus
+      + v.weeks90 * 1.0
+      + v.weeks80 * 0.35
+      + v.streak90 * 0.55
+      + v.streak * 0.35
+      + winPctAvg * 4.5
+      + rankBonus
+      - std * 0.35
+      - v.injuryHits * 0.4;
+
+    let seasonGrade = avgGrade * 0.72
+      + peakGrade * 0.16
+      + productionBonus * 0.55
+      + qbSeasonBonus * 0.6
+      + v.weeks90 * 0.28
+      + v.weeks80 * 0.1
+      + v.streak90 * 0.16
+      + v.appearances * 0.2
+      - std * 0.25;
+
+    if (v.appearances < 4) seasonGrade = Math.min(seasonGrade, 84);
+    else if (v.appearances < 6) seasonGrade = Math.min(seasonGrade, 88);
 
     const entry = {
       id: v.id,
@@ -1381,6 +1255,7 @@ function computeSeasonTop100FromHistory(leagueId) {
       team: v.team,
       teamId: v.teamId,
       avgGrade: Number(avgGrade.toFixed(2)),
+      peakGrade: Number(peakGrade.toFixed(2)),
       winPct: Number(winPctAvg.toFixed(3)),
       appearances: v.appearances,
       weeks90: v.weeks90,
@@ -1390,433 +1265,49 @@ function computeSeasonTop100FromHistory(leagueId) {
       streak: v.streak,
       bestRank: v.bestRank,
       injuryHits: v.injuryHits,
-      seasonScore: Number(adjScore.toFixed(3)),
-      seasonGrade: Number(seasonGrade.toFixed(2)),
-      meetsUsage
-    };
-    if (v.appearances >= 6 && meetsUsage) seasonList.push(entry);
-    else fallbackList.push(entry);
-  });
-
-  seasonList.sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0));
-  fallbackList.sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0));
-  // Refill from fallback to reach 100; allow non-usage players but require at least some appearances
-  const eligibleFallback = fallbackList.filter(v => (v.appearances || 0) >= 2);
-  let fbIdx = 0;
-  while (seasonList.length < 100 && fbIdx < eligibleFallback.length) {
-    seasonList.push(eligibleFallback[fbIdx++]);
-  }
-  let top = seasonList.slice(0, 100);
-  // Cap elite grades so only 1–2 exceed ~97
-  if (top.length) {
-    top[0].seasonGrade = Number(Math.min(top[0].seasonGrade || 0, 97.0).toFixed(2));
-  }
-  if (top.length > 1) {
-    top[1].seasonGrade = Number(Math.min(top[1].seasonGrade || 0, 96.5).toFixed(2));
-  }
-  for (let i = 2; i < top.length; i++) {
-    const g = top[i].seasonGrade || 0;
-    top[i].seasonGrade = Number(Math.min(g, 95.8).toFixed(2));
-  }
-  // Sort by seasonGrade, then seasonScore
-  top.sort((a, b) => {
-    const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
-    if (Math.abs(g) > 0.0001) return g;
-    return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
-  });
-  // Ensure a healthy defensive representation (~40 in top 100)
-  const DEF_POS = new Set(['CB', 'FS', 'SS', 'S', 'REDGE', 'LEDGE', 'EDGE', 'DT', 'DL', 'MIKE', 'WILL', 'SAM', 'LB']);
-  const defCount = top.filter(p => DEF_POS.has((p.position || '').toUpperCase())).length;
-  if (defCount < 40) {
-    const bump = Math.min(1.2, 0.3 + 0.05 * (40 - defCount)); // scaled bump toward target
-    top = top.map(p => {
-      if (DEF_POS.has((p.position || '').toUpperCase())) {
-        p.seasonGrade = Number(Math.min(99, (p.seasonGrade || 0) + bump).toFixed(2));
-      }
-      return p;
-    });
-    top.sort((a, b) => {
-      const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
-      if (Math.abs(g) > 0.0001) return g;
-      return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
-    });
-  }
-  // Target top-30 defense: if defenders in top 30 < 8, bump best defenders in ranks 31–60
-  const top30Def = top.slice(0, 30).filter(p => DEF_POS.has((p.position || '').toUpperCase())).length;
-  if (top30Def < 8) {
-    const needs = 8 - top30Def;
-    const candidates = top
-      .map((p, idx) => ({ p, idx }))
-      .filter(({ p, idx }) => idx >= 30 && idx < 70 && DEF_POS.has((p.position || '').toUpperCase()))
-      .slice(0, needs * 3); // take up to 3x needed for smoothing
-    candidates.forEach(({ p }) => {
-      p.seasonGrade = Number(Math.min(96, (p.seasonGrade || 0) + 0.8).toFixed(2));
-    });
-    top.sort((a, b) => {
-      const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
-      if (Math.abs(g) > 0.0001) return g;
-      return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
-    });
-  }
-  // Elite defense boost: top 10 defenders by seasonScore get a slight bump to help top-20 presence
-  const topDefByScore = [...top]
-    .filter(p => DEF_POS.has((p.position || '').toUpperCase()))
-    .sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0))
-    .slice(0, 10);
-  topDefByScore.forEach((p, idx) => {
-    const baseBump = 0.5;
-    const extra = idx < 5 ? 0.3 : 0; // extra bump for top 5 defenders
-    p.seasonGrade = Number(Math.min(97, (p.seasonGrade || 0) + baseBump + extra).toFixed(2));
-  });
-  // Push a few elite defenders into the very top if still under-represented
-  const top20Def = top.slice(0, 20).filter(p => DEF_POS.has((p.position || '').toUpperCase())).length;
-  if (top20Def < 5) {
-    const target = 5 - top20Def;
-    const eliteDefs = [...top]
-      .filter(p => DEF_POS.has((p.position || '').toUpperCase()))
-      .sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0))
-      .slice(0, Math.max(3, target + 2));
-    eliteDefs.forEach((p, idx) => {
-      const bump = 0.8 - idx * 0.1; // decreasing bump
-      p.seasonGrade = Number(Math.min(97, (p.seasonGrade || 0) + bump).toFixed(2));
-    });
-  }
-  // If still short on defenders in top 20, pull up a couple more from 21–40 when close in grade
-  const defTop20After = top.slice(0, 20).filter(p => DEF_POS.has((p.position || '').toUpperCase())).length;
-  if (defTop20After < 4) {
-    const need = 4 - defTop20After;
-    const candidates = top
-      .map((p, idx) => ({ p, idx }))
-      .filter(({ p, idx }) => idx >= 20 && idx < 40 && DEF_POS.has((p.position || '').toUpperCase()))
-      .sort((a, b) => (b.p.seasonScore || 0) - (a.p.seasonScore || 0))
-      .slice(0, need);
-    candidates.forEach(({ p }, i) => {
-      const bump = 0.4 - i * 0.05;
-      p.seasonGrade = Number(Math.min(97, (p.seasonGrade || 0) + bump).toFixed(2));
-    });
-  }
-  // Deterministic jitter to break the 84 wall
-  const jitter = (s, scale = 1.2) => {
-    const str = s || '';
-    let h = 0;
-    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 100000;
-    return ((h / 100000) - 0.5) * 2 * scale;
-  };
-  top = top.map((p, idx) => {
-    const g = p.seasonGrade || 0;
-    if (g >= 82.5 && g <= 85.5) {
-      p.seasonGrade = Number((g + jitter(p.id || p.name || '', 0.8)).toFixed(2));
-    }
-    // Tiny rank-based offset to avoid equal grades
-    p.seasonGrade = Number((p.seasonGrade - idx * 0.0007).toFixed(3));
-    // Additional spread for lower ranks to avoid plateaus
-    if (idx >= 40) {
-      p.seasonGrade = Number((p.seasonGrade - (idx - 39) * 0.015).toFixed(3));
-    }
-    return p;
-  });
-  top.sort((a, b) => {
-    const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
-    if (Math.abs(g) > 0.0001) return g;
-    return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
-  });
-  // Ensure OL spread: min counts per position using seasonScore/grade (not OVR)
-  const ensureOlMin = () => {
-    const desired = { C: 2, LG: 2, RG: 2, RT: 2, LT: 2 };
-    const currentCount = {};
-    top.forEach(p => {
-      const pos = (p.position || '').toUpperCase();
-      currentCount[pos] = (currentCount[pos] || 0) + 1;
-    });
-    // Build pool from season + fallback + historical weekly OL to surface elite centers like Creed Humphrey
-    const histOL = [];
-    try {
-      const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
-      const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
-      const grouped = new Map(); // name/id -> best entry
-      files.forEach(f => {
-        try {
-          const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
-          (data.players || data.top100 || []).forEach(p => {
-            const pos = (p.position || '').toUpperCase();
-            if (!['LT','LG','C','RG','RT','OL','OT','OG','T','G'].includes(pos)) return;
-            const id = p.id || `${p.name}-${f}`;
-            const best = grouped.get(id) || { ...p };
-            const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
-            const bestGrade = Number(best.seasonGrade ?? best.grade ?? best.score ?? 0);
-            if (g > bestGrade) {
-              grouped.set(id, { ...p, seasonGrade: g, id, name: p.name });
-            } else if (!grouped.has(id)) {
-              grouped.set(id, { ...p, seasonGrade: bestGrade, id, name: p.name });
-            }
-          });
-        } catch { /* ignore bad weekly file */ }
-      });
-      histOL.push(...grouped.values());
-    } catch { /* missing history is fine */ }
-
-    const pool = [...seasonList, ...fallbackList, ...histOL].filter(p => {
-      const pos = (p.position || '').toUpperCase();
-      return ['LT','LG','C','RG','RT'].includes(pos);
-    }).sort((a, b) => {
-      const sg = Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
-      if (Math.abs(sg) > 0.0001) return sg;
-      return Number(b.seasonGrade || 0) - Number(a.seasonGrade || a.grade || 0);
-    });
-    const usedIds = new Set(top.map(p => p.id || p.name));
-    const replaceIdxFor = (targetPos) => {
-      const revIdx = [...top].reverse().findIndex(p => {
-        const pos = (p.position || '').toUpperCase();
-        return ['LT','LG','C','RG','RT','OL'].includes(pos) && pos !== targetPos;
-      });
-      if (revIdx >= 0) return top.length - 1 - revIdx;
-      return top.length - 1;
-    };
-    Object.entries(desired).forEach(([pos, min]) => {
-      while ((currentCount[pos] || 0) < min) {
-        const candidate = pool.find(p => (p.position || '').toUpperCase() === pos && !usedIds.has(p.id || p.name));
-        if (!candidate) break;
-        const idx = replaceIdxFor(pos);
-        top[idx] = { ...candidate };
-        usedIds.add(candidate.id || candidate.name);
-        currentCount[pos] = (currentCount[pos] || 0) + 1;
-      }
-    });
-    top.sort((a, b) => {
-      const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
-      if (Math.abs(g) > 0.0001) return g;
-      return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
-    });
-  };
-  ensureOlMin();
-
-  // Ensure LB spread so MIKE and SAM are represented (All-Pro needs each)
-  const ensureLbMin = () => {
-    // Need enough LBs to field both All-Pro teams (one MIKE and one SAM per team)
-    const desired = { MIKE: 2, SAM: 2 };
-    const currentCount = {};
-    top.forEach(p => {
-      const pos = (p.position || '').toUpperCase();
-      currentCount[pos] = (currentCount[pos] || 0) + 1;
-    });
-    const histLB = [];
-    try {
-      const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
-      const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
-      const grouped = new Map();
-      files.forEach(f => {
-        try {
-          const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
-          (data.players || data.top100 || []).forEach(p => {
-            const pos = (p.position || '').toUpperCase();
-            if (!['MIKE','SAM','WILL','LB'].includes(pos)) return;
-            const id = p.id || `${p.name}-${f}`;
-            const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
-            const best = grouped.get(id);
-            if (!best || g > Number(best.seasonGrade ?? best.grade ?? best.score ?? 0)) {
-              grouped.set(id, { ...p, seasonGrade: g, id, name: p.name });
-            }
-          });
-        } catch { /* ignore bad weekly file */ }
-      });
-      histLB.push(...grouped.values());
-    } catch { /* missing history ok */ }
-
-    const pool = [...top, ...histLB]
-      .filter(p => ['MIKE','SAM','WILL','LB'].includes((p.position || '').toUpperCase()))
-      .sort((a, b) => Number(b.seasonGrade || b.grade || 0) - Number(a.seasonGrade || a.grade || 0));
-
-    const usedIds = new Set(top.map(p => p.id || p.name));
-    const replaceIdxFor = (targetPos) => {
-      // replace the last non-matching LB/DB/WR/etc. to minimize impact on other scarce spots
-      const revIdx = [...top].reverse().findIndex(p => {
-        const pos = (p.position || '').toUpperCase();
-        return pos !== targetPos;
-      });
-      if (revIdx >= 0) return top.length - 1 - revIdx;
-      return top.length - 1;
+      seasonScore: Number(score.toFixed(3)),
+      seasonGrade: Number(Math.max(72, Math.min(98, seasonGrade)).toFixed(2)),
+      meetsUsage: getUsageGate(v),
     };
 
-    Object.entries(desired).forEach(([pos, min]) => {
-      while ((currentCount[pos] || 0) < min) {
-        const cand = pool.find(p => (p.position || '').toUpperCase() === pos && !usedIds.has(p.id || p.name));
-        if (!cand) break;
-        const idx = replaceIdxFor(pos);
-        top[idx] = { ...cand };
-        usedIds.add(cand.id || cand.name);
-        currentCount[pos] = (currentCount[pos] || 0) + 1;
-      }
-    });
+    if (v.appearances >= 5 && entry.meetsUsage) seasonList.push(entry);
+    else if (v.appearances >= 2) fallbackList.push(entry);
+  });
 
-    top.sort((a, b) => {
+  const combined = [
+    ...seasonList.sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0)),
+    ...fallbackList.sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0)),
+  ].slice(0, 100);
+
+  if (!combined.length) return [];
+
+  const topScore = Math.max(...combined.map((p) => Number(p.seasonScore || 0)));
+  const bottomScore = Math.min(...combined.map((p) => Number(p.seasonScore || 0)));
+  const scoreSpan = Math.max(1, topScore - bottomScore);
+
+  const top = combined
+    .map((p, idx, arr) => {
+      const scoreNorm = Math.min(1, Math.max(0, ((p.seasonScore || 0) - bottomScore) / scoreSpan));
+      const rankNorm = arr.length <= 1 ? 1 : 1 - (idx / (arr.length - 1));
+      return {
+        ...p,
+        seasonGrade: computePffStyleGrade(scoreNorm, rankNorm, {
+          min: 73.5,
+          max: 97.5,
+          scoreWeight: 0.72,
+          rankWeight: 0.28,
+          rankPower: 0.72,
+          eliteFloor: 0.95,
+          eliteBump: 0.8,
+        }),
+      };
+    })
+    .sort((a, b) => {
       const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
       if (Math.abs(g) > 0.0001) return g;
       return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
     });
-  };
-  ensureLbMin();
 
-  // If we still lack enough true centers, pull the best historical centers (e.g., Creed Humphrey) so OL is represented.
-  const ensureHistCenters = () => {
-    const curCenters = top.filter(p => (p.position || '').toUpperCase() === 'C');
-    if (curCenters.length >= 2) return;
-    const histCenters = (() => {
-      try {
-        const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
-        const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
-        const grouped = new Map();
-        files.forEach(f => {
-          try {
-            const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
-            (data.players || data.top100 || []).forEach(p => {
-              const pos = (p.position || '').toUpperCase();
-              if (pos !== 'C') return;
-              const id = p.id || `${p.name}-${f}`;
-              const best = grouped.get(id) || { ...p, id, name: p.name, seasonGrade: 0 };
-              const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
-              if (g > Number(best.seasonGrade ?? 0)) grouped.set(id, { ...p, id, name: p.name, seasonGrade: g });
-            });
-          } catch { /* ignore bad weekly file */ }
-        });
-        return [...grouped.values()].sort((a, b) => Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0));
-      } catch {
-        return [];
-      }
-    })();
-    if (!histCenters.length) return;
-    const usedIds = new Set(top.map(p => p.id || p.name));
-    const add = histCenters.filter(c => !usedIds.has(c.id || c.name)).slice(0, 2 - curCenters.length);
-    add.forEach(c => {
-      // replace the last non-center to keep length 100
-      const replaceIdx = [...top].reverse().findIndex(p => (p.position || '').toUpperCase() !== 'C');
-      const idx = replaceIdx >= 0 ? top.length - 1 - replaceIdx : top.length - 1;
-      top[idx] = { ...c };
-    });
-    top.sort((a, b) => {
-      const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
-      if (Math.abs(g) > 0.0001) return g;
-      return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
-    });
-  };
-  ensureHistCenters();
-
-  // Final safety: guarantee at least one MIKE and one SAM by pulling best historical LBs if missing.
-  const ensureHistLinebackers = () => {
-    const desiredCounts = { MIKE: 2, SAM: 2 };
-    const counts = {};
-    top.forEach(p => {
-      const pos = (p.position || '').toUpperCase();
-      counts[pos] = (counts[pos] || 0) + 1;
-    });
-    const needAny = Object.entries(desiredCounts).some(([pos, min]) => (counts[pos] || 0) < min);
-    if (!needAny) return;
-
-    const histLB = [];
-    try {
-      const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
-      const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
-      const grouped = new Map();
-      files.forEach(f => {
-        try {
-          const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
-          (data.players || data.top100 || []).forEach(p => {
-            const pos = (p.position || '').toUpperCase();
-            if (!['MIKE','SAM','WILL','LB'].includes(pos)) return;
-            const id = p.id || `${p.name}-${f}`;
-            const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
-            const best = grouped.get(id);
-            if (!best || g > Number(best.seasonGrade ?? best.grade ?? best.score ?? 0)) {
-              grouped.set(id, { ...p, seasonGrade: g, id, name: p.name });
-            }
-          });
-        } catch { /* ignore bad weekly file */ }
-      });
-      histLB.push(...grouped.values());
-    } catch { /* missing history is fine */ }
-
-    const usedIds = new Set(top.map(p => p.id || p.name));
-    const pick = (pos) => histLB
-      .filter(p => (p.position || '').toUpperCase() === pos && !usedIds.has(p.id || p.name))
-      .sort((a, b) => Number(b.seasonGrade || b.grade || 0) - Number(a.seasonGrade || a.grade || 0))[0];
-
-    Object.entries(desiredCounts).forEach(([pos, min]) => {
-      while ((counts[pos] || 0) < min) {
-        const cand = pick(pos);
-        if (!cand) break;
-        const replaceIdx = top.length - 1; // replace lowest-ranked entry (already sorted)
-        top[replaceIdx] = { ...cand };
-        usedIds.add(cand.id || cand.name);
-        counts[pos] = (counts[pos] || 0) + 1;
-        top.sort((a, b) => {
-          const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
-          if (Math.abs(g) > 0.0001) return g;
-          return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
-        });
-      }
-    });
-  };
-  ensureHistLinebackers();
-
-  // Ensure enough cornerbacks (need 3 per All-Pro team => 6 total)
-  const ensureCornerMin = () => {
-    const minCB = 6;
-    const countCB = top.filter(p => (p.position || '').toUpperCase() === 'CB').length;
-    if (countCB >= minCB) return;
-
-    const histCB = [];
-    try {
-      const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', `${leagueId}.json`);
-      const files = fs.readdirSync(histDir).filter(f => f.endsWith('.json'));
-      const grouped = new Map();
-      files.forEach(f => {
-        try {
-          const data = JSON.parse(fs.readFileSync(path.join(histDir, f), 'utf8'));
-          (data.players || data.top100 || []).forEach(p => {
-            const pos = (p.position || '').toUpperCase();
-            if (pos !== 'CB') return;
-            const id = p.id || `${p.name}-${f}`;
-            const g = Number(p.seasonGrade ?? p.grade ?? p.score ?? 0);
-            const best = grouped.get(id);
-            if (!best || g > Number(best.seasonGrade ?? best.grade ?? best.score ?? 0)) {
-              grouped.set(id, { ...p, seasonGrade: g, id, name: p.name });
-            }
-          });
-        } catch { /* ignore bad weekly file */ }
-      });
-      histCB.push(...grouped.values());
-    } catch { /* missing history ok */ }
-
-    const usedIds = new Set(top.map(p => p.id || p.name));
-    const candidates = histCB
-      .filter(p => !usedIds.has(p.id || p.name))
-      .sort((a, b) => Number(b.seasonGrade || b.grade || 0) - Number(a.seasonGrade || a.grade || 0));
-
-    while (top.filter(p => (p.position || '').toUpperCase() === 'CB').length < minCB && candidates.length) {
-      const cand = candidates.shift();
-      // replace lowest-ranked non-CB to keep list length 100
-      const replaceIdx = top.length - 1;
-      top[replaceIdx] = { ...cand };
-      usedIds.add(cand.id || cand.name);
-      top.sort((a, b) => {
-        const g = Number(b.seasonGrade || 0) - Number(a.seasonGrade || 0);
-        if (Math.abs(g) > 0.0001) return g;
-        return Number(b.seasonScore || 0) - Number(a.seasonScore || 0);
-      });
-    }
-  };
-  ensureCornerMin();
-  // Debug dump if enabled
-  if (process.env.TOP100_DEBUG) {
-    console.log('[seasonTop100][debug] weekly history files used:', history.length);
-    console.log('[seasonTop100][debug] top 20 preview:');
-    top.slice(0, 20).forEach((p, idx) => {
-      console.log(
-        `${idx + 1}. ${p.name} (${p.position}, ${p.team || p.teamId || 'UNK'}) ` +
-        `grade=${p.seasonGrade} score=${p.seasonScore} avg=${p.avgGrade} ` +
-        `bestRank=${p.bestRank} weeks90=${p.weeks90} streak90=${p.streak90} appearances=${p.appearances}`
-      );
-    });
-  }
   return top;
 }
 

@@ -2,9 +2,10 @@ import { ButtonInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder } from
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { markThreadDone } from '../shared/madden_thread_notifier.js';
+import { markThreadDone, getThreadState } from '../shared/madden_thread_notifier.js';
 import { updateFairSimBoard } from '../shared/fairsim_board.js';
 import { registerThread } from '../shared/madden_thread_notifier.js';
+import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const FAIR_FILE = path.join(process.cwd(), 'data', 'madden', 'fairsims.json');
@@ -232,6 +233,11 @@ export async function execute(interaction) {
     await interaction.reply({ content: 'Thread not found for this button.', ephemeral: true });
     return;
   }
+  const threadState = getThreadState(threadId);
+  if (threadState && threadState.status && threadState.status !== 'pending' && !isNaN(Date.now())) {
+    await interaction.reply({ content: 'This matchup has already been resolved by the system or staff. Ask staff if it needs to be reopened.', ephemeral: true });
+    return;
+  }
 
   const member = await interaction.guild.members.fetch(interaction.user.id);
   let { away, home } = parseTeams(thread.name || '');
@@ -331,6 +337,21 @@ export async function execute(interaction) {
     }
     try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
     try { await disableButtons(interaction); } catch {}
+    appendMaddenStaffLog({
+      type: 'staff_strike',
+      guildId: interaction.guildId,
+      threadId,
+      targetTeam,
+      awardedBy: interaction.user.id,
+      action,
+    });
+    await postMaddenStaffLog(
+      interaction.client,
+      interaction.guildId,
+      'Staff Strike Applied',
+      `${targetTeam || 'Unknown team'} received a staff-applied strike in <#${threadId}>.`,
+    ).catch(() => null);
+    await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'staff strike applied').catch(() => null);
     await interaction.reply({ content: teamOnly ? 'Strike recorded for the team (no coach users found in the role).' : 'Strike issued and recorded.', ephemeral: true });
     clearPendingFair(threadId);
     return;
@@ -363,6 +384,14 @@ export async function execute(interaction) {
     baseEmbed.setTitle('Game Completed').setColor(0x57F287).setDescription(`Marked by ${interaction.user}`);
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
     try { await disableButtons(interaction); } catch {}
+    appendMaddenStaffLog({
+      type: 'game_completed',
+      guildId: interaction.guildId,
+      threadId,
+      away,
+      home,
+      byUser: interaction.user.id,
+    });
     await interaction.reply({ content: 'Marked complete. Reminders stopped.', ephemeral: true });
     return;
   }
@@ -373,6 +402,14 @@ export async function execute(interaction) {
     try { await disableButtons(interaction); } catch {}
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
     try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
+    appendMaddenStaffLog({
+      type: 'cpu_game',
+      guildId: interaction.guildId,
+      threadId,
+      away,
+      home,
+      byUser: interaction.user.id,
+    });
     await interaction.reply({ content: 'Logged as CPU matchup. No sim strikes applied.', ephemeral: true });
     clearPendingFair(threadId);
     return;
@@ -415,6 +452,21 @@ export async function execute(interaction) {
     // Refresh fair-sim board (best effort)
     try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
     try { await disableButtons(interaction); } catch {}
+    appendMaddenStaffLog({
+      type: 'fair_sim',
+      guildId: interaction.guildId,
+      threadId,
+      away,
+      home,
+      byUser: interaction.user.id,
+    });
+    await postMaddenStaffLog(
+      interaction.client,
+      interaction.guildId,
+      'Fair Sim Logged',
+      `${away || 'Away'} vs ${home || 'Home'} was logged as a fair sim in <#${threadId}>.`,
+    ).catch(() => null);
+    await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'fair sim logged').catch(() => null);
     await interaction.reply({ content: 'Fair sim logged and commish notified. Reminders stopped.', ephemeral: true });
     return;
   }
@@ -439,6 +491,22 @@ export async function execute(interaction) {
     await sendWarnings(thread, chargeUsers, ensureSeason(fairData, seasonKey), commishMention);
     try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
     try { await disableButtons(interaction); } catch {}
+    appendMaddenStaffLog({
+      type: 'force_win',
+      guildId: interaction.guildId,
+      threadId,
+      away,
+      home,
+      chargedTeam: action === 'homewin' ? away : home,
+      byUser: interaction.user.id,
+    });
+    await postMaddenStaffLog(
+      interaction.client,
+      interaction.guildId,
+      'Force Win Logged',
+      `${away || 'Away'} vs ${home || 'Home'} was resolved with a force-win style outcome in <#${threadId}>.`,
+    ).catch(() => null);
+    await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'force win logged').catch(() => null);
     await interaction.reply({ content: 'Force-win request sent and reminders stopped.', ephemeral: true });
     clearPendingFair(threadId);
     return;

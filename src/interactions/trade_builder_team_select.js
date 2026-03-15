@@ -3,16 +3,24 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_
 import { getTradeDraft, saveTradeDraft } from '../shared/trade_draft_store.js';
 import { buildButtons } from './trade_builder_add_assets.js';
 import { resolveTeamNameForRoster } from '../shared/rosterUtils.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 export const customId = /^trade_builder_team_(yours|other_afc|other_nfc)\|/;
 
 async function safeUpdate(interaction, payload) {
-  try {
-    return await interaction.update(payload);
-  } catch (err) {
-    // Only update interaction, do not send public channel message
-    throw err;
+  if (interaction.deferred || interaction.replied) {
+    return interaction.editReply(payload);
   }
+  await interaction.deferUpdate();
+  return interaction.editReply(payload);
+}
+
+async function safeMessage(interaction, content) {
+  const payload = { content, embeds: [], components: [] };
+  if (interaction.deferred || interaction.replied) {
+    return interaction.editReply(payload);
+  }
+  return interaction.reply(interaction.inGuild() ? { ...payload, flags: 64 } : payload);
 }
 
 const EAST = [
@@ -35,7 +43,7 @@ function buildTeamOptions(snapshot, conference) {
       return conference === 'AFC' ? div.includes('AFC') : div.includes('NFC');
     })
     .map(t => ({
-      label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+      label: getFullTeamName(t, 'Unknown'),
       value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
     }));
 }
@@ -51,18 +59,25 @@ function limitOptions(options, keepValue) {
 
 export async function execute(interaction) {
   if (!interaction.isStringSelectMenu()) return;
+  try {
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferUpdate();
+    }
+  } catch {
+    return;
+  }
   const [prefix, draftId] = interaction.customId.split('|');
   const side = prefix.includes('yours') ? 'yourTeamId' : 'otherTeamId';
   const draft = getTradeDraft(draftId);
   if (!draft) {
-    await interaction.reply({ content: 'Trade builder expired. Press Start Trade Builder again.', ephemeral: true });
+    await safeMessage(interaction, 'Trade builder expired. Press Start Trade Builder again.');
     return;
   }
-  const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
+  const leagueId = draft.leagueId || resolveLeagueIdWithConfig(interaction.guildId);
   let snapshot = null;
   if (draft.mode !== '2k') {
     if (!leagueId) {
-      await interaction.reply({ content: 'No league configured. Run /madden-set-league first.', ephemeral: true });
+      await safeMessage(interaction, 'No league configured. Run /madden-set-league first.');
       return;
     }
     try { snapshot = loadLeagueSnapshot(leagueId); } catch { snapshot = null; }
@@ -86,15 +101,6 @@ export async function execute(interaction) {
       if (/bucks/i.test(selected)) return 'Milwaukee Bucks';
       return resolveTeamNameForRoster(selected);
     })();
-    console.log('[trade_builder_team_select][2k]', {
-      userId: interaction.user.id,
-      side,
-      selected,
-      resolved,
-      userOverride,
-      prevYour,
-      prevOther,
-    });
     if (side === 'yourTeamId') {
       draft.yourTeamName = resolved;
       draft.yourTeamId = resolved;
@@ -108,19 +114,17 @@ export async function execute(interaction) {
     const optionsAFC = limitOptions(buildTeamOptions(snapshot, 'AFC'));
     const optionsNFC = limitOptions(buildTeamOptions(snapshot, 'NFC'));
     const team = (snapshot?.teams?.leagueTeamInfoList || []).find(t => String(t.teamId ?? t.teamIndex) === String(selected));
-    if (side === 'yourTeamId') draft.yourTeamName = team?.displayName || team?.nickName || team?.cityName || selected;
-    if (side === 'otherTeamId') draft.otherTeamName = team?.displayName || team?.nickName || team?.cityName || selected;
+    if (side === 'yourTeamId') draft.yourTeamName = getFullTeamName(team, selected);
+    if (side === 'otherTeamId') draft.otherTeamName = getFullTeamName(team, selected);
     draft.yourTeam = draft.yourTeamName || draft.yourTeamId || draft.yourTeam;
     draft.otherTeam = draft.otherTeamName || draft.otherTeamId || draft.otherTeam;
   }
-  // If team selection changed, clear cached assets so roster list refreshes correctly
-  if (draft.mode === '2k') {
-    if (side === 'yourTeamId' && prevYour && prevYour !== selected && draft.assets?.your) {
-      draft.assets.your = [];
-    }
-    if (side !== 'yourTeamId' && prevOther && prevOther !== selected && draft.assets?.other) {
-      draft.assets.other = [];
-    }
+  // If team selection changed, clear cached assets so roster list refreshes correctly.
+  if (side === 'yourTeamId' && prevYour && prevYour !== selected && draft.assets?.your) {
+    draft.assets.your = [];
+  }
+  if (side !== 'yourTeamId' && prevOther && prevOther !== selected && draft.assets?.other) {
+    draft.assets.other = [];
   }
   saveTradeDraft(draftId, draft);
 

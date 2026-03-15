@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { loadLeagueSnapshot, currentWeek, getDefaultLeagueId } from '../../../madden/madden_data.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const data = new SlashCommandBuilder()
   .setName('madden-schedule')
@@ -31,12 +32,7 @@ function buildTeamMap(snapshot) {
   const list = snapshot?.teams?.leagueTeamInfoList || [];
   list.forEach(t => {
     if (!t?.teamId) return;
-    const base =
-      normalizeName(t.displayName) ||
-      normalizeName(t.nickName) ||
-      normalizeName(t.abbrName) ||
-      normalizeName(t.cityName);
-    const name = base || `Team ${t.teamId}`;
+    const name = getFullTeamName(t, `Team ${t.teamId}`);
     map[t.teamId] = name;
   });
   return map;
@@ -44,12 +40,7 @@ function buildTeamMap(snapshot) {
 
 function allTeamNames(snapshot) {
   const list = snapshot?.teams?.leagueTeamInfoList || [];
-  const names = list.map(t =>
-    normalizeName(t.displayName) ||
-    normalizeName(t.nickName) ||
-    normalizeName(t.abbrName) ||
-    normalizeName(t.cityName)
-  ).filter(Boolean);
+  const names = list.map(t => getFullTeamName(t, `Team ${t.teamId}`)).filter(Boolean);
   return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
 }
 
@@ -155,7 +146,7 @@ async function execute(interaction) {
     if (!team) throw new Error('Team not found. Make sure you pick from the autocomplete list.');
     const { lines, current } = formatScheduleLines(snapshot, team);
     const embed = new EmbedBuilder()
-      .setTitle(`Madden Schedule — ${normalizeName(team.displayName) || normalizeName(team.nickName) || 'Team'}`)
+      .setTitle(`Madden Schedule — ${getFullTeamName(team, 'Team')}`)
       .setDescription(lines.length ? lines.join('\n') : 'No games found in snapshot.')
       .addFields({ name: 'Current Week', value: String(current ?? '?'), inline: true })
       .setColor(0x00b0f4);

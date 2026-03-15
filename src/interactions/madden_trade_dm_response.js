@@ -9,6 +9,7 @@ import {
   incrementTradeCounts,
   updateTradeCountsEmbed,
 } from '../shared/madden_trade_utils.js';
+import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
@@ -22,6 +23,23 @@ function loadRoleMap() {
 }
 
 const VALUE_THRESHOLD = 50;
+
+function formatAssetLines(items = []) {
+  if (!Array.isArray(items) || !items.length) return '—';
+  return items
+    .map((item) => `${item.name || 'Asset'} — ${Number(item.value || 0).toFixed(1)}`)
+    .join('\n');
+}
+
+function sideAdvantageText(trade) {
+  const sendTotal = Number(trade.sendTotal || 0);
+  const recvTotal = Number(trade.recvTotal || 0);
+  const net = typeof trade.valueGap === 'number' ? trade.valueGap : (sendTotal - recvTotal);
+  if (net === 0) return 'No advantage: trade is even by value.';
+  const sender = net > 0 ? (trade.yourTeam || 'One side') : (trade.otherTeam || 'One side');
+  const receiver = net > 0 ? (trade.otherTeam || 'the other side') : (trade.yourTeam || 'the other side');
+  return `${sender} is sending ${Math.abs(net).toFixed(1)} more value than ${receiver}.`;
+}
 
 function formatValueSummary(sendTotal, recvTotal, gap, flip = false) {
   const youSend = flip ? recvTotal : sendTotal;
@@ -46,19 +64,24 @@ function committeeValueText(trade) {
   const sendTotal = Number(trade.sendTotal || 0);
   const recvTotal = Number(trade.recvTotal || 0);
   const net = typeof trade.valueGap === 'number' ? trade.valueGap : (sendTotal - recvTotal);
-  if (net === 0) return 'Value gap: even';
-  const giver = net > 0 ? (trade.yourTeam || 'One side') : (trade.otherTeam || 'One side');
-  const receiver = net > 0 ? (trade.otherTeam || 'other side') : (trade.yourTeam || 'other side');
-  const diff = Math.abs(net).toFixed(1);
-  return `Value gap: ${giver} sending ${diff} more than ${receiver} (${sendTotal.toFixed(1)} vs ${recvTotal.toFixed(1)})`;
+  const gapAbs = Math.abs(net);
+  const thresholdLine = gapAbs <= VALUE_THRESHOLD
+    ? `Value check: within limit (gap ${gapAbs.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
+    : `Value check: exceeds limit (gap ${gapAbs.toFixed(1)} > ${VALUE_THRESHOLD})`;
+  return [
+    `${trade.yourTeam || 'Side A'} total: ${sendTotal.toFixed(1)}`,
+    `${trade.otherTeam || 'Side B'} total: ${recvTotal.toFixed(1)}`,
+    sideAdvantageText(trade),
+    thresholdLine,
+  ].join('\n');
 }
 
 function applyCommitteeValueSummary(embed, trade) {
   const fields = embed.data?.fields ? [...embed.data.fields] : [];
-  const idx = fields.findIndex(f => f.name === 'Trade Value Check');
+  const idx = fields.findIndex(f => f.name === 'Committee Value Check' || f.name === 'Trade Value Check');
   const value = committeeValueText(trade);
-  if (idx >= 0) fields[idx] = { ...fields[idx], value };
-  else fields.push({ name: 'Trade Value Check', value });
+  if (idx >= 0) fields[idx] = { ...fields[idx], name: 'Committee Value Check', value };
+  else fields.push({ name: 'Committee Value Check', value });
   embed.setFields(fields);
   return embed;
 }
@@ -74,16 +97,22 @@ function buildEmbed(trade, tradeId, status, actor) {
     .setTitle(title)
     .addFields(
       { name: 'Teams', value: `${trade.yourTeam} ↔ ${trade.otherTeam}` },
-      { name: 'Assets Sent', value: trade.assetsSent || '—' },
-      { name: 'Assets Received', value: trade.assetsReceived || '—' },
+      {
+        name: `${trade.yourTeam || 'Side A'} Sends`,
+        value: `${formatAssetLines(trade.assetsSentDetails)}\nTotal: ${Number(trade.sendTotal || 0).toFixed(1)}`,
+      },
+      {
+        name: `${trade.otherTeam || 'Side B'} Sends`,
+        value: `${formatAssetLines(trade.assetsReceivedDetails)}\nTotal: ${Number(trade.recvTotal || 0).toFixed(1)}`,
+      },
     )
     .setColor(colors[status] || 0x5865f2)
     .setTimestamp(new Date())
     .setFooter({ text: `Trade ID ${tradeId}${actor ? ` • ${actor}` : ''}` });
   if (trade.sendTotal !== undefined && trade.recvTotal !== undefined) {
     embed.addFields({
-      name: 'Trade Value Check',
-      value: formatValueSummary(trade.sendTotal, trade.recvTotal, trade.valueGap, false),
+      name: 'Committee Value Check',
+      value: committeeValueText(trade),
     });
   }
   if (trade.notes) embed.addFields({ name: 'Notes', value: trade.notes });
@@ -226,6 +255,22 @@ export async function execute(interaction) {
   trade.committeeMsgId = committeeMsgId;
   trades[tradeId] = trade;
   saveActiveTrades(trades);
+  appendMaddenStaffLog({
+    type: 'trade_committee_submission',
+    guildId: interaction.guildId,
+    tradeId,
+    yourTeam: trade.yourTeam,
+    otherTeam: trade.otherTeam,
+    byUser: interaction.user.id,
+  });
+  await postMaddenStaffLog(
+    interaction.client,
+    interaction.guildId,
+    'Trade Sent To Committee',
+    `${trade.yourTeam} vs ${trade.otherTeam} was sent to committee.`,
+    [{ name: 'Trade ID', value: tradeId }],
+  ).catch(() => null);
+  await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'trade sent to committee').catch(() => null);
 
   await deletePendingMessage(interaction.client, channelMap, trade);
   // DM proposer that Coach B approved

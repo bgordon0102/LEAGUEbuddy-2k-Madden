@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
 import { getMessageForWeek } from './madden_utils.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const LEAGUE_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const PREV_DIR = path.join(LEAGUE_DIR, 'previous');
@@ -21,8 +22,8 @@ function teamNameMap(snapshot) {
   const teams = snapshot?.teams?.leagueTeamInfoList || [];
   teams.forEach(t => {
     map[t.teamId] = {
-      name: t.displayName || t.nickName || t.cityName || `Team ${t.teamId}`,
-      abbr: t.abbrName || t.displayName || t.nickName || `T${t.teamId}`,
+      name: getFullTeamName(t, `Team ${t.teamId}`),
+      abbr: t.abbrName || getFullTeamName(t, `T${t.teamId}`),
     };
   });
   return map;

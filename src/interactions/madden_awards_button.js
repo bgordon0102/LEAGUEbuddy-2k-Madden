@@ -10,6 +10,7 @@ import {
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -56,7 +57,7 @@ function findTeam(snapshot, input) {
   return teams.find(t => {
     const names = [
       t.displayName, t.nickName, t.cityName,
-      `${t.cityName || ''} ${t.displayName || t.nickName || ''}`.trim()
+      getFullTeamName(t, '')
     ];
     return names.some(n => {
       const norm = normalize(n);
@@ -67,7 +68,7 @@ function findTeam(snapshot, input) {
 
 function teamEmoji(team, emojiMap) {
   if (!team) return '';
-  const name = `${team.cityName || ''} ${team.displayName || team.nickName || ''}`.trim();
+  const name = getFullTeamName(team, '');
   const target = normalize(name);
   for (const [k, v] of Object.entries(emojiMap || {})) {
     const norm = normalize(k);
@@ -190,7 +191,7 @@ export async function execute_modal(interaction) {
     const teamId = player?.teamId;
     const team = (snapshot?.teams?.leagueTeamInfoList || []).find(t => t.teamId === teamId);
     const emoji = teamEmoji(team, emojiMap);
-    const teamName = team ? `${team.cityName} ${team.displayName || team.nickName || ''}`.trim() : 'Unknown Team';
+    const teamName = team ? getFullTeamName(team, 'Unknown Team') : 'Unknown Team';
     const coachRole = coachTag(teamName, roleMap);
     const playerName = player ? `${player.firstName || ''} ${player.lastName || ''}`.trim() : titleCase(inputs[key]);
     const title = `🏆 ${label} — Season ${seasonYear}`;
@@ -200,7 +201,7 @@ export async function execute_modal(interaction) {
   };
   const addTeamAward = (key, label) => {
     const team = findTeam(snapshot, inputs[key]);
-    const teamName = team ? `${team.cityName} ${team.displayName || team.nickName || ''}`.trim() : titleCase(inputs[key]);
+    const teamName = team ? getFullTeamName(team, titleCase(inputs[key])) : titleCase(inputs[key]);
     const emoji = teamEmoji(team, emojiMap);
     const coachRole = coachTag(teamName, roleMap);
     const title = `🏆 ${label} — Season ${seasonYear}`;

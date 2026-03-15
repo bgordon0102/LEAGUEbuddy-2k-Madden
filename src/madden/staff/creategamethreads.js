@@ -4,6 +4,7 @@ import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { draftOrder, applyPickTrades } from '../coach/mockdraft.js';
 import { registerThread } from '../../shared/madden_thread_notifier.js';
+import { brandTitle } from '../../shared/madden_branding.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -762,7 +763,7 @@ async function execute(interaction) {
           new ButtonBuilder().setCustomId(`madden_game_status_staffstrikehome|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`Staff Strike ${homeShort} 🚫`).setStyle(ButtonStyle.Danger),
         );
         const embed = {
-          title: 'LEAGUEbuddy Matchup',
+          title: brandTitle('LEAGUEbuddy Matchup'),
           description: [
             `Schedule and play your game. Use the buttons when needed:`,
             `🏁 Game Completed — both coaches press; clears reminders.`,
@@ -781,7 +782,16 @@ async function execute(interaction) {
           components: [row, staffRow],
           allowedMentions: mentionIds?.length ? { roles: mentionIds, parse: [] } : { parse: ['roles'] },
         });
-        try { registerThread(thread.id, mentionText || ''); } catch (e) { console.warn('[madden-creategamethreads] registerThread failed', e?.message || e); }
+        try {
+          registerThread(thread.id, {
+            mention: mentionText || '',
+            deadlineAt: deadline * 1000,
+            awayTeam: teams[game.awayTeamId] || null,
+            homeTeam: teams[game.homeTeamId] || null,
+            awayRoleIds: coachRoleIds(teams[game.awayTeamId], roleMap),
+            homeRoleIds: coachRoleIds(teams[game.homeTeamId], roleMap),
+          });
+        } catch (e) { console.warn('[madden-creategamethreads] registerThread failed', e?.message || e); }
         created += 1;
       } catch (e) {
         console.warn('[madden-creategamethreads] Failed to create thread', name, e?.message || e);
@@ -795,7 +805,7 @@ async function execute(interaction) {
         const announce = await interaction.client.channels.fetch(announceChannelId).catch(() => null);
         if (announce && announce.isTextBased()) {
           const embed = {
-            title: playoffRound ? `${playoffRound} Threads Created` : `Week ${wkNumeric} Threads Created`,
+            title: brandTitle(playoffRound ? `${playoffRound} Threads Created` : `Week ${wkNumeric} Threads Created`),
             description: `Deadline to play: <t:${deadline}:F> (<t:${deadline}:R>).`,
             color: 0x00b0f4,
             timestamp: new Date().toISOString(),

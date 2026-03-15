@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { getPinId, setPinId } from './pins_store.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
@@ -44,7 +45,7 @@ function teamNameMap(snapshot, emojiMap) {
   const list = snapshot?.teams?.leagueTeamInfoList || [];
   list.forEach(t => {
     if (!t.teamId) return;
-    const name = [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim();
+    const name = getFullTeamName(t, `Team ${t.teamId}`);
     const emoji = teamEmoji(name, emojiMap);
     map[t.teamId] = emoji || name || `Team ${t.teamId}`;
   });

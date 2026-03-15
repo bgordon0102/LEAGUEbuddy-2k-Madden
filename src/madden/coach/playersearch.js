@@ -3,6 +3,7 @@ import path from 'path';
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { computePlayerValue } from '../../../madden/madden_trade_modal_submit.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 
@@ -68,7 +69,7 @@ export async function autocomplete(interaction) {
 
   // Team autocomplete
   if (focusedName === 'team') {
-    const names = teams.map(t => `${t.cityName} ${t.displayName || t.nickName || ''}`.trim());
+    const names = teams.map(t => getFullTeamName(t, `Team ${t.teamId}`));
     const filtered = names
       .filter(n => n.toLowerCase().includes(focused))
       .sort((a, b) => a.localeCompare(b))
@@ -84,7 +85,7 @@ export async function autocomplete(interaction) {
     const teamMatch = teams.find(t => {
       const variants = [
         t.displayName, t.nickName, t.cityName, t.abbrName,
-        `${t.cityName || ''} ${t.displayName || t.nickName || ''}`,
+        getFullTeamName(t, ''),
       ].map(x => (x || '').toLowerCase());
       return variants.some(v => teamOpt.toLowerCase().includes(v) || v.includes(teamOpt.toLowerCase()));
     });
@@ -120,7 +121,7 @@ export async function execute(interaction) {
   const teamMatch = teams.find(t => {
     const variants = [
       t.displayName, t.nickName, t.cityName, t.abbrName,
-      `${t.cityName || ''} ${t.displayName || t.nickName || ''}`,
+      getFullTeamName(t, ''),
     ].map(x => (x || '').toLowerCase());
     const target = (teamInput || '').toLowerCase();
     return variants.some(v => target.includes(v) || v.includes(target));
@@ -130,7 +131,7 @@ export async function execute(interaction) {
     await interaction.editReply({ content: 'Team not found. Please select a team from the list.' });
     return;
   }
-  const teamName = `${teamMatch.cityName || ''} ${teamMatch.displayName || teamMatch.nickName || ''}`.trim() || 'Unknown';
+  const teamName = getFullTeamName(teamMatch, 'Unknown');
   const roster = (snapshot?.rosters?.teams?.[teamId]?.rosterInfoList) || [];
   const rosters = snapshot?.rosters?.teams || {};
   const devEmojis = safeReadJSON(DEV_EMOJI_PATH, {});

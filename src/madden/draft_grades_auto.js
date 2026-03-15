@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
 import { loadLeagueSnapshot } from './madden_data.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
@@ -53,8 +54,8 @@ function computeGrades(snapshot, emojiMap) {
       + (countBonus * 1.1);
     score = Math.max(1, Math.min(100, Math.round(score * 10) / 10));
     grades.push({
-      teamName: `${t.cityName} ${t.displayName || t.nickName || ''}`.trim(),
-      emoji: teamEmoji(t.displayName || t.nickName, emojiMap),
+      teamName: getFullTeamName(t, `Team ${t.teamId}`),
+      emoji: teamEmoji(getFullTeamName(t, `Team ${t.teamId}`), emojiMap),
       grade: score,
     });
   });

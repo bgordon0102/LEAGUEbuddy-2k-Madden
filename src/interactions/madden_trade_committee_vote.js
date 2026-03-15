@@ -1,17 +1,16 @@
-import { ButtonInteraction, EmbedBuilder } from 'discord.js';
+import { ButtonInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import {
   loadActiveTrades,
   saveActiveTrades,
-  loadTradeCounts,
-  saveTradeCounts,
-  updateTradeCountsEmbed,
-  computeApprovedTradeCounts,
 } from '../shared/madden_trade_utils.js';
+import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
+const PENDING_PROOFS_PATH = path.join(process.cwd(), 'data', 'madden', 'pending_proofs.json');
+const PROOF_CHANNEL_ID = '1482473294769684561'; // pending trades (upload proof)
 
 function loadChannelMap() {
   try { return JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8')); } catch { return {}; }
@@ -19,6 +18,30 @@ function loadChannelMap() {
 
 function loadRoleMap() {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
+}
+
+function readPendingProofs() {
+  try { return JSON.parse(fs.readFileSync(PENDING_PROOFS_PATH, 'utf8')); } catch { return {}; }
+}
+function writePendingProofs(data) {
+  try { fs.writeFileSync(PENDING_PROOFS_PATH, JSON.stringify(data ?? {}, null, 2)); } catch { }
+}
+
+function getCoachRole(roleMap, teamName) {
+  if (!teamName) return null;
+  const mascot = teamName.split(' ').pop();
+  const norm = `${mascot}`.toLowerCase().replace(/[^a-z0-9]/g, '') + 'coach';
+  const entry = Object.entries(roleMap || {}).find(([name]) =>
+    name.toLowerCase().replace(/[^a-z0-9]/g, '') === norm
+  );
+  return entry ? entry[1] : null;
+}
+
+function formatAssetLines(items = []) {
+  if (!Array.isArray(items) || !items.length) return '—';
+  return items
+    .map((item) => `${item.name || 'Asset'} — ${Number(item.value || 0).toFixed(1)}`)
+    .join('\n');
 }
 
 function formatValueSummary(sendTotal, recvTotal, gap) {
@@ -39,16 +62,17 @@ function formatCommitteeValueSummary(trade) {
   const recvTotal = Number(trade.recvTotal);
   const net = typeof trade.valueGap === 'number' ? trade.valueGap : (sendTotal - recvTotal);
   const giver = net > 0 ? trade.yourTeam : trade.otherTeam;
+  const receiver = net > 0 ? trade.otherTeam : trade.yourTeam;
   const diff = Math.abs(net);
   const headline = net === 0
-    ? 'Value gap: even'
-    : `Value gap: ${giver || 'One side'} sending ${diff.toFixed(1)} more value`;
+    ? 'No advantage: trade is even by value.'
+    : `${giver || 'One side'} is sending ${diff.toFixed(1)} more value than ${receiver || 'the other side'}.`;
   const thresholdLine = diff <= VALUE_THRESHOLD
     ? `Value check: within limit (gap ${diff.toFixed(1)} ≤ ${VALUE_THRESHOLD})`
     : `Value check: exceeds limit (gap ${diff.toFixed(1)} > ${VALUE_THRESHOLD})`;
   return [
-    `You send: ${sendTotal.toFixed(1)}`,
-    `They send: ${recvTotal.toFixed(1)}`,
+    `${trade.yourTeam || 'Side A'} total: ${sendTotal.toFixed(1)}`,
+    `${trade.otherTeam || 'Side B'} total: ${recvTotal.toFixed(1)}`,
     headline,
     thresholdLine,
   ].join('\n');
@@ -61,35 +85,23 @@ function buildEmbed(trade, tradeId, status) {
     .setTitle(titles[status] || titles.vote)
     .addFields(
       { name: 'Teams', value: `${trade.yourTeam} ↔ ${trade.otherTeam}` },
-      { name: 'Assets Sent', value: trade.assetsSent || '—' },
-      { name: 'Assets Received', value: trade.assetsReceived || '—' },
+      {
+        name: `${trade.yourTeam || 'Side A'} Sends`,
+        value: `${formatAssetLines(trade.assetsSentDetails)}\nTotal: ${Number(trade.sendTotal || 0).toFixed(1)}`,
+      },
+      {
+        name: `${trade.otherTeam || 'Side B'} Sends`,
+        value: `${formatAssetLines(trade.assetsReceivedDetails)}\nTotal: ${Number(trade.recvTotal || 0).toFixed(1)}`,
+      },
     )
     .setColor(colors[status] || colors.vote)
     .setTimestamp(new Date())
     .setFooter({ text: `Trade ID ${tradeId}` });
   if (trade.sendTotal !== undefined && trade.recvTotal !== undefined) {
-    const gap = trade.valueGap ?? (trade.sendTotal - trade.recvTotal);
     embed.addFields({
-      name: 'Trade Value Check',
+      name: 'Committee Value Check',
       value: formatCommitteeValueSummary(trade),
     });
-    // Detailed value breakdown if available
-    if (Array.isArray(trade.assetsSentDetails) || Array.isArray(trade.assetsReceivedDetails)) {
-      let sentBreakdown = '';
-      let recvBreakdown = '';
-      if (Array.isArray(trade.assetsSentDetails)) {
-        sentBreakdown = trade.assetsSentDetails.map(a => `- ${a.name}: ${a.value}`).join('\n');
-      }
-      if (Array.isArray(trade.assetsReceivedDetails)) {
-        recvBreakdown = trade.assetsReceivedDetails.map(a => `- ${a.name}: ${a.value}`).join('\n');
-      }
-      if (sentBreakdown) {
-        embed.addFields({ name: 'Your Side Value Breakdown', value: sentBreakdown });
-      }
-      if (recvBreakdown) {
-        embed.addFields({ name: 'Other Side Value Breakdown', value: recvBreakdown });
-      }
-    }
   }
   if (trade.notes) embed.addFields({ name: 'Notes', value: trade.notes });
   return embed;
@@ -134,7 +146,6 @@ function teamRoleId(teamName, roleMap) {
 export const customId = /^mtrade_c_(approve|deny)_/;
 
 export async function execute(interaction) {
-  console.log('Trade committee vote execute called');
   if (!(interaction instanceof ButtonInteraction)) return;
   if (!customId.test(interaction.customId)) return;
   try { await interaction.deferReply({ ephemeral: true }); } catch { return; }
@@ -223,16 +234,77 @@ export async function execute(interaction) {
   const embed = EmbedBuilder.from(buildEmbed(trade, tradeId, finalized))
     .setDescription(`${channelMentions ? `${channelMentions}\n` : ''}Trade ID: ${tradeId}`);
 
-  if (finalized === 'approved' && approvedId) {
-    const approvedChan = await interaction.client.channels.fetch(approvedId).catch(() => null);
-    if (approvedChan?.isTextBased()) {
-      await approvedChan.send({
-        content: `Trade ID: ${tradeId}`,
-        embeds: [embed],
-        allowedMentions: { parse: [], roles: mentionRoleIds },
-      }).catch((err) => console.error('Error sending approved trade message:', err));
+  if (finalized === 'approved') {
+    // Defer final approval until proof is submitted
+    trade.status = 'approved_pending_proof';
+    trades[tradeId] = trade;
+    saveActiveTrades(trades);
+
+    // Queue proof request
+    const pending = readPendingProofs();
+    pending[tradeId] = { trade };
+    writePendingProofs(pending);
+
+    const roleMap = loadRoleMap();
+    const coachA = getCoachRole(roleMap, trade.yourTeam);
+    const coachB = getCoachRole(roleMap, trade.otherTeam);
+    const tags = [coachA && `<@&${coachA}>`, coachB && `<@&${coachB}>`].filter(Boolean).join(' ');
+
+    const proofEmbed = new EmbedBuilder()
+      .setTitle('Madden Proof Required')
+      .setDescription('Upload a screenshot showing **Valid Trade** for this exact deal.')
+      .addFields(
+        { name: 'Your Team', value: trade.yourTeam || '—', inline: true },
+        { name: 'Other Team', value: trade.otherTeam || '—', inline: true },
+        { name: 'Assets Sent', value: trade.assetsSent || '—', inline: false },
+        { name: 'Assets Received', value: trade.assetsReceived || '—', inline: false },
+      )
+      .setFooter({ text: `Trade ID ${tradeId}` })
+      .setColor(0x57F287);
+
+    try {
+      const proofChan = await interaction.client.channels.fetch(PROOF_CHANNEL_ID).catch(() => null);
+      if (proofChan?.isTextBased()) {
+        await proofChan.send({
+          content: `${tags} Trade approved by committee. Upload Madden proof below.`,
+          embeds: [proofEmbed],
+          components: [
+            new (await import('discord.js')).ActionRowBuilder().addComponents(
+              new (await import('discord.js')).ButtonBuilder().setCustomId(`trade_madden_proof|${tradeId}`).setLabel('Upload Madden Proof').setStyle((await import('discord.js')).ButtonStyle.Success),
+              new (await import('discord.js')).ButtonBuilder().setCustomId(`trade_madden_cancel|${tradeId}`).setLabel('Cancel Trade').setStyle((await import('discord.js')).ButtonStyle.Danger),
+            ),
+          ],
+          allowedMentions: {
+            parse: [],
+            roles: [coachA, coachB].filter(Boolean).map(String),
+          },
+        });
+      }
+    } catch (err) {
+      console.error('[madden_trade_committee_vote] failed to send proof request:', err);
     }
+
+    appendMaddenStaffLog({
+      type: 'trade_approved_pending_proof',
+      guildId: interaction.guildId,
+      tradeId,
+      yourTeam: trade.yourTeam,
+      otherTeam: trade.otherTeam,
+      approveCount,
+    });
+    await postMaddenStaffLog(
+      interaction.client,
+      interaction.guildId,
+      'Trade Approved Pending Proof',
+      `${trade.yourTeam} vs ${trade.otherTeam} cleared committee and is now waiting on proof.`,
+      [{ name: 'Trade ID', value: tradeId }],
+    ).catch(() => null);
+    await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'trade approved pending proof').catch(() => null);
+
+    await interaction.editReply({ content: `Trade approved pending proof upload. Trade ID: ${tradeId}` });
+    return;
   }
+
   if (finalized === 'denied' && deniedId) {
     const deniedChan = await interaction.client.channels.fetch(deniedId).catch(() => null);
     if (deniedChan?.isTextBased()) {
@@ -244,14 +316,23 @@ export async function execute(interaction) {
     }
   }
 
-  // Update trade counts only on approval (recompute from all approved trades)
-  if (finalized === 'approved') {
-    const counts = computeApprovedTradeCounts(loadActiveTrades());
-    saveTradeCounts(counts);
-    await updateTradeCountsEmbed(interaction.client, channelMap, counts);
-  }
-
   await dmProposer(interaction.client, trade.proposerId, embed, `Your trade with ${trade.otherTeam} was ${finalized} by committee.`);
+  appendMaddenStaffLog({
+    type: 'trade_committee_finalized',
+    guildId: interaction.guildId,
+    tradeId,
+    yourTeam: trade.yourTeam,
+    otherTeam: trade.otherTeam,
+    status: finalized,
+  });
+  await postMaddenStaffLog(
+    interaction.client,
+    interaction.guildId,
+    'Trade Committee Decision',
+    `${trade.yourTeam} vs ${trade.otherTeam} was ${finalized} by committee.`,
+    [{ name: 'Trade ID', value: tradeId }],
+  ).catch(() => null);
+  await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'trade committee decision').catch(() => null);
 
   await interaction.editReply({ content: `Trade ${finalized} and logged (threshold ${THRESHOLD} votes).` });
 }

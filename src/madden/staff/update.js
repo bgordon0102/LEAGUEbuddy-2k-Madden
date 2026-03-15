@@ -18,6 +18,9 @@ import { updateAwards, gatherWeeklyStats } from '../../../madden/awards.js';
 import { maybePostDraftGrades } from '../../../madden/draft_grades_auto.js';
 import { updateTopPlayers } from '../../../madden/top_players.js';
 import { hasStaffRole, loadRoleMap } from './staffUtils.js';
+import { buildStoryContext, buildWeeklyRecapData } from '../storytelling.js';
+import { queueMaddenContentReview } from '../../shared/madden_content_review_queue.js';
+import { brandText, brandTitle } from '../../shared/madden_branding.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const POWER_RANKS_FILE = path.join(process.cwd(), 'data', 'madden', 'power_ranks.json');
@@ -385,7 +388,7 @@ async function execute(interaction) {
     const weekFieldValue = weekLabelPretty;
 
     const embed = new EmbedBuilder()
-      .setTitle('Madden Weekly Update Complete')
+      .setTitle(brandTitle('Madden Weekly Update Complete'))
       .setDescription('Latest data pulled and saved locally.')
       .setColor(0x00cc66)
       .addFields(
@@ -397,7 +400,39 @@ async function execute(interaction) {
         { name: 'Missing player stats', value: missingField, inline: false },
         { name: 'Saved', value: summary.outPath, inline: false }
       );
+
     await interaction.editReply({ embeds: [embed] });
+
+    try {
+      const channelMap = JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8'));
+      const ctx = await buildStoryContext(interaction.guild, interaction.client);
+      if (ctx) {
+        const recap = buildWeeklyRecapData(ctx);
+        const weekLabel = recap.currentWeek == null ? 'League Update Recap' : `Week ${recap.currentWeek + 1} Recap`;
+        const recapEmbed = new EmbedBuilder()
+          .setColor(0x57f287)
+          .setTitle(brandTitle(weekLabel))
+          .setDescription((recap.paragraphs || [recap.leadStory]).join('\n\n'))
+          .setTimestamp();
+
+        const ghostRoleId = roleMap['Ghost Legacy'];
+
+        if (channelMap['Weekly Recap']) {
+          await queueMaddenContentReview(interaction.client, interaction.guildId, {
+            kind: 'weekly_recap',
+            createdBy: interaction.user.id,
+            targetChannelId: channelMap['Weekly Recap'],
+            content: ghostRoleId ? `<@&${ghostRoleId}>` : null,
+            embeds: [recapEmbed.toJSON()],
+            previewAllowedMentions: { parse: [] },
+            postAllowedMentions: { parse: ['roles'] },
+          });
+        }
+
+      }
+    } catch (e) {
+      console.warn('[madden-weeklyupdate] content/staff posts skipped:', e?.message || e);
+    }
   } catch (err) {
     const msg = typeof err?.message === 'string' ? err.message : 'Unknown error';
     // Surface more detail to the server logs for debugging (week override, stack)
@@ -421,7 +456,7 @@ async function execute(interaction) {
     }
     const shortMsg = shortType;
     const embed = new EmbedBuilder()
-      .setTitle('Madden Update Failed')
+      .setTitle(brandTitle('Madden Update Failed'))
       .setDescription(shortMsg)
       .addFields({ name: 'Next steps', value: guidance })
       .setColor(0xcc0000);

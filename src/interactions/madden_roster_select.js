@@ -1,5 +1,6 @@
 import { loadLeagueSnapshot } from '../madden/madden_data.js';
 import { buildRosterEmbeds } from '../madden/coach/roster.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 export const customId = 'madden_roster_select';
 
@@ -22,7 +23,7 @@ export async function execute(interaction) {
       await interaction.reply({ content: 'Team not found.', ephemeral: true });
       return;
     }
-    const result = buildRosterEmbeds(snapshot, `${team.cityName} ${team.nickName}`);
+    const result = buildRosterEmbeds(snapshot, getFullTeamName(team, `Team ${team.teamId}`));
     if (result.error) {
       await interaction.reply({ content: result.error, ephemeral: true });
       return;

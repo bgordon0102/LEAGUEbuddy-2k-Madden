@@ -6,14 +6,19 @@ const MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 const drafts = new Map();
 
-// Load persisted drafts on startup (best effort)
-try {
-  const raw = fs.readFileSync(STORE_PATH, 'utf8');
-  const obj = JSON.parse(raw);
-  Object.entries(obj || {}).forEach(([id, draft]) => drafts.set(id, draft));
-} catch {
-  // ignore missing/invalid file
+function loadFromDisk() {
+  try {
+    const raw = fs.readFileSync(STORE_PATH, 'utf8');
+    const obj = JSON.parse(raw);
+    drafts.clear();
+    Object.entries(obj || {}).forEach(([id, draft]) => drafts.set(id, draft));
+  } catch {
+    drafts.clear();
+  }
 }
+
+// Load persisted drafts on startup (best effort)
+loadFromDisk();
 
 function persist() {
   try {
@@ -40,18 +45,21 @@ function prune() {
 
 export function saveTradeDraft(draftId, draft) {
   if (!draftId || !draft) return;
+  loadFromDisk();
   drafts.set(draftId, { ...draft, savedAt: Date.now() });
   persist();
 }
 
 export function getTradeDraft(draftId) {
   if (!draftId) return null;
+  loadFromDisk();
   prune();
   return drafts.get(draftId) || null;
 }
 
 export function deleteTradeDraft(draftId) {
   if (!draftId) return;
+  loadFromDisk();
   drafts.delete(draftId);
   persist();
 }
@@ -59,6 +67,7 @@ export function deleteTradeDraft(draftId) {
 // Remove all drafts for a given user (helpful to avoid stale selections carrying over)
 export function deleteDraftsForUser(userId) {
   if (!userId) return;
+  loadFromDisk();
   let changed = false;
   drafts.forEach((draft, id) => {
     if (draft.userId === userId) {

@@ -1,10 +1,11 @@
-import { ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
+import { ActionRowBuilder, EmbedBuilder, StringSelectMenuBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
 import { canTrade } from '../shared/madden_trade_utils.js';
 import { saveTradeDraft } from '../shared/trade_draft_store.js';
 import { buildButtons } from './trade_builder_add_assets.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 
@@ -70,7 +71,7 @@ function getCoachTeamFromRoles(interaction, snapshot) {
       ].map(x => (x || '').toLowerCase());
       return candidates.includes(base);
     });
-    if (match) return match.displayName || match.nickName || match.cityName || 'Team';
+    if (match) return getFullTeamName(match, 'Team');
   }
   return null;
 }
@@ -78,13 +79,20 @@ function getCoachTeamFromRoles(interaction, snapshot) {
 export async function execute(interaction) {
   if (!interaction.isButton()) return;
   if (!customId.test(interaction.customId)) return;
+  try {
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply({ flags: 64 });
+    }
+  } catch {
+    return;
+  }
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
-    await interaction.reply({ content: 'No league set. Run /madden-set-league first.', ephemeral: true });
+    await interaction.editReply({ content: 'No league set. Run /madden-set-league first.', components: [] });
     return;
   }
   if (!canTrade(leagueId)) {
-    await interaction.reply({ content: 'Trades are locked starting Week 13. Try again next season.', ephemeral: true });
+    await interaction.editReply({ content: 'Trades are locked starting Week 13. Try again next season.', components: [] });
     return;
   }
   const snapshot = loadLeagueSnapshot(leagueId);
@@ -108,15 +116,15 @@ export async function execute(interaction) {
     }) || null;
   };
   const optionsAll = teams.map(t => ({
-    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+    label: getFullTeamName(t, 'Unknown'),
     value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
   }));
   const optionsAFC = teams.filter(t => (t.divName || '').toUpperCase().includes('AFC')).map(t => ({
-    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+    label: getFullTeamName(t, 'Unknown'),
     value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
   }));
   const optionsNFC = teams.filter(t => (t.divName || '').toUpperCase().includes('NFC')).map(t => ({
-    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+    label: getFullTeamName(t, 'Unknown'),
     value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
   }));
   const limitOptions = (opts, keepValue) => {
@@ -176,12 +184,31 @@ export async function execute(interaction) {
     components.length = 0;
     components.push(...buildButtons(draftId));
   }
+  const embed = new EmbedBuilder()
+    .setTitle('Trade Builder')
+    .setDescription('This builder now runs privately in DM. Select both teams, then add assets to see live values.')
+    .addFields(
+      { name: 'You', value: yourTeamName || '—', inline: true },
+      { name: 'Other', value: otherTeamInit || '—', inline: true },
+    )
+    .setColor(0x5865f2);
 
-  await interaction.reply({
-    content: `Trade Builder\nYou: ${yourTeamName || '—'}\nOther: ${otherTeamInit || '—'}\nSelect both teams, then add assets to see live values.`,
-    components,
-    ephemeral: true,
-  });
+  try {
+    const dm = await interaction.user.createDM();
+    await dm.send({
+      embeds: [embed],
+      components,
+    });
+    await interaction.editReply({
+      content: 'Trade Builder opened in your DMs. Build the deal there, then submit it for coach approval.',
+      components: [],
+    });
+  } catch {
+    await interaction.editReply({
+      content: 'I could not open your DMs. Turn on server DMs, then press Start Trade Builder again.',
+      components: [],
+    });
+  }
 }
 
 export default { customId, execute };

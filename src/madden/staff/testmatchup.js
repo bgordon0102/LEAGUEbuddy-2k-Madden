@@ -3,6 +3,8 @@ import path from 'path';
 import fs from 'fs';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { registerThread } from '../../shared/madden_thread_notifier.js';
+import { brandTitle } from '../../shared/madden_branding.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const COMMISH_ROLE_IDS = ['1460399404241522759', '1460399405436768431'];
@@ -17,7 +19,7 @@ function findTeam(snapshot, name) {
   return teams.find(t => {
     const aliases = [
       t.displayName, t.nickName, t.cityName, t.abbrName,
-      `${t.cityName} ${t.nickName}`,
+      getFullTeamName(t, ''),
     ].map(x => (x || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
     return aliases.includes(norm);
   });
@@ -30,6 +32,7 @@ const mascot = (name) => {
   const parts = cleaned.split(/\s+/);
   return parts[parts.length - 1] || cleaned;
 };
+
 
 export const data = new SlashCommandBuilder()
   .setName('madden-testmatchup')
@@ -55,17 +58,20 @@ export async function execute(interaction) {
 
   const awayTeam = findTeam(snapshot, awayNameInput);
   const homeTeam = findTeam(snapshot, homeNameInput);
-  const awayLabel = mascot(awayTeam?.displayName || awayNameInput);
-  const homeLabel = mascot(homeTeam?.displayName || homeNameInput);
+  const awayFullName = getFullTeamName(awayTeam, awayNameInput);
+  const homeFullName = getFullTeamName(homeTeam, homeNameInput);
+  const awayLabel = mascot(awayFullName);
+  const homeLabel = mascot(homeFullName);
 
   const channel = interaction.channel;
-  if (!channel?.isTextBased()) {
-    await interaction.editReply({ content: 'Run this in a text channel.' }).catch(() => {});
+  if (!channel?.isTextBased() || !channel.threads) {
+    await interaction.editReply({ content: 'Run this in a text channel that supports threads.' }).catch(() => {});
     return;
   }
 
+  const threadName = `${awayFullName} vs ${homeFullName} - TEST`;
   const thread = await channel.threads.create({
-    name: `${awayLabel} vs ${homeLabel} - TEST`,
+    name: threadName,
     autoArchiveDuration: 10080,
     reason: 'Test matchup thread',
   });
@@ -82,7 +88,7 @@ export async function execute(interaction) {
 
   const deadline = Math.floor((Date.now() + 48 * 3600 * 1000) / 1000);
   const embed = {
-    title: 'LEAGUEbuddy Matchup (TEST)',
+    title: brandTitle('LEAGUEbuddy Matchup (TEST)'),
     description: [
       `Schedule and play your game. Use the buttons when needed:`,
       `🏁 Game Completed — both coaches press; clears reminders.`,
@@ -96,8 +102,8 @@ export async function execute(interaction) {
     timestamp: new Date().toISOString(),
   };
 
-  const encAway = encodeURIComponent(awayTeam?.displayName || awayNameInput);
-  const encHome = encodeURIComponent(homeTeam?.displayName || homeNameInput);
+  const encAway = encodeURIComponent(awayFullName);
+  const encHome = encodeURIComponent(homeFullName);
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`madden_game_status_complete|${thread.id}|${encAway}|${encHome}`).setLabel('Game Completed 🏁').setStyle(ButtonStyle.Success),
     new ButtonBuilder().setCustomId(`madden_game_status_fairsim|${thread.id}|${encAway}|${encHome}`).setLabel('Fair Sim ⚖️').setStyle(ButtonStyle.Secondary),
@@ -110,15 +116,26 @@ export async function execute(interaction) {
     new ButtonBuilder().setCustomId(`madden_game_status_staffstrikehome|${thread.id}|${encAway}|${encHome}`).setLabel(`Staff Strike ${homeLabel} 🚫`).setStyle(ButtonStyle.Danger),
   );
 
-  await thread.send({
+  const payload = {
     content: mentionText || null,
     embeds: [embed],
     components: [row, staffRow],
     allowedMentions: mentionText ? { parse: ['roles'] } : { parse: [] },
-  }).catch(() => {});
+  };
 
-  try { registerThread(thread.id, mentionText || ''); } catch {}
-  try { await interaction.editReply({ content: `Test matchup thread created: <#${thread.id}>` }); } catch {}
+  await thread.send(payload).catch(() => {});
+
+  try {
+    registerThread(thread.id, {
+      mention: mentionText || '',
+      deadlineAt: deadline * 1000,
+      awayTeam: awayFullName,
+      homeTeam: homeFullName,
+      awayRoleIds: awayRole ? [awayRole.id] : (awayTeam?.displayName && roleMap[`${awayTeam.displayName} Coach`] ? [roleMap[`${awayTeam.displayName} Coach`]] : []),
+      homeRoleIds: homeRole ? [homeRole.id] : (homeTeam?.displayName && roleMap[`${homeTeam.displayName} Coach`] ? [roleMap[`${homeTeam.displayName} Coach`]] : []),
+    });
+  } catch {}
+  try { await interaction.editReply({ content: `Test matchup thread ready: <#${thread.id}>` }); } catch {}
 }
 
 export default { data, execute };

@@ -10,11 +10,13 @@ import {
   StringSelectMenuOptionBuilder,
 } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { computePlayerValue, buildValueMap, parsePickValue } from './madden_trade_modal_submit.js';
+import { computePlayerValue, buildValueMap, parsePickValue, getMaddenPickContext } from './madden_trade_modal_submit.js';
 import { getTradeDraft, saveTradeDraft } from '../shared/trade_draft_store.js';
 import { readRoster, normalizeName, resolveTeamNameForRoster, computePlayerValue2k, computePickValue2k, parsePickValue2k } from '../shared/rosterUtils.js';
+import { getFirstRoundPickLabelsForTeam } from '../madden/pick_overrides_store.js';
 import fs from 'fs';
 import path from 'path';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const MENU_CUSTOM_ID = /^trade_builder_select_assets\|(yours|other)\|/;
 const ADD_CUSTOM_ID = /^trade_builder_add\|(yours|other)\|/;
@@ -97,25 +99,6 @@ export function rosterForTeam(snapshot, teamIdOrName) {
   return Object.values(rosters).flatMap(r => r?.rosterInfoList || []);
 }
 
-function pickOptions(currentYear) {
-  const rounds = [1, 2, 3, 4, 5, 6, 7];
-  const yr = Number(currentYear) || new Date().getFullYear();
-  const years = [yr, yr + 1, yr + 2];
-  const current = [];
-  const future = [];
-  years.forEach(y => {
-    rounds.forEach(r => {
-      if (y === yr) {
-        current.push({ label: `${y} Round ${r}`, value: `pick:${y}:${r}` });
-      } else {
-        // Future years: round-only
-        future.push({ label: `${y} Round ${r}`, value: `pick:${y}:${r}` });
-      }
-    });
-  });
-  return { current, future };
-}
-
 function buildAssetSelectRows(side, draftId, snapshot, teamId) {
   // Madden path (default)
   const roster = rosterForTeam(snapshot, teamId)
@@ -134,9 +117,13 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
     weekType === 8 || // explicit offseason code
     seasonTitle.includes('offseason') ||
     (seasonInfo.isDraftActive === false && seasonInfo.isLeagueStarted === true && !isRegularOrPost);
-  const year = seasonInfo?.seasonYear
-    || snapshot?.info?.calendarYear
-    || new Date().getFullYear();
+  const pickContext = getMaddenPickContext(snapshot);
+  const draftBaseYear = Math.max(2027, pickContext.draftBaseYear);
+  const teamMeta = teamLookup(snapshot, teamId);
+  const teamName = getFullTeamName(teamMeta, String(teamId || ''));
+  const allTeams = (snapshot?.teams?.leagueTeamInfoList || []).map(t =>
+    getFullTeamName(t, t.abbrName || 'Team')
+  ).filter(Boolean);
 
   const offensePos = new Set(['QB', 'HB', 'RB', 'FB', 'WR', 'TE', 'LT', 'LG', 'C', 'RG', 'RT']);
   const defensePos = new Set(['LE', 'RE', 'DL', 'DT', 'EDGE', 'REDGE', 'LEDGE', 'OLB', 'ROLB', 'LOLB', 'MLB', 'MIKE', 'WILL', 'SAM', 'CB', 'FS', 'SS', 'DB']);
@@ -145,7 +132,7 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
   const buckets = [
     { key: 'off', label: 'Offense', items: [] },
     { key: 'def', label: 'Defense', items: [] },
-    { key: 'st', label: 'Special Teams / Picks', items: [] },
+    { key: 'st', label: 'Special Teams', items: [] },
   ];
 
   roster.forEach(p => {
@@ -163,19 +150,6 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
     else buckets[2].items.push(opt);
   });
 
-  // add picks separated into current/future buckets
-  const pickBuckets = pickOptions(year);
-  const futurePickRow = pickBuckets.future.slice(0, 25).length
-    ? new ActionRowBuilder().addComponents(
-      new StringSelectMenuBuilder()
-        .setCustomId(`trade_builder_select_assets|${side}|${draftId}|picks_future|0`)
-        .setPlaceholder(`Add ${side === 'yours' ? 'your' : 'their'} future picks`)
-        .setMinValues(1)
-        .setMaxValues(Math.min(5, pickBuckets.future.slice(0, 25).length))
-        .addOptions(pickBuckets.future.slice(0, 25))
-    )
-    : null;
-
   // Limit player buckets to top 25 to avoid extra pages; keep single row per category
   const rows = buckets
     .map(bucket => bucket.items.slice(0, 25))
@@ -188,41 +162,51 @@ function buildAssetSelectRows(side, draftId, snapshot, teamId) {
         .setMaxValues(Math.min(5, opts.length))
         .addOptions(opts)
     ));
-  if (futurePickRow) rows.push(futurePickRow);
-  // Manual pick entry is offseason-only; in-season use menu averages
-  if (isOffseason) {
-    rows.push(
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`trade_builder_pick_manual|${side}|${draftId}`)
-          .setLabel('Type current-year pick')
-          .setStyle(ButtonStyle.Secondary)
-      )
-    );
-  }
-  // enforce Discord max 5 rows
+
+  const pickYearOptions = [draftBaseYear, draftBaseYear + 1, draftBaseYear + 2];
+  const combinedPickOptions = [];
+
+  pickYearOptions.forEach((pickYear) => {
+    const firstRoundLabels = getFirstRoundPickLabelsForTeam(teamName, pickYear, allTeams);
+    firstRoundLabels.forEach(label => {
+      const parsed = parsePickValue(label, draftBaseYear, {
+        currentYearExactAllowed: pickContext.currentYearExactAllowed,
+      });
+      combinedPickOptions.push({
+        label,
+        value: `pick:${label}`,
+        description: `Val ${Number(parsed?.value || 0).toFixed(1)}`.slice(0, 100),
+      });
+    });
+    [2, 3, 4, 5, 6, 7].forEach(round => {
+      const roundLabel = `${pickYear} Round ${round}`;
+      const parsed = parsePickValue(roundLabel, draftBaseYear, {
+        currentYearExactAllowed: pickContext.currentYearExactAllowed,
+      });
+      combinedPickOptions.push({
+        label: roundLabel,
+        value: `pick:${roundLabel}`,
+        description: `Val ${Number(parsed?.value || 0).toFixed(1)}`.slice(0, 100),
+      });
+    });
+  });
+
+  rows.push(
+    new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(`trade_builder_select_assets|${side}|${draftId}|picks|0`)
+        .setPlaceholder(`Add ${side === 'yours' ? 'your' : 'their'} draft picks (2027-2029)`)
+        .setMinValues(1)
+        .setMaxValues(Math.min(5, combinedPickOptions.length))
+        .addOptions(combinedPickOptions.slice(0, 25))
+    )
+  );
+
   return rows.slice(0, 5);
-  return rows;
 }
 
-function summarizeAssets(draft, valueMap, seasonYear) {
+function summarizeAssets(draft, valueMap, seasonYear, pickOptions = {}) {
   // Madden path (default)
-  const currentPickValue = (round, pickNum) => {
-    // Piecewise: hand-tune top 5, then smooth decay from pick 6 onward.
-    const r = Math.max(1, Number(round) || 1);
-    const p = Math.max(1, Number(pickNum) || 1);
-    const overall = Math.min(224, (r - 1) * 32 + p);
-    if (overall === 1) return 800;
-    if (overall === 2) return 525;
-    if (overall === 3) return 475;
-    if (overall === 4) return 425;
-    if (overall === 5) return 400;
-    // decay starting at pick 6: 400 * exp(-k*(overall-5)), k tuned so pick 224 ~ 10
-    const k = 0.0145;
-    const val = 400 * Math.exp(-k * (overall - 5));
-    return Math.max(10, val);
-  };
-
   const summarize = (arr) => {
     let total = 0;
     const lines = [];
@@ -233,41 +217,13 @@ function summarizeAssets(draft, valueMap, seasonYear) {
         total += val;
         lines.push(`${item.label} (${item.pos || 'UNK'}) — ${val.toFixed(1)}`);
       } else if (item.type === 'pick') {
-        // Prefer stored structured data to avoid mis-parsing
-        const parsedStored = { year: item.year, round: item.round, pickNum: item.pickNum };
-        const parsedFallback = parsePickValue(item.raw, seasonYear) || {};
-        const yr = parsedStored.year || parsedFallback.year || seasonYear;
-        const rnd = parsedStored.round || parsedFallback.round;
-        const pk = parsedStored.pickNum || parsedFallback.pickNum;
-        let val = 0;
-        let label = item.raw;
-        if (yr && rnd) {
-          const currentYear = seasonYear || new Date().getFullYear();
-          if (pk && yr === currentYear) {
-            val = currentPickValue(rnd, pk);
-            label = `${yr} Round ${rnd} Pick ${pk}`;
-          } else {
-            // future or round-only
-            const floorMap = { 1: 150, 2: 110, 3: 85, 4: 65, 5: 50, 6: 35, 7: 25 };
-            // Future picks: round averages aligned to new current curve (slightly discounted)
-            const futureBaseChart = { 1: 275, 2: 165, 3: 120, 4: 90, 5: 65, 6: 45, 7: 32 };
-            const floor = floorMap[rnd] || 10;
-            const diff = yr - currentYear;
-            if (diff > 0) {
-              const decay = diff === 1 ? 0.85 : 0.7;
-              val = Math.max(5, Math.round((futureBaseChart[rnd] || floor) * decay));
-              if (rnd === 1 && diff === 1 && val < 250) val = 250;
-              if (rnd === 1 && diff >= 2 && val < 200) val = 200;
-            } else if (pk) {
-              val = Math.max(floor, currentPickValue(rnd, pk));
-            }
-            label = pk ? `${yr} Round ${rnd} Pick ${pk}` : `${yr} Round ${rnd}`;
-          }
-        } else {
-          const parsed = parsedFallback;
-          val = parsed?.value || 0;
-          label = parsed?.label || item.raw;
-        }
+        const canonical = item.raw
+          || (item.pickNum
+            ? `${item.year} Round ${item.round} Pick ${item.pickNum}`
+            : `${item.year} Round ${item.round}`);
+        const parsed = parsePickValue(canonical, seasonYear, pickOptions) || {};
+        const val = Number.isFinite(Number(item.value)) ? Number(item.value) : Number(parsed.value || 0);
+        const label = parsed.label || canonical || item.raw;
         total += val;
         lines.push(`${label} — ${Number(val).toFixed(1)}`);
       }
@@ -376,10 +332,14 @@ function buildAssetSelectRows2k(side, draftId, teamName) {
     );
 
   if (picks.length) {
-    const pickOpts = picks.slice(0, 25).map(p => ({
-      label: p,
-      value: `pick:${p}`
-    }));
+    const pickOpts = picks.slice(0, 25).map(p => {
+      const parsed = parsePickValue2k(p, draft.seasonYear) || {};
+      return {
+        label: p,
+        value: `pick:${p}`,
+        description: `Val ${Number(parsed?.value || 0).toFixed(1)}`.slice(0, 100),
+      };
+    });
     rows.push(
       new ActionRowBuilder().addComponents(
         new StringSelectMenuBuilder()
@@ -452,7 +412,8 @@ function summarizeAssets2k(draft) {
 export function buildButtons(draftId) {
   const draft = getTradeDraft(draftId);
   const is2k = draft?.mode === '2k';
-  let allowManualCurrentPick = true;
+  // 2K: only allow manual pick entry in offseason when order known.
+  let allowManualCurrentPick = !is2k;
   if (is2k) {
     // Only allow manual pick entry in the offseason when draft order is known
     try {
@@ -475,10 +436,10 @@ export function buildButtons(draftId) {
   ];
 
   const actionRow = new ActionRowBuilder();
-  if (!is2k || allowManualCurrentPick) {
+  if (is2k && allowManualCurrentPick) {
     actionRow.addComponents(
-      new ButtonBuilder().setCustomId(`trade_builder_pick_manual|yours|${draftId}`).setLabel('Type current pick (yours)').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`trade_builder_pick_manual|other|${draftId}`).setLabel('Type current pick (theirs)').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`trade_builder_pick_manual|yours|${draftId}`).setLabel('Type pick (yours)').setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder().setCustomId(`trade_builder_pick_manual|other|${draftId}`).setLabel('Type pick (theirs)').setStyle(ButtonStyle.Secondary),
     );
   }
   actionRow.addComponents(
@@ -487,6 +448,10 @@ export function buildButtons(draftId) {
   );
   rows.push(actionRow);
   return rows;
+}
+
+function buildPrivatePayload(interaction, payload) {
+  return interaction.inGuild() ? { ...payload, flags: 64 } : payload;
 }
 
 async function refreshBuilder(interaction, draft, snapshot) {
@@ -535,8 +500,14 @@ async function refreshBuilder(interaction, draft, snapshot) {
     return;
   }
   const valueMap = buildValueMap(snapshot);
-  const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear;
-  const summary = summarizeAssets(draft, valueMap, seasonYear);
+  const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear
+    || snapshot?.info?.calendarYear
+    || new Date().getFullYear();
+  const baseYear = Math.max(2027, seasonYear);
+  const pickContext = getMaddenPickContext(snapshot);
+  const summary = summarizeAssets(draft, valueMap, baseYear, {
+    currentYearExactAllowed: pickContext.currentYearExactAllowed,
+  });
   const gap = summary.your.total - summary.other.total;
   // Persist team labels for later submit
   draft.yourTeam = draft.yourTeamName || draft.yourTeamId || '—';
@@ -569,9 +540,9 @@ async function refreshBuilder(interaction, draft, snapshot) {
 }
 
 export async function execute(interaction) {
-  const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   const draftId = interaction.customId.split('|')[1];
   const draft = getTradeDraft(draftId);
+  const leagueId = draft?.leagueId || resolveLeagueIdWithConfig(interaction.guildId);
   const isNBA = draft?.mode === '2k';
   if (RESET_CUSTOM_ID.test(interaction.customId)) {
     const draftId = interaction.customId.split('|')[1];
@@ -598,7 +569,7 @@ export async function execute(interaction) {
     const [, side, draftId] = interaction.customId.split('|');
     const draft = getTradeDraft(draftId);
     if (!draft || !(draft.mode === '2k' ? draft[side === 'yours' ? 'yourTeamName' : 'otherTeamName'] : draft[side === 'yours' ? 'yourTeamId' : 'otherTeamId'])) {
-      await interaction.reply({ content: 'Select both teams first.', ephemeral: true });
+      await interaction.reply(buildPrivatePayload(interaction, { content: 'Select both teams first.' }));
       return;
     }
     if (draft.mode === '2k') {
@@ -609,16 +580,15 @@ export async function execute(interaction) {
       const teamName = forceTeam || (side === 'yours' ? draft.yourTeamName : draft.otherTeamName);
       const rows = buildAssetSelectRows2k(side === 'yours' ? 'yours' : 'other', draftId, teamName);
       if (!rows?.length) {
-        await interaction.reply({ content: 'No assets found for that team.', ephemeral: true });
+        await interaction.reply(buildPrivatePayload(interaction, { content: 'No assets found for that team.' }));
         return;
       }
-      await interaction.reply({ content: `Select assets for ${side === 'yours' ? 'your' : 'their'} team`, components: rows.slice(0, 5), ephemeral: true });
+      await interaction.reply(buildPrivatePayload(interaction, { content: `Select assets for ${side === 'yours' ? 'your' : 'their'} team`, components: rows.slice(0, 5) }));
       if (rows.length > 5) {
-        await interaction.followUp({
+        await interaction.followUp(buildPrivatePayload(interaction, {
           content: 'More options (picks / remaining positions):',
           components: rows.slice(5, 10),
-          ephemeral: true,
-        });
+        }));
       }
       return;
     }
@@ -626,21 +596,20 @@ export async function execute(interaction) {
     const snapshot = loadLeagueSnapshot(leagueId);
     const rows = buildAssetSelectRows(side === 'yours' ? 'yours' : 'other', draftId, snapshot, side === 'yours' ? draft.yourTeamId : draft.otherTeamId);
     if (!rows?.length) {
-      await interaction.reply({ content: 'No assets found for that team. Try again after a sync.', ephemeral: true });
+      await interaction.reply(buildPrivatePayload(interaction, { content: 'No assets found for that team. Try again after a sync.' }));
       return;
     }
-    await interaction.reply({
+    await interaction.reply(buildPrivatePayload(interaction, {
       content: `Select assets for ${side === 'yours' ? 'your' : 'their'} team`,
       components: rows.slice(0, 5), // Discord limit 5 rows
-      ephemeral: true,
-    });
+    }));
     return;
   }
   if (MENU_CUSTOM_ID.test(interaction.customId)) {
     const [, side, draftId] = interaction.customId.split('|');
     const draft = getTradeDraft(draftId);
     if (!draft) {
-      await interaction.reply({ content: 'Trade builder expired. Start again.', ephemeral: true });
+      await interaction.reply(buildPrivatePayload(interaction, { content: 'Trade builder expired. Start again.' }));
       return;
     }
     if (draft.mode === '2k') {
@@ -697,6 +666,10 @@ export async function execute(interaction) {
     }
     if (!leagueId) return;
     const snapshot = loadLeagueSnapshot(leagueId);
+    const draftYearBase = Math.max(
+      2027,
+      snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || new Date().getFullYear()
+    );
     const roster = rosterForTeam(snapshot, side === 'yours' ? draft.yourTeamId : draft.otherTeamId);
     const rosterMap = new Map(roster.map(p => [String(p.rosterId), p]));
     const sel = interaction.values || [];
@@ -717,25 +690,34 @@ export async function execute(interaction) {
           pos: p.position,
         });
       } else if (v.startsWith('pick:')) {
-        const parts = v.split(':'); // pick:year:round[:pick]
+        const rawValue = v.slice('pick:'.length);
+        const parts = v.split(':');
+        const isLegacyStructured = parts.length >= 3 && /^\d{4}$/.test(parts[1] || '');
         const year = parts[1];
         const rnd = parts[2];
         const pickNum = parts[3];
         const suffix = rnd === '1' ? 'st' : rnd === '2' ? 'nd' : rnd === '3' ? 'rd' : 'th';
-        const raw = pickNum ? `${year} ${rnd}${suffix} pick ${pickNum}` : `${year} ${rnd}${suffix}`;
+        const raw = isLegacyStructured
+          ? (pickNum ? `${year} ${rnd}${suffix} pick ${pickNum}` : `${year} ${rnd}${suffix}`)
+          : rawValue;
         if (assetsArr.find(a => a.type === 'pick' && a.raw === raw)) return;
         const parsed = draft.mode === '2k'
           ? parsePickValue2k(raw, draft.seasonYear)
-          : parsePickValue(raw, loadLeagueSnapshot(leagueId)?.info?.careerHubInfo?.seasonInfo?.seasonYear);
+          : parsePickValue(raw, draftYearBase, {
+            currentYearExactAllowed: getMaddenPickContext(snapshot).currentYearExactAllowed,
+          });
         assetsArr.push({
           type: 'pick',
-          raw,
+          raw: parsed?.canonical || raw,
           year: parsed?.year ?? Number(year),
           round: parsed?.round ?? Number(rnd),
           pickNum: parsed?.pickNum ?? (pickNum ? Number(pickNum) : null),
           protection: parsed?.protection,
           value: parsed?.value,
           label: parsed?.label,
+          viaTeam: parsed?.viaTeam,
+          originalOwner: parsed?.originalOwner,
+          via: parsed?.via,
         });
       }
     });
@@ -750,19 +732,19 @@ export async function execute(interaction) {
   if (PICK_MANUAL_BTN.test(interaction.customId)) {
     const draft = getTradeDraft(interaction.customId.split('|')[2]);
     if (draft?.mode === '2k') {
-      await interaction.reply({ content: 'For NBA, add picks from the Picks menu.', ephemeral: true });
+      await interaction.reply(buildPrivatePayload(interaction, { content: 'For NBA, add picks from the Picks menu.' }));
       return;
     }
     const [, side, draftId] = interaction.customId.split('|');
     const modalId = `trade_builder_pick_modal|${side}|${draftId}`;
     const modal = new ModalBuilder()
       .setCustomId(modalId)
-      .setTitle('Add current-year pick');
+      .setTitle('Add draft pick');
     modal.addComponents(
       new ActionRowBuilder().addComponents(
         new TextInputBuilder()
           .setCustomId('pickLabel')
-          .setLabel('Enter pick (e.g., 2026 Round 1 Pick 5)')
+          .setLabel('Pick (e.g., 2027 R1 via Jets; 2027 R1P4 via Jets)')
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
       )
@@ -775,27 +757,32 @@ export async function execute(interaction) {
     const [, side, draftId] = interaction.customId.split('|');
     const draft = getTradeDraft(draftId);
     if (!draft) {
-      await interaction.reply({ content: 'Trade builder expired. Start again.', ephemeral: true });
+      await interaction.reply(buildPrivatePayload(interaction, { content: 'Trade builder expired. Start again.' }));
       return;
     }
     if (!leagueId) {
-      await interaction.reply({ content: 'No league configured. Run /madden-set-league first.', ephemeral: true });
+      await interaction.reply(buildPrivatePayload(interaction, { content: 'No league configured. Run /madden-set-league first.' }));
       return;
     }
     const snapshot = loadLeagueSnapshot(leagueId);
+    const pickContext = getMaddenPickContext(snapshot);
+    const draftYearBase = Math.max(2027, pickContext.draftBaseYear);
     const rawInput = interaction.fields.getTextInputValue('pickLabel') || '';
     const parsed = draft.mode === '2k'
       ? parsePickValue2k(rawInput, draft.seasonYear)
-      : parsePickValue(rawInput, snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear);
+      : parsePickValue(rawInput, draftYearBase, {
+        currentYearExactAllowed: pickContext.currentYearExactAllowed,
+      });
     if (!parsed) {
-      await interaction.reply({ content: 'Could not parse that pick. Try formats like \"2026 Round 1\" or \"2026 Round 1 Pick 5\".', ephemeral: true });
+      await interaction.reply(buildPrivatePayload(interaction, { content: 'Could not parse that pick. Try formats like \"2027 Round 1\", \"2027 Round 1 via Jets\", or \"2027 Round 1 Pick 4 via Jets\".' }));
       return;
     }
     draft.assets = draft.assets || { your: [], other: [] };
     const assetsArr = draft.assets[side === 'yours' ? 'your' : 'other'] || [];
-    const canonical = parsed.pickNum
-      ? `${parsed.year} Round ${parsed.round} Pick ${parsed.pickNum}`
-      : `${parsed.year} Round ${parsed.round}`;
+    const canonical = parsed.canonical
+      || (parsed.pickNum
+        ? `${parsed.year} Round ${parsed.round} Pick ${parsed.pickNum}`
+        : `${parsed.year} Round ${parsed.round}`);
     if (!assetsArr.find(a => a.type === 'pick' && a.raw === canonical)) {
       assetsArr.push({
         type: 'pick',
@@ -806,6 +793,9 @@ export async function execute(interaction) {
         protection: parsed.protection,
         value: parsed.value,
         label: parsed.label,
+        viaTeam: parsed.viaTeam,
+        originalOwner: parsed.originalOwner,
+        via: parsed.via,
       });
     }
     draft.assets[side === 'yours' ? 'your' : 'other'] = assetsArr;

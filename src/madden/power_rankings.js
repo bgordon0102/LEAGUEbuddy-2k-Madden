@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { getPinId, setPinId } from './pins_store.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
@@ -35,7 +36,7 @@ function teamNameMap(snapshot) {
   const list = snapshot?.teams?.leagueTeamInfoList || [];
   list.forEach(t => {
     if (!t.teamId) return;
-    const name = [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim();
+    const name = getFullTeamName(t, `Team ${t.teamId}`);
     map[t.teamId] = name || `Team ${t.teamId}`;
   });
   return map;
@@ -48,15 +49,76 @@ function formatRecord(s) {
   return t ? `${w}-${l}-${t}` : `${w}-${l}`;
 }
 
+function completedRegularGames(snapshot) {
+  return (snapshot?.schedule?.schedules || []).filter((game) => {
+    const stage = Number(game?.stageIndex ?? game?.stage ?? -1);
+    const status = Number(game?.status ?? 0);
+    return stage === 1 && status >= 2;
+  });
+}
+
+function recentFormMap(snapshot) {
+  const games = completedRegularGames(snapshot);
+  const weeks = [...new Set(games.map((game) => Number(game.weekIndex)).filter((n) => Number.isFinite(n)))].sort((a, b) => b - a).slice(0, 2);
+  const form = new Map();
+  for (const game of games.filter((g) => weeks.includes(Number(g.weekIndex)))) {
+    const homeTeamId = Number(game.homeTeamId);
+    const awayTeamId = Number(game.awayTeamId);
+    const homeScore = Number(game.homeScore || 0);
+    const awayScore = Number(game.awayScore || 0);
+    const ensure = (teamId) => {
+      if (!form.has(teamId)) form.set(teamId, { wins: 0, losses: 0, margin: 0, pointsFor: 0, pointsAgainst: 0 });
+      return form.get(teamId);
+    };
+    const home = ensure(homeTeamId);
+    const away = ensure(awayTeamId);
+    home.pointsFor += homeScore;
+    home.pointsAgainst += awayScore;
+    away.pointsFor += awayScore;
+    away.pointsAgainst += homeScore;
+    home.margin += homeScore - awayScore;
+    away.margin += awayScore - homeScore;
+    if (homeScore > awayScore) {
+      home.wins += 1;
+      away.losses += 1;
+    } else if (awayScore > homeScore) {
+      away.wins += 1;
+      home.losses += 1;
+    }
+  }
+  return form;
+}
+
 function rankTeams(snapshot) {
   const standings = snapshot?.standings?.teamStandingInfoList || [];
   const allZero = standings.every(s => (s.totalWins ?? 0) === 0 && (s.totalLosses ?? 0) === 0 && (s.totalTies ?? 0) === 0);
   if (!standings.length || allZero) return [];
-  const sorted = [...standings].sort((a, b) =>
+  const recentForm = recentFormMap(snapshot);
+  const scored = [...standings].map((team) => {
+    const wins = Number(team.totalWins || 0);
+    const losses = Number(team.totalLosses || 0);
+    const gamesPlayed = Math.max(1, wins + losses + Number(team.totalTies || 0));
+    const winPct = Number(team.winPct ?? (wins / gamesPlayed) ?? 0);
+    const netPts = Number(team.netPts || 0);
+    const offTotalYds = Number(team.offTotalYds || 0);
+    const ptsFor = Number(team.ptsFor || 0);
+    const ptsAgainst = Number(team.ptsAgainst || 0);
+    const recent = recentForm.get(Number(team.teamId)) || { wins: 0, losses: 0, margin: 0, pointsFor: 0, pointsAgainst: 0 };
+    const score =
+      (winPct * 100) +
+      (netPts * 0.9) +
+      ((ptsFor - ptsAgainst) * 0.6) +
+      ((offTotalYds / gamesPlayed) * 0.015) +
+      (recent.wins * 6) -
+      (recent.losses * 4) +
+      (recent.margin * 0.35);
+    return { ...team, _powerScore: score };
+  });
+  const sorted = scored.sort((a, b) =>
+    (b._powerScore ?? 0) - (a._powerScore ?? 0) ||
     (b.winPct ?? 0) - (a.winPct ?? 0) ||
-    (b.totalWins ?? 0) - (a.totalWins ?? 0) ||
     (b.netPts ?? 0) - (a.netPts ?? 0) ||
-    (b.offTotalYds ?? 0) - (a.offTotalYds ?? 0)
+    (b.totalWins ?? 0) - (a.totalWins ?? 0)
   );
   return sorted.slice(0, 10);
 }
@@ -111,6 +173,7 @@ export async function updatePowerRankings(client, leagueId) {
   const ranked = rankTeams(snapshot);
   const prevMap = loadPrevRanks();
   const prev = prevMap[leagueId] || {};
+  const hadPreviousRanks = Object.keys(prev).length > 0;
   const fields = [];
   let lines = [];
   const newEntrants = [];
@@ -129,8 +192,10 @@ export async function updatePowerRankings(client, leagueId) {
       let move = '(=)';
       if (prevRank === undefined || prevRank > 10) {
         move = '(new)';
-        const mention = teamRoleMention(name, roleMap);
-        newEntrants.push({ mention, name, emoji });
+        if (hadPreviousRanks) {
+          const mention = teamRoleMention(name, roleMap);
+          newEntrants.push({ mention, name, emoji });
+        }
       } else {
         const diff = prevRank - currentRank;
         if (diff > 0) move = `(+${diff})`;

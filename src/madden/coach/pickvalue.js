@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 
 const ROUND_OPTIONS = ['1', '2', '3', '4', '5', '6', '7'];
@@ -7,27 +7,15 @@ const PICK_OPTIONS = Array.from({ length: 32 }, (_, i) => String(i + 1));
 function currentPickValue(round, pickNum) {
   const r = Number(round);
   const p = Math.min(32, Math.max(1, Number(pickNum) || 1));
-  // Round-specific linear curves; R1 is bespoke for top 3 picks
-  if (r === 1) {
-    if (p === 1) return 400;
-    if (p === 2) return 350;
-    if (p === 3) return 300;
-    const start = 280;
-    const end = 150;
-    const t = (p - 4) / (32 - 4);
-    return start + (end - start) * t;
-  }
-  const curves = {
-    2: { start: 170, end: 120 },
-    3: { start: 125, end: 85 },
-    4: { start: 95, end: 65 },
-    5: { start: 70, end: 45 },
-    6: { start: 50, end: 30 },
-    7: { start: 32, end: 18 },
-  };
-  const curve = curves[r] || { start: 20, end: 10 };
-  const t = (p - 1) / 31;
-  return curve.start + (curve.end - curve.start) * t;
+  const overall = Math.max(1, (r - 1) * 32 + p);
+  if (overall === 1) return 800;
+  if (overall === 2) return 525;
+  if (overall === 3) return 475;
+  if (overall === 4) return 425;
+  if (overall === 5) return 400;
+  const k = 0.0145;
+  const val = 400 * Math.exp(-k * (overall - 5));
+  return Math.max(10, val);
 }
 
 function computePickValue(year, round, pick, seasonYear) {
@@ -47,14 +35,16 @@ function computePickValue(year, round, pick, seasonYear) {
   const floor = floorMap[r] || 10;
 
   if (diff > 0) {
-    // future picks: flat mid-round, discounted by year (no pick-number edge)
-    const futureBaseChart = { 1: 300, 2: 200, 3: 150, 4: 110, 5: 80, 6: 60, 7: 40 };
-    const baseFuture = futureBaseChart[r] || floor;
-    const decay = diff === 1 ? 0.85 : 0.7; // year+1 ~85%, year+2 ~70%
-    let val = Math.max(5, Math.round(baseFuture * decay));
-    if (r === 1 && diff === 1 && val < 250) val = 250;
+    // future picks: use current mid-round value, then decay by year offset
+    const midPick = 16; // midpoint of 32-pick round
+    const midVal = currentPickValue(r, midPick);
+    const baseFuture = Math.max(floor, midVal);
+    const decay = diff === 1 ? 0.8 : 0.65; // year+1 ~80%, year+2 ~65%
+    let val = Math.round(baseFuture * decay);
+    // Safeguards for top rounds so they stay meaningful
+    if (r === 1 && diff === 1 && val < 240) val = 240;
     if (r === 1 && diff >= 2 && val < 200) val = 200;
-    return val;
+    return Math.max(10, val);
   }
 
   // current year: per-pick curve
@@ -63,107 +53,108 @@ function computePickValue(year, round, pick, seasonYear) {
   return Math.max(5, Math.round(value));
 }
 
+function buildPickPages(startYear, seasonYear, leagueId) {
+  const pages = [];
+  if (startYear === seasonYear) {
+    // Current draft: 7 pages, one per round, 32 picks each (overall 1–224)
+    for (let round = 1; round <= 7; round += 1) {
+      const lines = [];
+      for (let pick = 1; pick <= 32; pick += 1) {
+        const overall = (round - 1) * 32 + pick; // 1-224 numbering
+        const val = computePickValue(startYear, round, pick, seasonYear);
+        lines.push(`${startYear} Round ${round} Pick ${overall} — ${val}`);
+      }
+      pages.push(
+        new EmbedBuilder()
+          .setTitle(`Draft Pick Values — ${startYear} Round ${round}`)
+          .setDescription(lines.join('\n'))
+          .setFooter({ text: `Page ${pages.length + 1}/7 • Values match trade system` })
+          .setColor(0x00a3ff)
+      );
+    }
+  } else {
+    // Future draft: one page with 7 round values
+    const lines = [];
+    for (let round = 1; round <= 7; round += 1) {
+      const val = computePickValue(startYear, round, null, seasonYear);
+      lines.push(`${startYear} Round ${round} — ${val}`);
+    }
+    pages.push(
+      new EmbedBuilder()
+        .setTitle(`Draft Pick Values — ${startYear}`)
+        .setDescription(lines.join('\n'))
+        .setFooter({ text: `Page 1/1 • Values match trade system` })
+        .setColor(0x00a3ff)
+    );
+  }
+
+  const baseId = `madden_pickvalue_page_${leagueId}_${startYear}`;
+  return { embeds: pages, baseId };
+}
+
 export const data = new SlashCommandBuilder()
   .setName('madden-pickvalue')
-  .setDescription('Get the trade value for a draft pick')
-  .addStringOption(o =>
-    o.setName('year')
-      .setDescription('Draft year (current season only)')
-      .setRequired(true)
-      .setAutocomplete(true)
-  )
-  .addStringOption(o =>
-    o.setName('round')
-      .setDescription('Round (1-7)')
-      .setRequired(true)
-      .setAutocomplete(true)
-  )
-  .addStringOption(o =>
-    o.setName('pick')
-      .setDescription('Pick (1-32) — optional')
+  .setDescription('View paged draft pick values (32 picks per page)')
+  .addIntegerOption(o =>
+    o.setName('start_year')
+      .setDescription('First draft year to show')
       .setRequired(false)
-      .setAutocomplete(true)
+      .addChoices(
+        { name: '2027', value: 2027 },
+        { name: '2028', value: 2028 },
+        { name: '2029', value: 2029 },
+      )
   );
 
 export async function execute(interaction) {
-  const yearStr = interaction.options.getString('year');
-  const roundStr = interaction.options.getString('round');
-  const pickStr = interaction.options.getString('pick');
-  const year = Number(yearStr);
-  const round = Number(roundStr);
-  const pick = pickStr ? Number(pickStr) : null;
+  if (!interaction.deferred && !interaction.replied) {
+    try { await interaction.deferReply({ flags: 64 }); } catch (_) {}
+  }
 
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
-    await interaction.reply({ content: 'No Madden league set. Run /madden-set-league first.', ephemeral: true });
+    const payload = { content: 'No Madden league set. Run /madden-set-league first.' };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
   const snapshot = loadLeagueSnapshot(leagueId);
-  const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear;
-
-  const currentYear = seasonYear || new Date().getFullYear();
-  if (year < currentYear || year > currentYear + 2 || !ROUND_OPTIONS.includes(String(round))) {
-    await interaction.reply({ content: `Year must be current (${currentYear}) or next two drafts (${currentYear + 1}, ${currentYear + 2}), and round 1-7.`, ephemeral: true });
+  const calendarYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear
+    || snapshot?.info?.calendarYear
+    || new Date().getFullYear();
+  const baseYear = Math.max(2027, calendarYear); // force 2027+ as current draft baseline
+  const maxYear = baseYear + 2; // Madden trades only 2 years out
+  const startYearInput = interaction.options.getInteger('start_year');
+  let startYear = Number.isInteger(startYearInput) ? startYearInput : baseYear;
+  if (startYear >= 1 && startYear <= 10 && startYear < 1900) {
+    startYear = baseYear + (startYear - 1);
+  }
+  if (startYear < baseYear || startYear > maxYear) {
+    const payload = { content: `Start year must be ${baseYear}, ${baseYear + 1}, or ${maxYear}.` };
+    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
+    else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
-  if (pick !== null && (pick < 1 || pick > 32)) {
-    await interaction.reply({ content: 'Pick must be between 1 and 32.', ephemeral: true });
-    return;
+
+  const { embeds, baseId } = buildPickPages(startYear, baseYear, leagueId);
+  const components = [];
+  if (embeds.length > 1) {
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId(`${baseId}_0`).setLabel('Previous').setStyle(ButtonStyle.Secondary).setDisabled(true),
+      new ButtonBuilder().setCustomId(`${baseId}_1`).setLabel('Next').setStyle(ButtonStyle.Primary).setDisabled(embeds.length <= 1),
+    );
+    components.push(row);
   }
 
-  const value = computePickValue(year, round, pick, seasonYear);
-  if (!value) {
-    await interaction.reply({ content: 'Could not compute pick value. Check inputs.', ephemeral: true });
-    return;
-  }
-
-  const labelPick = (year > currentYear) ? null : pick;
-  const label = labelPick ? `${year} Round ${round} Pick ${labelPick}` : `${year} Round ${round}`;
-
-  const embed = new EmbedBuilder()
-    .setTitle('Draft Pick Value')
-    .setDescription(`Pick: **${label}**`)
-    .addFields({ name: 'Value', value: value.toString(), inline: true })
-    .setFooter({ text: seasonYear ? `Current season: ${seasonYear}` : 'Current season unknown' })
-    .setColor(0x00a3ff);
-  await interaction.reply({ embeds: [embed], ephemeral: true });
+  if (interaction.deferred || interaction.replied) await interaction.editReply({ embeds: [embeds[0]], components });
+  else await interaction.reply({ embeds: [embeds[0]], components, flags: 64 });
 }
 
 export async function autocomplete(interaction) {
   if (!interaction.isAutocomplete()) return;
-  const focused = interaction.options.getFocused(true);
-  const name = focused?.name;
-  const value = (focused?.value || '').toString();
-
-  const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
-  let seasonYear = new Date().getFullYear();
-  if (leagueId) {
-    const snapshot = loadLeagueSnapshot(leagueId);
-    seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear || seasonYear;
-  }
-
-  const respondList = (list) => {
-    const filtered = list
-      .filter(item => item.toLowerCase().includes(value.toLowerCase()))
-      .slice(0, 25)
-      .map(v => ({ name: v, value: v }));
-    interaction.respond(filtered).catch(() => {});
-  };
-
-  if (name === 'year') {
-    respondList([String(seasonYear), String(seasonYear + 1), String(seasonYear + 2)]);
-  } else if (name === 'round') {
-    respondList(ROUND_OPTIONS);
-  } else if (name === 'pick') {
-    const selectedYear = Number(interaction.options.getString('year')) || seasonYear;
-    if (selectedYear === seasonYear) {
-      respondList(PICK_OPTIONS);
-    } else {
-      interaction.respond([]).catch(() => {});
-    }
-  } else {
-    interaction.respond([]).catch(() => {});
-  }
+  interaction.respond([]).catch(() => {});
 }
+
+export { buildPickPages };
 
 export default { data, execute, autocomplete };

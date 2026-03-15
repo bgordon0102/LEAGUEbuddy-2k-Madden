@@ -2,6 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const RETIRED_FILE = path.join(process.cwd(), 'data', 'madden', 'retired_players.json');
@@ -35,7 +36,7 @@ function listFromSnapshot(snapshot) {
   const players = [];
   teams.forEach(t => {
     const r = teamRosters[t.teamId]?.rosterInfoList || [];
-    r.forEach(p => players.push({ ...p, teamId: t.teamId, teamName: t.displayName || t.nickName || t.cityName }));
+    r.forEach(p => players.push({ ...p, teamId: t.teamId, teamName: getFullTeamName(t, `Team ${t.teamId}`) }));
   });
   faRoster.forEach(p => players.push({ ...p, teamId: 0, teamName: 'Free Agents' }));
   return players;

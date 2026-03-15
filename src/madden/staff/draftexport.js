@@ -2,6 +2,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import path from 'path';
 import fs from 'fs';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const EXPORT_DIR = path.join(process.cwd(), 'data', 'madden', 'draft_exports');
@@ -41,7 +42,7 @@ function collectDraft(snapshot) {
       const pickNumber = (round - 1) * 32 + pick; // approximate ordering
       all.push({
         teamId: t.teamId,
-        teamName: `${t.cityName} ${t.displayName || t.nickName || ''}`.trim(),
+        teamName: getFullTeamName(t, `Team ${t.teamId}`),
         position: p.position,
         firstName: p.firstName,
         lastName: p.lastName,

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { getPinId, setPinId } from './pins_store.js';
 import { Stage } from './ea_client.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
@@ -25,7 +26,7 @@ function teamMap(snapshot, emojiMap) {
   const list = snapshot?.teams?.leagueTeamInfoList || [];
   list.forEach(t => {
     if (!t.teamId) return;
-    const name = [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim();
+    const name = getFullTeamName(t, `Team ${t.teamId}`);
     const emoji = teamEmoji(name, emojiMap);
     map[t.teamId] = emoji || name || `Team ${t.teamId}`;
   });
@@ -237,7 +238,8 @@ export async function updateStatLeaders(client, leagueId) {
   }
   const emojiMap = loadJson(TEAM_EMOJIS_FILE, {});
   const teams = teamMap(snapshot, emojiMap);
-  // Use only the latest regular-season week with stats to avoid mixing old-season data
+  // Use all regular-season weeks through the latest completed one so the board matches its
+  // season-to-date title while still ignoring stale future/offseason buckets.
   const stage1Weeks = (snapshot?.weeklyStats || [])
     .filter(w => Number(w?.stage ?? w?.stageIndex ?? 0) === 1)
     .filter(w => {
@@ -251,11 +253,11 @@ export async function updateStatLeaders(client, leagueId) {
     });
   const latestStage1 = stage1Weeks.length ? Math.max(...stage1Weeks.map(w => Number(w.weekIndex))) : null;
   const weeklyStats = latestStage1 != null
-    ? stage1Weeks.filter(w => Number(w.weekIndex) === latestStage1)
+    ? stage1Weeks.filter(w => Number(w.weekIndex) <= latestStage1)
     : stage1Weeks;
   if (latestStage1 != null) {
-    const maxPass = Math.max(...weeklyStats.flatMap(w => (w.passing?.playerPassingStatInfoList || []).map(p => Number(p.passYds || 0))));
-    console.log('[stat_leaders] using week', latestStage1 + 1, 'entries', weeklyStats.length, 'maxPassYds', maxPass);
+    const maxPass = Math.max(...weeklyStats.flatMap(w => (w.passing?.playerPassingStatInfoList || []).map(p => Number(p.passYds || 0))), 0);
+    console.log('[stat_leaders] using weeks 1-', latestStage1 + 1, 'entries', weeklyStats.length, 'maxPassYds', maxPass);
   } else {
     console.log('[stat_leaders] no stage1 weeks with stats found');
   }
@@ -290,6 +292,7 @@ export async function updateStatLeaders(client, leagueId) {
   const embed = {
     title: 'Madden Stat Leaders (Season-to-Date)',
     color: 0x00b0f4,
+    description: latestStage1 != null ? `Updated through Week ${latestStage1 + 1}.` : 'No regular-season stat data yet.',
     fields,
     timestamp: new Date().toISOString(),
   };

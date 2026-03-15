@@ -1,0 +1,443 @@
+[
+  {
+    "ts": 1773604439578,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773604709129,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773604717514,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773605078784,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor mill queued for approval."
+  },
+  {
+    "ts": 1773605222985,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773605232347,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773605271937,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-myscouts"
+  },
+  {
+    "ts": 1773605314331,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-myscouts"
+  },
+  {
+    "ts": 1773605320369,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-myscouts"
+  },
+  {
+    "ts": 1773605470520,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773605478028,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773605494820,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-myscouts"
+  },
+  {
+    "ts": 1773606732819,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773606803511,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773606965533,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773606975055,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773607067787,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773607076742,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773607186982,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773607190414,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773607320571,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773607343854,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773607344061,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773607345213,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773607354065,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773607354914,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773607627072,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773607648259,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773607648472,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773607649100,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773607658474,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773607659421,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773607909271,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773607918879,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773607919097,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773607920156,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773607929099,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773607930264,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773608127468,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773608137500,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773608137705,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773608138529,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773608147707,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773608148846,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773608640199,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773608670467,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773608670669,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773608671486,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773608680671,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773608681799,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773608684105,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-auth"
+  },
+  {
+    "ts": 1773608707601,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-auth"
+  },
+  {
+    "ts": 1773608714567,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-leagues"
+  },
+  {
+    "ts": 1773608728082,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-set-league"
+  },
+  {
+    "ts": 1773608736995,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773608768793,
+    "type": "notable_injuries",
+    "guildId": "1255691165265821747",
+    "leagueId": "16594549",
+    "count": 1,
+    "weekLabel": "Offseason Stage 10",
+    "lines": [
+      "Kansas City Chiefs: HB Nick Chubb - 78 OVR — out 6 weeks"
+    ]
+  },
+  {
+    "ts": 1773608918771,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773608930172,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773608930376,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773608931468,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773608940380,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773608941124,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773609048857,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773609061563,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773609061767,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773609062897,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773609071769,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773609072904,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773609103589,
+    "type": "content_review",
+    "guildId": "1255691165265821747",
+    "reviewId": "content_1773609072614",
+    "kind": "rumor_mill",
+    "action": "approve",
+    "reviewedBy": "1076243288056664234",
+    "targetChannelId": "1482823538309202051"
+  }
+]

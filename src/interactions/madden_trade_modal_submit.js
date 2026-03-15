@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
+import { resolveOriginalPickOwner } from '../madden/pick_overrides_store.js';
 import { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
 import { canTrade, loadTradeCounts } from '../shared/madden_trade_utils.js';
 import { saveTradeDraft } from '../shared/trade_draft_store.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -66,137 +68,120 @@ export function computePlayerValue(p) {
   const yearsPro = Number(p.yearsPro ?? 0);
   const cap = Number(p.contractSalary || 0) + Number(p.contractBonus || 0);
   const yearsLeft = p.contractYearsLeft ?? p.contractLengthRemaining ?? p.contractLength ?? p.yearsRemaining ?? 0;
-  const attr = (keys) => {
-    for (const k of keys) {
-      if (p[k] != null) return Number(p[k]) || 0;
-    }
-    return 0;
-  };
-  const spd = attr(['speedRating', 'spd', 'speed']);
-  const acc = attr(['accelerationRating', 'acc', 'acceleration']);
-  const agi = attr(['agilityRating', 'agi', 'agility']);
-  const str = attr(['strengthRating', 'str', 'strength']);
-  const athAvg = (spd + acc + agi) / 3 || 0;
-  const athBoost = Math.max(-0.12, Math.min(0.30, (athAvg - 80) / 35)); // slightly steeper spread
-  const isOffSkill = ['QB', 'HB', 'RB', 'WR', 'TE', 'FB'].includes(p.position);
-  const isDB = ['CB', 'FS', 'SS'].includes(p.position);
-  const isEdge = ['REDGE', 'LEDGE', 'EDGE', 'ROLB', 'LOLB', 'RE', 'LE'].includes(p.position);
-  const isDT = ['DT', 'IDL', 'DI'].includes(p.position);
-  const isOL = ['LT', 'LG', 'C', 'RG', 'RT'].includes(p.position);
-  const passBlock = attr(['passBlockRating', 'pbk']);
-  const runBlock = attr(['runBlockRating', 'rbk']);
-  const blockBoost = isOL ? Math.max(0, (passBlock + runBlock) / 2 - 75) / 60 : 0;
-  const rushMove = attr(['finesseMovesRating', 'fmv']) + attr(['powerMovesRating', 'pmv']);
-  const passRushBoost = (isEdge || isDT) ? Math.max(0, (rushMove / 2 - 75) / 40) : 0;
-  const cover = attr(['manCoverageRating', 'pressCoverageRating', 'zoneCoverageRating', 'mcv', 'zcv']);
-  const coverBoost = isDB ? Math.max(0, (cover - 75) / 45) : 0;
   const draftRound = Number(p.draftRound ?? p.draftYearRound ?? p.collegeDraftRound ?? 0);
   const draftPick = Number(p.draftPick ?? p.draftSelection ?? p.pickNumber ?? 0);
   const isRookie = p.isRookie === true || yearsPro === 0 || age <= 22;
+  const pos = (p.position || '').toUpperCase();
+  const isQB = pos === 'QB';
+  const eliteFloorByPos = {
+    QB: 340,
+    WR: 245,
+    CB: 245,
+    LT: 235,
+    RT: 210,
+    EDGE: 235,
+    REDGE: 235,
+    LEDGE: 235,
+    RE: 235,
+    LE: 235,
+    DT: 205,
+  };
+  const positionMultiplier = {
+    QB: 1.28,
+    WR: 1.10,
+    CB: 1.10,
+    LT: 1.08,
+    RT: 1.02,
+    LG: 0.94,
+    RG: 0.94,
+    C: 0.96,
+    EDGE: 1.10,
+    REDGE: 1.10,
+    LEDGE: 1.10,
+    RE: 1.08,
+    LE: 1.08,
+    DT: 1.00,
+    FS: 0.92,
+    SS: 0.92,
+    MLB: 0.90,
+    MIKE: 0.90,
+    WILL: 0.90,
+    SAM: 0.88,
+    HB: 0.88,
+    RB: 0.88,
+    FB: 0.50,
+    TE: 0.86,
+    K: 0.18,
+    P: 0.14,
+    LS: 0.08,
+  };
+  const ageMultiplier = (() => {
+    if (age <= 22) return 1.18;
+    if (age <= 24) return 1.12;
+    if (age <= 26) return 1.06;
+    if (age <= 28) return 1.00;
+    if (age <= 30) return 0.94;
+    if (age <= 32) return 0.86;
+    if (age <= 34) return 0.76;
+    return 0.66;
+  })();
+  const devMultiplier = (() => {
+    if (p.devTrait === 3) return 1.16;
+    if (p.devTrait === 2) return 1.10;
+    if (p.devTrait === 1) return 1.05;
+    return 1.00;
+  })();
+  const contractMultiplier = (() => {
+    const years = Number(yearsLeft || 0);
+    const base = years > 0 ? 1 + Math.min(years, 4) * 0.015 : 0.96;
+    const capPenalty = isRookie ? Math.min(cap / 800, 0.03) : Math.min(cap / 180, 0.10);
+    return Math.max(0.85, base - capPenalty);
+  })();
+  const rookieMultiplier = (() => {
+    if (!isRookie) return 1;
+    if (draftRound === 1 && draftPick > 0 && draftPick <= 5) return isQB ? 1.24 : 1.18;
+    if (draftRound === 1 && draftPick > 0 && draftPick <= 10) return isQB ? 1.18 : 1.12;
+    if (draftRound === 1) return 1.08;
+    return 1.03;
+  })();
 
-  const pos = posAdj(p.position);
-  const ageFactor = ageAdj(age);
-  const dev = devAdj(p.devTrait);
-  const yrs = yearsAdj(yearsLeft);
-  const capHit = capAdj(cap, isRookie);
-  // Heavier weight for franchise QBs in prime window (ages 26-32) with high OVR/dev
-  let qbPrimeBoost = 0;
-  const isQB = p.position === 'QB';
-  const highOvrQB = isQB && ovr >= 85;
-  const primeAgeQB = isQB && age >= 26 && age <= 32;
-  if (highOvrQB) qbPrimeBoost += 0.12;
-  if (primeAgeQB) qbPrimeBoost += 0.15;
-  if (isQB && p.devTrait >= 2) qbPrimeBoost += 0.08; // SS/X get an extra nudge
-  // Young upside boost for any position
-  let youthUpside = 0;
-  if (age <= 24 && ovr >= 80) youthUpside += 0.18;
-  if (age <= 26 && ovr >= 85) youthUpside += 0.13;
-  // Young franchise QB bonus and athletic boost
-  if (isQB) {
-    if (age <= 25 && ovr >= 82) youthUpside += 0.22;
-    if (age <= 27 && ovr >= 85) youthUpside += 0.15;
-    if (p.devTrait >= 2) youthUpside += 0.08;
-    const qbAth = Math.max(0, ((spd + acc) / 2) - 80) / 40; // mobile QB bump slightly larger
-    qbPrimeBoost += qbAth;
-  }
-  // Rookie pedigree bump: top-round rookies carry extra value even at lower OVR
-  let rookiePedigree = 0;
-  if (isRookie && draftRound === 1) {
-    if (draftPick > 0 && draftPick <= 5) rookiePedigree += 0.35;
-    else if (draftPick > 0 && draftPick <= 10) rookiePedigree += 0.25;
-    else rookiePedigree += 0.18;
-    if (p.devTrait >= 2) rookiePedigree += 0.08;
-    // Extra bump for skill positions taken very high
-    const isSkill = ['QB', 'WR', 'HB', 'RB', 'TE'].includes(p.position);
-    if (isSkill && draftPick > 0 && draftPick <= 3) rookiePedigree += 0.06;
-  }
-  // Veteran decay for high OVR past prime
-  let vetDrag = 0;
-  if (age >= 30 && ovr >= 88) vetDrag -= 0.18;
-  if (age >= 32 && ovr >= 85) vetDrag -= 0.24;
-  if (age >= 34 && ovr >= 82) vetDrag -= 0.32;
-  if (age >= 35 && ovr >= 80) vetDrag -= 0.40;
+  const base = Math.max(0, (ovr - 60)) ** 2 * 0.18 + Math.max(0, (ovr - 60)) * 2.5;
+  let value = base
+    * (positionMultiplier[pos] || 0.96)
+    * ageMultiplier
+    * devMultiplier
+    * contractMultiplier
+    * rookieMultiplier;
 
-  const multiplier = 1.0
-    + pos
-    + ageFactor
-    + dev
-    + yrs
-    + capHit
-    + qbPrimeBoost
-    + youthUpside
-    + rookiePedigree
-    + vetDrag
-    + (athBoost * (isOffSkill || isDB || isEdge ? 1.1 : 0.6))
-    + blockBoost
-    + passRushBoost
-    + coverBoost;
-  const safeMultiplier = Math.max(0.2, multiplier); // prevent negative/zero
-  // Non-linear base to widen gap between elite and low OVR
-  const base = Math.pow(Math.max(0, ovr - 40), 2) / 10;
-  // Global spread to raise ceiling and widen separation
-  let value = base * safeMultiplier * 1.2; // boost overall range
-  if (ovr >= 96) value *= 1.12;
-  if (ovr >= 98) value *= 1.08;
-  // Floor elite QBs: 94+ → 500+, 90–93 → 400+
-  if (p.position === 'QB') {
-    if (ovr >= 94 && value < 500) value = 500;
-    else if (ovr >= 90 && value < 400) value = 400;
+  if (isQB && age >= 25 && age <= 31 && ovr >= 84) value *= 1.10;
+  if (!isQB && age <= 25 && ovr >= 84) value *= 1.06;
+  if (!['K', 'P', 'LS'].includes(pos)) value *= 1.08;
+
+  if (isRookie && draftRound === 1 && draftPick > 0) {
+    const rookieFloor = (() => {
+      if (isQB && draftPick <= 5) return 300;
+      if (isQB && draftPick <= 10) return 260;
+      if (draftPick <= 5) return 240;
+      if (draftPick <= 10) return 210;
+      return 0;
+    })();
+    if (rookieFloor > 0) value = Math.max(value, rookieFloor + Math.max(0, (ovr - 75) * 5));
   }
-  // Elite veteran floor: keep high-OVR vets from cratering
-  if (ovr >= 95 && age >= 34 && value < 250) {
-    value = 250 + (ovr - 95) * 12; // 95 -> 250, 99 -> 298
+
+  const eliteFloor = eliteFloorByPos[pos];
+  if (eliteFloor && ovr >= 95 && age <= 30) {
+    value = Math.max(value, eliteFloor + Math.max(0, (ovr - 95) * 18));
   }
-  // Rookie pedigree floors (keep top picks from looking cheap)
-  if (isRookie && draftRound === 1 && draftPick > 0 && draftPick <= 5) {
-    const floor = p.position === 'QB' ? 425 : 325;
-    if (value < floor) value = floor + Math.max(0, (ovr - 70) * 4);
-  } else if (isRookie && draftRound === 1 && draftPick > 0 && draftPick <= 10) {
-    const floor = p.position === 'QB' ? 360 : 300;
-    if (value < floor) value = floor + Math.max(0, (ovr - 70) * 3);
+
+  if (['K', 'P', 'LS'].includes(pos)) {
+    value = Math.min(value, pos === 'K' ? 35 : pos === 'P' ? 28 : 16);
   }
-  // Fallback rookie QB franchise floor (for cases missing draft data)
-  if (isQB && isRookie && age <= 22 && p.devTrait >= 2) {
-    const qbRookieFloor = 420 + Math.max(0, (ovr - 74) * 5); // 76 OVR -> 430
-    if (value < qbRookieFloor) value = qbRookieFloor;
+  if (value > 300) {
+    const softCap = isQB ? 1000 : 900;
+    const curve = isQB ? 260 : 220;
+    value = 300 + (softCap - 300) * (1 - Math.exp(-(value - 300) / curve));
   }
-  // Fallback rookie top-pick floor for non-QB skill positions when draft data present
-  if (isRookie && !isQB && ['WR', 'HB', 'RB', 'TE'].includes(p.position) && draftRound === 1 && draftPick > 0) {
-    let floor = 0;
-    if (draftPick === 1) floor = 360;
-    else if (draftPick <= 5) floor = 340;
-    else if (draftPick <= 10) floor = 310;
-    if (floor > 0 && value < floor) value = floor + Math.max(0, (ovr - 70) * 3);
-  }
-  // Fallback floor for elite rookie skill players when draft data missing
-  if (isRookie && !isQB && ['WR', 'HB', 'RB', 'TE'].includes(p.position) && draftRound === 0 && draftPick === 0) {
-    const baseFloor = (p.devTrait >= 2) ? 330 : 300;
-    const uplift = Math.max(0, (ovr - 70) * 3);
-    if (value < baseFloor) value = baseFloor + uplift;
-  }
-  // Clamp to global bounds to align with cross-sport scale
-  value = Math.min(1000, value);
-  return Math.max(40, Math.round(value * 10) / 10);
+  return Math.max(10, Math.round(value * 10) / 10);
 }
 
 function normalizeKey(str) {
@@ -230,34 +215,82 @@ function buildValueMap(snapshot) {
   return map;
 }
 
-function parsePickValue(label, seasonYear) {
-  // Flexible parse: allow "2026 Round 1 Pick 5", "Round 1 Pick 5", "1.05", "1st", etc.
+function averageRoundPickValue(round) {
+  let total = 0;
+  for (let pickNum = 1; pickNum <= 32; pickNum += 1) total += currentPickValue(round, pickNum);
+  return Math.round(total / 32);
+}
+
+function formatPickLabel(year, round, pickNum, viaTeam) {
+  const base = `${year} Round ${round}${pickNum ? ` Pick ${pickNum}` : ''}`;
+  return viaTeam ? `${base} via ${viaTeam}` : base;
+}
+
+export function getMaddenPickContext(snapshot) {
+  const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+  const seasonTitle = (seasonInfo.seasonTitle || '').toLowerCase();
+  const weekTypeRaw = seasonInfo.seasonWeekType ?? seasonInfo.seasonWeekTypeId ?? seasonInfo.weekType;
+  const weekType = Number.isFinite(Number(weekTypeRaw)) ? Number(weekTypeRaw) : 1;
+  const isRegularOrPost = weekType === 1 || weekType === 2;
+  const isOffseason =
+    weekType === 8 ||
+    seasonTitle.includes('offseason') ||
+    (seasonInfo.isDraftActive === false && seasonInfo.isLeagueStarted === true && !isRegularOrPost);
+  const seasonYear = Number(
+    snapshot?.info?.calendarYear
+    || seasonInfo?.calendarYear
+    || seasonInfo?.seasonYear
+    || new Date().getFullYear()
+  );
+  const draftBaseYear = isRegularOrPost ? seasonYear + 1 : seasonYear;
+  return {
+    isOffseason,
+    isRegularOrPost,
+    seasonYear,
+    draftBaseYear,
+    currentYearExactAllowed: isOffseason,
+  };
+}
+
+function parsePickValue(label, seasonYear, options = {}) {
+  // Flexible parse: allow "2026 Round 1 Pick 5", "2027 Round 1 via Jets", "Round 1 Pick 5", "1.05", "1st", etc.
   const trimmed = (label || '').trim();
   if (!trimmed) return null;
+  const viaMatch = trimmed.match(/\s+via\s+(.+)$/i);
+  const viaTeamRaw = viaMatch?.[1]?.trim() || '';
+  const coreLabel = viaMatch ? trimmed.slice(0, viaMatch.index).trim() : trimmed;
+  const viaTeam = viaTeamRaw.replace(/^\(|\)$/g, '').trim() || null;
   const season = seasonYear || new Date().getFullYear();
+  const currentYearExactAllowed = options.currentYearExactAllowed !== false;
+  const resolveViaTeam = typeof options.resolveViaTeam === 'function' ? options.resolveViaTeam : null;
+  const resolvedViaTeam = resolveViaTeam && viaTeam ? resolveViaTeam(viaTeam) : viaTeam;
   let year = season;
   let round = null;
   let pickNum = null;
+  let explicitYear = false;
 
   // try dot notation first: 1.10 (round.pick) optional year
-  const dotMatch = /^(\d{1,2})\.(\d{1,2})(?:\s+(\d{2,4}))?$/i.exec(trimmed);
+  const dotMatch = /^(\d{1,2})\.(\d{1,2})(?:\s+(\d{2,4}))?$/i.exec(coreLabel);
   if (dotMatch) {
     round = Number(dotMatch[1]);
     pickNum = Number(dotMatch[2]);
     if (dotMatch[3]) {
       const y = Number(dotMatch[3]);
       year = y < 100 ? 2000 + y : y;
+      explicitYear = true;
     }
   } else {
-    const nums = (trimmed.match(/\d+/g) || []).map(n => Number(n));
+    const nums = (coreLabel.match(/\d+/g) || []).map(n => Number(n));
     if (nums.length >= 3) {
       year = nums[0] >= 100 ? nums[0] : season;
       round = nums[1];
       pickNum = nums[2];
+      explicitYear = true;
     } else if (nums.length === 2) {
       if (nums[0] >= 100) {
         year = nums[0];
         round = nums[1];
+        explicitYear = true;
       } else {
         round = nums[0];
         pickNum = nums[1];
@@ -269,33 +302,31 @@ function parsePickValue(label, seasonYear) {
 
   if (!round || round < 1 || round > 7) return null;
   if (!year) year = season;
-  // derive pickNum midpoint if missing
-  if (!pickNum || pickNum < 1) {
-    const start = (round - 1) * 32 + 1;
-    const end = round * 32;
-    pickNum = Math.floor((start + end) / 2);
-  }
-  const pickValueCurve = currentPickValue(round, pickNum);
+  const seasonForCalc = season;
   const floorMap = { 1: 150, 2: 110, 3: 85, 4: 65, 5: 50, 6: 35, 7: 25 };
   const floor = floorMap[round] || 10;
   let value;
-  let labelPick = pickNum;
-  const isFuture = year > season;
-  if (isFuture) {
-    // Future picks: round averages aligned to new current curve (slightly discounted vs current year)
-    const futureBaseChart = { 1: 275, 2: 165, 3: 120, 4: 90, 5: 65, 6: 45, 7: 32 };
-    const baseFuture = futureBaseChart[round] || floor;
-    const diff = year - season;
-    const futureDecay = diff === 1 ? 0.85 : 0.7;
-    value = Math.max(5, Math.round(baseFuture * futureDecay));
-    if (round === 1 && diff === 1 && value < 250) value = 250;
+  let labelPick = pickNum && pickNum > 0 ? pickNum : null;
+  const isFuture = year > seasonForCalc;
+  const isCurrentYear = year === seasonForCalc;
+  const shouldAverageRound = isFuture || (isCurrentYear && !currentYearExactAllowed);
+  if (shouldAverageRound) {
+    const baseFuture = Math.max(floor, averageRoundPickValue(round));
+    const diff = year - seasonForCalc;
+    const decay = diff <= 0 ? 1 : diff === 1 ? 0.8 : 0.65;
+    value = Math.round(baseFuture * decay);
+    if (round === 1 && diff === 1 && value < 240) value = 240;
     if (round === 1 && diff >= 2 && value < 200) value = 200;
     labelPick = null;
   } else {
+    if (!pickNum || pickNum < 1) return null;
+    const pickValueCurve = currentPickValue(round, pickNum);
     value = Math.max(floor, pickValueCurve);
   }
-  const yearLabel = year ? year : season;
-  const normLabel = `Round ${round}${labelPick ? ` Pick ${labelPick}` : ''} (${yearLabel})`;
+  const originalOwner = resolvedViaTeam && Number(round) === 1
+    ? resolveOriginalPickOwner(resolvedViaTeam, year, round)
+    : (resolvedViaTeam || null);
+  const normLabel = formatPickLabel(year, round, labelPick, resolvedViaTeam);
   return {
     value: Math.max(5, Math.round(value)),
     label: normLabel,
@@ -303,10 +334,14 @@ function parsePickValue(label, seasonYear) {
     round,
     pickNum: labelPick,
     isFuture,
+    viaTeam: resolvedViaTeam,
+    originalOwner,
+    via: originalOwner ? originalOwner.slice(0, 3).toUpperCase() : undefined,
+    canonical: formatPickLabel(year, round, labelPick, resolvedViaTeam),
   };
 }
 
-function parseAssets(text, valueMap, seasonYear) {
+function parseAssets(text, valueMap, seasonYear, pickOptions = {}) {
   const parts = (text || '')
     .split(/[\n,]+/)
     .map(t => t.trim())
@@ -330,7 +365,7 @@ function parseAssets(text, valueMap, seasonYear) {
     const normStripped = normalizeKey(stripped);
     let entry = null;
     // picks first
-    const pickVal = parsePickValue(part, seasonYear);
+    const pickVal = parsePickValue(part, seasonYear, pickOptions);
     if (pickVal) {
       total += pickVal.value;
       matched.push({ label: pickVal.label, player: null, value: pickVal.value });
@@ -409,7 +444,7 @@ function teamDisplay(snapshot, teamName) {
     ].map(x => (x || '').toLowerCase());
     return cands.includes(teamName.toLowerCase());
   });
-  return t ? (t.displayName || t.nickName || t.cityName) : teamName;
+  return t ? getFullTeamName(t, teamName) : teamName;
 }
 
 const VALUE_THRESHOLD = 50;
@@ -418,7 +453,7 @@ function currentPickValue(round, pickNum) {
   // Compute overall pick number (cap at 224)
   const r = Math.max(1, Number(round) || 1);
   const p = Math.max(1, Number(pickNum) || 1);
-  const overall = Math.min(224, (r - 1) * 32 + p);
+  const overall = Math.min(224, p > 32 ? p : (r - 1) * 32 + p);
   // Hand-tuned top of round 1, then smooth decay
   if (overall === 1) return 800;
   if (overall === 2) return 525;
@@ -495,10 +530,12 @@ export async function execute(interaction) {
     const assetsSent = interaction.fields.getTextInputValue('assetsSent');
     const assetsReceived = interaction.fields.getTextInputValue('assetsReceived');
     const notes = interaction.fields.getTextInputValue('notes');
-    const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear;
+    const pickContext = getMaddenPickContext(snapshot);
+    const draftYearBase = Math.max(2027, pickContext.draftBaseYear);
     const valueMap = buildValueMap(snapshot);
-    const sendVal = parseAssets(assetsSent, valueMap, seasonYear);
-    const recvVal = parseAssets(assetsReceived, valueMap, seasonYear);
+    const pickOptions = { currentYearExactAllowed: pickContext.currentYearExactAllowed };
+    const sendVal = parseAssets(assetsSent, valueMap, draftYearBase, pickOptions);
+    const recvVal = parseAssets(assetsReceived, valueMap, draftYearBase, pickOptions);
     const gap = sendVal.total - recvVal.total;
     const sendItems = (sendVal.matched || sendVal.items || []).map(it => ({ name: it.label || it.name || it.asset || 'Asset', value: it.value ?? 0 }));
     const recvItems = (recvVal.matched || recvVal.items || []).map(it => ({ name: it.label || it.name || it.asset || 'Asset', value: it.value ?? 0 }));

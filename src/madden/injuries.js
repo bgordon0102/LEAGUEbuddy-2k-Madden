@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
 import { getMessageForWeek } from './madden_utils.js';
+import { appendMaddenStaffLog, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const LEAGUE_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const PREV_DIR = path.join(LEAGUE_DIR, 'previous');
@@ -15,8 +17,8 @@ function teamNameMap(snapshot) {
   const teams = snapshot?.teams?.leagueTeamInfoList || [];
   teams.forEach(t => {
     map[t.teamId] = {
-      name: t.displayName || t.nickName || t.cityName || `Team ${t.teamId}`,
-      abbr: t.abbrName || t.displayName || t.nickName || `T${t.teamId}`,
+      name: getFullTeamName(t, `Team ${t.teamId}`),
+      abbr: t.abbrName || getFullTeamName(t, `T${t.teamId}`),
     };
   });
   return map;
@@ -69,6 +71,33 @@ function formatInjury(p) {
   return `${playerLabel(p)} — ${status}`;
 }
 
+function isPremiumPosition(position = '') {
+  const pos = String(position || '').toUpperCase();
+  return ['QB', 'LT', 'RT', 'CB', 'WR', 'EDGE', 'LE', 'RE', 'DE'].includes(pos);
+}
+
+function isStaffNotableInjury(player, type, offSeasonStage = 0) {
+  const ovr = Number(player?.playerBestOvr || player?.teamSchemeOvr || player?.playerSchemeOvr || 0);
+  const weeks = Number(player?.injuryLength || 0);
+  const pos = String(player?.position || '').toUpperCase();
+  const inOffseason = Number(offSeasonStage || 0) > 0;
+
+  if (type === 'recovered') {
+    return ovr >= 88 || (pos === 'QB' && ovr >= 82);
+  }
+
+  if (inOffseason) {
+    return weeks >= 12 || (pos === 'QB' && weeks >= 4) || (ovr >= 90 && weeks >= 4);
+  }
+
+  return (
+    weeks >= 10 ||
+    (pos === 'QB' && weeks >= 3) ||
+    (ovr >= 88 && weeks >= 4) ||
+    (isPremiumPosition(pos) && ovr >= 84 && weeks >= 6)
+  );
+}
+
 function lastCompletedWeek(snapshot) {
   const currentWeek = snapshot.currentWeek ?? 0;
   const currentStage = snapshot.stage ?? snapshot.info?.careerHubInfo?.seasonInfo?.seasonWeekType ?? 1;
@@ -113,6 +142,7 @@ export async function updateInjuries(client, leagueId) {
   const teams = teamNameMap(curr);
   const prevPlayers = buildPlayerMap(prev).players;
   const currTeams = buildPlayerMap(curr).byTeam;
+  const notableInjuries = [];
   // Use prior week label for logs
   const prevWeekIdx = Math.max(0, (curr.currentWeek ?? 1) - 1);
   const weekEntry = curr.weeklyStats?.find(w => w.weekIndex === prevWeekIdx);
@@ -130,8 +160,17 @@ export async function updateInjuries(client, leagueId) {
       const isInjured = Number(player.injuryLength) > 0;
       if (isInjured && !wasInjured) {
         lines.push(`**New Injury** ${formatInjury(player)}`);
+        const ovr = Number(player.playerBestOvr || player.teamSchemeOvr || player.playerSchemeOvr || 0);
+        const weeks = Number(player.injuryLength || 0);
+        if (isStaffNotableInjury(player, 'new', offSeasonStage)) {
+          notableInjuries.push({ teamName: teams[teamId]?.name || 'Team', player, weeks, ovr, type: 'new' });
+        }
       } else if (!isInjured && wasInjured) {
         lines.push(`**Recovered** ${playerLabel(player)}`);
+        const ovr = Number(player.playerBestOvr || player.teamSchemeOvr || player.playerSchemeOvr || 0);
+        if (isStaffNotableInjury(player, 'recovered', offSeasonStage)) {
+          notableInjuries.push({ teamName: teams[teamId]?.name || 'Team', player, weeks: 0, ovr, type: 'recovered' });
+        }
       }
     }
     if (!lines.length) continue;
@@ -147,6 +186,31 @@ export async function updateInjuries(client, leagueId) {
         .setColor(0xdc3545)
         .setTimestamp(new Date());
       await channel.send({ embeds: [embed] }).catch(() => null);
+    }
+  }
+
+  if (notableInjuries.length) {
+    const lines = notableInjuries.slice(0, 6).map(({ teamName, player, weeks, ovr, type }) =>
+      type === 'new'
+        ? `${teamName}: ${playerLabel(player)} — out ${weeks} week${weeks === 1 ? '' : 's'}`
+        : `${teamName}: ${playerLabel(player)} — recovered`
+    );
+    appendMaddenStaffLog({
+      type: 'notable_injuries',
+      guildId: client.guilds.cache.first()?.id || null,
+      leagueId,
+      count: notableInjuries.length,
+      weekLabel,
+      lines,
+    });
+    for (const guild of client.guilds.cache.values()) {
+      await postMaddenStaffLog(
+        client,
+        guild.id,
+        'Notable Injury Watch',
+        `${weekLabel}: major injury movement worth staff attention.`,
+        [{ name: 'Highlights', value: lines.join('\n') }],
+      ).catch(() => null);
     }
   }
 }

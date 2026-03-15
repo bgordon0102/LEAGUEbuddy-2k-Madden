@@ -9,11 +9,10 @@ const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.js
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
 const LOGO_DIR = path.join(process.cwd(), 'college football logos');
 const POINTS_PER_WEEK = 60; // regular & postseason
-const BONUS_STEP = 10;
-const BONUS_CAP = 60; // additional, so max 120 total
-const TOTAL_CAP = 120;
 const COST_PER_REVEAL = 10;
 const OFFSEASON_POINTS = 300; // full offseason pool
+const BONUS_INCREMENT = 10;
+const MAX_WEEKLY_POINTS = 120;
 // Preferred position order for autocomplete (canonical names)
 const POS_ORDER = [
   'QB', 'HB', 'FB',
@@ -51,9 +50,18 @@ function appendScoutLog(entry) {
   saveJSON(SCOUT_LOG_PATH, log);
 }
 
-function classIdForSeason(calendarYear) {
-  // Mapping: 2025 -> cus_01, 2026 -> cus_02, 2027 -> cus_03, etc.
-  const idx = Math.max(1, (calendarYear || 2025) - 2025 + 1);
+function classIdForSnapshot(snapshot) {
+  const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
+  const seasonOrdinal = Number(
+    seasonInfo?.seasonYear
+    ?? snapshot?.info?.seasonYear
+    ?? snapshot?.seasonYear
+  );
+  if (Number.isFinite(seasonOrdinal) && seasonOrdinal >= 0 && seasonOrdinal < 50) {
+    return `cus_${String(seasonOrdinal + 1).padStart(2, '0')}`;
+  }
+  const calendarYear = Number(seasonInfo?.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear || 2025);
+  const idx = Math.max(1, calendarYear - 2024);
   return `cus_${String(idx).padStart(2, '0')}`;
 }
 
@@ -124,8 +132,7 @@ export async function autocomplete(interaction) {
   // Keep autocomplete fast to avoid Unknown interaction (3s limit)
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   const snapshot = leagueId ? loadLeagueSnapshot(leagueId) : null;
-  const calendarYear = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || snapshot?.calendarYear;
-  const classId = classIdForSeason(calendarYear);
+  const classId = classIdForSnapshot(snapshot);
   const { data: draftData, resolvedId: resolvedClassId } = loadDraftClass(classId);
   const focusedOpt = interaction.options.getFocused(true);
   const focusedVal = focusedOpt?.value?.toLowerCase() || '';
@@ -188,7 +195,7 @@ export async function execute(interaction) {
     return;
   }
 
-  const classId = classIdForSeason(calendarYear);
+  const classId = classIdForSnapshot(snapshot);
   const { data: draftData, resolvedId: resolvedClassId } = loadDraftClass(classId);
   const classKey = resolvedClassId || classId;
   if (!draftData) {
@@ -213,24 +220,19 @@ export async function execute(interaction) {
   // Load scouting data
   const scoutData = safeReadJSON(SCOUT_PATH, {});
   const userId = interaction.user.id;
-  if (!scoutData[userId]) scoutData[userId] = { players: {}, weeklyPoints: {}, bonus: {} };
+  if (!scoutData[userId]) scoutData[userId] = { players: {}, weeklyPoints: {} };
   const userData = scoutData[userId];
-  userData.bonus = userData.bonus || {};
-  const seasonKey = `year_${calendarYear}`;
-  const currentBonus = Math.min(Number(userData.bonus[seasonKey]) || 0, BONUS_CAP);
+  userData.weeklyPoints = userData.weeklyPoints || {};
+  userData.scoutingBonusBySeason = userData.scoutingBonusBySeason || {};
+  userData.scoutingBonusAwardedWeeks = userData.scoutingBonusAwardedWeeks || {};
+  const seasonBonusKey = `year_${calendarYear}`;
+  const seasonBonus = Math.max(0, Number(userData.scoutingBonusBySeason[seasonBonusKey] || 0));
   const weekKey = isOffseason ? `year_${calendarYear}_offseason_total` : `year_${calendarYear}_week_${currentWeek}`;
-  const defaultPoints = isOffseason ? OFFSEASON_POINTS : Math.min(POINTS_PER_WEEK + currentBonus, TOTAL_CAP);
-  // Ensure offseason pool is refreshed to full allotment before any spend
-  if (isOffseason) {
-    userData.weeklyPoints[weekKey] = OFFSEASON_POINTS;
-  }
+  const defaultPoints = isOffseason
+    ? OFFSEASON_POINTS
+    : Math.min(MAX_WEEKLY_POINTS, POINTS_PER_WEEK + seasonBonus);
   if (userData.weeklyPoints[weekKey] === undefined) {
     userData.weeklyPoints[weekKey] = defaultPoints;
-  } else {
-    // If the coach has a bonus and the week was seeded with the base 60, top it up to the correct bonus amount
-    if (!isOffseason && currentBonus > 0 && userData.weeklyPoints[weekKey] === POINTS_PER_WEEK) {
-      userData.weeklyPoints[weekKey] = defaultPoints;
-    }
   }
   let pointsLeft = Number(userData.weeklyPoints[weekKey]);
   if (!Number.isFinite(pointsLeft)) pointsLeft = defaultPoints;
@@ -253,11 +255,25 @@ export async function execute(interaction) {
   pointsLeft -= cost;
   if (!userData.players[classKey]) userData.players[classKey] = {};
   userData.players[classKey][player.name] = newUnlocked;
+  const suggestedScoutHit = userData.suggestedScout?.[classKey]?.[weekKey] === player.name;
+  if (suggestedScoutHit && newUnlocked.length >= 3) {
+    delete userData.suggestedScout[classKey][weekKey];
+  }
   // Ensure new scouted players are appended to the end of the user's board order
   userData.order = userData.order || {};
   userData.order[classKey] = Array.isArray(userData.order[classKey]) ? userData.order[classKey] : [];
   if (!userData.order[classKey].includes(player.name)) {
     userData.order[classKey].push(player.name);
+  }
+  let awardedBonus = 0;
+  if (!isOffseason && pointsLeft === 0 && !userData.scoutingBonusAwardedWeeks[weekKey] && defaultPoints < MAX_WEEKLY_POINTS) {
+    const nextBonus = Math.min(MAX_WEEKLY_POINTS - POINTS_PER_WEEK, seasonBonus + BONUS_INCREMENT);
+    awardedBonus = Math.max(0, nextBonus - seasonBonus);
+    if (awardedBonus > 0) {
+      userData.scoutingBonusBySeason[seasonBonusKey] = nextBonus;
+      userData.scoutingBonusAwardedWeeks[weekKey] = true;
+      pointsLeft += awardedBonus;
+    }
   }
   userData.weeklyPoints[weekKey] = pointsLeft;
   saveJSON(SCOUT_PATH, scoutData);
@@ -268,15 +284,26 @@ export async function execute(interaction) {
     username: interaction.user?.tag || interaction.user?.username || '',
     guildId: interaction.guildId || null,
     classId,
+    resolvedClassId: classKey,
     player: player.name,
     position: player.position,
     school: player.school || null,
+    boardPosition: player.RNK ?? player.rank ?? player.order ?? player['#'] ?? null,
+    archetype: player.archetype_1 || player.archetype_2 || null,
+    overall: player.overall ?? null,
+    devTrait: player.dev_trait ?? null,
     unlockedCategory: nextCat,
+    unlockCount: newUnlocked.length,
+    fullyScouted: newUnlocked.length >= 3,
     weekKey,
     seasonYear: calendarYear,
     currentWeek,
     stage: seasonWeekType,
     pointsLeft,
+    pointsSpent: cost,
+    weeklyAllowance: defaultPoints,
+    awardedBonus,
+    suggestedScoutHit,
   });
 
   const devEmojis = safeReadJSON(DEV_EMOJI_PATH, {});
@@ -295,7 +322,7 @@ export async function execute(interaction) {
   const embed = new EmbedBuilder()
     .setTitle(`${player.position} ${player.name}${yearLabel}`)
     .setDescription(fields.join('\n') || 'No info unlocked yet.')
-    .setFooter({ text: `Used 10 pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason (300 total)' : `this week (${defaultPoints})`}. Class ${classId.toUpperCase()}` })
+    .setFooter({ text: `Used 10 pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason (300 total)' : `this week (${Math.min(MAX_WEEKLY_POINTS, POINTS_PER_WEEK + Number(userData.scoutingBonusBySeason[seasonBonusKey] || 0))})`}. Class ${classKey.toUpperCase()}` })
     .setColor(0x1e90ff);
   const metaFields = [];
   const boardPos = player.RNK ?? player.rank ?? player.order ?? player['#'];
@@ -327,25 +354,17 @@ export async function execute(interaction) {
     files.push({ attachment: logo.attachment, name: logo.name });
     embed.setImage(`attachment://${logo.name}`);
   }
+  if (awardedBonus > 0) {
+    embed.addFields({
+      name: 'Scouting Bonus Earned',
+      value: `You used your full weekly scouting pool and unlocked +${awardedBonus} weekly points going forward. New weekly cap: ${Math.min(MAX_WEEKLY_POINTS, POINTS_PER_WEEK + Number(userData.scoutingBonusBySeason[seasonBonusKey] || 0))}.`,
+      inline: false
+    });
+  }
 
   const payload = { embeds: [embed], files };
   if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
   else await interaction.reply({ ...payload, flags: 64 });
-
-  // Bonus accrual: if regular/post season and user spent entire allotment this week, grant +10 (cap 120) for future weeks
-  if (!isOffseason && pointsLeft <= 0) {
-    const newBonus = Math.min(currentBonus + BONUS_STEP, BONUS_CAP);
-    if (newBonus > currentBonus) {
-      userData.bonus[seasonKey] = newBonus;
-      saveJSON(SCOUT_PATH, scoutData);
-      const bonusMsg = `Bonus unlocked: +${BONUS_STEP} scouting points weekly for the rest of the season (now ${Math.min(POINTS_PER_WEEK + newBonus, TOTAL_CAP)} max, cap ${TOTAL_CAP}).`;
-      try {
-        await interaction.followUp({ content: bonusMsg, flags: 64 });
-      } catch {}
-    } else {
-      saveJSON(SCOUT_PATH, scoutData);
-    }
-  }
 }
 
 export default { data, execute, autocomplete };

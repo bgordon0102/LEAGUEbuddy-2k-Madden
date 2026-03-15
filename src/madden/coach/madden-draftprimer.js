@@ -3,9 +3,11 @@ import fs from 'fs';
 import path from 'path';
 import { deriveTeamNeeds, loadTeamEmojis, formatTeamEmoji, draftOrder, applyPickTrades } from './mockdraft.js';
 import { computeSeasonTop100FromHistory } from '../top_players.js';
+import { buildLiveDraftContext, loadLatestLeagueSnapshot, getSeasonPhaseContext } from './draft_live_data.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
-const PLAYER_STATS_PATH = path.join(process.cwd(), 'data', 'madden', 'player_stats.json');
+const CURRENT_CLASS_ID = 'CUS02';
 const POS_ALIAS = { EDGE: 'REDG', REDGE: 'REDG', LEDGE: 'LEDG' };
 const POSITION_NEEDS = {
     // Offense
@@ -21,6 +23,134 @@ const POSITION_NEEDS = {
 
 function normalizeName(name = '') {
     return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function normalizePositionCode(pos = '') {
+    const code = (pos || '').trim().toUpperCase();
+    return POS_ALIAS[code] || code;
+}
+
+function formatNeedLabel(need) {
+    const labels = {
+        QB: 'Quarterback',
+        OT: 'Offensive Tackle',
+        IOL: 'Interior OL',
+        WR: 'Wide Receiver',
+        TE: 'Tight End',
+        RB: 'Running Back',
+        EDGE: 'Edge Rusher',
+        DT: 'Defensive Tackle',
+        LB: 'Linebacker',
+        CB: 'Cornerback',
+        S: 'Safety',
+        BPA: 'Best Player Available',
+    };
+    return labels[need] || need || 'Need';
+}
+
+function getProspectArchetype(prospect) {
+    const raw = prospect?.archetype_1 || prospect?.archetype1 || prospect?.archetype || prospect?.Archetype || '';
+    if (!raw) return '';
+    if (/^hyrbid$/i.test(raw)) return 'Hybrid';
+    return String(raw).trim();
+}
+
+function articleFor(text = '') {
+    return /^[aeiou]/i.test(text.trim()) ? 'an' : 'a';
+}
+
+function formatArchetypeLabel(need, prospect) {
+    const archetype = getProspectArchetype(prospect);
+    return archetype || null;
+}
+
+function formatArchetype(need, prospect) {
+    const label = formatArchetypeLabel(need, prospect);
+    if (label) {
+        const nounMap = {
+            QB: 'quarterback',
+            OT: 'tackle',
+            IOL: 'interior lineman',
+            WR: 'receiver',
+            TE: 'tight end',
+            RB: 'back',
+            EDGE: 'edge rusher',
+            DT: 'defensive tackle',
+            LB: 'linebacker',
+            CB: 'corner',
+            S: 'safety',
+            BPA: 'prospect',
+        };
+        const lower = label.toLowerCase();
+        const hasRoleWord = ['back', 'rusher', 'corner', 'safety', 'tackle', 'receiver', 'quarterback', 'tight end', 'linebacker', 'lineman']
+            .some((word) => lower.includes(word));
+        const roleLabel = hasRoleWord ? label : `${label} ${nounMap[need] || 'prospect'}`;
+        const article = articleFor(roleLabel);
+        const tailored = {
+            QB: `target ${article} ${roleLabel} who can steady the room or take it over within a year`,
+            OT: `target ${article} ${roleLabel} who matches your protection profile on the edge`,
+            IOL: `target ${article} ${roleLabel} who can stabilize the pocket and firm up inside runs`,
+            WR: `target ${article} ${roleLabel} who complements the current receiver room instead of duplicating it`,
+            TE: `target ${article} ${roleLabel} who actually changes how you can call the offense`,
+            RB: `target ${article} ${roleLabel} who changes pace, contact balance, or passing-down value`,
+            EDGE: `target ${article} ${roleLabel} who fits how you want to generate pressure`,
+            DT: `target ${article} ${roleLabel} who fixes the interior issue you are actually seeing on tape`,
+            LB: `target ${article} ${roleLabel} who fits your coverage and run-fit demands`,
+            CB: `target ${article} ${roleLabel} who matches the coverages you lean on most`,
+            S: `target ${article} ${roleLabel} who gives the back end the right range or downhill presence`,
+            BPA: `lean into ${article} ${roleLabel} if premium value falls`,
+        };
+        return tailored[need] || tailored.BPA;
+    }
+    const archetypes = {
+        QB: 'target a quarterback who can start within a year',
+        OT: 'prioritize length, pass-set range, and recovery feet on the edge',
+        IOL: 'look for a sturdy anchor who can survive power and clean up A-gap pressure',
+        WR: 'target a receiver who adds a missing dimension to the room',
+        TE: 'look for a tight end who adds third-down value',
+        RB: 'target burst, tackle-breaking, and enough vision to create explosives',
+        EDGE: 'prioritize first-step juice and speed-to-power finishing',
+        DT: 'target a pocket-collapsing 3-tech or a true run-anchor nose',
+        LB: 'look for a three-down run-and-chase backer with coverage range',
+        CB: 'target a cover corner with recovery speed',
+        S: 'look for range on the roof or a downhill chess piece who can disguise coverages',
+        BPA: 'stay on premium talent and lean into upside',
+    };
+    return archetypes[need] || archetypes.BPA;
+}
+
+function formatShortArchetype(need, prospect) {
+    return formatArchetypeLabel(need, prospect) || ({
+        QB: 'Quarterback',
+        OT: 'Tackle',
+        IOL: 'Interior OL',
+        WR: 'Receiver',
+        TE: 'Tight End',
+        RB: 'Back',
+        EDGE: 'Edge Rusher',
+        DT: 'DT',
+        LB: 'Linebacker',
+        CB: 'Corner',
+        S: 'Safety',
+        BPA: 'Value',
+    }[need] || 'Prospect');
+}
+
+function formatPhaseFooter(seasonContext, draftYear) {
+    if (!seasonContext) return `${draftYear} planning lens`;
+    if (!seasonContext.isInSeason) return `${seasonContext.phaseLabel} planning lens • ${draftYear} class`;
+    if (seasonContext.completedRegularWeeks > 0) {
+        return `${seasonContext.phaseLabel} • through ${seasonContext.completedRegularWeeks} game${seasonContext.completedRegularWeeks === 1 ? '' : 's'} • ${draftYear} class`;
+    }
+    return `${seasonContext.phaseLabel} planning lens • ${draftYear} class`;
+}
+
+function getUpcomingDraftYear(league) {
+    const seasonInfo = league?.info?.careerHubInfo?.seasonInfo || {};
+    const calendarYear = seasonInfo?.calendarYear || league?.info?.calendarYear || league?.calendarYear || 2025;
+    const weekTypeRaw = seasonInfo.seasonWeekType ?? seasonInfo.seasonWeekTypeId ?? seasonInfo.weekType;
+    const weekType = Number.isFinite(Number(weekTypeRaw)) ? Number(weekTypeRaw) : 1;
+    return (weekType === 1 || weekType === 2) ? Number(calendarYear) + 1 : Number(calendarYear);
 }
 
 function getMetricOvr(p) {
@@ -91,8 +221,7 @@ function buildAllProTeams(list) {
 }
 
 function mapPositionToNeed(player) {
-    const pos = (player.position || player.position_1 || '').trim().toUpperCase();
-    if (POS_ALIAS[pos]) pos = POS_ALIAS[pos];
+    let pos = normalizePositionCode(player.position || player.position_1 || '');
     if (pos === 'QB') return 'QB';
     if (['LT', 'RT'].includes(pos)) return 'OT';
     if (['LG', 'C', 'RG'].includes(pos)) return 'IOL';
@@ -108,27 +237,67 @@ function mapPositionToNeed(player) {
 }
 
 function resolveTeamNeeds(teamName, league, needsByTeam) {
-    // Try exact normalized match first
-    const norm = normalizeName(teamName);
+    const clean = (s) => normalizeName((s || '').replace(/\(via.*$/i, '').trim());
+    const norm = clean(teamName);
     if (needsByTeam[norm]) return needsByTeam[norm];
 
     const leagueTeamsNeed = league?.teams?.leagueTeamInfoList || [];
+    const aliasMap = {
+        patriots: 'newenglandpatriots',
+        nepatriots: 'newenglandpatriots',
+        ne: 'newenglandpatriots',
+        '49ers': 'sanfrancisco49ers',
+        sf49ers: 'sanfrancisco49ers',
+        sf: 'sanfrancisco49ers',
+        niners: 'sanfrancisco49ers',
+        giants: 'newyorkgiants',
+        nyg: 'newyorkgiants',
+        buccaneers: 'tampabaybuccaneers',
+        tb: 'tampabaybuccaneers',
+        tbbuccaneers: 'tampabaybuccaneers',
+        bucs: 'tampabaybuccaneers',
+        vikings: 'minnesotavikings',
+        min: 'minnesotavikings',
+        dolphins: 'miamidolphins',
+        mia: 'miamidolphins',
+        jaguars: 'jacksonvillejaguars',
+        jax: 'jacksonvillejaguars',
+        chargers: 'losangeleschargers',
+        lac: 'losangeleschargers',
+    };
+
+    const variants = new Set([norm]);
     for (const t of leagueTeamsNeed) {
-        const candidates = [
+        const cand = [
+            getFullTeamName(t, ''),
             `${t.cityName || ''} ${t.nickName || ''}`,
             t.nickName,
             t.displayName,
             t.abbrName,
             t.cityName,
-        ].filter(Boolean).map(normalizeName);
-        if (candidates.includes(norm)) {
-            const key = candidates[0]; // normalized city+nick
-            return needsByTeam[key] || needsByTeam[normalizeName(t.nickName || '')] || [];
-        }
+        ].filter(Boolean).map(clean);
+        cand.forEach(v => variants.add(v));
     }
-    // Fallback: find closest that contains the norm
-    const fuzzy = Object.entries(needsByTeam).find(([k]) => k.includes(norm) || norm.includes(k));
-    return fuzzy ? fuzzy[1] : [];
+    for (const v of [...variants]) {
+        const alias = aliasMap[v];
+        if (alias) variants.add(alias);
+    }
+
+    for (const v of variants) {
+        if (needsByTeam[v]) return needsByTeam[v];
+    }
+    // Fuzzy contains
+    for (const v of variants) {
+        const hit = Object.entries(needsByTeam).find(([k]) => k.includes(v) || v.includes(k));
+        if (hit) return hit[1];
+    }
+    // Mascot-only last token
+    const mascot = norm.split(/[^a-z0-9]+/).filter(Boolean).pop();
+    if (mascot) {
+        const hit = Object.entries(needsByTeam).find(([k]) => k.endsWith(mascot) || k.includes(mascot));
+        if (hit) return hit[1];
+    }
+    return ['BPA'];
 }
 
 function qbDepthStatus(teamName, league) {
@@ -139,6 +308,7 @@ function qbDepthStatus(teamName, league) {
     let depthTeamId = null;
     for (const t of leagueTeamsDepth) {
         const candidates = [
+            getFullTeamName(t, ''),
             `${t.cityName || ''} ${t.nickName || ''}`,
             t.nickName,
             t.displayName,
@@ -166,10 +336,10 @@ function loadDraftClass() {
     const dir = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
     if (!fs.existsSync(dir)) return [];
     const files = fs.readdirSync(dir)
-        .filter(f => f.toLowerCase().includes('cus') && f.toLowerCase().includes('big board') && f.endsWith('.json'))
+        .filter(f => f.toLowerCase().includes(CURRENT_CLASS_ID.toLowerCase()) && f.toLowerCase().includes('big board') && f.endsWith('.json'))
         .sort();
     if (!files.length) return [];
-    const data = JSON.parse(fs.readFileSync(path.join(dir, files[files.length - 1]), 'utf8'));
+    const data = JSON.parse(fs.readFileSync(path.join(dir, files[0]), 'utf8'));
     return Object.values(data).filter(p => p && p.name);
 }
 
@@ -203,21 +373,14 @@ export async function execute(interaction) {
             throw err;
         }
     }
-    // Load latest league file
-    const leagueFile = (() => {
-        const dir = path.join(process.cwd(), 'data', 'madden', 'leagues');
-        if (!fs.existsSync(dir)) return null;
-        const files = fs.readdirSync(dir)
-            .filter(f => f.endsWith('.json'))
-            .map(f => ({ f, time: fs.statSync(path.join(dir, f)).mtimeMs }))
-            .sort((a, b) => b.time - a.time);
-        return files.length ? path.join(dir, files[0].f) : null;
-    })();
-    if (!leagueFile) {
-        await interaction.reply({ content: 'No league snapshot found.', ephemeral: true });
+    const latestSnapshot = loadLatestLeagueSnapshot();
+    const leagueFile = latestSnapshot?.file || null;
+    if (!leagueFile || !latestSnapshot?.league) {
+        if (interaction.deferred || interaction.replied) await interaction.editReply({ content: 'No league snapshot found.', embeds: [], components: [] });
+        else await interaction.reply({ content: 'No league snapshot found.', flags: 64 });
         return;
     }
-    const league = JSON.parse(fs.readFileSync(leagueFile, 'utf8'));
+    const league = latestSnapshot.league;
     const leagueId = league?.info?.leagueId || league?.leagueId || league?.info?.leagueInfo?.leagueId || 'default';
 
     // Resolve teamId early (used throughout)
@@ -225,6 +388,7 @@ export async function execute(interaction) {
     let teamId = null;
     for (const t of leagueTeamsAll) {
         const candidates = [
+            getFullTeamName(t, ''),
             `${t.cityName || ''} ${t.nickName || ''}`,
             t.nickName,
             t.displayName,
@@ -239,233 +403,43 @@ export async function execute(interaction) {
     }
     if (teamId === null) {
         const target = normalizeName(teamName);
-        const hit = leagueTeamsAll.find(t => normalizeName(t.displayName || t.nickName || '').includes(target));
+        const hit = leagueTeamsAll.find(t => normalizeName(getFullTeamName(t, '')).includes(target));
         if (hit) teamId = Number(hit.teamId);
     }
 
-    // Load prebuilt team stats (authoritative) and fall back to inline aggregation if missing
-    let seasonAgg = {};
-    let seasonCounts = {};
-    let playerAgg = {};
-    const playerStats = fs.existsSync(PLAYER_STATS_PATH) ? JSON.parse(fs.readFileSync(PLAYER_STATS_PATH, 'utf8')) : {};
-    const rosterNameById = {};
-    const rosterAgeById = {};
-    const rosterOvrById = {};
-    const rosterYearsLeftById = {};
-    for (const [tidStr, rosterTeam] of Object.entries(league.rosters?.teams || {})) {
-        for (const p of rosterTeam?.rosterInfoList || []) {
-            rosterNameById[p.rosterId] = p.displayName || `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Unknown';
-            rosterAgeById[p.rosterId] = p.age ?? p.playerAge ?? null;
-            rosterOvrById[p.rosterId] = getMetricOvr(p);
-            rosterYearsLeftById[p.rosterId] = p.contractYearsLeft ?? p.contractLength ?? null;
-        }
-    }
-    const TEAM_STATS_PATH = path.join(process.cwd(), 'data', 'madden', 'team_stats.json');
-    const teamNameById = Object.fromEntries((league.teams?.leagueTeamInfoList || []).map(t => [Number(t.teamId), `${t.cityName || ''} ${t.nickName || ''}`.trim() || t.displayName || t.abbrName || String(t.teamId)]));
-    const useTeamStatsFile = fs.existsSync(TEAM_STATS_PATH);
-    if (useTeamStatsFile) {
-        seasonAgg = JSON.parse(fs.readFileSync(TEAM_STATS_PATH, 'utf8'));
-        // counts: assume data present for categories where numbers exist
-        seasonCounts = Object.fromEntries(Object.entries(seasonAgg).map(([tid, stats]) => {
-            const c = {};
-            if (stats.pass?.yds !== undefined) c.pass = 1;
-            if (stats.rush?.yds !== undefined) c.rush = 1;
-            if (stats.rec?.yds !== undefined) c.rec = 1;
-            if (stats.def?.sacks !== undefined) c.def = 1;
-            return [tid, c];
-        }));
-        playerAgg = {}; // not needed when using prebuilt team stats
-        // Fill gaps with weekly aggregation if a team is missing in team_stats.json
-        const presentIds = new Set(Object.keys(seasonAgg).map(k => String(k)));
-        const presentNames = new Set(Object.values(seasonAgg).map(s => normalizeName(s.teamName || '')));
-        const bumpCount = (map, teamId, cat) => {
-            map[teamId] = map[teamId] || {};
-            map[teamId][cat] = (map[teamId][cat] || 0) + 1;
-        };
-        const latestSeason = Math.max(...(league.weeklyStats || [{ seasonIndex: 0 }]).map(w => w.seasonIndex || 0));
-        const isRegularSeason = (w) => {
-            const stage = w.stage ?? w.stageIndex;
-            return stage === 1;
-        };
-        for (const week of (league.weeklyStats || [])
-            .filter(w => (w.seasonIndex || 0) === latestSeason)
-            .filter(w => isRegularSeason(w))
-            .filter(w => (w.weekIndex ?? 0) <= 18)) {
-            const addAgg = (obj, key, val) => {
-                if (val === undefined || val === null) return;
-                obj[key] = (obj[key] || 0) + val;
-            };
-            const ensureTeam = (tid) => {
-                const tidStr = String(tid);
-                if (!presentIds.has(tidStr)) {
-                    seasonAgg[tid] = seasonAgg[tid] || {};
-                }
-                return seasonAgg[tid];
-            };
-            for (const p of week.passing?.playerPassingStatInfoList || []) {
-                const tidStr = String(p.teamId);
-                const teamNameNorm = normalizeName(teamNameById[p.teamId] || '');
-                if (presentIds.has(tidStr) || presentNames.has(teamNameNorm)) continue; // already covered by prebuilt stats
-                const team = ensureTeam(p.teamId);
-                const pass = team.pass || (team.pass = { yds: 0, td: 0, int: 0, sacksTaken: 0, comp: 0, att: 0 });
-                addAgg(pass, 'yds', p.passYds);
-                addAgg(pass, 'td', p.passTDs);
-                addAgg(pass, 'int', p.passInts);
-                addAgg(pass, 'comp', p.passComp);
-                addAgg(pass, 'att', p.passAtt);
-                addAgg(pass, 'sacksTaken', p.passSacks);
-                bumpCount(seasonCounts, p.teamId, 'pass');
-                if (p.rosterId != null) {
-                    const name = rosterNameById[p.rosterId] || p.fullName || 'Player';
-                    playerAgg[p.rosterId] = playerAgg[p.rosterId] || { teamId: p.teamId, name };
-                    addAgg(playerAgg[p.rosterId], 'passYds', p.passYds);
-                    addAgg(playerAgg[p.rosterId], 'passTDs', p.passTDs);
-                    addAgg(playerAgg[p.rosterId], 'passInts', p.passInts);
-                    addAgg(playerAgg[p.rosterId], 'passComp', p.passComp);
-                    addAgg(playerAgg[p.rosterId], 'passAtt', p.passAtt);
-                }
-            }
-            for (const r of week.rushing?.playerRushingStatInfoList || []) {
-                const tidStr = String(r.teamId);
-                const teamNameNorm = normalizeName(teamNameById[r.teamId] || '');
-                if (presentIds.has(tidStr) || presentNames.has(teamNameNorm)) continue;
-                const team = ensureTeam(r.teamId);
-                const rush = team.rush || (team.rush = { yds: 0, td: 0, att: 0 });
-                addAgg(rush, 'yds', r.rushYds);
-                addAgg(rush, 'td', r.rushTDs);
-                addAgg(rush, 'att', r.rushAtt);
-                bumpCount(seasonCounts, r.teamId, 'rush');
-                if (r.rosterId != null) {
-                    const name = rosterNameById[r.rosterId] || r.fullName || 'Player';
-                    playerAgg[r.rosterId] = playerAgg[r.rosterId] || { teamId: r.teamId, name };
-                    addAgg(playerAgg[r.rosterId], 'rushYds', r.rushYds);
-                    addAgg(playerAgg[r.rosterId], 'rushAtt', r.rushAtt);
-                    addAgg(playerAgg[r.rosterId], 'rushTDs', r.rushTDs);
-                }
-            }
-            for (const r of week.receiving?.playerReceivingStatInfoList || []) {
-                const tidStr = String(r.teamId);
-                const teamNameNorm = normalizeName(teamNameById[r.teamId] || '');
-                if (presentIds.has(tidStr) || presentNames.has(teamNameNorm)) continue;
-                const team = ensureTeam(r.teamId);
-                const rec = team.rec || (team.rec = { yds: 0, td: 0 });
-                addAgg(rec, 'yds', r.recYds);
-                addAgg(rec, 'td', r.recTDs);
-                bumpCount(seasonCounts, r.teamId, 'rec');
-                if (r.rosterId != null) {
-                    const name = rosterNameById[r.rosterId] || r.fullName || 'Player';
-                    playerAgg[r.rosterId] = playerAgg[r.rosterId] || { teamId: r.teamId, name };
-                    addAgg(playerAgg[r.rosterId], 'recYds', r.recYds);
-                    addAgg(playerAgg[r.rosterId], 'recTDs', r.recTDs);
-                }
-            }
-            for (const d of week.defense?.playerDefensiveStatInfoList || []) {
-                const tidStr = String(d.teamId);
-                const teamNameNorm = normalizeName(teamNameById[d.teamId] || '');
-                if (presentIds.has(tidStr) || presentNames.has(teamNameNorm)) continue;
-                const team = ensureTeam(d.teamId);
-                const def = team.def || (team.def = { sacks: 0, ints: 0 });
-                addAgg(def, 'sacks', d.defSacks);
-                addAgg(def, 'ints', d.defInts);
-                bumpCount(seasonCounts, d.teamId, 'def');
-                if (d.rosterId != null) {
-                    const name = rosterNameById[d.rosterId] || d.fullName || 'Player';
-                    playerAgg[d.rosterId] = playerAgg[d.rosterId] || { teamId: d.teamId, name };
-                    addAgg(playerAgg[d.rosterId], 'sacks', d.defSacks);
-                    addAgg(playerAgg[d.rosterId], 'ints', d.defInts);
-                }
-            }
-        }
-    } else {
-        seasonAgg = {};
-        seasonCounts = {};
-        playerAgg = {};
-        const bumpCount = (teamId, cat) => {
-            if (teamId === undefined || teamId === null) return;
-            seasonCounts[teamId] = seasonCounts[teamId] || {};
-            seasonCounts[teamId][cat] = (seasonCounts[teamId][cat] || 0) + 1;
-        };
-        function addAgg(obj, key, val) {
-            if (val === undefined || val === null) return;
-            obj[key] = (obj[key] || 0) + val;
-        }
-        // Only aggregate the latest seasonIndex, regular season only (stage=1), up to week 18
-        const latestSeason = Math.max(...(league.weeklyStats || [{ seasonIndex: 0 }]).map(w => w.seasonIndex || 0));
-        const isRegularSeason = (w) => {
-            const stage = w.stage ?? w.stageIndex;
-            return stage === 1;
-        };
-        for (const week of (league.weeklyStats || [])
-            .filter(w => (w.seasonIndex || 0) === latestSeason)
-            .filter(w => isRegularSeason(w))
-            .filter(w => (w.weekIndex ?? 0) <= 18)) {
-            const passing = week.passing?.playerPassingStatInfoList || [];
-            for (const p of passing) {
-                const tid = p.teamId;
-                seasonAgg[tid] = seasonAgg[tid] || {};
-                addAgg(seasonAgg[tid], 'passYds', p.passYds);
-                addAgg(seasonAgg[tid], 'passSacksTaken', p.passSacks);
-                addAgg(seasonAgg[tid], 'passTDs', p.passTDs);
-                addAgg(seasonAgg[tid], 'passInts', p.passInts);
-                addAgg(seasonAgg[tid], 'passComp', p.passComp);
-                addAgg(seasonAgg[tid], 'passAtt', p.passAtt);
-                bumpCount(tid, 'pass');
-                const pid = p.rosterId;
-                if (pid != null) {
-                    playerAgg[pid] = playerAgg[pid] || { teamId: tid, name: rosterNameById[pid] || p.fullName || 'Player' };
-                    addAgg(playerAgg[pid], 'passYds', p.passYds);
-                    addAgg(playerAgg[pid], 'passTDs', p.passTDs);
-                    addAgg(playerAgg[pid], 'passInts', p.passInts);
-                    addAgg(playerAgg[pid], 'passComp', p.passComp);
-                    addAgg(playerAgg[pid], 'passAtt', p.passAtt);
-                }
-            }
-            const rushing = week.rushing?.playerRushingStatInfoList || [];
-            for (const r of rushing) {
-                const tid = r.teamId;
-                seasonAgg[tid] = seasonAgg[tid] || {};
-                addAgg(seasonAgg[tid], 'rushYds', r.rushYds);
-                addAgg(seasonAgg[tid], 'rushAtt', r.rushAtt);
-                addAgg(seasonAgg[tid], 'rushTDs', r.rushTDs);
-                bumpCount(tid, 'rush');
-                const pid = r.rosterId;
-                if (pid != null) {
-                    playerAgg[pid] = playerAgg[pid] || { teamId: tid, name: rosterNameById[pid] || r.fullName || 'Player' };
-                    addAgg(playerAgg[pid], 'rushYds', r.rushYds);
-                    addAgg(playerAgg[pid], 'rushAtt', r.rushAtt);
-                    addAgg(playerAgg[pid], 'rushTDs', r.rushTDs);
-                }
-            }
-            const receiving = week.receiving?.playerReceivingStatInfoList || [];
-            for (const r of receiving) {
-                const tid = r.teamId;
-                seasonAgg[tid] = seasonAgg[tid] || {};
-                addAgg(seasonAgg[tid], 'recYds', r.recYds);
-                addAgg(seasonAgg[tid], 'recTDs', r.recTDs);
-                bumpCount(tid, 'rec');
-                const pid = r.rosterId;
-                if (pid != null) {
-                    playerAgg[pid] = playerAgg[pid] || { teamId: tid, name: rosterNameById[pid] || r.fullName || 'Player' };
-                    addAgg(playerAgg[pid], 'recYds', r.recYds);
-                    addAgg(playerAgg[pid], 'recTDs', r.recTDs);
-                }
-            }
-            const defense = week.defense?.playerDefensiveStatInfoList || [];
-            for (const d of defense) {
-                const tid = d.teamId;
-                seasonAgg[tid] = seasonAgg[tid] || {};
-                addAgg(seasonAgg[tid], 'defSacks', d.defSacks);
-                addAgg(seasonAgg[tid], 'defInts', d.defInts);
-                bumpCount(tid, 'def');
-                const pid = d.rosterId;
-                if (pid != null) {
-                    playerAgg[pid] = playerAgg[pid] || { teamId: tid, name: rosterNameById[pid] || d.fullName || 'Player' };
-                    addAgg(playerAgg[pid], 'sacks', d.defSacks);
-                    addAgg(playerAgg[pid], 'ints', d.defInts);
-                }
-            }
-        }
-    }
+    const live = buildLiveDraftContext(league);
+    const seasonContext = live.seasonContext || getSeasonPhaseContext(league, 0);
+    const seasonAgg = live.teamStatsByTeamId || {};
+    const seasonCounts = live.seasonCountsByTeamId || {};
+    const playerAgg = live.playerStatsByRosterId || {};
+    const rosterMetaById = live.rosterMetaById || {};
+    const teamNameById = live.teamNameById || {};
+    const rosterAgeById = Object.fromEntries(Object.values(rosterMetaById).map((p) => [p.rosterId, p.age]));
+    const rosterOvrById = Object.fromEntries(Object.values(rosterMetaById).map((p) => [p.rosterId, p.overall]));
+    const rosterYearsLeftById = Object.fromEntries(Object.values(rosterMetaById).map((p) => [p.rosterId, p.yearsLeft]));
+    const completedWeeks = Math.max(0, Number(seasonContext.completedRegularWeeks || 0));
+    const progressPrefix = completedWeeks > 0 ? `Through ${completedWeeks} game${completedWeeks === 1 ? '' : 's'}, ` : '';
+    const paceText = (value, precision = 0) => {
+        if (!seasonContext.isInSeason || !completedWeeks || !Number.isFinite(Number(value))) return null;
+        const projected = (Number(value) / completedWeeks) * 17;
+        return Number(projected).toFixed(precision);
+    };
+    const projectedSeasonValue = (value) => {
+        if (!seasonContext.isInSeason || !completedWeeks || !Number.isFinite(Number(value))) return null;
+        return (Number(value) / completedWeeks) * 17;
+    };
+    const productionText = (value, unit, precision = 0) => {
+        if (!Number.isFinite(Number(value))) return null;
+        const numeric = Number(value);
+        const display = precision > 0 ? numeric.toFixed(precision) : Math.round(numeric).toString();
+        if (!seasonContext.isInSeason || !completedWeeks) return `${display} ${unit}`;
+        const pace = paceText(numeric, precision);
+        return `${display} ${unit} through ${completedWeeks} game${completedWeeks === 1 ? '' : 's'}${pace ? ` (pace: ${pace})` : ''}`;
+    };
+    const statLeadIn = () => {
+        if (!seasonContext.isInSeason || !completedWeeks) return '';
+        return progressPrefix;
+    };
 
     // Resolve teamId early for downstream logic
     // teamId already resolved above; no redeclare here
@@ -578,16 +552,15 @@ export async function execute(interaction) {
 
     // Build 7 targets (1 per round) guided by true draft slot and team needs
     // Derive pick slots (after trades) for realism
-    const seasonYear =
-        league?.info?.careerHubInfo?.seasonInfo?.calendarYear ||
-        league?.info?.calendarYear ||
-        league?.calendarYear;
-    const tradedOrder = applyPickTrades(draftOrder(league), seasonYear);
+    const draftYear = getUpcomingDraftYear(league);
+    const rawOrder = draftOrder(league);
+    const tradedOrder = applyPickTrades(rawOrder, draftYear);
     const teamNorm = normalizeName(teamName);
-    const teamSlots = tradedOrder
+    const roundOneOwnedSlots = tradedOrder
         .map((p, i) => ({ slot: i + 1, norm: normalizeName(p.name || p.nick || ''), via: p.via }))
         .filter(p => p.norm === teamNorm);
-    const firstSlot = teamSlots.length ? Math.min(...teamSlots.map(p => p.slot)) : 16;
+    const naturalRoundOneSlot = Math.max(1, rawOrder.findIndex((p) => normalizeName(p.name || p.nick || '') === teamNorm) + 1 || 16);
+    const firstRoundSlot = roundOneOwnedSlots.length ? Math.min(...roundOneOwnedSlots.map(p => p.slot)) : null;
 
     const maxWR = 2;
     const maxQBPrimary = 1;
@@ -605,7 +578,7 @@ export async function execute(interaction) {
         return pr === round;
     };
 
-    let picks = [];
+    let pickEntries = [];
     const top3Needs = (needs.length ? needs.slice(0, 3) : ['BPA']).filter(Boolean);
 
     const forceCamForRams = (round, basePick) => {
@@ -615,7 +588,12 @@ export async function execute(interaction) {
     };
 
     for (let round = 1; round <= 7; round++) {
-        const basePick = firstSlot + 32 * (round - 1);
+        const basePick = round === 1 ? firstRoundSlot : (naturalRoundOneSlot + 32 * (round - 1));
+        if (round === 1 && basePick == null) {
+            const firstNeed = top3Needs[0] || 'BPA';
+            pickEntries.push({ round, target: null, need: firstNeed, line: `1. No Round 1 pick — stay patient and attack ${formatNeedLabel(firstNeed)} on day two.` });
+            continue;
+        }
         const low = Math.max(1, basePick - 5);
         const high = basePick + 15;
         let window = draftClass.filter((p, idx) => {
@@ -684,17 +662,23 @@ export async function execute(interaction) {
             if (n === 'QB') qbCount++;
         }
         const school = target?.college || target?.College || target?.school || target?.schoolName || 'N/A';
-        picks.push(target
-            ? `${round}. ${target.name} (${target.position || target.position_1 || 'POS'}) — ${school} (Proj R${projectedRound(target)})`
-            : `${round}. No suggestion`);
+        const targetNeed = target ? (mapNeed(target) === 'BPA' ? (top3Needs[Math.min(round - 1, top3Needs.length - 1)] || 'BPA') : mapNeed(target)) : null;
+        pickEntries.push(target
+            ? {
+                round,
+                target,
+                need: targetNeed,
+                line: `${round}. ${target.name} (${target.position || target.position_1 || 'POS'}) — ${school} • ${formatNeedLabel(targetNeed)}`,
+            }
+            : { round, target: null, need: null, line: `${round}. No suggestion` });
     }
 
     // Post-process: cap WR suggestions to 2 by swapping later WRs to best non-WR available
-    const wrIndices = picks
-        .map((line, idx) => ({ line, idx }))
-        .filter(x => /\(WR\)/.test(x.line));
+    const wrIndices = pickEntries
+        .map((entry, idx) => ({ entry, idx }))
+        .filter(x => /\(WR\)/.test(x.entry.line));
     if (wrIndices.length > 2) {
-        const usedNames = new Set(picks.map(l => l.split('. ')[1]?.split(' (')[0]).filter(Boolean));
+        const usedNames = new Set(pickEntries.map(entry => entry.target?.name).filter(Boolean));
         const replacementPool = draftClass.filter(p => mapNeed(p) !== 'WR' && !usedNames.has(p.name));
     if (process.env.MOCK_DEBUG) console.log('[WR CAP]', teamName, 'wrIndices', wrIndices.length, 'pool', replacementPool.length);
         let repIdx = 0;
@@ -708,7 +692,13 @@ export async function execute(interaction) {
             }
             usedNames.add(rep.name);
             const school = rep.college || rep.College || rep.school || rep.schoolName || 'N/A';
-            picks[targetIdx] = `${targetIdx + 1}. ${rep.name} (${rep.position || rep.position_1 || 'POS'}) — ${school} (Proj R${projectedRound(rep)})`;
+            const repNeed = mapNeed(rep) === 'BPA' ? (top3Needs[Math.min(targetIdx, top3Needs.length - 1)] || 'BPA') : mapNeed(rep);
+            pickEntries[targetIdx] = {
+                round: targetIdx + 1,
+                target: rep,
+                need: repNeed,
+                line: `${targetIdx + 1}. ${rep.name} (${rep.position || rep.position_1 || 'POS'}) — ${school} • ${formatNeedLabel(repNeed)}`,
+            };
         }
     }
     if (process.env.MOCK_DEBUG) console.log('[WR COUNT]', teamName, wrCount);
@@ -868,7 +858,7 @@ export async function execute(interaction) {
             }
         }
         if (process.env.MOCK_DEBUG) console.log(`[MOCK_POST] Rebuilt non-QB picks for ${teamName}`);
-        picks = rebuilt;
+        pickEntries = rebuilt.map((line, idx) => ({ round: idx + 1, target: null, need: null, line }));
     }
     // --- Stat-driven strategy logic ---
     let topNeedsFinal = topNeedsBase;
@@ -899,7 +889,7 @@ export async function execute(interaction) {
     }
     // Get team stats from league snapshot
     // Team stats may be absent in snapshot; default to empty object
-    const teamStatsObj = league?.teamstats?.teamStatInfoList?.find?.(t => Number(t.teamId) === teamId) || {};
+    const teamStatsObj = seasonAgg[teamId] || seasonAgg[String(teamId)] || {};
     const winPct = teamStanding ? ((teamStanding.totalWins + 0.5 * (teamStanding.totalTies || 0)) / ((teamStanding.totalWins || 0) + (teamStanding.totalLosses || 0) + (teamStanding.totalTies || 0))) : 0.5;
     function getPlayerName(p) {
         return p.name || p.fullName || p.displayName || ((p.firstName || '') + ' ' + (p.lastName || '')).trim() || 'Unknown';
@@ -912,19 +902,17 @@ export async function execute(interaction) {
             : '—';
         statBlurbs.push(`Team scoring: PF ${pf}, PA ${pa}.`);
     }
-    const sacksAllowed = seasonAgg[teamId]?.pass?.sacksTaken ?? seasonAgg[String(teamId)]?.pass?.sacksTaken ?? teamStatsObj?.passSacksAllowed;
+    const sacksAllowed = seasonAgg[teamId]?.pass?.sacksTaken ?? seasonAgg[String(teamId)]?.pass?.sacksTaken ?? teamStatsObj?.pass?.sacksTaken;
     if (sacksAllowed !== undefined) {
         statBlurbs.push(`Sacks allowed: ${sacksAllowed}.`);
     }
     // Pre-compute leaders for stat weaving (prioritize passing yards, then starts/overall as fallback)
     // Pre-compute leaders (prefer prebuilt player_stats.json)
-    const teamPlayers = Object.values(playerStats)
-        .filter(p => teamId != null && Number(p.teamId) === Number(teamId))
-        .map(p => ({
-        ...p,
-        age: p.age ?? rosterAgeById[p.rosterId],
-        overall: p.overall ?? rosterOvrById[p.rosterId],
-        yearsLeft: p.contractYearsLeft ?? rosterYearsLeftById[p.rosterId]
+    const teamPlayers = (live.currentPlayersByTeamId?.[teamId] || []).map((player) => ({
+        ...player,
+        age: player.age ?? rosterAgeById[player.rosterId],
+        overall: player.overall ?? rosterOvrById[player.rosterId],
+        yearsLeft: player.yearsLeft ?? rosterYearsLeftById[player.rosterId]
     }));
     const getVal = (obj, path) => path.split('.').reduce((o,k)=> (o && o[k] !== undefined ? o[k] : undefined), obj);
     const topBy = (arr, path) => arr.slice().sort((a,b)=>(getVal(b,path) ?? 0)-(getVal(a,path) ?? 0))[0];
@@ -1002,6 +990,33 @@ export async function execute(interaction) {
         // No QB stats available, but winning: treat QB as depth only
         needs = needs.filter(n => n !== 'QB');
         if (!needs.length) needs = ['BPA'];
+    }
+    if (teamId != null && needs.includes('WR')) {
+        const wrs = teamPlayers
+            .filter(p => (p.position || '').toUpperCase() === 'WR')
+            .map((p) => ({
+                ...p,
+                recYds: p.recYds ?? p.rec?.yds ?? playerAgg[p.rosterId]?.recYds ?? 0,
+                yearsLeft: p.yearsLeft ?? rosterYearsLeftById[p.rosterId] ?? null,
+                ovr: getMetricOvr(p),
+            }))
+            .sort((a, b) => (b.recYds ?? 0) - (a.recYds ?? 0) || (b.ovr - a.ovr));
+        const wr1 = wrs[0];
+        const wr2 = wrs[1];
+        const wr3 = wrs[2];
+        const wr1Proj = projectedSeasonValue(wr1?.recYds ?? 0) ?? Number(wr1?.recYds ?? 0);
+        const wr2Proj = projectedSeasonValue(wr2?.recYds ?? 0) ?? Number(wr2?.recYds ?? 0);
+        const wr3Proj = projectedSeasonValue(wr3?.recYds ?? 0) ?? Number(wr3?.recYds ?? 0);
+        const strongWr1 = wr1 && (wr1Proj >= 1200 || wr1.ovr >= 88);
+        const strongWr2 = wr2 && (wr2Proj >= 800 || wr2.ovr >= 82);
+        const stableWr2 = strongWr2 && (wr2.yearsLeft === null || wr2.yearsLeft > 1);
+        const solidWr3 = !wr3 || wr3Proj >= 500 || wr3.ovr >= 76;
+        if (strongWr1 && stableWr2 && solidWr3) {
+            needs = needs.filter(n => n !== 'WR');
+            if (!needs.length) needs = ['BPA'];
+        } else if (strongWr1 && strongWr2 && needs[0] === 'WR') {
+            needs = [...needs.filter(n => n !== 'WR'), 'WR'];
+        }
     }
 
     // Existing strategy phrases
@@ -1173,12 +1188,12 @@ export async function execute(interaction) {
             if (seenPass && qbYearsLeft !== null && qbYearsLeft <= 1) return `${qbName} is in a contract year—decide on an extension or draft a successor.`;
             if (seenPass && qbAge >= 35) return `${qbName} is ${qbAge}—line up a succession plan at quarterback now.`;
             // Madden statlines carry more interceptions; raise the flag threshold to avoid overreacting
-            if (seenPass && ints !== undefined && ints >= 22 && !strongProd) return `${qbName} threw ${ints} INTs—start evaluating a new option at quarterback.`;
+            if (seenPass && ints !== undefined && ints >= 22 && !strongProd) return `${qbName} has ${productionText(ints, 'INTs')}—start evaluating a new option at quarterback.`;
             if (seenPass && qbAge >= 33) return `${qbName} is ${qbAge}—begin lining up a replacement QB now.`;
             // If production is strong, don't nudge replacement
             const tdIntRatio = (td !== undefined && ints !== undefined) ? (td / Math.max(1, ints)) : Infinity;
             if (passYds !== undefined && passYds >= 3800 && tdIntRatio >= 1.6 && (ints ?? 0) <= 20) return '';
-            if (seenPass && passYds !== undefined && passYds < 3500) return `${qbName} produced ${passYds} pass yards—raise the ceiling at QB.`;
+            if (seenPass && passYds !== undefined && passYds < 3500) return `${qbName} has ${productionText(passYds, 'pass yards')}—raise the ceiling at QB.`;
             // Relax turnover concern for high-volume Madden passing; only flag if ratio is really lopsided
             if (seenPass && td !== undefined && ints !== undefined && ints > 0 && (td / ints) < 1.6) return `${qbName}'s TD/INT ratio is under 1.6:1 (TDs ${td}, INTs ${ints})—raise the floor at QB.`;
             if (seenPass && compPct !== null && compPct < 63) return `${qbName} completed only ${compPct.toFixed(1)}%—add accuracy and timing.`;
@@ -1191,8 +1206,8 @@ export async function execute(interaction) {
             const recTDs = te?.recTDs ?? null;
             const yl = yearsLeft(te);
             if (yl !== null && yl <= 1) return `${name} is in a contract year—secure a TE who can block and win seams.`;
-            if (recYds !== null && recYds < 450) return `${name} managed ${recYds} receiving yards—add a TE who can work seams and third downs.`;
-            if (recTDs !== null && recTDs < 5) return `${name} scored ${recTDs} TDs—boost red-zone punch with a dual-threat TE.`;
+            if (recYds !== null && recYds < 450) return `${name} has ${productionText(recYds, 'receiving yards')}—add a TE who can work seams and third downs.`;
+            if (recTDs !== null && recTDs < 5) return `${name} has ${productionText(recTDs, 'receiving TDs')}—boost red-zone punch with a dual-threat TE.`;
             return '';
         }
         if (pos === 'RB') {
@@ -1203,10 +1218,10 @@ export async function execute(interaction) {
             const ypc = rushAtt ? rushYds / rushAtt : null;
             const td = ts.rush?.td ?? agg.rushTDs;
             if (yl !== null && yl <= 1) return `${leaderName} is in a contract year—line up a back who keeps your ground game steady.`;
-            if (seenRush && rushYds !== undefined && rushYds < 1100) return `${leaderName} managed ${rushYds} rush yards—find a true bell cow.`;
-            if (seenRush && ypc !== null && ypc < 4.2) return `Run game averaged ${ypc.toFixed(2)} YPC—add a back who creates explosives.`;
-            if (seenRush && td !== undefined && td < 10) return `Ground game scored ${td} rush TDs—add a finisher in the red zone.`;
-            if (seenRush && rushYds !== undefined) return `${leaderName} posted ${rushYds} yards—pair him with another playmaker.`;
+            if (seenRush && rushYds !== undefined && rushYds < 1100) return `${leaderName} has ${productionText(rushYds, 'rush yards')}—find a true bell cow.`;
+            if (seenRush && ypc !== null && ypc < 4.2) return `${statLeadIn()}run game is at ${ypc.toFixed(2)} YPC—add a back who creates explosives.`;
+            if (seenRush && td !== undefined && td < 10) return `Ground game has ${productionText(td, 'rush TDs')}—add a finisher in the red zone.`;
+            if (seenRush && rushYds !== undefined) return `${leaderName} has ${productionText(rushYds, 'rush yards')}—pair him with another playmaker.`;
             return '';
         }
         if (pos === 'WR') {
@@ -1237,12 +1252,18 @@ export async function execute(interaction) {
             if (recYds !== undefined && recYds >= 1300) {
                 const wr2 = wrs[1];
                 const wr2Yds = wr2 ? wrYds(wr2) : 0;
-                if (wr2Yds < 900) return `${leaderName} is a true WR1 at ${recYds} yards—add a WR2/WR3 to punish doubles and keep coverage honest.`;
-                return `${leaderName} is rolling at ${recYds} yards—add depth so the offense stays multiple when teams bracket him.`;
+                if (wr2Yds < 900) return `${leaderName} is carrying WR1 volume with ${productionText(recYds, 'receiving yards')}—add a WR2/WR3 to punish doubles and keep coverage honest.`;
+                return `${leaderName} has ${productionText(recYds, 'receiving yards')}—add depth so the offense stays multiple when teams bracket him.`;
             }
-            if (recYds !== undefined && recYds < 950) return `${leaderName} topped out at ${recYds} yards—add a true weapon to stretch coverage.`;
-            if (recTDs !== undefined && recTDs < 15) return `${leaderName} scored ${recTDs} TDs—add a reliable scoring threat.`;
-            if (recYds !== undefined) return `${leaderName} logged ${recYds} yards—add another threat to tilt coverage.`;
+            const projectedRecYds = projectedSeasonValue(recYds);
+            if (recYds !== undefined && recYds < 950) {
+                if ((projectedRecYds ?? recYds) >= 1100) {
+                    return `${leaderName} has ${productionText(recYds, 'receiving yards')}—add a complementary WR so coverage cannot live on your WR1.`;
+                }
+                return `${leaderName} has ${productionText(recYds, 'receiving yards')}—add a true weapon to stretch coverage.`;
+            }
+            if (recTDs !== undefined && recTDs < 15) return `${leaderName} has ${productionText(recTDs, 'receiving TDs')}—add a reliable scoring threat.`;
+            if (recYds !== undefined) return `${leaderName} has ${productionText(recYds, 'receiving yards')}—add another threat to tilt coverage.`;
             return '';
         }
         if (pos === 'EDGE') {
@@ -1253,15 +1274,15 @@ export async function execute(interaction) {
             const yl = yearsLeft(topEdge || topPassRusher);
             if (yl !== null && yl <= 1) return `${leaderName} is in a contract year—add an EDGE to keep pressure constant.`;
             if (teamSacks && teamSacks >= 45) return ''; // production already strong; deprioritize EDGE
-            if (teamSacks && teamSacks >= 40) return `Edge group produced ${teamSacks} sacks—focus elsewhere unless elite value falls.`;
+            if (teamSacks && teamSacks >= 40) return `Edge group has ${productionText(teamSacks, 'sacks')}—focus elsewhere unless elite value falls.`;
             if (seenDef && leaderVal !== undefined) {
                 if (leaderPos && ['DT','NT','IDL','IDL1','IDL2','IDL3'].includes(leaderPos)) {
-                    return `${leaderName} (DT) is carrying the rush with ${leaderVal} sacks—add a true edge finisher so QBs can’t step up.`;
+                    return `${leaderName} (DT) is carrying the rush with ${productionText(leaderVal, 'sacks')}—add a true edge finisher so QBs can’t step up.`;
                 }
-                if (leaderVal < 8) return `${leaderName} had ${leaderVal} sacks—need more edge juice; add a finisher.`;
-                return `${leaderName} posted ${leaderVal} sacks (edge total ${teamSacks ?? '—'})—add another closer to keep pressure high.`;
+                if (leaderVal < 8) return `${leaderName} has ${productionText(leaderVal, 'sacks')}—need more edge juice; add a finisher.`;
+                return `${leaderName} has ${productionText(leaderVal, 'sacks')} (edge total ${teamSacks ?? '—'})—add another closer to keep pressure high.`;
             }
-            if (seenDef && teamSacks !== undefined) return `Edge group produced ${teamSacks} sacks—add edge juice to push the total up.`;
+            if (seenDef && teamSacks !== undefined) return `Edge group has ${productionText(teamSacks, 'sacks')}—add edge juice to push the total up.`;
             return '';
         }
         if (pos === 'DT') {
@@ -1269,15 +1290,15 @@ export async function execute(interaction) {
             const topDt = dts[0];
             const yl = yearsLeft(topDt);
             if (yl !== null && yl <= 1) return `${topDt ? getPlayerName(topDt) : 'Top DT'} is in a contract year—shore up the interior now.`;
-            if (dtSacks !== undefined && dtSacks < 8) return `Interior rush produced ${dtSacks} sacks—add a DT who can collapse the pocket (a QB’s worst nightmare).`;
-            if (teamStatsObj?.rushYdsAllowed !== undefined) {
-                const r = teamStatsObj.rushYdsAllowed;
-                if (r > 1800) return `Run D allowed ${r} rush yards—fortify the interior.`;
-                return `Run D gave up ${r} rush yards—reinforce DT rotation.`;
+            if (dtSacks !== undefined && dtSacks < 8) return `Interior rush has ${productionText(dtSacks, 'sacks')}—add a DT who can collapse the pocket.`;
+            if (teamStatsObj?.def?.rushYdsAllowed !== undefined) {
+                const r = teamStatsObj.def.rushYdsAllowed;
+                if (r > 1800) return `Run defense has allowed ${productionText(r, 'rush yards')}—fortify the interior.`;
+                return `Run defense has allowed ${productionText(r, 'rush yards')}—reinforce DT rotation.`;
             }
             if (dts.length) {
                 const topDtSacks = Math.max(...dts.map(sackVal));
-                if (topDtSacks >= 8 && edgeSacks < 30) return `Interior rush is carrying (${topDtSacks} DT sacks)—add edge heat to finish plays.`;
+                if (topDtSacks >= 8 && edgeSacks < 30) return `Interior rush is carrying with ${productionText(topDtSacks, 'DT sacks')}—add edge heat to finish plays.`;
                 return `DT room avg OVR ${avgOvr(dts)}—add a stronger interior anchor.`;
             }
             return '';
@@ -1287,10 +1308,10 @@ export async function execute(interaction) {
             const topLb = lbs[0];
             const yl = yearsLeft(topLb);
             if (yl !== null && yl <= 1) return `${topLb ? getPlayerName(topLb) : 'Top LB'} is in a contract year—add speed and communication at linebacker.`;
-            if (teamStatsObj?.rushYdsAllowed !== undefined) {
-                const r = teamStatsObj.rushYdsAllowed;
-                if (r > 1800) return `Front seven leaked ${r} rush yards—add a backer who fills fast.`;
-                return `Front seven allowed ${r} rush yards—tighten fits with a rangy backer.`;
+            if (teamStatsObj?.def?.rushYdsAllowed !== undefined) {
+                const r = teamStatsObj.def.rushYdsAllowed;
+                if (r > 1800) return `Front seven has leaked ${productionText(r, 'rush yards')}—add a backer who fills fast.`;
+                return `Front seven has allowed ${productionText(r, 'rush yards')}—tighten fits with a rangy backer.`;
             }
             if (lbs.length) return `LB room avg OVR ${avgOvr(lbs)}—add speed and instincts inside.`;
             return '';
@@ -1300,8 +1321,8 @@ export async function execute(interaction) {
             const yl = yearsLeft(topCB);
             if (yl !== null && yl <= 1) return `${topCB ? getPlayerName(topCB) : 'Top corner'} is in a contract year—add coverage depth now.`;
             if (ints !== undefined) {
-                if (ints < 10) return `Defense snagged ${ints} INTs—add a playmaking corner to boost takeaways.`;
-                return `Defense tallied ${ints} INTs—add cover depth to keep turnovers coming.`;
+                if (ints < 10) return `Defense has ${productionText(ints, 'INTs')}—add a playmaking corner to boost takeaways.`;
+                return `Defense has ${productionText(ints, 'INTs')}—add cover depth to keep turnovers coming.`;
             }
             return '';
         }
@@ -1310,20 +1331,20 @@ export async function execute(interaction) {
             const topS = safeties[0];
             const yl = yearsLeft(topS);
             if (yl !== null && yl <= 1) return `${topS ? getPlayerName(topS) : 'Top safety'} is in a contract year—secure range on the back end.`;
-            if (teamStatsObj?.passYdsAllowed !== undefined) {
-                const p = teamStatsObj.passYdsAllowed;
-                if (p > 4200) return `Secondary allowed ${p} pass yards—add a rangy safety.`;
-                return `Pass D allowed ${p} yards—shore up the back end.`;
+            if (teamStatsObj?.def?.passYdsAllowed !== undefined) {
+                const p = teamStatsObj.def.passYdsAllowed;
+                if (p > 4200) return `Secondary has allowed ${productionText(p, 'pass yards')}—add a rangy safety.`;
+                return `Pass defense has allowed ${productionText(p, 'pass yards')}—shore up the back end.`;
             }
             if (safeties.length) return `Safety room avg OVR ${avgOvr(safeties)}—add range and leadership.`;
             return '';
         }
         if (pos === 'OT' || pos === 'IOL') {
-            const sacksAllowed = ts.pass?.sacksTaken ?? agg.passSacksTaken ?? teamStatsObj?.passSacksAllowed;
-            const ypc = teamStatsObj?.rushAtt ? (teamStatsObj.rushYds || 0) / Math.max(1, teamStatsObj.rushAtt) : undefined;
-            if (sacksAllowed !== undefined && sacksAllowed > 40) return `Allowed ${sacksAllowed} sacks—shore up protection on the line.`;
-            if (ypc !== undefined && ypc < 4.2) return `Run game at ${ypc.toFixed(2)} YPC—upgrade the interior to move people.`;
-            if (sacksAllowed !== undefined) return `Allowed ${sacksAllowed} sacks—add OL depth to stay clean.`;
+            const sacksAllowed = ts.pass?.sacksTaken ?? agg.passSacksTaken ?? teamStatsObj?.pass?.sacksTaken;
+            const ypc = teamStatsObj?.rush?.att ? (teamStatsObj.rush.yds || 0) / Math.max(1, teamStatsObj.rush.att) : undefined;
+            if (sacksAllowed !== undefined && sacksAllowed > 40) return `Offense has allowed ${productionText(sacksAllowed, 'sacks')}—shore up protection on the line.`;
+            if (ypc !== undefined && ypc < 4.2) return `${statLeadIn()}run game is at ${ypc.toFixed(2)} YPC—upgrade the interior to move people.`;
+            if (sacksAllowed !== undefined) return `Offense has allowed ${productionText(sacksAllowed, 'sacks')}—add OL depth to stay clean.`;
             return '';
         }
         return '';
@@ -1366,85 +1387,87 @@ export async function execute(interaction) {
     const apFirstCount = allProFirst.filter(p => (teamId != null && Number(p.teamId) === Number(teamId)) || normalizeName(p.team || '') === normalizeName(teamName)).length;
     const apSecondCount = allProSecond.filter(p => (teamId != null && Number(p.teamId) === Number(teamId)) || normalizeName(p.team || '') === normalizeName(teamName)).length;
 
-    const blurb = (() => {
-        const endings = [
-            "Attack your biggest weaknesses early, then look for value and depth in later rounds.",
-            "Front-load premium positions in the first three rounds, then draft BPA for depth.",
-            "Hit a core need in rounds 1–2, then stack depth and special teams help late.",
-            "Prioritize starters early; round out the roster with versatile depth on day three.",
-            "Fill glaring holes first, then chase upside swings with developmental prospects.",
-            "Secure starters early, then grab a capable backup QB/OL to protect your season.",
-            "Address marquee needs up top, then target role players who upgrade sub-packages."
-        ];
-        const closing = endings[seededRand(teamName, 'ending', endings.length)];
-        const end = endings[seededRand(teamName, 'ending', endings.length)];
-        const topGradeVal = (obj) => Number(obj?.seasonGrade ?? obj?.grade ?? obj?.avgGrade ?? 0);
-        const posLabel = (p) => {
-            const n = mapNeed(p);
-            const map = {
-                QB: 'QB',
-                WR: 'receiver',
-                TE: 'tight end',
-                RB: 'runner', HB: 'runner',
-                OT: 'tackle',
-                IOL: 'interior lineman',
-                OL: 'lineman',
-                EDGE: 'edge rusher',
-                DT: 'interior defender',
-                LB: 'linebacker',
-                SAM: 'linebacker',
-                MIKE: 'linebacker',
-                WILL: 'linebacker',
-                CB: 'corner',
-                S: 'safety',
-            };
-            return map[n] || needsDisplay[0] || 'unit';
-        };
-        const needSet = new Set(needsDisplay);
-        const allProLine = (() => {
-            if (apFirstHit && needSet.has(mapNeed(apFirstHit))) {
-                const g = topGradeVal(apFirstHit).toFixed(1);
-                return `First-team All-Pro ${apFirstHit.name} (${g}) anchors your ${posLabel(apFirstHit)} group—add another ${posLabel(apFirstHit)} to keep it elite.`;
-            }
-            if (apSecondHit && needSet.has(mapNeed(apSecondHit))) {
-                const g = topGradeVal(apSecondHit).toFixed(1);
-                return `Second-team All-Pro ${apSecondHit.name} (${g}) needs a complementary ${posLabel(apSecondHit)} so defenses can’t key on him.`;
-            }
-            if (topStar && needSet.has(mapNeed(topStar)) && topGradeVal(topStar) > 70) {
-                const g = topGradeVal(topStar).toFixed(1);
-                return `${topStar.name} graded ${g}; add another ${posLabel(topStar)} to maximize that advantage.`;
-            }
-            return '';
-        })();
-        const lowLine = (() => {
-            if (lowStar && lowStar !== topStar && needSet.has(mapNeed(lowStar))) {
-                const lg = topGradeVal(lowStar);
-                if (lg > 0 && lg < 85) {
-                    return `${lowStar.name} is at ${lg.toFixed(1)} — upgrade the ${posLabel(lowStar)} spot with a starting-caliber prospect.`;
-                }
-            }
-            return '';
-        })();
-        const lines = [];
-        if (allProLine) lines.push(allProLine);
-        if (needBlurbs[0]) lines.push(needBlurbs[0]);
-        if (needBlurbs[1]) lines.push(needBlurbs[1]);
-        if (needBlurbs[2]) lines.push(needBlurbs[2]);
-        if (lowLine) lines.push(lowLine);
-        lines.push(closing);
-        return lines.filter(Boolean).join(' ');
+    const topGradeVal = (obj) => Number(obj?.seasonGrade ?? obj?.grade ?? obj?.avgGrade ?? 0);
+    const primaryNeed = needsDisplay[0] || 'BPA';
+    const secondaryNeed = needsDisplay[1] || primaryNeed;
+    const tertiaryNeed = needsDisplay[2] || secondaryNeed;
+    const extraRoundOneSlots = roundOneOwnedSlots.slice().sort((a, b) => a.slot - b.slot).slice(1);
+    const firstRoundCapital = (() => {
+        if (!roundOneOwnedSlots.length) {
+            return `No ${draftYear} Round 1 pick. Build this class through rounds 2-4 and avoid forcing round-one talent in trade-up scenarios.`;
+        }
+        const primary = `Own ${draftYear} Round 1 pick at #${firstRoundSlot}.`;
+        if (!extraRoundOneSlots.length) {
+            return `${primary} That gives you a clean shot at a premium ${formatNeedLabel(primaryNeed).toLowerCase()} profile early.`;
+        }
+        const extras = extraRoundOneSlots.map((pick) => `#${pick.slot}${pick.via ? ` via ${pick.via}` : ''}`).join(', ');
+        return `${primary} Extra first-round capital: ${extras}. Use the first pick on a premium need, then attack value or trade leverage with the extra first.`;
     })();
+    const allProLine = (() => {
+        const needSet = new Set(needsDisplay);
+        if (apFirstHit && needSet.has(mapNeed(apFirstHit))) {
+            const g = topGradeVal(apFirstHit).toFixed(1);
+            return `Strength to build around: ${apFirstHit.name} (${g}) already gives you an All-Pro level ${formatNeedLabel(mapNeed(apFirstHit)).toLowerCase()} foundation.`;
+        }
+        if (apSecondHit && needSet.has(mapNeed(apSecondHit))) {
+            const g = topGradeVal(apSecondHit).toFixed(1);
+            return `Existing edge: ${apSecondHit.name} (${g}) is already carrying part of this room; add a complementary piece instead of a redundant one.`;
+        }
+        if (topStar && needSet.has(mapNeed(topStar)) && topGradeVal(topStar) > 70) {
+            const g = topGradeVal(topStar).toFixed(1);
+            return `Build around ${topStar.name} (${g}) by adding a complementary ${formatNeedLabel(mapNeed(topStar)).toLowerCase()} instead of duplicating the same role.`;
+        }
+        return '';
+    })();
+    const weakSpotLine = (() => {
+        if (lowStar && lowStar !== topStar && new Set(needsDisplay).has(mapNeed(lowStar))) {
+            const lg = topGradeVal(lowStar);
+            if (lg > 0 && lg < 85) {
+                return `${lowStar.name} grades at ${lg.toFixed(1)}; that spot still needs a starting-caliber answer.`;
+            }
+        }
+        return '';
+    })();
+    const recommendedProspectForNeed = (need) => {
+        const fromBoard = pickEntries.find((entry) => entry?.target && entry.need === need)?.target;
+        if (fromBoard) return fromBoard;
+        return draftClass.find((prospect) => mapNeed(prospect) === need) || null;
+    };
+    const priorityStack = needsDisplay.map((need, idx) => {
+        const rationale = needBlurbs[idx] || `${formatNeedLabel(need)} remains a live need.`;
+        return `${idx + 1}. ${formatNeedLabel(need)}: ${rationale} Archetype: ${formatArchetype(need, recommendedProspectForNeed(need))}.`;
+    }).join('\n');
+    const phaseOpening = seasonContext.phase === 'early_regular'
+        ? `Phase: early-season read. Lean on underlying roster pressure points and live usage, not small-sample panic.`
+        : seasonContext.phase === 'mid_regular'
+            ? `Phase: midseason audit. Prioritize rooms where live production and roster runway are both flashing yellow.`
+            : seasonContext.phase === 'late_regular'
+                ? `Phase: stretch-run planning. Weight contract cliffs and playoff pressure more aggressively than September noise.`
+                : seasonContext.phase === 'postseason'
+                    ? `Phase: postseason planning. Treat current production as close to final and focus on roster holes that cap playoff ceiling.`
+                    : `Phase: offseason reset. Read these needs as a full roster-building plan for the ${draftYear} class.`;
+    const strategyLines = [
+        phaseOpening,
+        firstRoundCapital,
+        allProLine,
+        weakSpotLine,
+        roundOneOwnedSlots.length
+            ? `Opening script: if the board matches value, hit ${formatNeedLabel(primaryNeed).toLowerCase()} first, then come back with ${formatNeedLabel(secondaryNeed).toLowerCase()} or ${formatNeedLabel(tertiaryNeed).toLowerCase()} before the class flattens out.`
+            : `Opening script: with no first-rounder, treat your round 2 slot like your true day-one decision and prioritize ${formatNeedLabel(primaryNeed).toLowerCase()} or ${formatNeedLabel(secondaryNeed).toLowerCase()} there.`,
+        `Avoid: do not force a luxury pick early. If ${formatNeedLabel(primaryNeed).toLowerCase()} gets wiped out, pivot to premium value at ${formatNeedLabel(secondaryNeed).toLowerCase()} or ${formatNeedLabel(tertiaryNeed).toLowerCase()} and let the board work for you.`
+    ].filter(Boolean).join('\n');
 
     // Final safety: if displayed needs do NOT include QB, strip any QB still lingering in picks
     if (!needsDisplay.includes('QB')) {
         const nonQBs = draftClass.filter(p => (p.position || p.position_1 || '').trim().toUpperCase() !== 'QB');
         const usedNames = new Set();
-        picks = picks.map((line, idx) => {
+        pickEntries = pickEntries.map((entry, idx) => {
+            const line = entry?.line || `${idx + 1}. No suggestion`;
             const isQB = line.toUpperCase().includes('(QB');
             if (!isQB) {
                 const nm = line.match(/^\d+\.\s+([^()]+)\(/);
                 if (nm) usedNames.add(nm[1].trim());
-                return line;
+                return entry;
             }
             const replacement = nonQBs.find(p => {
                 if (usedNames.has(p.name)) return false;
@@ -1456,22 +1479,31 @@ export async function execute(interaction) {
                 usedNames.add(replacement.name);
                 if (mapNeed(replacement) === 'WR') wrCount++;
                 const school = replacement.college || replacement.College || replacement.school || replacement.schoolName || 'N/A';
-                return `${idx + 1}. ${replacement.name} (${replacement.position || replacement.position_1 || 'POS'}) — ${school} (Proj R${idx + 1})`;
+                const replacementNeed = mapNeed(replacement) === 'BPA' ? (needsDisplay[Math.min(idx, needsDisplay.length - 1)] || 'BPA') : mapNeed(replacement);
+                return {
+                    round: idx + 1,
+                    target: replacement,
+                    need: replacementNeed,
+                    line: `${idx + 1}. ${replacement.name} (${replacement.position || replacement.position_1 || 'POS'}) — ${school} • ${formatNeedLabel(replacementNeed)}`,
+                };
             }
-            return `${idx + 1}. No suggestion`;
+            return { round: idx + 1, target: null, need: null, line: `${idx + 1}. No suggestion` };
         });
     }
+    const picks = pickEntries.map((entry) => entry.line);
 
     const embed = new EmbedBuilder()
         .setTitle(`${teamEmoji ? teamEmoji + ' ' : ''}${teamName} — Draft Primer`)
-        .setDescription(`**Players to Target**\n${picks.join('\n')}`)
+        .setDescription(`A seven-round board built off your top three needs, current roster pressure points, live season context, and ${draftYear} draft capital.`)
         .addFields(
-            { name: 'Top Team Needs', value: needsDisplay.map((n, i) => `${i + 1}. ${n}`).join('\n') },
-            { name: 'Last Season Record', value: recordStr },
-            { name: 'Roster Accolades', value: `Top 100: ${top100Count}\nAll-Pro 1st: ${apFirstCount}\nAll-Pro 2nd: ${apSecondCount}` },
-            { name: 'Strategy', value: blurb }
+            { name: 'Team Snapshot', value: `Record: ${recordStr}\nTop 100: ${top100Count}\nAll-Pro 1st: ${apFirstCount}\nAll-Pro 2nd: ${apSecondCount}` },
+            { name: 'Draft Capital', value: firstRoundCapital },
+            { name: 'Priority Stack', value: priorityStack },
+            { name: 'Target Board', value: picks.join('\n') },
+            { name: 'Strategic Plan', value: strategyLines }
         )
-        .setColor(0x00b0f4);
+        .setColor(0x00b0f4)
+        .setFooter({ text: formatPhaseFooter(seasonContext, draftYear) });
     if (interaction.deferred || interaction.replied) {
         await interaction.editReply({ embeds: [embed] });
     } else {

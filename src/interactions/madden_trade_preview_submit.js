@@ -17,12 +17,12 @@ import {
   buildTradeEmbed,
   formatValueSummary,
   parsePickValue,
+  getMaddenPickContext,
 } from './madden_trade_modal_submit.js';
 import {
   getTradeDraft,
   deleteTradeDraft,
 } from '../shared/trade_draft_store.js';
-import { addPickOverridesFromTrade } from '../madden/pick_overrides_store.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 
@@ -65,6 +65,56 @@ function buildDecisionButtons(tradeId, isOtherCoach) {
   return row;
 }
 
+function normalizeTradeToken(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function normalizeAssetFingerprint(items, seasonYear) {
+  return (items || [])
+    .map((item) => {
+      if (item?.type === 'player') {
+        return `player:${normalizeTradeToken(item.key || item.label || item.name)}`;
+      }
+      if (item?.type === 'pick') {
+        const canonical = item.raw
+          || (item.pickNum
+            ? `${item.year} Round ${item.round} Pick ${item.pickNum}`
+            : `${item.year} Round ${item.round}`);
+        const parsed = parsePickValue(canonical, seasonYear, { currentYearExactAllowed: true });
+        const label = parsed?.label || canonical;
+        return `pick:${normalizeTradeToken(label)}`;
+      }
+      return `asset:${normalizeTradeToken(item?.label || item?.raw || item)}`;
+    })
+    .sort()
+    .join('|');
+}
+
+function findDuplicateTrade(trades, candidate) {
+  const now = Date.now();
+  return Object.entries(trades || {}).find(([, trade]) => {
+    if (!trade) return false;
+    if (['denied', 'expired', 'cancelled'].includes(trade.status)) return false;
+    if (trade.createdBy !== candidate.createdBy) return false;
+    if ((now - Number(trade.createdAt || 0)) > 24 * 60 * 60 * 1000) return false;
+    return (
+      normalizeTradeToken(trade.yourTeam) === normalizeTradeToken(candidate.yourTeam)
+      && normalizeTradeToken(trade.otherTeam) === normalizeTradeToken(candidate.otherTeam)
+      && normalizeTradeToken(trade.assetsSent) === normalizeTradeToken(candidate.assetsSent)
+      && normalizeTradeToken(trade.assetsReceived) === normalizeTradeToken(candidate.assetsReceived)
+      && normalizeTradeToken(trade.structuredSendFingerprint) === normalizeTradeToken(candidate.structuredSendFingerprint)
+      && normalizeTradeToken(trade.structuredReceiveFingerprint) === normalizeTradeToken(candidate.structuredReceiveFingerprint)
+    );
+  }) || null;
+}
+
+function toAssetDetail(label, value) {
+  return {
+    name: label || 'Asset',
+    value: Number.isFinite(Number(value)) ? Number(value) : 0,
+  };
+}
+
 export const customId = /^madden_trade_preview_submit\|/;
 
 export async function execute(interaction) {
@@ -72,31 +122,41 @@ export async function execute(interaction) {
   const [, draftId] = interaction.customId.split('|');
   const draft = getTradeDraft(draftId);
   if (!draft) {
-    await interaction.reply({ content: 'Trade draft expired. Please reopen using Modify and resubmit.', ephemeral: true });
+    await interaction.reply(interaction.inGuild()
+      ? { content: 'Trade draft expired. Please reopen using Modify and resubmit.', flags: 64 }
+      : { content: 'Trade draft expired. Please reopen using Modify and resubmit.' });
     return;
   }
 
-  const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
+  const leagueId = draft.leagueId || resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
-    await interaction.reply({ content: 'No league configured. Run /madden-set-league first.', ephemeral: true });
+    await interaction.reply(interaction.inGuild()
+      ? { content: 'No league configured. Run /madden-set-league first.', flags: 64 }
+      : { content: 'No league configured. Run /madden-set-league first.' });
     return;
   }
   if (!canTrade(leagueId)) {
-    await interaction.reply({ content: 'Trades are locked starting Week 13. Try again next season.', ephemeral: true });
+    await interaction.reply(interaction.inGuild()
+      ? { content: 'Trades are locked starting Week 13. Try again next season.', flags: 64 }
+      : { content: 'Trades are locked starting Week 13. Try again next season.' });
     return;
   }
 
-  try { await interaction.deferReply({ ephemeral: true }); } catch { return; }
+  try { await interaction.deferReply(interaction.inGuild() ? { flags: 64 } : {}); } catch { return; }
 
   try {
     const snapshot = loadLeagueSnapshot(leagueId);
+    const pickContext = getMaddenPickContext(snapshot);
     const valueMap = buildValueMap(snapshot);
     const counts = loadTradeCounts();
     const roleMap = loadRoleMap();
 
     const yourTeam = draft.yourTeam || draft.yourTeamName || draft.yourTeamId || draft.yourTeamRaw;
     const otherTeam = draft.otherTeam || draft.otherTeamName || draft.otherTeamId || draft.otherTeamRaw;
-    const seasonYear = snapshot?.info?.careerHubInfo?.seasonInfo?.seasonYear || draft.seasonYear;
+    const seasonYear = Math.max(
+      2027,
+      snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || draft.seasonYear || new Date().getFullYear()
+    );
     const yourStructAssets = draft.assets?.your || [];
     const theirStructAssets = draft.assets?.other || [];
 
@@ -106,19 +166,30 @@ export async function execute(interaction) {
       const rnd = item.round;
       const pk = item.pickNum;
       if (!yr || !rnd) return null;
-      const currentYear = seasonYear || new Date().getFullYear();
-      if (pk && yr === currentYear) {
-        return parsePickValue(`${yr} Round ${rnd} Pick ${pk}`, seasonYear)?.value ?? null;
+      if (pk) {
+        return parsePickValue(`${yr} Round ${rnd} Pick ${pk}`, seasonYear, {
+          currentYearExactAllowed: pickContext.currentYearExactAllowed,
+        })?.value ?? null;
       }
-      const parsed = parsePickValue(`${yr} Round ${rnd}`, seasonYear);
+      const parsed = parsePickValue(`${yr} Round ${rnd}`, seasonYear, {
+        currentYearExactAllowed: pickContext.currentYearExactAllowed,
+      });
       return parsed?.value ?? null;
     };
     const toLabel = (item) => {
       if (!item) return 'Asset';
       if (item.type === 'pick') {
-        if (item.pickNum) return `${item.year || seasonYear || ''} Round ${item.round} Pick ${item.pickNum}`;
-        if (item.year && item.round) return `${item.year} Round ${item.round}`;
-        const parsed = parsePickValue(item.raw, seasonYear);
+        if (item.viaTeam || item.pickNum || (item.year && item.round)) {
+          const canonical = item.raw
+            || `${item.year || seasonYear || ''} Round ${item.round}${item.pickNum ? ` Pick ${item.pickNum}` : ''}${item.viaTeam ? ` via ${item.viaTeam}` : ''}`;
+          const parsed = parsePickValue(canonical, seasonYear, {
+            currentYearExactAllowed: pickContext.currentYearExactAllowed,
+          });
+          return parsed?.label || canonical;
+        }
+        const parsed = parsePickValue(item.raw, seasonYear, {
+          currentYearExactAllowed: pickContext.currentYearExactAllowed,
+        });
         return parsed?.label || item.raw || 'Pick';
       }
       return item.label || item.name || 'Player';
@@ -131,7 +202,11 @@ export async function execute(interaction) {
         val = item.value ?? valueMap.get((item.key || '').toLowerCase())?.value ?? null;
       } else if (item.type === 'pick') {
         val = pickValFromStruct(item);
-        if (val == null) val = parsePickValue(item.raw, seasonYear)?.value ?? null;
+        if (val == null) {
+          val = parsePickValue(item.raw, seasonYear, {
+            currentYearExactAllowed: pickContext.currentYearExactAllowed,
+          })?.value ?? null;
+        }
       }
       val = val == null ? 0 : val;
       return `${label} (${item.pos || ''}) — ${Number(val).toFixed(1)}`.replace(/\(\s*\)/, '').trim();
@@ -142,6 +217,8 @@ export async function execute(interaction) {
     let assetsReceivedValueLines = [];
     let sendVal = 0;
     let recvVal = 0;
+    let assetsSentDetails = [];
+    let assetsReceivedDetails = [];
     let unmatched = [];
     let sendUnmatched = [];
     let recvUnmatched = [];
@@ -150,9 +227,11 @@ export async function execute(interaction) {
       const yourArr = draft.assets?.your || [];
       const theirArr = draft.assets?.other || [];
       const pickVal = (item) => {
-        const fromStruct = pickValFromStruct(item);
+        const fromStruct = Number.isFinite(Number(item?.value)) ? Number(item.value) : pickValFromStruct(item);
         if (fromStruct != null) return fromStruct;
-        const parsed = parsePickValue(item.raw, seasonYear);
+        const parsed = parsePickValue(item.raw, seasonYear, {
+          currentYearExactAllowed: pickContext.currentYearExactAllowed,
+        });
         return parsed?.value || 0;
       };
       assetsSentValueLines = yourArr.map(i => toLine(i, valueMap)).filter(Boolean);
@@ -161,19 +240,46 @@ export async function execute(interaction) {
       assetsReceived = theirArr.map(i => toLabel(i)).join(', ');
       sendVal = yourArr.reduce((sum, i) => sum + (i.type === 'player' ? (valueMap.get((i.key || '').toLowerCase())?.value || 0) : pickVal(i)), 0);
       recvVal = theirArr.reduce((sum, i) => sum + (i.type === 'player' ? (valueMap.get((i.key || '').toLowerCase())?.value || 0) : pickVal(i)), 0);
+      assetsSentDetails = yourArr.map(i => toAssetDetail(
+        toLabel(i),
+        i.type === 'player' ? (valueMap.get((i.key || '').toLowerCase())?.value || 0) : pickVal(i),
+      ));
+      assetsReceivedDetails = theirArr.map(i => toAssetDetail(
+        toLabel(i),
+        i.type === 'player' ? (valueMap.get((i.key || '').toLowerCase())?.value || 0) : pickVal(i),
+      ));
     } else {
-      const parsedSend = parseAssets(assetsSent, valueMap, seasonYear);
-      const parsedRecv = parseAssets(assetsReceived, valueMap, seasonYear);
+      const parsedSend = parseAssets(assetsSent, valueMap, seasonYear, {
+        currentYearExactAllowed: pickContext.currentYearExactAllowed,
+      });
+      const parsedRecv = parseAssets(assetsReceived, valueMap, seasonYear, {
+        currentYearExactAllowed: pickContext.currentYearExactAllowed,
+      });
       sendVal = Number(parsedSend.total || 0);
       recvVal = Number(parsedRecv.total || 0);
       assetsSentValueLines = parsedSend.matched.map(i => `${i.label} (${Number(i.value || 0).toFixed(1)})`);
       assetsReceivedValueLines = parsedRecv.matched.map(i => `${i.label} (${Number(i.value || 0).toFixed(1)})`);
+      assetsSentDetails = (parsedSend.matched || []).map(i => toAssetDetail(i.label, i.value));
+      assetsReceivedDetails = (parsedRecv.matched || []).map(i => toAssetDetail(i.label, i.value));
       sendUnmatched = parsedSend.unmatched || [];
       recvUnmatched = parsedRecv.unmatched || [];
       unmatched = [...sendUnmatched, ...recvUnmatched];
     }
 
     const notes = draft.notes || '';
+
+    if (!yourTeam || !otherTeam) {
+      await interaction.editReply({ content: 'Trade blocked: both teams must be selected before submitting.' });
+      return;
+    }
+    if (normalizeTradeToken(yourTeam) === normalizeTradeToken(otherTeam)) {
+      await interaction.editReply({ content: 'Trade blocked: you cannot submit a trade with the same team on both sides.' });
+      return;
+    }
+    if (!yourStructAssets.length || !theirStructAssets.length) {
+      await interaction.editReply({ content: 'Trade blocked: both teams must include at least one asset.' });
+      return;
+    }
 
     // Team trade cap check (5 max per season)
     const overCap = [yourTeam, otherTeam].find(t => (counts?.[t] || 0) >= 5);
@@ -202,6 +308,24 @@ export async function execute(interaction) {
 
     // Store trade
     const trades = loadActiveTrades();
+    const structuredSendFingerprint = normalizeAssetFingerprint(yourStructAssets, seasonYear);
+    const structuredReceiveFingerprint = normalizeAssetFingerprint(theirStructAssets, seasonYear);
+    const duplicate = findDuplicateTrade(trades, {
+      yourTeam,
+      otherTeam,
+      assetsSent,
+      assetsReceived,
+      structuredSendFingerprint,
+      structuredReceiveFingerprint,
+      createdBy: interaction.user.id,
+    });
+    if (duplicate) {
+      const [existingTradeId, existingTrade] = duplicate;
+      await interaction.editReply({
+        content: `Trade blocked: this deal already exists as ${existingTradeId} with status ${existingTrade.status || 'pending'}.`,
+      });
+      return;
+    }
     const tradeId = `trade_${Date.now()}`;
     trades[tradeId] = {
       yourTeam,
@@ -219,20 +343,15 @@ export async function execute(interaction) {
       status: 'awaiting_coach_b',
       proposerId: interaction.user.id,
       expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+      seasonYear,
+      assetsSentDetails,
+      assetsReceivedDetails,
+      yourStructAssets,
+      theirStructAssets,
+      structuredSendFingerprint,
+      structuredReceiveFingerprint,
     };
     saveActiveTrades(trades);
-    // Persist first-round pick ownership if picks were traded via builder
-    try {
-      addPickOverridesFromTrade({
-        fromTeam: yourTeam,
-        toTeam: otherTeam,
-        fromAssets: yourStructAssets,
-        toAssets: theirStructAssets,
-        seasonYear,
-      });
-    } catch (e) {
-      console.warn('[pick overrides] could not update from trade', e?.message || e);
-    }
     deleteTradeDraft(draftId);
 
     // DM other coach (role members or user) with approve/deny buttons

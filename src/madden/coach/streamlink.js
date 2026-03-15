@@ -2,6 +2,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
@@ -27,7 +28,7 @@ function coachTeamFromMember(member, roleMap, snapshot) {
       const cands = [t.displayName, t.nickName, t.abbrName, t.cityName].map(x => (x || '').toLowerCase());
       return cands.includes(base);
     });
-    if (match) return match.displayName || match.nickName || match.cityName || 'Team';
+    if (match) return getFullTeamName(match, 'Team');
   }
   return null;
 }

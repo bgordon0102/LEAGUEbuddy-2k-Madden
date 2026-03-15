@@ -1,8 +1,48 @@
 {
   "overrides": [
-    { "from": "Cardinals", "to": "Detroit Lions", "via": "ARI", "year": 2026, "round": 1 },
-    { "from": "Packers",   "to": "Dallas Cowboys", "via": "GB",  "year": 2026, "round": 1 },
-    { "from": "Colts",     "to": "New York Jets",  "via": "IND", "year": 2026, "round": 1 },
-    { "from": "Cowboys",   "to": "New York Jets",  "via": "DAL", "year": 2026, "round": 1 }
+    {
+      "from": "Cardinals",
+      "to": "Detroit Lions",
+      "via": "ARI",
+      "year": 2026,
+      "round": 1
+    },
+    {
+      "from": "Packers",
+      "to": "Dallas Cowboys",
+      "via": "GB",
+      "year": 2026,
+      "round": 1
+    },
+    {
+      "from": "Colts",
+      "to": "New York Jets",
+      "via": "IND",
+      "year": 2026,
+      "round": 1
+    },
+    {
+      "from": "Cowboys",
+      "to": "New York Jets",
+      "via": "DAL",
+      "year": 2026,
+      "round": 1
+    },
+    {
+      "from": "Jets",
+      "to": "Broncos",
+      "via": "NYJ",
+      "year": 2027,
+      "round": 1,
+      "updatedAt": "2026-03-15T00:32:27.221Z"
+    },
+    {
+      "from": "Jets",
+      "to": "Broncos",
+      "via": "NYJ",
+      "year": 2028,
+      "round": 1,
+      "updatedAt": "2026-03-15T00:32:27.224Z"
+    }
   ]
 }

@@ -3,6 +3,7 @@ import path from 'path';
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden_data.js';
 import { computePlayerValue } from '../madden_trade_modal_submit.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const DEV_LABEL = { 0: 'Normal', 1: 'Star', 2: 'SS', 3: 'X' };
 const DEV_EMOJI_FILE = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
@@ -36,7 +37,7 @@ function normalize(str) {
 function findTeam(snapshot, name) {
   const teams = snapshot?.teams?.leagueTeamInfoList || [];
   const target = normalize(name);
-  const label = (t) => [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim();
+  const label = (t) => getFullTeamName(t, `Team ${t.teamId}`);
   // Build candidate keys
   const withCandidates = teams.map(t => {
     const candidates = [
@@ -89,7 +90,8 @@ export function buildRosterEmbeds(snapshot, teamName) {
   if (!teamInfo) return { error: `Team not found for "${teamName}". Try full city or nickname.` };
   const teamId = teamInfo.teamId;
   const roster = snapshot?.rosters?.teams?.[teamId]?.rosterInfoList || [];
-  if (!roster.length) return { error: `No roster data for ${teamInfo.cityName} ${teamInfo.nickName}.` };
+  const fullTeamName = getFullTeamName(teamInfo, 'Unknown Team');
+  if (!roster.length) return { error: `No roster data for ${fullTeamName}.` };
 
   const lines = roster
     .slice()
@@ -107,7 +109,7 @@ export function buildRosterEmbeds(snapshot, teamName) {
 
   const chunks = chunkLines(lines, 12);
   const embeds = chunks.map((chunk, idx) => new EmbedBuilder()
-    .setTitle(`${teamInfo.cityName} ${teamInfo.displayName || teamInfo.nickName} — Roster`)
+    .setTitle(`${fullTeamName} — Roster`)
     .setDescription(chunk.join('\n'))
     .setColor(0x00a3ff)
     .setFooter({ text: chunks.length > 1 ? `Page ${idx + 1}/${chunks.length}` : null })
@@ -172,7 +174,7 @@ export async function autocomplete(interaction) {
   try {
     const snapshot = loadLeagueSnapshot(leagueId);
     const teams = snapshot?.teams?.leagueTeamInfoList || [];
-    const opts = teams.map(t => [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim());
+    const opts = teams.map(t => getFullTeamName(t, `Team ${t.teamId}`));
     const filtered = opts
       .filter(name => name.toLowerCase().includes(focused))
       .slice(0, 25)

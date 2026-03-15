@@ -4,6 +4,7 @@ import { EmbedBuilder } from 'discord.js';
 import { getPinId } from './pins_store.js'; // unused but kept in case future pinning is desired
 import { computeGradeFromRank } from './top_players.js';
 import { computeWeeklyList } from './top_players.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const LEAGUE_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -51,7 +52,7 @@ function conferenceMap(snapshot) {
 function teamNameMap(snapshot) {
   const map = {};
   (snapshot?.teams?.leagueTeamInfoList || []).forEach(t => {
-    const name = [t.cityName, t.displayName || t.nickName].filter(Boolean).join(' ').trim();
+    const name = getFullTeamName(t, `Team ${t.teamId}`);
     map[t.teamId] = name || `Team ${t.teamId}`;
   });
   return map;
@@ -216,10 +217,7 @@ export function gatherWeeklyStats(snapshot, weekIndex) {
       .map(w => ({ w, c: countPlayers(w) }))
       .filter(({ w }) => hasPlayerData(w))
       .sort((a, b) => b.c - a.c)[0]?.w;
-    if (bestStage1) {
-      console.log('[gatherWeeklyStats] picked stage 1', { weekIndex, playerCount: countPlayers(bestStage1) });
-      return bestStage1;
-    }
+    if (bestStage1) return bestStage1;
     console.warn('[gatherWeeklyStats] no stage 1 found for week', weekIndex);
   }
 
@@ -306,11 +304,50 @@ function formatLine(p) {
   return parts.join('\n') || 'No stats';
 }
 
+function hasEligibleOffenseStats(p) {
+  const t = p?.totals || {};
+  return (
+    Number(t.passYds || 0) > 0 ||
+    Number(t.passTDs || 0) > 0 ||
+    Number(t.rushYds || 0) > 0 ||
+    Number(t.rushTDs || 0) > 0 ||
+    Number(t.recYds || 0) > 0 ||
+    Number(t.recTDs || 0) > 0 ||
+    Number(t.recCatches || 0) > 0
+  );
+}
+
+function hasEligibleDefenseStats(p) {
+  const t = p?.totals || {};
+  return (
+    Number(t.defTotalTackles || 0) > 1 ||
+    Number(t.defSacks || 0) > 0 ||
+    Number(t.defTacklesForLoss || 0) > 0 ||
+    Number(t.defInts || 0) > 0 ||
+    Number(t.defForcedFumbles || 0) > 0 ||
+    Number(t.defRecoveredFumbles || 0) > 0 ||
+    Number(t.defPassDeflections || 0) > 0 ||
+    Number(t.defTDs || 0) > 0
+  );
+}
+
+function hasEligibleStatsForPlayer(p, posSet = null) {
+  const pos = (p?.position || p?.displayPos || '').toUpperCase();
+  if (posSet) {
+    if (posSet.has(pos)) {
+      const offensePositions = new Set(['QB', 'HB', 'RB', 'FB', 'TB', 'WR', 'TE', 'LT', 'LG', 'C', 'RG', 'RT', 'K', 'P']);
+      return offensePositions.has(pos) ? hasEligibleOffenseStats(p) : hasEligibleDefenseStats(p);
+    }
+    return false;
+  }
+  return hasEligibleDefenseStats(p) || hasEligibleOffenseStats(p);
+}
+
 function pickWinner(players, conf) {
-  let list = Array.from(players.values()).filter(p => p.conference === conf);
+  let list = Array.from(players.values()).filter(p => p.conference === conf && hasEligibleOffenseStats(p));
   if (!list.length) {
     // fallback if conference mapping missing
-    list = Array.from(players.values());
+    list = Array.from(players.values()).filter(hasEligibleOffenseStats);
   }
   if (!list.length) return null;
   list.forEach(p => { p.score = scoreOffense(p); });
@@ -322,9 +359,9 @@ function pickWinner(players, conf) {
 }
 
 function pickDefWinner(players, conf) {
-  let list = Array.from(players.values()).filter(p => p.conference === conf);
+  let list = Array.from(players.values()).filter(p => p.conference === conf && hasEligibleDefenseStats(p));
   if (!list.length) {
-    list = Array.from(players.values());
+    list = Array.from(players.values()).filter(hasEligibleDefenseStats);
   }
   if (!list.length) return null;
   list.forEach(p => { p.score = scoreDefense(p); });
@@ -337,7 +374,9 @@ function pickDefWinner(players, conf) {
 }
 
 function pickRookie(allPlayers, seasonYear) {
-  const list = Array.from(allPlayers.values()).filter(p => isRookie(p, seasonYear));
+  const list = Array.from(allPlayers.values()).filter(p =>
+    isRookie(p, seasonYear) && hasEligibleStatsForPlayer(p)
+  );
   if (!list.length) return null;
   list.forEach(p => {
     const pos = (p.position || '').toUpperCase();
@@ -431,13 +470,11 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
     await replySkip('[awards] skipping: no completed Stage 1 week with stats found');
     return;
   }
-  console.log('[awards] using week', awardsWeek, 'latestStage1Week', latestStage1Week, 'weekOverride', weekOverride);
   // New season start: clear last season's cached awards and graded history to avoid bleed
   if (!weekOverride && awardsWeek === 1) {
     try {
       const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId));
       fs.rmSync(histDir, { recursive: true, force: true });
-      console.log('[awards] Week 1 detected; cleared top players history for fresh season', { leagueId });
     } catch (e) {
       console.warn('[awards] Week 1 history clear skipped:', e?.message || e);
     }
@@ -456,12 +493,10 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
       const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId));
       fs.rmSync(histDir, { recursive: true, force: true });
       delete awardsStore[leagueId];
-      console.log('[awards] detected season change; cleared history and awards cache', { leagueId, prevYear, seasonYear });
     } else if (!prevYear && forceStartOfSeason) {
       const histDir = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId));
       fs.rmSync(histDir, { recursive: true, force: true });
       delete awardsStore[leagueId];
-      console.log('[awards] season reset at Week 1 with stale offseason flag; cleared history and awards cache', { leagueId, seasonYear });
     }
     seasonState[leagueId] = { calendarYear: seasonYear };
     saveJson(SEASON_STATE_FILE, seasonState);
@@ -645,6 +680,7 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
       if (conf && confVal !== conf) return false;
       const isRk = p.isRookie === true;
       if (rookieOnly && !isRk) return false;
+      if (!hasEligibleStatsForPlayer(p, posSet)) return false;
       return true;
     });
     if (!filtered.length) return null;
@@ -690,16 +726,6 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
   })();
 
   // Override winners directly from weekly graded list to keep awards in sync with Top100
-  const logPick = (label, pick) => {
-    if (!pick) return;
-    console.log('[awards] pick', label, {
-      name: pick.fullName || pick.name,
-      grade: pick.grade,
-      team: pick.team || pick.teamName,
-      pos: pick.position,
-      conf: pick.teamId ? conferenceById[pick.teamId] : null,
-    });
-  };
   if (weeklyTopList.length) {
     const topAfcOff = pickTopFromGrades('AFC', offensePositionsSet, false);
     const topNfcOff = pickTopFromGrades('NFC', offensePositionsSet, false);
@@ -707,12 +733,6 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
     const topNfcDef = pickTopFromGrades('NFC', defensePositionsSet, false);
     const topRkOff = pickTopFromGrades(null, offensePositionsSet, true);
     const topRkDef = pickTopFromGrades(null, defensePositionsSet, true);
-    logPick('AFC_O', topAfcOff);
-    logPick('NFC_O', topNfcOff);
-    logPick('AFC_D', topAfcDef);
-    logPick('NFC_D', topNfcDef);
-    logPick('RK_O', topRkOff);
-    logPick('RK_D', topRkDef);
     winners.afc_offense = topAfcOff || winners.afc_offense;
     winners.nfc_offense = topNfcOff || winners.nfc_offense;
     winners.afc_defense = topAfcDef || winners.afc_defense;

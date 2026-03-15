@@ -10,6 +10,7 @@ import { startExportWebhook } from './madden/export_webhook.js';
 import { startAutoSync } from './madden/auto_sync.js';
 import { startLocalSidecar } from './madden/local_sidecar.js';
 import { initNotifier } from './shared/madden_thread_notifier.js';
+import { appendMaddenStaffLog, postMaddenStaffLog, initMaddenStoryScheduler } from './shared/madden_staff_ops.js';
 
 dotenv.config();
 
@@ -91,6 +92,21 @@ client.on('interactionCreate', async interaction => {
     }
     // Lightweight command audit log
     console.log(`[CMD] ${interaction.user.tag} used /${interaction.commandName}`);
+    if (interaction.commandName?.startsWith('madden-')) {
+      appendMaddenStaffLog({
+        type: 'command',
+        guildId: interaction.guildId,
+        userId: interaction.user.id,
+        username: interaction.user.tag,
+        command: interaction.commandName,
+      });
+      postMaddenStaffLog(
+        client,
+        interaction.guildId,
+        'Madden Command Used',
+        `<@${interaction.user.id}> used \`/${interaction.commandName}\`.`,
+      ).catch(() => null);
+    }
     try {
       await command.execute(interaction);
     } catch (error) {
@@ -208,6 +224,11 @@ client.once('clientReady', (readyClient) => {
   console.log(`🏟️  Serving ${readyClient.guilds.cache.size} server(s)`);
   console.log(`⚡ Loaded ${client.commands.size} commands`);
   try { initNotifier(client); } catch (e) { console.warn('[notifier] init failed', e?.message || e); }
+  try { initMaddenStoryScheduler(client); } catch (e) { console.warn('[story scheduler] init failed', e?.message || e); }
+  for (const guild of readyClient.guilds.cache.values()) {
+    appendMaddenStaffLog({ type: 'lifecycle', guildId: guild.id, state: 'online' });
+    postMaddenStaffLog(client, guild.id, 'Bot Online', 'LEAGUEbuddy Madden services are online.').catch(() => null);
+  }
 });
 
 
@@ -283,3 +304,17 @@ async function handleImageOCR(message) {
     process.exit(1);
   }
 })();
+
+async function logLifecycle(state) {
+  for (const guild of client.guilds.cache.values()) {
+    appendMaddenStaffLog({ type: 'lifecycle', guildId: guild.id, state });
+    await postMaddenStaffLog(client, guild.id, state === 'offline' ? 'Bot Offline' : 'Bot Lifecycle', `LEAGUEbuddy Madden services marked \`${state}\`.`).catch(() => null);
+  }
+}
+
+process.on('SIGINT', () => {
+  logLifecycle('offline').finally(() => process.exit(0));
+});
+process.on('SIGTERM', () => {
+  logLifecycle('offline').finally(() => process.exit(0));
+});

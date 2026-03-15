@@ -2,10 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
-import { loadPickOverrides as loadPickOverridesFile } from '../pick_overrides_store.js';
+import { getEffectiveFirstRoundOverrides } from '../pick_overrides_store.js';
+import { buildLiveDraftContext } from './draft_live_data.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 let currentCalendarYear = 2025;
-let staffClassOverride = null;
+const DRAFT_CLASS_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
+const CURRENT_CLASS_ID = 'CUS02';
 // Utility: pick latest league snapshot
 function getLatestLeagueFile() {
   const dir = path.join(process.cwd(), 'data', 'madden', 'leagues');
@@ -399,21 +402,6 @@ export function draftOrder(league) {
   const teamByName = Object.fromEntries(teams.map(t => [(t.name || '').toLowerCase(), t]));
   const seasonInfo = league?.info?.careerHubInfo?.seasonInfo || {};
 
-  // Hardwire 2026 (calendarYear 2025 offseason) draft order provided by user
-  const hardwire2026 = [
-    'Chargers','Jets','Buccaneers','Panthers','Browns','Dolphins','Steelers','Titans',
-    'Lions','Raiders','Vikings','Cowboys','Chiefs','Commanders','49ers','Jaguars',
-    'Rams','Saints','Texans','Eagles','Bengals','Patriots','Bears','Giants',
-    'Packers','Broncos','Bills','Cardinals','Seahawks','Colts','Falcons','Ravens'
-  ];
-  if (seasonInfo?.calendarYear === 2025 && hardwire2026.length === 32) {
-    const fixed = hardwire2026.map(name => {
-      const hit = teamByName[name.toLowerCase()];
-      return hit ? hit : { id: null, name, w: 0, l: 0, net: 0, pf: 0 };
-    });
-    return fixed.slice(0, 32);
-  }
-
   // Derive playoff participation from weeklyStats when schedule is missing postseason games
   const weekTeams = {};
   for (const w of weekly.filter(w => (w.stage ?? w.stageIndex) > 1)) {
@@ -531,19 +519,6 @@ export function draftOrder(league) {
     ...buckets.sbw,
   ];
 
-  // Debug log playoff bucket placement
-  console.log('--- PLAYOFF BUCKETS (stage/lost) ---');
-  for (const [name, list] of Object.entries({
-    non: buckets.non,
-    wc: buckets.wc,
-    div: buckets.div,
-    conf: buckets.conf,
-    sbl: buckets.sbl,
-    sbw: buckets.sbw
-  })) {
-    console.log(`${name.toUpperCase()}: ${list.map(t => `${t.name}`).join(', ')}`);
-  }
-
   return order.slice(0, 32);
 }
 
@@ -568,16 +543,7 @@ function loadPickOverridesList(seasonYear) {
 
 // Pick trades/forfeitures (manual overrides)
 function applyPickTrades(order, seasonYear = currentCalendarYear) {
-  // Load persisted overrides; fall back to legacy hardcoded list
-  const fileOverrides = loadPickOverridesList(seasonYear).concat(loadPickOverridesFile());
-  // Legacy overrides for current cycle (R1 only)
-  const legacy = [
-    { from: 'Cardinals', to: 'Detroit Lions', via: 'ARI' },   // ARI -> DET
-    { from: 'Packers', to: 'Dallas Cowboys', via: 'GB' },     // GB -> DAL
-    { from: 'Colts', to: 'New York Jets', via: 'IND' },       // IND -> NYJ
-    { from: 'Cowboys', to: 'New York Jets', via: 'DAL' },     // DAL -> NYJ
-  ];
-  const overrides = [...fileOverrides, ...legacy];
+  const overrides = getEffectiveFirstRoundOverrides(seasonYear);
   const map = new Map();
   overrides.forEach(o => {
     const key = normalizeTeamKey(o.from || o.owner || '');
@@ -593,37 +559,16 @@ function applyPickTrades(order, seasonYear = currentCalendarYear) {
 }
 
 function loadDraftClass() {
-  const dir = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
-  if (!fs.existsSync(dir)) return [];
-  const classIdx = staffClassOverride?.classIndex || null;
-  const calendarYear = currentCalendarYear;
-  const yearShort = Number(String(calendarYear || 2025).slice(-2));
-  const files = fs.readdirSync(dir).filter(f => f.toLowerCase().endsWith('.json'));
+  if (!fs.existsSync(DRAFT_CLASS_DIR)) return [];
+  const files = fs.readdirSync(DRAFT_CLASS_DIR).filter(f => f.toLowerCase().endsWith('.json'));
   if (!files.length) return [];
 
-  const parsed = files.map(f => {
-    const m = f.match(/madden(\d+)_cus(\d+)/i);
-    const mYear = m ? Number(m[1]) : null;
-    return { f, mYear, cus: m?.[2] || null, time: fs.statSync(path.join(dir, f)).mtimeMs };
-  });
+  const target = files
+    .filter(f => f.toLowerCase().includes(CURRENT_CLASS_ID.toLowerCase()) && f.toLowerCase().includes('big board'))
+    .sort()[0];
+  if (!target) return [];
 
-  let pickFile;
-  if (classIdx) {
-    const target = String(classIdx).padStart(2, '0');
-    pickFile = parsed.find(p => p.cus === target)?.f;
-  }
-  if (!pickFile) {
-    // Prefer the file whose Madden year is the closest at/above the current cycle; fallback to newest
-    const ranked = parsed
-      .filter(p => p.mYear !== null)
-      .sort((a, b) => {
-        const diffA = Math.abs((a.mYear || 0) - yearShort);
-        const diffB = Math.abs((b.mYear || 0) - yearShort);
-        return diffA - diffB || (b.time - a.time);
-      });
-    pickFile = (ranked[0]?.f) || parsed.sort((a,b)=>b.time-a.time)[0].f;
-  }
-  const data = JSON.parse(fs.readFileSync(path.join(dir, pickFile), 'utf8'));
+  const data = JSON.parse(fs.readFileSync(path.join(DRAFT_CLASS_DIR, target), 'utf8'));
   const players = Object.values(data).filter(p => p && p.name);
   players.sort((a, b) => (a.RNK || a.rank || a.order || 9999) - (b.RNK || b.rank || b.order || 9999));
   return players;
@@ -647,20 +592,103 @@ function teamKey(name, nick) {
 }
 
 function resolveTeamNeedsMock(teamName, needsMap, altName) {
-  const norm = normalizeName(teamName);
-  if (needsMap[norm]) return needsMap[norm];
-  if (altName) {
-    const normAlt = normalizeName(altName);
-    if (needsMap[normAlt]) return needsMap[normAlt];
+  const clean = (s) => normalizeName((s || '').replace(/\(via.*$/i, '').trim());
+  const norm = clean(teamName);
+  const mascotOnly = norm.split(/city|town|club/)[0] || norm;
+  const variants = new Set([norm, mascotOnly]);
+  if (altName) variants.add(clean(altName));
+
+  const aliasMap = {
+    patriots: 'newenglandpatriots',
+    nepatriots: 'newenglandpatriots',
+    ne: 'newenglandpatriots',
+    '49ers': 'sanfrancisco49ers',
+    sf49ers: 'sanfrancisco49ers',
+    sf: 'sanfrancisco49ers',
+    niners: 'sanfrancisco49ers',
+    giants: 'newyorkgiants',
+    nyg: 'newyorkgiants',
+    buccaneers: 'tampabaybuccaneers',
+    tb: 'tampabaybuccaneers',
+    tbbuccaneers: 'tampabaybuccaneers',
+    bucs: 'tampabaybuccaneers',
+    vikings: 'minnesotavikings',
+    min: 'minnesotavikings',
+    dolphins: 'miamidolphins',
+    mia: 'miamidolphins',
+    jaguars: 'jacksonvillejaguars',
+    jax: 'jacksonvillejaguars',
+    chargers: 'losangeleschargers',
+    lac: 'losangeleschargers',
+  };
+  for (const v of [...variants]) {
+    const alias = aliasMap[v];
+    if (alias) variants.add(alias);
   }
-  const entry = Object.entries(needsMap).find(([k]) => k.includes(norm) || norm.includes(k));
-  if (entry) return entry[1];
-  if (altName) {
-    const normAlt = normalizeName(altName);
-    const altEntry = Object.entries(needsMap).find(([k]) => k.includes(normAlt) || normAlt.includes(k));
-    if (altEntry) return altEntry[1];
+
+  for (const v of variants) {
+    if (needsMap[v]) return needsMap[v];
   }
+  for (const v of variants) {
+    const entry = Object.entries(needsMap).find(([k]) => k.includes(v) || v.includes(k));
+    if (entry) return entry[1];
+  }
+  // As a final fallback, try matching by mascot (last token)
+  const mascot = clean(teamName).split(/[^a-z0-9]+/).filter(Boolean).pop();
+  if (mascot) {
+    const entry = Object.entries(needsMap).find(([k]) => k.endsWith(mascot) || k.includes(mascot));
+    if (entry) return entry[1];
+  }
+  console.warn('[mockdraft] Needs fallback to BPA for', teamName, 'variants:', Array.from(variants));
   return ['BPA'];
+}
+
+function resolveTeamNeedProfileMock(teamName, profileMap, altName) {
+  const clean = (s) => normalizeName((s || '').replace(/\(via.*$/i, '').trim());
+  const norm = clean(teamName);
+  const variants = new Set([norm]);
+  if (altName) variants.add(clean(altName));
+
+  const aliasMap = {
+    patriots: 'newenglandpatriots',
+    nepatriots: 'newenglandpatriots',
+    ne: 'newenglandpatriots',
+    '49ers': 'sanfrancisco49ers',
+    sf49ers: 'sanfrancisco49ers',
+    sf: 'sanfrancisco49ers',
+    niners: 'sanfrancisco49ers',
+    giants: 'newyorkgiants',
+    nyg: 'newyorkgiants',
+    buccaneers: 'tampabaybuccaneers',
+    tb: 'tampabaybuccaneers',
+    tbbuccaneers: 'tampabaybuccaneers',
+    bucs: 'tampabaybuccaneers',
+    vikings: 'minnesotavikings',
+    min: 'minnesotavikings',
+    dolphins: 'miamidolphins',
+    mia: 'miamidolphins',
+    jaguars: 'jacksonvillejaguars',
+    jax: 'jacksonvillejaguars',
+    chargers: 'losangeleschargers',
+    lac: 'losangeleschargers',
+  };
+  for (const v of [...variants]) {
+    const alias = aliasMap[v];
+    if (alias) variants.add(alias);
+  }
+  for (const v of variants) {
+    if (profileMap[v]) return profileMap[v];
+  }
+  for (const v of variants) {
+    const entry = Object.entries(profileMap).find(([k]) => k.includes(v) || v.includes(k));
+    if (entry) return entry[1];
+  }
+  const mascot = clean(teamName).split(/[^a-z0-9]+/).filter(Boolean).pop();
+  if (mascot) {
+    const entry = Object.entries(profileMap).find(([k]) => k.endsWith(mascot) || k.includes(mascot));
+    if (entry) return entry[1];
+  }
+  return { needs: ['BPA'], scores: { BPA: 0 } };
 }
 
 function loadTeamEmojis() {
@@ -699,16 +727,15 @@ function formatTeamEmoji(teamName, emojiMap) {
 }
 
 // --- Team needs heuristics ---
-function deriveTeamNeeds(league) {
+function deriveTeamNeedsDetailed(league) {
   const rosters = league.rosters?.teams || {};
   const teamInfo = league.teams?.leagueTeamInfoList || [];
-  const nameById = Object.fromEntries(teamInfo.map(t => [Number(t.teamId), `${t.cityName || ''} ${t.nickName || ''}`.trim()]));
-  const normNameById = Object.fromEntries(teamInfo.map(t => [Number(t.teamId), normalizeName(`${t.cityName || ''} ${t.nickName || ''}`)]));
-  // Optional team stats for production-based tuning
-  const TEAM_STATS_PATH = path.join(process.cwd(), 'data', 'madden', 'team_stats.json');
-  const teamStats = fs.existsSync(TEAM_STATS_PATH) ? JSON.parse(fs.readFileSync(TEAM_STATS_PATH, 'utf8')) : {};
-  const statsByTeamId = new Map(Object.entries(teamStats).map(([k,v]) => [Number(k), v]));
-  const statsByName = new Map(Object.values(teamStats).map(v => [normalizeName(v.teamName || ''), v]));
+  const teamInfoById = Object.fromEntries(teamInfo.map(t => [Number(t.teamId), t]));
+  const nameById = Object.fromEntries(teamInfo.map(t => [Number(t.teamId), getFullTeamName(t, `Team ${t.teamId}`)]));
+  const normNameById = Object.fromEntries(teamInfo.map(t => [Number(t.teamId), normalizeName(getFullTeamName(t, `Team ${t.teamId}`))]));
+  const live = buildLiveDraftContext(league);
+  const statsByTeamId = new Map(Object.entries(live.teamStatsByTeamId || {}).map(([k, v]) => [Number(k), v]));
+  const statsByName = new Map(Object.entries(live.teamStatsByName || {}));
   const getTeamStat = (tid, teamName) => {
     const hit = statsByTeamId.get(Number(tid));
     if (hit) return hit;
@@ -726,8 +753,6 @@ function deriveTeamNeeds(league) {
     .sort((a, b) => ((b.ptsFor || 0) - (b.netPts || 0)) - ((a.ptsFor || 0) - (a.netPts || 0))) // highest PA worst
     .map((t, i) => [Number(t.teamId), i + 1]));
   // No more QB_FORCE_LIST or QB_LOCKED_LIST; all teams use dynamic QB need logic
-  // Teams with a highlighted need at RB (manual nudge for low rushing) — keep minimal manual touch
-  const RB_MANUAL = new Set(['Kansas City Chiefs'].map(s => s.toLowerCase()));
 
   const needsByTeam = {};
   const baseByGroup = {
@@ -789,10 +814,15 @@ function deriveTeamNeeds(league) {
     const teamNameKey = nameById[tid] || tidStr;
     // Calculate average OVR or depth for each group
     const groupStats = {};
-    const topCache = {}; // store top2 metrics per group for later need suppression
+    const topCache = {}; // store top metrics per group for later need suppression
     const getTop = (group, n = 2) => {
       if (topCache[group]) return topCache[group];
-      const arr = (byGroup[group] || []).map(p => ({ ovr: getMetricOvr(p), age: getAge(p) }));
+      const arr = (byGroup[group] || []).map(p => ({
+        ovr: getMetricOvr(p),
+        age: getAge(p),
+        yearsPro: getYearsPro(p),
+        yearsLeft: getYearsLeft(p),
+      }));
       const top = arr.sort((a, b) => b.ovr - a.ovr).slice(0, n);
       topCache[group] = top;
       return top;
@@ -914,7 +944,8 @@ function deriveTeamNeeds(league) {
         const topOvr = top1.ovr || 0;
         const top2 = top[1] || { ovr: 0, age: 99 };
         const topYears = top1 ? (top1.yearsPro ?? top1.yp ?? 99) : 99;
-        const rookieGuard = topYears <= 2 && topOvr >= 70; // keep rookie/soph with 70+ as depth-only
+        const topAge = top1 ? (top1.age ?? 99) : 99;
+        const rookieGuard = (topYears <= 2 || topAge <= 24) && topOvr >= 70; // keep rookie/soph (or young) 70+ as depth-only
 
         if (stat.count === 0) {
           score += 200; // no QBs: high urgency
@@ -938,7 +969,6 @@ function deriveTeamNeeds(league) {
 
       // RB rushing performance nudge
       if (group === 'RB') {
-        const normTeamRB = normNameById[tid] || normalizeName(teamNameKey);
         const ts = getTeamStat(tid, teamNameKey) || {};
         const rushYds = ts.rush?.yds ?? ts.rushYds;
         const rushAtt = ts.rush?.att ?? ts.rushAtt;
@@ -949,16 +979,22 @@ function deriveTeamNeeds(league) {
         if (rushTD !== undefined && rushTD < 10) score += 6;
         if ((stat.avgOvr || 0) < 73) score += 10;
         if ((stat.count || 0) < 2) score += 6;
-        if (RB_MANUAL.has(normTeamRB)) score += 10;
       }
 
       // DT depth expectations
       if (group === 'DT') {
         const depth = stat.count || 0;
-        if (depth < 4) score += 10;
-        if (depth < 3) score += 18;
-        if (depth < 2) score += 28;
-        if ((stat.avgOvr || 0) < 76) score += 10;
+        const startersAvg = (top1.ovr + top2.ovr) / (top1.ovr && top2.ovr ? 2 : 1);
+        // prioritize starter quality first
+        if (startersAvg >= 82) score -= 16;
+        else if (startersAvg >= 78) score -= 8;
+        else if (startersAvg < 75) score += 20;
+        // slight baseline push so DT needs still surface
+        score += 8;
+        // depth: expect 3 DTs active, 4 is great
+        if (depth < 2) score += 26;
+        else if (depth === 2) score += 12;
+        else if (depth === 3) score += 6;
         const paR = paRank[tid];
         if (paR && paR <= 10) score += 8;
         else if (paR && paR >= 24) score -= 6;
@@ -966,22 +1002,38 @@ function deriveTeamNeeds(league) {
 
       // EDGE production dampening
       if (group === 'EDGE') {
-        if ((stat.count || 0) >= 5) score -= 25;
-        else if ((stat.count || 0) >= 4) score -= 18;
-        if ((stat.avgOvr || 0) >= 78) score -= 12;
+        const depth = stat.count || 0;
+        const startersAvg = (top1.ovr + top2.ovr) / (top1.ovr && top2.ovr ? 2 : 1);
+        // soften previous dampening; focus on starter quality
+        if (startersAvg >= 82) score -= 15;
+        else if (startersAvg >= 78) score -= 8;
+        else if (startersAvg < 74) score += 16;
+        // depth expectations: 4 EDGE is healthy
+        if (depth >= 5) score -= 10;
+        else if (depth === 4) score -= 4;
+        else if (depth === 3) score += 8;
+        else if (depth <= 2) score += 18;
         const ts = getTeamStat(tid, teamNameKey);
         const teamSacks = ts?.def?.sacks;
         const leadSacks = ts?.leaders?.defSacks?.val;
         if (teamSacks !== undefined) {
-          if (teamSacks >= 42) score -= 20;
-          else if (teamSacks >= 36) score -= 12;
+          if (teamSacks >= 42) score -= 12;
+          else if (teamSacks >= 36) score -= 6;
+          else if (teamSacks <= 28) score += 8;
         }
         if (leadSacks !== undefined && leadSacks >= 10) score -= 8;
       }
 
-      // Young-core suppression
-      const youngStar = top1.ovr >= 88 && top1.age <= 28;
-      const youngDuo = top1.ovr >= 82 && top2.ovr >= 78 && top1.age <= 27 && top2.age <= 27;
+      // Young-core suppression: established young starters should not keep surfacing as needs.
+      const top1YearsLeft = top1.yearsLeft ?? 0;
+      const top2YearsLeft = top2.yearsLeft ?? 0;
+      const top1YearsPro = top1.yearsPro ?? 99;
+      const top2YearsPro = top2.yearsPro ?? 99;
+      const youngStar = top1.ovr >= 88 && top1.age <= 28 && top1YearsLeft >= 2;
+      const youngDuo = top1.ovr >= 82 && top2.ovr >= 78 && top1.age <= 27 && top2.age <= 27 && top1YearsLeft >= 2 && top2YearsLeft >= 2;
+      const establishedYoungStarter = top1.ovr >= 76 && top1.age <= 24 && top1YearsPro <= 2 && top1YearsLeft >= 2;
+      const establishedPrimeStarter = top1.ovr >= 82 && top1.age <= 29 && top1YearsLeft >= 2;
+      const stableStarter = top1.ovr >= 80 && top1.age <= 30 && top1YearsLeft >= 2;
       if (group === 'OT') {
         if (youngDuo) score -= 999;
         else if (youngStar && top2.ovr >= 75) score -= 400;
@@ -1001,6 +1053,19 @@ function deriveTeamNeeds(league) {
       if (group === 'RB') {
         if (top1.ovr >= 82 && top1.age <= 27) score -= 200;
       }
+      if (group === 'TE') {
+        if (establishedYoungStarter) score -= 260;
+        else if (stableStarter) score -= 180;
+      }
+      if (group === 'RB') {
+        if (establishedYoungStarter) score -= 180;
+      }
+      if (group === 'WR' || group === 'CB' || group === 'S') {
+        if (establishedPrimeStarter && top2.ovr >= 74) score -= 90;
+      }
+      if (group === 'LB' || group === 'DT') {
+        if (establishedPrimeStarter && top2.ovr >= 72) score -= 70;
+      }
 
       // Depth-aware bump for CB/WR (carry ~5, start 3)
       if (group === 'CB' || group === 'WR') {
@@ -1009,6 +1074,10 @@ function deriveTeamNeeds(league) {
         if (depth < starts) score += 25;
         else if (depth < room) score += (room - depth) * 6;
       }
+      // Premium position emphasis: elevate OT and EDGE slightly; modest nudge for DT so it still surfaces
+      if (group === 'OT') score += 10;
+      if (group === 'EDGE') score += 10;
+      if (group === 'DT') score += 4;
 
       return { group, score };
     });
@@ -1016,10 +1085,6 @@ function deriveTeamNeeds(league) {
     needScores.sort((a, b) => b.score - a.score);
     // Take top 5 needs
   let needs = needScores.slice(0, 5).map(n => n.group);
-  const teamNormForRB = normalizeName(teamNameKey);
-  if (RB_MANUAL.has(teamNormForRB) && !needs.includes('RB')) {
-    needs[needs.length - 1] = 'RB';
-  }
   // If QB is present but not #1 and QB score is close to top, consider moving it up (avoid QB buried by edge depth tweaks)
   const qbEntry = needScores.find(n => n.group === 'QB');
   if (qbEntry && needs[0] !== 'QB') {
@@ -1035,9 +1100,27 @@ function deriveTeamNeeds(league) {
   }
     // Normalize team name for consistent lookup
     const teamNameNorm = (nameById[tid] || tidStr).toLowerCase().replace(/[^a-z0-9]/g, '');
-    needsByTeam[teamNameNorm] = needs;
+    const info = teamInfoById[tid] || {};
+    const aliasKeys = new Set([
+      teamNameNorm,
+      normalizeName(info.nickName || ''),
+      normalizeName(info.cityName || ''),
+      normalizeName(info.displayName || ''),
+      normalizeName(info.abbrName || ''),
+    ].filter(Boolean));
+    const scoreMap = Object.fromEntries(needScores.map(({ group, score }) => [group, score]));
+    const profile = {
+      needs: [...needs],
+      scores: scoreMap,
+    };
+    aliasKeys.forEach(k => { if (k) needsByTeam[k] = profile; });
   }
   return needsByTeam;
+}
+
+function deriveTeamNeeds(league) {
+  const profiles = deriveTeamNeedsDetailed(league);
+  return Object.fromEntries(Object.entries(profiles).map(([key, profile]) => [key, profile?.needs || ['BPA']]));
 }
 
 function prospectGroup(player) {
@@ -1055,27 +1138,33 @@ function prospectGroup(player) {
   return 'BPA';
 }
 
+function premiumPositionValue(group) {
+  const values = {
+    QB: 10,
+    OT: 8,
+    EDGE: 8,
+    CB: 7,
+    WR: 7,
+    IOL: 5,
+    DT: 5,
+    S: 5,
+    LB: 4,
+    TE: 2,
+    RB: 1,
+    BPA: 0,
+  };
+  return values[group] || 0;
+}
+
 export const data = new SlashCommandBuilder()
   .setName('madden-mockdraft')
-  .setDescription('Show a mock draft for the top 32 picks using current standings and the latest draft class')
-  .addIntegerOption(opt =>
-    opt.setName('class')
-      .setDescription('[Staff] Pick draft class by CUS index (1 -> CUS01, 2 -> CUS02, etc.)')
-      .setMinValue(1)
-      .setMaxValue(99)
-      .setRequired(false));
+  .setDescription('Show a mock draft for the top 32 picks using current standings and the active draft class');
 
 export async function execute(interaction) {
   // Defer immediately to avoid interaction timeout; use flags for ephemeral-like behavior
   if (!interaction.deferred && !interaction.replied) {
     await interaction.deferReply({ flags: 64 });
   }
-  // Staff-only overrides
-  const staff = interaction.member?.permissions?.has?.('Administrator') || false;
-  const classOverride = staff ? interaction.options.getInteger('class') : null;
-  staffClassOverride = {
-    classIndex: classOverride || null,
-  };
 
   const leagueFile = getLatestLeagueFile();
   if (!leagueFile) {
@@ -1089,9 +1178,18 @@ export async function execute(interaction) {
     || league?.info?.calendarYear
     || league?.calendarYear
     || 2025;
+  const seasonInfo = league?.info?.careerHubInfo?.seasonInfo || {};
+  const seasonTitle = (seasonInfo.seasonTitle || '').toLowerCase();
+  const weekTypeRaw = seasonInfo.seasonWeekType ?? seasonInfo.seasonWeekTypeId ?? seasonInfo.weekType;
+  const weekType = Number.isFinite(Number(weekTypeRaw)) ? Number(weekTypeRaw) : 1;
+  const isRegularOrPost = weekType === 1 || weekType === 2;
+  const draftYear = isRegularOrPost
+    ? Number(currentCalendarYear) + 1
+    : Number(currentCalendarYear || 2025);
   const rawOrder = draftOrder(league);
-  const order = applyPickTrades(rawOrder, currentCalendarYear);
-  const needs = deriveTeamNeeds(league);
+  const order = applyPickTrades(rawOrder, draftYear);
+  const needProfiles = deriveTeamNeedsDetailed(league);
+  const needs = Object.fromEntries(Object.entries(needProfiles).map(([key, profile]) => [key, profile?.needs || ['BPA']]));
   const prospects = loadDraftClass();
   if (!prospects.length) {
     const payload = { content: 'No Madden draft class found.' };
@@ -1104,13 +1202,6 @@ export async function execute(interaction) {
   // Assign players based on team needs with light reach logic
   const available = [...prospects];
   const picks = [];
-  const priority = ['QB', 'OL_T', 'OL_I', 'OL', 'EDGE', 'LB', 'CB', 'WR', 'TE', 'RB', 'BPA'];
-  const needBonusByIndex = [9, 7, 5, 3, 2];
-  // Madden weighting: WR/CB/S/LB prioritized for users; pass rush/OT/DT elevated
-  const posWeight = { QB: 5, OL: 3, EDGE: 4, LB: 4, CB: 5, WR: 5, TE: 2, RB: 1, S: 4, DT: 3, IOL: 3, OL_T: 3, OL_I: 3 };
-
-const MOCK_DEBUG = process.env.MOCK_DEBUG === 'true';
-
   let pickNumber = 1;
   let qbTop5Count = 0;
   const unmetNeedsMap = new Map(); // track remaining needs per team across multiple 1st-rounders
@@ -1119,8 +1210,12 @@ const MOCK_DEBUG = process.env.MOCK_DEBUG === 'true';
   for (const team of order) {
     const teamNameNorm = normalizeName(team.name || '');
     const teamKeyNorm = teamKey(team.name, team.nick);
-    let teamNeeds = resolveTeamNeedsMock(team.name || '', needs, team.nick);
+    const remainingPicksForTeam = order.slice(pickNumber).filter(t => teamKey(t.name, t.nick) === teamKeyNorm).length;
+    const teamProfile = resolveTeamNeedProfileMock(team.name || '', needProfiles, team.nick);
+    let teamNeeds = teamProfile?.needs || resolveTeamNeedsMock(team.name || '', needs, team.nick);
     if (!teamNeeds.length) teamNeeds = ['BPA'];
+    const needScoreMap = teamProfile?.scores || {};
+    const needSeverity = (group) => Math.max(0, Number(needScoreMap[group] || 0));
 
     let hasQBNeed = teamNeeds.includes('QB');
     // Persistent unmet needs (avoid double-dipping when a team owns multiple R1 picks)
@@ -1139,100 +1234,118 @@ const MOCK_DEBUG = process.env.MOCK_DEBUG === 'true';
     let bestScore = Infinity;
 
     // If QB is the top need, heavily bias to take the best available QB very early.
-    const qbTopNeed = teamNeeds[0] === 'QB';
+    const qbTopNeed = hasQBNeed && teamNeeds[0] === 'QB';
 
     // Candidate pool within board window and needs
     const bpaOnly = teamNeeds.length === 1 && teamNeeds[0] === 'BPA';
     const boardWindow =
-      pickNumber <= 5 ? 8 :
-      pickNumber <= 8 ? 12 :
-      pickNumber <= 16 ? 18 :
-      pickNumber <= 24 ? 25 :
-      30;
+      pickNumber <= 5 ? 15 :
+      pickNumber <= 10 ? 18 :
+      pickNumber <= 16 ? 22 :
+      pickNumber <= 24 ? 28 :
+      32;
 
     const candidateIndices = [];
-    const isRams = teamNameNorm.includes('rams');
+    const firstQBIndex = available.findIndex(p => prospectGroup(p) === 'QB');
+    const bestQBIndexAny = firstQBIndex;
     const effectiveNeeds = unmetNeeds.size ? unmetNeeds : null;
     const openSlots = effectiveNeeds?.size || (teamNeeds.length > 1 && !bpaOnly);
     for (let i = 0; i < available.length; i++) {
-      if (i >= boardWindow) break; // limit reach
+      if (i >= boardWindow + 10) break;
       const p = available[i];
-      const nameLower = (p.name || '').toLowerCase();
       const g = prospectGroup(p);
-      // Always allow top-5 board into first 10 picks regardless of needs
-      const eliteBoard = (i < 5 && pickNumber <= 10);
-      if (eliteBoard) {
-        candidateIndices.push(i);
-        continue;
-      }
+      const tempOv = Number(p.overall ?? p.ovr ?? p.rating ?? p.OVR ?? 0);
       if (g === 'QB' && !hasQBNeed) continue;
       if (g === 'QB' && qbTop5Count >= 2 && pickNumber <= 5) continue;
-      if (!bpaOnly && effectiveNeeds) {
-        if (!effectiveNeeds.has(g)) continue;
-      } else if (!bpaOnly && !effectiveNeeds) {
-        // all needs filled; allow any need-listed positions, otherwise BPA
-        if (teamNeeds.length && !teamNeeds.includes(g)) continue;
-      }
-      // prevent double-dip on same position when other needs remain (QB allowed once; others avoid repeats)
+      const severity = needSeverity(g);
+      const isTopNeed = teamNeeds.slice(0, 3).includes(g);
+      const eliteTalent = i < 6 || tempOv >= 84;
+      const inPrimaryWindow = i < boardWindow;
+      if (!inPrimaryWindow && !(isTopNeed && severity >= 65) && !(g === 'QB' && qbTopNeed && severity >= 75) && !eliteTalent) continue;
+      if (pickNumber <= 12 && !inPrimaryWindow && !eliteTalent) continue;
+      if (pickNumber <= 10 && ['RB', 'TE'].includes(g) && severity < 85 && tempOv < 82) continue;
       if (g !== 'QB' && pickedGroups.has(g) && openSlots) continue;
       candidateIndices.push(i);
+    }
+    if (qbTopNeed && firstQBIndex !== -1 && pickNumber <= 10 && !candidateIndices.includes(firstQBIndex)) {
+      candidateIndices.push(firstQBIndex);
+    }
+    if (!hasQBNeed) {
+      for (let k = candidateIndices.length - 1; k >= 0; k--) {
+        if (prospectGroup(available[candidateIndices[k]]) === 'QB') {
+          candidateIndices.splice(k, 1);
+        }
+      }
     }
 
     // Soft preference handled in scoring; no hard lock
 
-    const debugRows = [];
-
-    // Score only within candidates
     for (const i of candidateIndices) {
       const p = available[i];
       const g = prospectGroup(p);
-      const pos = (p.position || p.position_1 || '').toUpperCase();
-      const needIdx = teamNeeds.indexOf(g);
-      const needBonus = needIdx >= 0 && needIdx < needBonusByIndex.length ? needBonusByIndex[needIdx] : 0;
-      let score = i * 2 - needBonus; // board position weighted more
-      const nameLower = (p.name || '').toLowerCase();
-      if (g === 'EDGE') {
-        // push higher-ranked edges slightly; keep modest to avoid overfitting
-        const edgeRankBonus = Math.max(0, 6 - i * 2);
-        score -= edgeRankBonus;
+      const overallVal = Number(p.overall ?? p.ovr ?? p.rating ?? p.OVR ?? 0);
+      const severity = needSeverity(g);
+      const needRank = teamNeeds.indexOf(g);
+      const needRankBonus = needRank === 0 ? 22 : needRank === 1 ? 16 : needRank === 2 ? 10 : needRank >= 0 ? 4 : 0;
+      const premiumBonus = premiumPositionValue(g) * 2.5;
+      const boardValue = i * 6;
+      const slideValue = Math.max(0, pickNumber - (i + 1)) * 8;
+      let score = boardValue - slideValue - needRankBonus - (severity * 0.7) - premiumBonus;
+
+      if (effectiveNeeds?.has(g)) score -= 18;
+      else if (effectiveNeeds?.size) score += overallVal >= 84 && i < 6 ? 4 : 22;
+
+      if (g !== 'QB' && pickedGroups.has(g) && effectiveNeeds?.size > 1) score += 30;
+      if (remainingPicksForTeam > 0 && effectiveNeeds?.size > 1 && teamNeeds[0] === g) score -= 8;
+      if (remainingPicksForTeam > 0 && effectiveNeeds?.size > 1 && !effectiveNeeds.has(g)) score += 12;
+
+      if (pickNumber <= 12 && ['RB', 'TE'].includes(g)) {
+        score += overallVal >= 84 && severity >= 90 ? 8 : 38;
       }
-      if ((g === 'WR' || g === 'CB' || g === 'S' || g === 'LB' || g === 'EDGE' || g === 'DT') && i <= 12)
-        score -= 12; // slightly toned boost
-      // Additional BPA shove: top-5 board players get extra boost inside top 10 picks
-      if (i < 5 && pickNumber <= 10) score -= 50;
-      // Keep top WR Hali'a Nalani from falling outside top 10
-      if ((p.name || '').toLowerCase().includes("hali'a nalani") && pickNumber <= 10) {
-        score -= 120;
-      }
-      // Rams favor Cam Thompson in the teens
-      if (isRams && (p.name || '').toLowerCase().includes('cam thompson') && pickNumber >= 14 && pickNumber <= 20) {
-        score -= 120;
-      }
-      // Elevate DTs (especially Keon Davis) to reflect 2-starter interiors
-      if (g === 'DT') {
-        if (effectiveNeeds?.has('DT') || teamNeeds.includes('DT')) score -= 18;
-        if (pickNumber <= 24 && i <= 25) score -= 8;
-        if (nameLower === 'keon davis') score -= 40;
+      if (pickNumber <= 8 && g === 'IOL' && severity < 85) score += 16;
+      if (pickNumber <= 8 && g === 'LB' && severity < 82) score += 12;
+
+      if (g === 'QB') {
+        if (qbTopNeed) score -= 34;
+        else score += pickNumber <= 12 ? 18 : 8;
+        if (!hasQBNeed) score += 1000;
       }
 
-      debugRows.push({ idx: i, name: p.name, pos: g, score });
+      if (overallVal >= 80) score -= 22;
+      if (overallVal >= 84) score -= 10;
+      if (overallVal < 74 && !effectiveNeeds?.has(g)) score += 18;
+      if (g === 'DT' && effectiveNeeds?.has('DT') && overallVal < 74) score += 10;
 
       if (score < bestScore) {
         bestScore = score;
         bestIdx = i;
       }
-      if (i > 70 && bestIdx !== -1) break;
     }
 
-    // Hard failsafe: keep Keon Davis inside Round 1 even if board/needs got weird
-    if (pickNumber >= 28 && pickNumber <= 32 && bestIdx !== -1) {
-      const keonIdx = available.findIndex(p => (p.name || '').toLowerCase() === 'keon davis');
-      if (keonIdx !== -1) bestIdx = keonIdx;
+    const qbEliteCandidate = (() => {
+      const qbIndices = candidateIndices.filter(idx => prospectGroup(available[idx]) === 'QB');
+      if (!qbIndices.length && qbTopNeed && firstQBIndex !== -1) qbIndices.push(firstQBIndex);
+      if (!qbIndices.length) return { idx: undefined, ovr: 0 };
+      qbIndices.sort((a, b) => {
+        const ovrA = Number(available[a].overall ?? available[a].ovr ?? 0);
+        const ovrB = Number(available[b].overall ?? available[b].ovr ?? 0);
+        if (ovrB !== ovrA) return ovrB - ovrA;
+        return a - b;
+      });
+      const idx = qbIndices[0];
+      const ovr = Number(available[idx].overall ?? available[idx].ovr ?? 0);
+      return { idx, ovr };
+    })();
+    const qbOverrideOvrReq = 83;
+    if (qbTopNeed && hasQBNeed && pickNumber <= 8 && qbEliteCandidate.ovr >= qbOverrideOvrReq && qbEliteCandidate.idx !== undefined) {
+      bestIdx = qbEliteCandidate.idx;
+      bestScore = -999;
     }
 
-    // If no candidate (e.g., thin needs), allow BPA
+    // If no candidate (e.g., thin needs), allow BPA or best QB if still needed
     if (bestIdx === -1 && available.length) {
-      bestIdx = 0;
+      if (hasQBNeed && bestQBIndexAny !== -1) bestIdx = bestQBIndexAny;
+      else bestIdx = 0;
     }
 
     // If no valid pick found (e.g., all QBs but team doesn't need QB), pick first non-QB
@@ -1243,30 +1356,41 @@ const MOCK_DEBUG = process.env.MOCK_DEBUG === 'true';
       // fallback: pick first available non-QB
       const fallbackIdx = available.findIndex(p => prospectGroup(p) !== 'QB');
       chosen = fallbackIdx !== -1 ? available.splice(fallbackIdx, 1)[0] : available.shift();
+      // If still none and team still needs QB, take best QB available
+      if (!chosen && hasQBNeed && bestQBIndexAny !== -1) {
+        chosen = available.splice(bestQBIndexAny, 1)[0];
+      }
     }
     if (chosen && pickNumber <= 5 && prospectGroup(chosen) === 'QB') {
       qbTop5Count += 1;
+    }
+    // Need-rescue: if we picked outside unmet needs and a need candidate is close, swap
+    if (effectiveNeeds && chosen) {
+      const chosenGroup = prospectGroup(chosen);
+      if (!effectiveNeeds.has(chosenGroup)) {
+        const rescueIdx = available.findIndex((p, idx) =>
+          idx < 35 && effectiveNeeds.has(prospectGroup(p)));
+        if (rescueIdx !== -1) {
+          const swapIn = available.splice(rescueIdx, 1)[0];
+          available.splice(bestIdx >= 0 ? bestIdx : 0, 0, chosen); // put chosen back near previous slot
+          chosen = swapIn;
+        }
+      }
     }
     // Mark need as satisfied to prevent double-dip on later R1 picks
     const chosenGroup = prospectGroup(chosen);
     if (chosenGroup && unmetNeeds.has(chosenGroup)) unmetNeeds.delete(chosenGroup);
     if (chosenGroup) pickedGroups.add(chosenGroup);
 
-    if (MOCK_DEBUG) {
-      const topCandidates = debugRows.sort((a,b)=>a.score-b.score).slice(0,3);
-      console.log(`[MOCK DEBUG] Pick ${pickNumber} ${team.name} needs=${teamNeeds.join(',')} unmet=${Array.from(unmetNeeds).join(',') || 'none'} picked=${Array.from(pickedGroups).join(',') || 'none'} window=${boardWindow} candidates=${candidateIndices.length}`);
-      topCandidates.forEach(c=> console.log(`  idx ${c.idx} score ${c.score.toFixed(2)} ${c.pos} ${c.name}`));
-      console.log(`  chosen: ${chosen?.name} (${prospectGroup(chosen)})`);
-    }
     const emoji = formatTeamEmoji(team.name, emojis);
     const pos = chosen?.position || chosen?.position_1 || '';
     const school = chosen?.school || chosen?.College || chosen?.college || 'N/A';
     const via = team.via ? ` (via ${team.via})` : '';
     const line = `${picks.length + 1}. ${emoji ? emoji + ' ' : ''}${team.name}${via} — ${pos || 'POS'} ${chosen?.name || 'TBD'} — ${school}`;
-    picks.push(line);
-    pickNumber += 1;
+      picks.push(line);
+      pickNumber += 1;
 
-  }
+    }
 
   const embed = new EmbedBuilder()
     .setTitle('Madden Mock Draft (Picks 1–32)')

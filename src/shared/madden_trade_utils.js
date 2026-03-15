@@ -8,6 +8,7 @@ const ACTIVE_TRADES_FILE = path.join(process.cwd(), 'data', 'madden', 'active_tr
 const TRADE_COUNTS_FILE = path.join(process.cwd(), 'data', 'madden', 'trade_counts.json');
 const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
+const TRADE_COUNT_MESSAGE_ID = '1460405214032035891';
 
 export function canTrade(leagueId) {
   try {
@@ -100,6 +101,12 @@ export async function updateTradeCountsEmbed(client, channelMap, counts) {
     .setDescription(lines.length ? lines.join('\n') : 'No trades yet.')
     .setColor(0x00b0f4)
     .setTimestamp(new Date());
+
+  const fixedMsg = await channel.messages.fetch(TRADE_COUNT_MESSAGE_ID).catch(() => null);
+  if (fixedMsg) {
+    await fixedMsg.edit({ embeds: [embed], content: null }).catch(() => null);
+    return;
+  }
 
   try {
     const pins = await channel.messages.fetchPinned().catch(() => null);

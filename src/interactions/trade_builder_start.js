@@ -5,6 +5,7 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_
 import { saveTradeDraft, deleteDraftsForUser } from '../utils/trade_draft_store.js';
 import { normalizeName } from '../shared/rosterUtils.js';
 import { resolveTeamNameForRoster } from '../shared/rosterUtils.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 export const customId = /^trade_builder_start(?:_2k)?$/;
 
@@ -176,19 +177,19 @@ export async function execute(interaction) {
   let rows;
   if (mode === 'madden') {
     const optionsAll = teams.map(t => ({
-      label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+      label: getFullTeamName(t, 'Unknown'),
       value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
     }));
     const optionsAFC = teams
       .filter(t => (t.divName || '').toUpperCase().includes('AFC'))
       .map(t => ({
-        label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+        label: getFullTeamName(t, 'Unknown'),
         value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
       }));
     const optionsNFC = teams
       .filter(t => (t.divName || '').toUpperCase().includes('NFC'))
       .map(t => ({
-        label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+        label: getFullTeamName(t, 'Unknown'),
         value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
       }));
     rows = [

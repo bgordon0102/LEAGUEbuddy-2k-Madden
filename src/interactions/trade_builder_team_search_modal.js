@@ -2,6 +2,7 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_
 import { getTradeDraft, saveTradeDraft } from '../shared/trade_draft_store.js';
 import { buildButtons } from './trade_builder_add_assets.js';
 import { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } from 'discord.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 export const customId = /^trade_builder_team_search_modal\|/;
 const EAST = [
@@ -128,20 +129,20 @@ export async function execute(interaction) {
     return;
   }
   draft.otherTeamId = match.teamId ?? match.teamIndex ?? match.displayName ?? match.nickName;
-  draft.otherTeamName = match.displayName || match.nickName || match.cityName || match.abbrName || 'Team';
+  draft.otherTeamName = getFullTeamName(match, 'Team');
   draft.otherTeam = draft.otherTeamName || draft.otherTeamId || draft.otherTeam;
   saveTradeDraft(draftId, draft);
 
   const optionsAll = teams.map(t => ({
-    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+    label: getFullTeamName(t, 'Unknown'),
     value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
   }));
   const optionsAFC = teams.filter(t => (t.divName || '').toUpperCase().includes('AFC')).map(t => ({
-    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+    label: getFullTeamName(t, 'Unknown'),
     value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
   }));
   const optionsNFC = teams.filter(t => (t.divName || '').toUpperCase().includes('NFC')).map(t => ({
-    label: t.displayName || t.nickName || t.cityName || t.abbrName || 'Unknown',
+    label: getFullTeamName(t, 'Unknown'),
     value: String(t.teamId ?? t.teamIndex ?? t.displayName ?? t.nickName),
   }));
   const limitOptions = (opts, keepValue) => {
