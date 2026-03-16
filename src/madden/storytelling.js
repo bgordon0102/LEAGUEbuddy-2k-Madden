@@ -4,15 +4,19 @@ import { deriveTeamNeeds, draftOrder, applyPickTrades } from './coach/mockdraft.
 import { buildLiveDraftContext, loadLatestLeagueSnapshot, getUpcomingDraftYear } from './coach/draft_live_data.js';
 import { loadRoleMap } from './staff/staffUtils.js';
 import { getFullTeamName, getFullTeamNameFromParts } from '../shared/madden_team_names.js';
+import { ensureStrikeSeason, weightedCount, formatBreakdown } from '../shared/madden_strikes.js';
+import { buildFranchiseProfileContext, buildFranchiseProfile } from './franchise_profile.js';
 
 const ACTIVE_TRADES_PATH = path.join(process.cwd(), 'data', 'madden', 'active_trades.json');
 const PENDING_PROOFS_PATH = path.join(process.cwd(), 'data', 'madden', 'pending_proofs.json');
 const THREAD_STATE_PATH = path.join(process.cwd(), 'data', 'madden', 'thread_reminders.json');
 const FAIRSIMS_PATH = path.join(process.cwd(), 'data', 'madden', 'fairsims.json');
 const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.json');
+const PLAYER_CHANGES_PATH = path.join(process.cwd(), 'data', 'madden', 'player_changes.json');
 const TOP_PLAYERS_PATH = path.join(process.cwd(), 'data', 'madden', 'top_players.json');
 const WEEKLY_RECAP_HISTORY_PATH = path.join(process.cwd(), 'data', 'madden', 'weekly_recap_history.json');
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
+const WEEKLY_GAME_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'weekly_game_log.json');
 
 function safeReadJSON(file, fallback) {
   try {
@@ -74,12 +78,50 @@ function coachMentionFor(teamName, mentionMap) {
   return mentionMap.get(norm) || mentionMap.get(normalizeName(team.split(/\s+/).pop())) || '';
 }
 
+function escapeRegex(text = '') {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function tagParagraphFirstMentions(paragraph, mentionMap, candidateTeams = []) {
+  let text = String(paragraph || '');
+  if (!text) return text;
+  const teams = [...new Set(Array.from(candidateTeams || []).filter(Boolean).map((team) => toDisplayTeam(team)))]
+    .sort((a, b) => b.length - a.length);
+
+  for (const team of teams) {
+    const mention = coachMentionFor(team, mentionMap);
+    if (!mention) continue;
+    if (text.includes(`${mention} and ${team}`)) continue;
+    const pattern = new RegExp(`(^|[^\\w>])(${escapeRegex(team)})(?=([^\\w<]|$))`);
+    text = text.replace(pattern, (match, prefix, matched) => `${prefix}${mention} and ${matched}`);
+  }
+  return text;
+}
+
 function formatRecord(standing) {
   if (!standing) return '0-0';
   const wins = Number(standing.totalWins || 0);
   const losses = Number(standing.totalLosses || 0);
   const ties = Number(standing.totalTies || 0);
   return ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
+}
+
+function formatNeedLabel(need) {
+  const labels = {
+    QB: 'Quarterback',
+    OT: 'Offensive Tackle',
+    IOL: 'Interior OL',
+    WR: 'Wide Receiver',
+    TE: 'Tight End',
+    RB: 'Running Back',
+    EDGE: 'Edge Rusher',
+    DT: 'Defensive Tackle',
+    LB: 'Linebacker',
+    CB: 'Cornerback',
+    S: 'Safety',
+    BPA: 'Best Player Available',
+  };
+  return labels[need] || need || 'Need';
 }
 
 function formatStatLine(player) {
@@ -137,16 +179,32 @@ function describePerformanceRumor(player, mode = 'heat') {
     const passInts = Number(totals.passInts || 0);
     const rushYds = Number(totals.rushYds || 0);
     const rushTDs = Number(totals.rushTDs || 0);
+    const totalTds = passTDs + rushTDs;
+    const totalYards = passYds + rushYds;
+    const monsterGame = totalTds >= 6 || (passTDs >= 5 && totalYards >= 380) || (totalTds >= 5 && totalYards >= 420);
+    const eliteDualThreat = rushYds >= 60 || rushTDs >= 1;
     if (mode === 'heat') {
-      if (passInts >= 2 && (passTDs >= 3 || passYds >= 300 || rushYds >= 60 || rushTDs >= 1)) {
+      if (monsterGame) {
+        if (passInts >= 3) {
+          return `${team} are still buzzing about the kind of high-wire day ${name} just put on tape. ${line} was explosive enough to tilt a game by itself, even if the interceptions kept it from looking completely clean.`;
+        }
+        return `${team} are getting a different level of quarterback buzz behind ${name}. ${line} was the kind of takeover line that changes the whole week around a team.`;
+      }
+      if (passInts >= 2 && (passTDs >= 3 || passYds >= 300 || eliteDualThreat)) {
         return `${team} are still talking through an up-and-down day from ${name}. ${line} showed how much stress he can put on a defense, but the interceptions kept the full review mixed.`;
       }
-      if (rushYds >= 60 || rushTDs >= 1) {
+      if (eliteDualThreat) {
         return `${team} keep getting stronger buzz behind ${name}. A ${grade} grade and a line like ${line} showed both the arm talent and the rushing pressure he can add to an offense.`;
       }
       return `${team} keep getting stronger buzz behind ${name}. A ${grade} grade and a line like ${line} changes the ceiling fast.`;
     }
-    if (passInts >= 2 && (passTDs >= 3 || passYds >= 300 || rushYds >= 60 || rushTDs >= 1)) {
+    if (monsterGame) {
+      if (passInts >= 3) {
+        return `${team} are still sorting through the volatility around ${name} after ${line}. The mistakes were real, but so was the kind of production that can blow a game open.`;
+      }
+      return `${team} are carrying real quarterback heat behind ${name} after ${line}. That is the kind of line the rest of the league takes seriously.`;
+    }
+    if (passInts >= 2 && (passTDs >= 3 || passYds >= 300 || eliteDualThreat)) {
       return `${team} are catching mixed reviews around ${name} after ${line}. The creation was obvious, but so was the volatility.`;
     }
     return `${team} are catching some bad noise around ${name} after ${line}. That is the kind of quarterback week that usually follows a team for a few days.`;
@@ -221,58 +279,302 @@ function pickDistinctItems(items, getTeams, blockedTeams = new Set(), limit = 1)
   return selected;
 }
 
+function pickDistinctCategoryItems(items = [], getTeams, blockedTeams = new Set(), limit = 1) {
+  const selected = [];
+  const usedTeams = new Set([...blockedTeams].map((team) => normalizeName(team)));
+  const usedCategories = new Set();
+
+  for (const item of items) {
+    const teams = (getTeams(item) || []).filter(Boolean);
+    const hasTeamConflict = teams.some((team) => usedTeams.has(normalizeName(team)));
+    const category = item?.category || '';
+    if (hasTeamConflict || usedCategories.has(category)) continue;
+    selected.push(item);
+    teams.forEach((team) => usedTeams.add(normalizeName(team)));
+    if (category) usedCategories.add(category);
+    if (selected.length >= limit) return selected;
+  }
+
+  return pickDistinctItems(items, getTeams, blockedTeams, limit);
+}
+
 function pickTemplate(templates = [], seed = 0) {
   if (!templates.length) return '';
   return templates[Math.abs(Number(seed) || 0) % templates.length];
 }
 
-function describeNeedPressureRumor(team, coachTag, need) {
+function seededText(seedKey, templates = [], replacements = {}) {
+  const seed = [...String(seedKey || '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  let template = pickTemplate(templates, seed);
+  for (const [key, value] of Object.entries(replacements)) {
+    template = template.replaceAll(`{${key}}`, String(value ?? ''));
+  }
+  return template;
+}
+
+function seededOrder(seedKey, values = []) {
+  const out = values.slice();
+  let seed = [...String(seedKey || '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    const j = seed % (i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function describeNeedPressureRumor(team, coachTag, need, variantSeed = 0) {
   const side = coachTag ? `${coachTag} may have to` : `${team} may have to`;
   const key = String(need || '').toUpperCase();
   switch (key) {
     case 'QB':
-      return `${team} are being tied to a bigger-picture reset. The read around the league is that ${side} settle the quarterback future before anything else really comes into focus.`;
+      return pickTemplate([
+        `${team} are being tied to a bigger-picture reset. The read around the league is that ${side} settle the quarterback future before anything else really comes into focus.`,
+        `${team} keep circling back to the same question. Around the league, the feeling is that ${side} get the quarterback picture settled before the rest of the roster can make sense.`,
+        `The quarterback angle still hangs over ${team}. The outside read is that ${side} answer that first before the rest of the build really clears up.`,
+      ], variantSeed + team.length);
     case 'OT':
     case 'LT':
     case 'RT':
-      return `${team} are drawing real offensive-line scrutiny. The sense around the league is that ${side} stabilize tackle before the offense can feel settled.`;
+      return pickTemplate([
+        `${team} are drawing real offensive-line scrutiny. The sense around the league is that ${side} stabilize tackle before the offense can feel settled.`,
+        `${team} still have people around the league staring at the edges of the line. The read is that ${side} settle tackle before the offense can really breathe.`,
+        `The tackle conversation is not leaving ${team} alone. Around the league, the expectation is that ${side} get steadier there before the offense feels fully built.`,
+      ], variantSeed + team.length);
     case 'WR':
-      return `${team} are getting tied to help on the perimeter. Around the league, the feeling is that ${side} add another receiver who can actually change coverages.`;
+      return pickTemplate([
+        `${team} are getting tied to help on the perimeter. Around the league, the feeling is that ${side} add another receiver who can actually change coverages.`,
+        `${team} keep getting linked to another real target outside. The league read is that ${side} find a receiver who changes the way defenses line up.`,
+        `There is still receiver smoke around ${team}. The outside view is that ${side} need one more pass-game piece who can tilt coverage.`,
+      ], variantSeed + team.length);
     case 'RB':
     case 'HB':
-      return `${team} are drawing quiet backfield questions. The read around the league is that ${side} find more explosive runner help before the offense feels complete.`;
+      return pickTemplate([
+        `${team} are drawing quiet backfield questions. The read around the league is that ${side} find more explosive runner help before the offense feels complete.`,
+        `${team} still have a little backfield doubt hanging around them. The sense is that ${side} add more juice at running back before the offense feels whole.`,
+        `The runner room around ${team} is still getting a second look. Around the league, people think ${side} need more explosiveness there.`,
+      ], variantSeed + team.length);
     case 'TE':
-      return `${team} are being linked to another option in the middle of the field. The sense around the league is that ${side} find a tighter answer at tight end.`;
+      return pickTemplate([
+        `${team} are being linked to another option in the middle of the field. The sense around the league is that ${side} find a tighter answer at tight end.`,
+        `${team} keep drawing tight-end chatter. The outside read is that ${side} could use a more reliable middle-of-the-field answer.`,
+        `There is still some quiet tight-end smoke around ${team}. Around the league, the feeling is that ${side} sharpen that spot.`,
+      ], variantSeed + team.length);
     case 'CB':
-      return `${team} are hearing more noise about the secondary. The feeling around the league is that ${side} find another corner who can hold up on an island.`;
+      return pickTemplate([
+        `${team} are hearing more noise about the secondary. The feeling around the league is that ${side} find another corner who can hold up on an island.`,
+        `${team} keep pulling cornerback talk. The read around the league is that ${side} need another cover man they can trust outside.`,
+        `The secondary still feels unresolved around ${team}. From the outside, it looks like ${side} need one more corner with real one-on-one value.`,
+      ], variantSeed + team.length);
     case 'S':
     case 'FS':
     case 'SS':
-      return `${team} are getting tied to help on the back end. Around the league, there is a sense that ${side} get safer at safety before the defense settles.`;
+      return pickTemplate([
+        `${team} are getting tied to help on the back end. Around the league, there is a sense that ${side} get safer at safety before the defense settles.`,
+        `${team} still have some back-end questions hanging there. The read is that ${side} stabilize safety before the defense feels clean.`,
+        `There is still safety chatter around ${team}. Around the league, the feeling is that ${side} need a steadier answer on the back end.`,
+      ], variantSeed + team.length);
     case 'EDGE':
     case 'REDGE':
     case 'LEDGE':
     case 'DE':
     case 'LE':
     case 'RE':
-      return `${team} are being tied to pass-rush help. The feeling around the league is that ${side} find more edge pressure before the defense can really climb.`;
+      return pickTemplate([
+        `${team} are being tied to pass-rush help. The feeling around the league is that ${side} find more edge pressure before the defense can really climb.`,
+        `${team} keep getting linked to more heat off the edge. The outside read is that ${side} need another rusher before the front can really take off.`,
+        `Pass-rush help still follows ${team} in league talk. Around the league, people think ${side} need more edge juice.`,
+      ], variantSeed + team.length);
     case 'DT':
-      return `${team} are being linked to interior help up front. Around the league, people think ${side} get sturdier inside before the front feels complete.`;
+      return pickTemplate([
+        `${team} are being linked to interior help up front. Around the league, people think ${side} get sturdier inside before the front feels complete.`,
+        `${team} keep pulling interior-line questions. The read is that ${side} need more weight and control inside.`,
+        `The inside of the front still looks unfinished around ${team}. Around the league, the feeling is that ${side} need a sturdier answer there.`,
+      ], variantSeed + team.length);
     case 'LB':
     case 'MLB':
     case 'WILL':
     case 'MIKE':
     case 'SAM':
-      return `${team} are getting tied to second-level help. The league read is that ${side} clean up linebacker before the defense really settles down.`;
+      return pickTemplate([
+        `${team} are getting tied to second-level help. The league read is that ${side} clean up linebacker before the defense really settles down.`,
+        `${team} still have some linebacker noise around them. The outside view is that ${side} settle the second level before the defense fully calms down.`,
+        `The linebacker picture around ${team} still feels a little loose. Around the league, people think ${side} need to tighten that up.`,
+      ], variantSeed + team.length);
     case 'IOL':
     case 'G':
     case 'LG':
     case 'RG':
     case 'C':
-      return `${team} are drawing pressure around the middle of the line. The sense around the league is that ${side} get stronger inside before the offense feels stable.`;
+      return pickTemplate([
+        `${team} are drawing pressure around the middle of the line. The sense around the league is that ${side} get stronger inside before the offense feels stable.`,
+        `${team} keep getting linked to help on the interior. The read is that ${side} need more stability inside before the offense really settles.`,
+        `The middle of the line still looks like live work around ${team}. Around the league, the expectation is that ${side} get firmer there.`,
+      ], variantSeed + team.length);
     default:
-      return `${team} are being tied to a bigger-picture reset. The read around the league is that ${side} solve ${titleCase(need || 'the roster')} before anything else settles down.`;
+      return pickTemplate([
+        `${team} are being tied to a bigger-picture reset. The read around the league is that ${side} solve ${titleCase(need || 'the roster')} before anything else settles down.`,
+        `${team} keep getting linked to a larger roster fix. Around the league, the feeling is that ${side} answer ${titleCase(need || 'the roster')} before the rest clears up.`,
+        `There is still one obvious roster question hanging over ${team}. The outside read is that ${side} settle ${titleCase(need || 'that')} first.`,
+      ], variantSeed + team.length);
   }
+}
+
+function latestPlayerChangeBatch(ctx) {
+  const history = Array.isArray(ctx?.playerChanges?.history) ? ctx.playerChanges.history : [];
+  return history[history.length - 1] || null;
+}
+
+function attributeChangeWeight(change) {
+  if (!change) return 0;
+  if (change.label === 'Dev Trait') return 14;
+  if (change.label === 'Position') return 12;
+  const from = Number(change.from);
+  const to = Number(change.to);
+  if (!Number.isFinite(from) || !Number.isFinite(to)) return 0;
+  const delta = to - from;
+  if (change.label === 'OVR') return Math.abs(delta) * 5;
+  return Math.abs(delta) * 3;
+}
+
+function playerChangeImportance(entry, ctx) {
+  if (!entry) return 0;
+  const overall = Number(entry.overall || 0);
+  const dev = Number(entry.devTrait || 0);
+  const pos = String(entry.position || '').toUpperCase();
+  const top100Match = (ctx?.top100 || []).find((player) =>
+    normalizeName(player?.team || '') === normalizeName(entry.teamName || '')
+    && normalizeName(player?.name || '') === normalizeName(entry.playerName || '')
+  );
+
+  let score = 0;
+  if (overall >= 90) score += 24;
+  else if (overall >= 85) score += 18;
+  else if (overall >= 80) score += 12;
+  else if (overall >= 76) score += 7;
+  else if (overall >= 73) score += 3;
+
+  score += dev >= 3 ? 12 : dev === 2 ? 9 : dev === 1 ? 5 : 0;
+  if (['QB', 'LT', 'RT', 'CB', 'WR', 'REDGE', 'LEDGE', 'EDGE', 'RE', 'LE', 'DT'].includes(pos)) score += 6;
+  else if (['HB', 'TE', 'FS', 'SS', 'MLB', 'MIKE', 'WILL'].includes(pos)) score += 3;
+
+  if (top100Match) score += 16;
+  return score;
+}
+
+function shouldSurfacePlayerChange(entry, ctx) {
+  const impact = playerChangeImportance(entry, ctx);
+  const topChange = Math.max(...(entry?.changes || []).map(attributeChangeWeight), 0);
+  if (topChange >= 14 && impact >= 8) return true;
+  if (topChange >= 10 && impact >= 14) return true;
+  if (topChange >= 6 && impact >= 22) return true;
+  return false;
+}
+
+function attributeStoryText(position, label, delta, toValue) {
+  const pos = String(position || '').toUpperCase();
+  const up = delta > 0;
+  if (label === 'Dev Trait') {
+    if (up) {
+      if (pos === 'QB') return 'around the league, the ceiling talk just got louder.';
+      if (['WR', 'TE'].includes(pos)) return 'the buzz now sounds more like a real breakout candidate.';
+      if (['HB', 'RB', 'FB'].includes(pos)) return 'people around the league are starting to talk about him like a bigger piece.';
+      if (['CB', 'FS', 'SS'].includes(pos)) return 'evaluators are talking about him like a more serious cover piece now.';
+      if (['LE', 'RE', 'DE', 'EDGE', 'DT', 'LOLB', 'ROLB', 'MLB'].includes(pos)) return 'the league is starting to read him like a more dangerous front-seven piece.';
+      if (['LT', 'RT', 'LG', 'RG', 'C'].includes(pos)) return 'the developmental buzz around him is getting much stronger.';
+      return 'around the league, the upside talk just got louder.';
+    }
+    return 'the long-term buzz around him cooled off a bit.';
+  }
+  if (label === 'OVR') {
+    return up ? `the overall climb is starting to get noticed.` : `the overall dip is getting noticed.`;
+  }
+  if (label === 'MCV') return up ? 'he has clearly been working on man coverage.' : 'his man coverage is under more scrutiny now.';
+  if (label === 'ZCV') return up ? 'the zone instincts look like they are coming along.' : 'the zone awareness has taken a hit.';
+  if (label === 'PRS') return up ? 'the press work is getting better.' : 'the press consistency is slipping.';
+  if (label === 'FMV') return up ? 'the finesse rush is getting sharper.' : 'the finesse rush has backed up a bit.';
+  if (label === 'PMV') return up ? 'the power rush is coming on.' : 'the power rush has cooled.';
+  if (label === 'PBK' || label === 'PBP' || label === 'PBF') return up ? 'the pass protection has tightened up.' : 'the pass protection is still a concern.';
+  if (label === 'RBK' || label === 'RBP' || label === 'RBF') return up ? 'the run blocking is trending the right way.' : 'the run blocking still needs work.';
+  if (label === 'THP') return up ? 'the throw power jump is getting noticed.' : 'the arm talent is being questioned more.';
+  if (label === 'TUP') return up ? 'he looks more comfortable under pressure.' : 'pressure is still affecting him.';
+  if (label === 'SRR' || label === 'MRR' || label === 'DRR') return up ? 'the route detail is sharpening up.' : 'the route-running polish still is not there.';
+  if (label === 'CTH' || label === 'SPC' || label === 'CIT') return up ? 'the hands have gotten more reliable.' : 'the hands are still drawing questions.';
+  if (label === 'BTK' || label === 'TRK' || label === 'JKM' || label === 'SPM') return up ? 'there is more tackle-breaking juice there now.' : 'the after-contact juice backed off.';
+  if (label === 'TAK' || label === 'PUR' || label === 'PRC') return up ? 'the defensive finish is trending up.' : 'the defensive consistency still looks shaky.';
+  if (label === 'ACC' || label === 'AGI' || label === 'COD') return up ? 'the movement profile looks livelier.' : 'the movement profile has flattened a bit.';
+  if (label === 'STR') return up ? 'the added strength shows up on tape.' : 'the strength profile dipped.';
+  if (label === 'AWR') return up ? 'the awareness jump is giving him a cleaner floor.' : 'the awareness is still behind where it needs to be.';
+  return up ? `${label} is trending up.` : `${label} slipped a bit.`;
+}
+
+function describePlayerChangeRumor(entry, coachTag) {
+  if (!entry) return null;
+  const teamLead = coachTag ? `${coachTag} and ${entry.teamName}` : entry.teamName;
+  const changes = [...(entry.changes || [])].sort((a, b) => attributeChangeWeight(b) - attributeChangeWeight(a));
+  const top = changes[0];
+  if (!top) return null;
+  if (top.label === 'Position') {
+    const from = String(top.from || '').toUpperCase();
+    const to = String(top.to || '').toUpperCase();
+    const moveKey = `${from}->${to}`;
+    const moveText = {
+      'CB->FS': 'working him deeper in the secondary, where the range and eyes fit better',
+      'CB->SS': 'using him closer to the box and asking for more physical snaps',
+      'FS->CB': 'testing whether the movement skills can hold up outside',
+      'SS->LB': 'leaning into a bigger box role and more downhill work',
+      'LB->EDGE': 'trying to turn that frame into more direct pass-rush juice',
+      'EDGE->DT': 'sliding him inside more often to chase interior pressure',
+      'DT->EDGE': 'seeing if he can give them more speed on the edge',
+      'WR->HB': 'looking for a more creative touch player role',
+      'HB->WR': 'seeing more value in his receiving profile than a pure backfield role',
+      'WR->TE': 'trying to create a bigger middle-of-the-field matchup piece',
+      'TE->WR': 'testing whether he can stress space more as a detached target',
+      'LT->LG': 'looking for a steadier fit inside',
+      'RT->RG': 'trying to settle the right side by kicking him inside',
+      'LG->C': 'testing whether the communication and anchor fit the middle better',
+      'RG->C': 'trying him in a more central role up front',
+      'QB->HB': 'using the athleticism in a more flexible offensive role',
+      'HB->QB': 'experimenting with the athlete package behind center',
+      'DE->LB': 'trying to find a more flexible front-seven role',
+      'LB->DE': 'asking him to play more directly into the rush',
+    }[moveKey];
+    if (moveText) {
+      return `${teamLead} have ${entry.playerName} working at ${to} now, ${moveText}.`;
+    }
+    if (['CB', 'FS', 'SS'].includes(to)) {
+      return `${teamLead} have ${entry.playerName} working in the secondary at ${to} now. Around the league, that usually reads like a coverage reshuffle.`;
+    }
+    if (['LT', 'RT', 'LG', 'RG', 'C'].includes(to)) {
+      return `${teamLead} have ${entry.playerName} working at ${to} now. That kind of line shuffle usually means they are still searching for the right fit up front.`;
+    }
+    if (['WR', 'TE', 'HB', 'RB', 'FB'].includes(to)) {
+      return `${teamLead} have ${entry.playerName} working at ${to} now. It looks like they are trying to find a cleaner offensive role for him.`;
+    }
+    if (['LE', 'RE', 'DE', 'EDGE', 'DT', 'LOLB', 'ROLB', 'MLB'].includes(to)) {
+      return `${teamLead} have ${entry.playerName} working at ${to} now. Around the league, that reads like a front-seven role adjustment.`;
+    }
+    return `${teamLead} have ${entry.playerName} working at ${to} now. Around the league, that kind of position move usually gets noticed quickly.`;
+  }
+  if (top.label === 'Dev Trait') {
+    const pos = String(entry.position || '').toUpperCase();
+    if (pos === 'QB') {
+      return `${teamLead} are hearing a different level of buzz around ${entry.playerName}. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
+    }
+    if (['WR', 'TE', 'HB', 'RB', 'FB'].includes(pos)) {
+      return `${teamLead} have more league buzz building around ${entry.playerName}. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
+    }
+    if (['CB', 'FS', 'SS', 'LE', 'RE', 'DE', 'EDGE', 'DT', 'LOLB', 'ROLB', 'MLB'].includes(pos)) {
+      return `${teamLead} are hearing stronger evaluator buzz around ${entry.playerName}. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
+    }
+    return `${teamLead} have a little more league buzz around ${entry.playerName} right now. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
+  }
+  const from = Number(top.from);
+  const to = Number(top.to);
+  const delta = Number.isFinite(from) && Number.isFinite(to) ? to - from : 0;
+  if (!delta) return null;
+  const direction = delta > 0 ? '+' : '';
+  return `${teamLead} have ${entry.playerName} at ${top.label} ${direction}${delta} (${top.from}->${top.to}); ${attributeStoryText(entry.position, top.label, delta, top.to)}`;
 }
 
 function leagueKeyFromContext(ctx) {
@@ -292,6 +594,19 @@ function getRecentFeaturedTeams(ctx, currentWeek) {
   );
 }
 
+function getRecentRecapStoryKeys(ctx, currentWeek) {
+  const history = safeReadJSON(WEEKLY_RECAP_HISTORY_PATH, {});
+  const leagueKey = leagueKeyFromContext(ctx);
+  const leagueHistory = Array.isArray(history?.[leagueKey]) ? history[leagueKey] : [];
+  return new Set(
+    leagueHistory
+      .filter((entry) => Number(entry?.week) !== Number(currentWeek))
+      .slice(-3)
+      .flatMap((entry) => entry?.storyKeys || [])
+      .map((key) => String(key || '')),
+  );
+}
+
 function saveFeaturedTeamsForWeek(ctx, currentWeek, teams) {
   if (currentWeek == null) return;
   const history = safeReadJSON(WEEKLY_RECAP_HISTORY_PATH, {});
@@ -301,9 +616,31 @@ function saveFeaturedTeamsForWeek(ctx, currentWeek, teams) {
   filtered.push({
     week: Number(currentWeek),
     teams: [...new Set((teams || []).filter(Boolean))],
+    storyKeys: [],
     updatedAt: Date.now(),
   });
   history[leagueKey] = filtered.slice(-6);
+  saveJSON(WEEKLY_RECAP_HISTORY_PATH, history);
+}
+
+function saveRecapStoryKeysForWeek(ctx, currentWeek, storyKeys = []) {
+  if (currentWeek == null) return;
+  const history = safeReadJSON(WEEKLY_RECAP_HISTORY_PATH, {});
+  const leagueKey = leagueKeyFromContext(ctx);
+  const leagueHistory = Array.isArray(history?.[leagueKey]) ? history[leagueKey] : [];
+  const existing = leagueHistory.find((entry) => Number(entry?.week) === Number(currentWeek));
+  if (existing) {
+    existing.storyKeys = [...new Set((storyKeys || []).filter(Boolean).map((key) => String(key)))];
+    existing.updatedAt = Date.now();
+  } else {
+    leagueHistory.push({
+      week: Number(currentWeek),
+      teams: [],
+      storyKeys: [...new Set((storyKeys || []).filter(Boolean).map((key) => String(key)))],
+      updatedAt: Date.now(),
+    });
+  }
+  history[leagueKey] = leagueHistory.slice(-6);
   saveJSON(WEEKLY_RECAP_HISTORY_PATH, history);
 }
 
@@ -345,6 +682,20 @@ function scoreRecapGame(ctx, game, recentTeamSet) {
     score: blowoutBonus + closeGameBonus + totalPointsBonus + recordWeight + youngBonus - recentPenalty,
     margin,
   };
+}
+
+function describeGameTexture(entry) {
+  const awayScore = Number(entry?.game?.awayScore || 0);
+  const homeScore = Number(entry?.game?.homeScore || 0);
+  const total = awayScore + homeScore;
+  const margin = Math.abs(awayScore - homeScore);
+  if (total >= 65 && margin <= 7) return 'It played more like a track meet than a grind.';
+  if (total >= 65) return 'Points came quickly enough that it never really settled down.';
+  if (total <= 27 && margin <= 7) return 'That one stayed tight because neither side gave much away.';
+  if (total <= 27) return 'It was a lower-scoring kind of game, with every clean drive carrying extra weight.';
+  if (margin >= 17) return 'By the second half, it had more control than drama.';
+  if (margin <= 3) return 'That game sat on one or two swings all the way through.';
+  return 'It had enough momentum swings to keep the result live deep into the game.';
 }
 
 function selectRecapGames(ctx, recentGames, currentWeek) {
@@ -437,13 +788,28 @@ function previousSnapshotFor(latestFile) {
 }
 
 function listCompletedGames(league, weekIndex = null) {
-  return (league?.schedule?.schedules || []).filter((game) => {
+  const scheduledGames = (league?.schedule?.schedules || []).filter((game) => {
     const stage = Number(game?.stageIndex ?? game?.stage ?? -1);
     const status = Number(game?.status ?? 0);
     const gameWeek = Number(game?.weekIndex ?? -1);
     const weekMatch = weekIndex == null ? true : gameWeek === weekIndex;
     return [1, 2].includes(stage) && weekMatch && status >= 2;
   });
+  if (scheduledGames.length) return scheduledGames;
+
+  const leagueId = String(league?.info?.leagueId || league?.leagueId || '');
+  const gameLog = safeReadJSON(WEEKLY_GAME_LOG_PATH, {});
+  const fallbackGames = (gameLog?.[leagueId]?.games || []).filter((game) => {
+    const stage = Number(game?.stageIndex ?? game?.stage ?? -1);
+    const played = game?.played === true || Number(game?.awayScore ?? 0) > 0 || Number(game?.homeScore ?? 0) > 0;
+    const gameWeek = Number(game?.weekIndex ?? -1);
+    const weekMatch = weekIndex == null ? true : gameWeek === weekIndex;
+    return [1, 2].includes(stage) && weekMatch && played;
+  }).map((game) => ({
+    ...game,
+    status: 2,
+  }));
+  return fallbackGames;
 }
 
 function latestCompletedWeek(league) {
@@ -485,6 +851,305 @@ function buildRecentForm(league) {
   return form;
 }
 
+function buildRosterPlayerIndex(league, teams) {
+  const index = new Map();
+  for (const [teamIdRaw, roster] of Object.entries(league?.rosters?.teams || {})) {
+    const teamName = teams.get(Number(teamIdRaw));
+    if (!teamName) continue;
+    for (const player of roster?.rosterInfoList || []) {
+      const name = `${player.firstName || ''} ${player.lastName || ''}`.trim() || player.displayName || '';
+      if (!name) continue;
+      const key = normalizeName(name);
+      const current = index.get(key);
+      const ovr = Number(player.playerBestOvr || player.ovrRating || player.overallRating || 0);
+      if (!current || ovr > current.ovr) {
+        index.set(key, { team: teamName, player, ovr, name });
+      }
+    }
+  }
+  return index;
+}
+
+function buildTop100PlayerIndex(top100 = []) {
+  const index = new Map();
+  for (const player of top100 || []) {
+    const key = normalizeName(player?.name || '');
+    if (!key || index.has(key)) continue;
+    index.set(key, player);
+  }
+  return index;
+}
+
+function tradeAssetLabel(asset) {
+  return String(asset?.label || asset?.name || asset?.raw || '').trim();
+}
+
+function normalizeTradeAssets(assets = [], fallbackText = '') {
+  if (Array.isArray(assets) && assets.length) {
+    return assets
+      .map((asset) => {
+        const label = tradeAssetLabel(asset);
+        if (!label) return null;
+        const isPick = asset?.type === 'pick' || /\b(round|pick|1st|2nd|3rd|4th)\b/i.test(label);
+        return {
+          ...asset,
+          type: isPick ? 'pick' : 'player',
+          label,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  return String(fallbackText || '')
+    .split(/\n|,/)
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((label) => ({
+      type: /\b(round|pick|1st|2nd|3rd|4th)\b/i.test(label) ? 'pick' : 'player',
+      label,
+      raw: label,
+    }));
+}
+
+function resolveTradePerspective(trade, team) {
+  const teamName = toDisplayTeam(team);
+  const yourTeam = toDisplayTeam(trade?.yourTeam || '');
+  const otherTeam = toDisplayTeam(trade?.otherTeam || '');
+  if (!teamName || (!yourTeam && !otherTeam)) return null;
+  const isYourSide = normalizeName(teamName) === normalizeName(yourTeam);
+  const isOtherSide = normalizeName(teamName) === normalizeName(otherTeam);
+  if (!isYourSide && !isOtherSide) return null;
+
+  const sent = isYourSide
+    ? normalizeTradeAssets(trade?.yourStructAssets, trade?.assetsSent)
+    : normalizeTradeAssets(trade?.theirStructAssets, trade?.assetsReceived);
+  const received = isYourSide
+    ? normalizeTradeAssets(trade?.theirStructAssets, trade?.assetsReceived)
+    : normalizeTradeAssets(trade?.yourStructAssets, trade?.assetsSent);
+  const sentValue = Number(isYourSide ? trade?.sendTotal : trade?.recvTotal) || 0;
+  const receivedValue = Number(isYourSide ? trade?.recvTotal : trade?.sendTotal) || 0;
+
+  return {
+    team: teamName,
+    counterpart: isYourSide ? otherTeam : yourTeam,
+    sent,
+    received,
+    sentValue,
+    receivedValue,
+    valueDelta: receivedValue - sentValue,
+  };
+}
+
+function pickOwnerFromAsset(asset, fallbackTeam = '') {
+  const explicit = asset?.originalOwner || asset?.viaTeam || asset?.owner || '';
+  if (explicit) return toDisplayTeam(explicit);
+  const label = tradeAssetLabel(asset);
+  const viaMatch = label.match(/\bvia\s+([A-Za-z .'-]+)$/i);
+  if (viaMatch?.[1]) return toDisplayTeam(viaMatch[1]);
+  return toDisplayTeam(fallbackTeam);
+}
+
+function buildProjectedPickMap(ctx) {
+  const order = draftOrder(ctx.league);
+  const projected = new Map();
+  order.forEach((slot, idx) => {
+    const team = ctx.teams.get(Number(slot?.id));
+    if (!team) return;
+    projected.set(normalizeName(team), idx + 1);
+  });
+  return projected;
+}
+
+function buildApprovedTradeReturnItems(ctx) {
+  const trades = Object.values(ctx.activeTrades || {}).filter((trade) => trade?.status === 'approved');
+  if (!trades.length) return [];
+
+  const projectedPickMap = buildProjectedPickMap(ctx);
+  const rosterIndex = buildRosterPlayerIndex(ctx.league, ctx.teams);
+  const top100Index = buildTop100PlayerIndex(ctx.top100);
+  const items = [];
+
+  for (const trade of trades) {
+    const teamA = toDisplayTeam(trade?.yourTeam || '');
+    const teamB = toDisplayTeam(trade?.otherTeam || '');
+    if (!teamA || !teamB) continue;
+
+    const sides = [resolveTradePerspective(trade, teamA), resolveTradePerspective(trade, teamB)].filter(Boolean);
+    for (const side of sides) {
+      const valueFeel =
+        side.valueDelta >= 30 ? 'bargain' :
+          side.valueDelta <= -30 ? 'overpay' :
+            'even';
+
+      const receivedPlayers = side.received.filter((asset) => asset.type === 'player');
+      const sentPlayers = side.sent.filter((asset) => asset.type === 'player');
+      const receivedPicks = side.received.filter((asset) => asset.type === 'pick');
+
+      const productiveAddition = receivedPlayers
+        .map((asset) => {
+          const top = top100Index.get(normalizeName(tradeAssetLabel(asset)));
+          if (!top || normalizeName(top.team || '') !== normalizeName(side.team)) return null;
+          return top;
+        })
+        .filter(Boolean)
+        .sort((a, b) => Number(b.grade || 0) - Number(a.grade || 0))[0] || null;
+
+      const thrivingDeparture = sentPlayers
+        .map((asset) => {
+          const top = top100Index.get(normalizeName(tradeAssetLabel(asset)));
+          if (!top || normalizeName(top.team || '') !== normalizeName(side.counterpart)) return null;
+          return top;
+        })
+        .filter(Boolean)
+        .sort((a, b) => Number(b.grade || 0) - Number(a.grade || 0))[0] || null;
+
+      const unstableAddition = receivedPlayers
+        .map((asset) => {
+          const lookup = rosterIndex.get(normalizeName(tradeAssetLabel(asset)));
+          if (!lookup || normalizeName(lookup.team || '') !== normalizeName(side.team)) return null;
+          const top = top100Index.get(normalizeName(lookup.name));
+          if (top) return null;
+          return lookup;
+        })
+        .filter(Boolean)
+        .sort((a, b) => Number(b.ovr || 0) - Number(a.ovr || 0))[0] || null;
+
+      const mostInterestingPick = receivedPicks
+        .map((asset) => {
+          const owner = pickOwnerFromAsset(asset, side.counterpart);
+          const slot = projectedPickMap.get(normalizeName(owner));
+          if (!slot) return null;
+          const standing = [...ctx.standings.entries()].find(([teamId]) => normalizeName(ctx.teams.get(teamId) || '') === normalizeName(owner))?.[1] || null;
+          const prev = [...ctx.prevStandings.entries()].find(([teamId]) => normalizeName(ctx.teams.get(teamId) || '') === normalizeName(owner))?.[1] || null;
+          const delta = recordScore(standing) - recordScore(prev);
+          return {
+            asset,
+            owner,
+            slot,
+            standing,
+            delta,
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.slot - b.slot)[0] || null;
+
+      let text = null;
+      let score = 0;
+
+      if (productiveAddition && mostInterestingPick) {
+        text = seededText(`trade_return:combo:${side.team}:${productiveAddition.name}`, [
+          `The early return on {team}'s deal with {counterpart} keeps getting stronger. {player} is already giving them real weekly production, and the {owner} pick they control is still tracking near No. {slot}.`,
+          `{team} keep getting more out of that deal with {counterpart}. {player} is already showing up on the weekly board, and the {owner} pick attached to the move is still carrying real top-of-board value at No. {slot}.`,
+        ], {
+          team: side.team,
+          counterpart: side.counterpart,
+          player: productiveAddition.name,
+          owner: mostInterestingPick.owner,
+          slot: mostInterestingPick.slot,
+        });
+        score = 96 - Math.min(25, mostInterestingPick.slot);
+      } else if (productiveAddition) {
+        text = seededText(`trade_return:add:${side.team}:${productiveAddition.name}`, [
+          `The early return on {team}'s move with {counterpart} is getting louder. {player} is already giving them weekly top-100 production, so the price is starting to look more like a {valueFeel} than a reach.`,
+          `{team} are already getting a real return on that deal with {counterpart}. {player} is showing up on the weekly board, and around the league the cost is starting to read more like a {valueFeel}.`,
+        ], {
+          team: side.team,
+          counterpart: side.counterpart,
+          player: productiveAddition.name,
+          valueFeel: valueFeel === 'overpay' ? 'heavy swing' : valueFeel,
+        });
+        score = 91 + Math.min(6, Math.round(Number(productiveAddition.grade || 0) / 15));
+      } else if (mostInterestingPick && mostInterestingPick.slot <= 12) {
+        const ownerRecord = formatRecord(mostInterestingPick.standing);
+        if (mostInterestingPick.delta <= -1 || recordScore(mostInterestingPick.standing) <= -2) {
+          text = seededText(`trade_return:pick_rise:${side.team}:${mostInterestingPick.owner}`, [
+            `The early return on {team}'s trade with {counterpart} keeps improving. The {owner} first they control is now projecting closer to No. {slot}, which makes that pick look richer than it did when the deal first landed.`,
+            `{team} have more juice in that trade return now. With {owner} sitting at {record} and tracking near No. {slot}, the first-rounder they hold looks more valuable by the week.`,
+          ], {
+            team: side.team,
+            counterpart: side.counterpart,
+            owner: mostInterestingPick.owner,
+            slot: mostInterestingPick.slot,
+            record: ownerRecord,
+          });
+        } else {
+          text = seededText(`trade_return:pick_hold:${side.team}:${mostInterestingPick.owner}`, [
+            `{team} still have meaningful pick value tied up in that deal with {counterpart}. Even with {owner} moving around a bit, the first they control is still tracking near No. {slot}.`,
+            `That trade still carries real draft value for {team}. The {owner} first involved is holding in the top part of the board around No. {slot}.`,
+          ], {
+            team: side.team,
+            counterpart: side.counterpart,
+            owner: mostInterestingPick.owner,
+            slot: mostInterestingPick.slot,
+          });
+        }
+        score = 88 - Math.min(18, mostInterestingPick.slot);
+      } else if (mostInterestingPick && mostInterestingPick.slot >= 20) {
+        text = seededText(`trade_return:pick_fall:${side.team}:${mostInterestingPick.owner}`, [
+          `The pick side of {team}'s deal with {counterpart} is not carrying the same weight right now. With {owner} up to {record}, that first is looking less premium than it did when the trade was made.`,
+          `{team} are getting a different read on that trade return now. As {owner} climb to {record}, the first-rounder involved no longer looks as promising as it first did.`,
+        ], {
+          team: side.team,
+          counterpart: side.counterpart,
+          owner: mostInterestingPick.owner,
+          record: formatRecord(mostInterestingPick.standing),
+        });
+        score = 82;
+      } else if (thrivingDeparture) {
+        text = seededText(`trade_return:sting:${side.team}:${thrivingDeparture.name}`, [
+          `That trade is still getting reviewed from {team}'s side because {player} is producing well for {counterpart}. Around the league, that is the part making the price feel heavier.`,
+          `{team} are still wearing some of the trade math here. {player} is already giving {counterpart} real production, which is the piece keeping the cost under discussion.`,
+        ], {
+          team: side.team,
+          counterpart: side.counterpart,
+          player: thrivingDeparture.name,
+        });
+        score = 86 + Math.min(5, Math.round(Number(thrivingDeparture.grade || 0) / 20));
+      } else if (unstableAddition && valueFeel === 'overpay') {
+        text = seededText(`trade_return:slow:${side.team}:${unstableAddition.name}`, [
+          `The early return on {team}'s move with {counterpart} still feels unsettled. {player} has not turned into a loud weekly return yet, so the deal is still carrying some overpay talk.`,
+          `{team} are still waiting for that trade to read cleaner. {player} has not really broken into the weekly story yet, and the market still reads the cost as a little heavy.`,
+        ], {
+          team: side.team,
+          counterpart: side.counterpart,
+          player: unstableAddition.name,
+        });
+        score = 80;
+      }
+
+      if (!text) continue;
+      items.push({
+        score,
+        text,
+        key: `trade_return:${side.team}:${side.counterpart}:${trade?.tradeId || trade?.createdAt || ''}`,
+        category: 'trade',
+      });
+    }
+  }
+
+  return items;
+}
+
+function summarizeFranchiseProfiles(profiles = []) {
+  const uniqueLines = [];
+  const seen = new Set();
+  for (const profile of profiles) {
+    const options = [
+      profile?.tradePosture?.line,
+      profile?.pressureLine,
+      profile?.identity?.line,
+    ].filter(Boolean);
+    const firstUnique = options.find((line) => {
+      const key = normalizeName(line);
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    if (firstUnique) uniqueLines.push(`${profile.teamName}: ${firstUnique}`);
+  }
+  return uniqueLines;
+}
+
 async function buildCoachUserTeamMap(guild) {
   const roleMap = loadRoleMap();
   const out = new Map();
@@ -510,6 +1175,14 @@ async function buildCoachUserTeamMap(guild) {
 function loadTop100(leagueId) {
   const all = safeReadJSON(TOP_PLAYERS_PATH, {});
   return all?.[leagueId]?.top100 || [];
+}
+
+function loadWeeklyTop100(leagueId, weekNumber = null) {
+  if (!leagueId || !weekNumber || weekNumber < 1) return [];
+  const file = path.join(process.cwd(), 'data', 'madden', 'top_players_history', String(leagueId), `week_${weekNumber}.json`);
+  const data = safeReadJSON(file, null);
+  if (!data) return [];
+  return Array.isArray(data) ? data : (data?.top100 || data?.players || []);
 }
 
 function chooseProspectForNeed(need, draftClass) {
@@ -621,6 +1294,7 @@ export async function buildStoryContext(guild, client, options = {}) {
   const league = latest?.league || null;
   if (!league) return null;
   const live = buildLiveDraftContext(league);
+  const franchiseProfileContext = buildFranchiseProfileContext(league, guild);
   const prevLeague = previousSnapshotFor(latest.file);
   const needs = deriveTeamNeeds(league);
   const teams = teamNameMap(league);
@@ -630,6 +1304,8 @@ export async function buildStoryContext(guild, client, options = {}) {
   const roleMap = loadRoleMap();
   const teamCoachMentions = addLeagueTeamCoachAliases(buildTeamCoachMentionMap(roleMap), league);
   const coachUserTeamMap = (guild && !options.skipCoachUserTeamMap) ? await buildCoachUserTeamMap(guild) : new Map();
+  const leagueId = String(league?.info?.leagueId || league?.leagueId || '');
+  const targetWeek = Number(options.targetWeek || 0) || null;
   return {
     latest,
     league,
@@ -645,24 +1321,35 @@ export async function buildStoryContext(guild, client, options = {}) {
     threadState: safeReadJSON(THREAD_STATE_PATH, { threads: {} }),
     fairsims: safeReadJSON(FAIRSIMS_PATH, {}),
     scoutLog: safeReadJSON(SCOUT_LOG_PATH, []),
-    top100: loadTop100(String(league?.info?.leagueId || league?.leagueId || '')),
+    playerChanges: safeReadJSON(PLAYER_CHANGES_PATH, { history: [] }),
+    top100: targetWeek ? loadWeeklyTop100(leagueId, targetWeek) : loadTop100(leagueId),
+    targetWeek,
     coachUserTeamMap,
     teamCoachMentions,
     roleMap,
+    franchiseProfileContext,
     client,
     guild,
   };
 }
 
-export function buildRumorMillItems(ctx, limit = 8) {
+export function buildRumorMillItems(ctx, limit = 10, options = {}) {
   const items = [];
+  const variantSeed = Number(options.variantSeed ?? 0);
+  const recentStoryKeys = new Set((options.recentStoryKeys || []).map((key) => String(key || '')));
+  const recentCategories = new Set((options.recentCategories || []).map((category) => String(category || '')));
   const completedWeek = latestCompletedWeek(ctx.league);
   const recentForm = buildRecentForm(ctx.league);
   const draftYear = getUpcomingDraftYear(ctx.league);
   const seasonContext = ctx.seasonContext || {};
   const phaseLanguage = buildPhaseLanguage(seasonContext);
   const mockSignals = buildMockDraftSignals(ctx, 3);
+  const profileFor = (team) => buildFranchiseProfile(ctx.franchiseProfileContext, team);
   const add = (score, text, key, category = 'misc') => items.push({ score, text, key, category });
+
+  for (const item of buildApprovedTradeReturnItems(ctx)) {
+    add(item.score, item.text, item.key, item.category);
+  }
 
   if (seasonContext.isInSeason) {
     for (const [teamId, standing] of ctx.standings.entries()) {
@@ -671,18 +1358,64 @@ export function buildRumorMillItems(ctx, limit = 8) {
       const delta = recordScore(standing) - recordScore(prev);
       const team = ctx.teams.get(teamId);
       const coachTag = coachMentionFor(team, ctx.teamCoachMentions);
+      const wins = Number(standing.totalWins || 0);
+      const losses = Number(standing.totalLosses || 0);
       if (delta >= 1) {
+        const strongRise = delta >= 2 || wins >= 5 || (wins - losses) >= 2;
         add(
-          78 + delta,
-          `${coachTag ? `${coachTag} and ` : ''}${team} are climbing. The move from ${formatRecord(prev)} to ${formatRecord(standing)} has people around the league treating them more seriously.`,
+          (strongRise ? 78 : 72) + delta,
+          strongRise
+            ? seededText(`rise:${team}:strong:${variantSeed}`, [
+                `{coachLead}{team} are climbing. The move from {prevRecord} to {record} has people around the league treating them more seriously.`,
+                `{team} are building more real momentum now. Going from {prevRecord} to {record} is enough to sharpen the league conversation.`,
+                `{coachLead}{team} pushed themselves into a more serious light this week. The jump from {prevRecord} to {record} landed around the league.`,
+              ], {
+                coachLead: coachTag ? `${coachTag} and ` : '',
+                team,
+                prevRecord: formatRecord(prev),
+                record: formatRecord(standing),
+              })
+            : seededText(`rise:${team}:mild:${variantSeed}`, [
+                `{coachLead}{team} picked up a useful step this week, moving from {prevRecord} to {record}.`,
+                `{team} nudged themselves in a better direction, moving from {prevRecord} to {record}.`,
+                `The week treated {team} a little better, with the record shifting from {prevRecord} to {record}.`,
+                `{team} came out of the week looking slightly healthier, shifting from {prevRecord} to {record}.`,
+              ], {
+                coachLead: coachTag ? `${coachTag} and ` : '',
+                team,
+                prevRecord: formatRecord(prev),
+                record: formatRecord(standing),
+              }),
           `rise:${team}`,
           'trend_up',
         );
       }
       if (delta <= -1) {
+        const hardSlide = delta <= -2 || losses >= 5 || (losses - wins) >= 3;
         add(
-          84 + Math.abs(delta),
-          `${coachTag ? `${coachTag} and ` : ''}${team} are slipping. The drop from ${formatRecord(prev)} to ${formatRecord(standing)} is creating more pressure than anyone there would want.`,
+          (hardSlide ? 84 : 74) + Math.abs(delta),
+          hardSlide
+            ? seededText(`slide:${team}:hard:${variantSeed}`, [
+                `{coachLead}{team} are slipping. The drop from {prevRecord} to {record} is creating more pressure than anyone there would want.`,
+                `{team} took another hit, moving from {prevRecord} to {record}, and the pressure is building now.`,
+                `{coachLead}{team} are taking on more heat now. The move from {prevRecord} to {record} made the week feel heavier around them.`,
+              ], {
+                coachLead: coachTag ? `${coachTag} and ` : '',
+                team,
+                prevRecord: formatRecord(prev),
+                record: formatRecord(standing),
+              })
+            : seededText(`slide:${team}:mild:${variantSeed}`, [
+                `{coachLead}{team} took a step back this week, sliding from {prevRecord} to {record}.`,
+                `{team} gave back a little ground, moving from {prevRecord} to {record}.`,
+                `The week pushed {team} the wrong way, with the record moving from {prevRecord} to {record}.`,
+                `{team} left the week a little worse off, slipping from {prevRecord} to {record}.`,
+              ], {
+                coachLead: coachTag ? `${coachTag} and ` : '',
+                team,
+                prevRecord: formatRecord(prev),
+                record: formatRecord(standing),
+              }),
           `slide:${team}`,
           'trend_down',
         );
@@ -703,13 +1436,160 @@ export function buildRumorMillItems(ctx, limit = 8) {
       [trade.yourTeam, trade.otherTeam].includes(team)
     ).length;
     if (wins >= 3 && openTradeCount > 0) {
-      add(86 + openTradeCount, `${coachTag ? `${coachTag} and ` : ''}${team} are getting buyer buzz. The record says push, and the rest of the league expects them to stay aggressive.`, `buyer:${team}`, 'trade');
+      add(
+        86 + openTradeCount,
+        seededText(`buyer:${team}:${variantSeed}`, [
+          `{coachLead}{team} are getting buyer buzz. The record says push, and the rest of the league expects them to stay aggressive.`,
+          `{coachLead}{team} keep drawing buy-now chatter. Around the league, this is being read like a team that should add, not wait.`,
+          `{coachLead}{team} are being talked about like buyers. The combination of record and timing makes them look more aggressive than patient.`,
+          `{team} keep getting read through a buy-now lens. Around the league, the expectation is that this is a team more likely to add than sit still.`,
+        ], {
+          coachLead: coachTag ? `${coachTag} and ` : '',
+          team,
+        }),
+        `buyer:${team}`,
+        'trade',
+      );
     }
     if (losses >= 3 && openTradeCount > 0) {
-      add(85 + openTradeCount, `${coachTag ? `${coachTag} and ` : ''}${team} are drawing seller chatter. The record is forcing the question, and rival teams are waiting to see if a veteran hits the market.`, `seller:${team}`, 'trade');
+      add(
+        85 + openTradeCount,
+        seededText(`seller:${team}:${variantSeed}`, [
+          `{coachLead}{team} are drawing seller chatter. The record is forcing the question, and rival teams are waiting to see if a veteran hits the market.`,
+          `{coachLead}{team} keep getting pulled into seller talk. At this point, the rest of the league is watching for a veteran to shake loose.`,
+          `Around the league, {team} are starting to sound like a team that may have to sell. The record is putting real pressure on that call.`,
+          `{team} have started to sound more like a sell-side team in league conversation. The record is making that discussion harder to avoid.`,
+        ], {
+          coachLead: coachTag ? `${coachTag} and ` : '',
+          team,
+        }),
+        `seller:${team}`,
+        'trade',
+      );
     }
     if (losses >= 3 && ['QB', 'OT', 'CB', 'EDGE'].includes(needs[0])) {
-      add(80, describeNeedPressureRumor(team, coachTag, needs[0]), `pressure:${team}`, 'pressure');
+      add(80, describeNeedPressureRumor(team, coachTag, needs[0], variantSeed), `pressure:${team}`, 'pressure');
+    }
+  }
+
+  for (const team of [...ctx.teams.values()]) {
+    const profile = profileFor(team);
+    if (!profile) continue;
+    const coachTag = coachMentionFor(team, ctx.teamCoachMentions);
+    const coachLead = coachTag ? `${coachTag} and ` : '';
+    const topNeed = formatNeedLabel(profile.needs?.[0] || 'BPA').toLowerCase();
+    const secondNeed = formatNeedLabel(profile.needs?.[1] || profile.needs?.[0] || 'BPA').toLowerCase();
+
+    if (profile.identity?.short === 'Win-now build') {
+      add(
+        79,
+        seededText(`identity:win_now:${team}:${variantSeed}`, [
+          `{coachLead}{team} still look like a win-now roster. Around the league, the expectation is that they patch live holes instead of sitting on their hands.`,
+          `{team} continue to read like a win-now build. People around the league expect them to treat weak spots like urgent ones, not future problems.`,
+        ], { coachLead, team }),
+        `identity:${team}:win_now`,
+        'identity',
+      );
+    }
+
+    if (profile.identity?.short === 'Capital-heavy build') {
+      add(
+        76,
+        seededText(`identity:capital:${team}:${variantSeed}`, [
+          `{coachLead}{team} have enough draft leverage to stay patient. The read around the league is that they do not need to force a move unless it clearly improves the roster.`,
+          `{team} keep getting framed as a capital-rich roster. That gives them more patience than most teams around them.`,
+        ], { coachLead, team }),
+        `identity:${team}:capital`,
+        'identity',
+      );
+    }
+
+    if (profile.identity?.short === 'Young-core build') {
+      add(
+        75,
+        seededText(`identity:young:${team}:${variantSeed}`, [
+          `{coachLead}{team} still look like a young-core operation. The expectation is more about protecting the foundation than chasing short-term noise.`,
+          `{team} keep getting talked about as a roster that should grow into itself. The young-core read is still stronger than any quick-fix angle.`,
+        ], { coachLead, team }),
+        `identity:${team}:young`,
+        'identity',
+      );
+    }
+
+    if (profile.tradePosture?.short === 'Selective hold') {
+      add(
+        74,
+        seededText(`trade_posture:hold:${team}:${variantSeed}`, [
+          `{coachLead}{team} are getting read more as a selective hold than an all-in push. If they move, it will probably have to clearly improve {need}.`,
+          `Around the league, {team} are not being treated like a desperate market team. If they act, it likely has to be for a real {need} answer.`,
+        ], { coachLead, team, need: topNeed }),
+        `trade_posture:${team}:hold`,
+        'trade_posture',
+      );
+    }
+
+    if (profile.tradePosture?.short === 'Seller lean') {
+      add(
+        82,
+        seededText(`trade_posture:sell:${team}:${variantSeed}`, [
+          `{coachLead}{team} are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at {need} or {need2}.`,
+          `{team} continue to draw seller chatter. Around the league, the expectation is that they listen on expiring vets and look for younger answers at {need}.`,
+          `{coachLead}{team} are starting to feel more like a seller than a holder. The cleaner league read is that younger answers at {need} matter more than hanging onto expiring veterans.`,
+          `The market tone around {team} keeps bending sell-side. Around the league, the expectation is that they at least listen if a move helps them get younger at {need} or {need2}.`,
+        ], { coachLead, team, need: topNeed, need2: secondNeed }),
+        `trade_posture:${team}:sell`,
+        'trade_posture',
+      );
+    }
+
+    if (profile.tradePosture?.short === 'Buyer lean') {
+      add(
+        81,
+        seededText(`trade_posture:buy:${team}:${variantSeed}`, [
+          `{coachLead}{team} are still getting buyer noise, but the cleaner expectation is one real move at {need}, not a scattershot push.`,
+          `The market read on {team} is still buyer-leaning. The better fit sounds like one meaningful {need} move, not volume for the sake of volume.`,
+        ], { coachLead, team, need: topNeed }),
+        `trade_posture:${team}:buy`,
+        'trade_posture',
+      );
+    }
+
+    if (Number(profile.accountability?.strikeTotal || 0) >= 3) {
+      add(
+        83 + Math.floor(Number(profile.accountability.strikeTotal || 0)),
+        seededText(`accountability:${team}:${variantSeed}`, [
+          `{coachLead}{team} are carrying accountability pressure now. A {total}/5 strike line changes how the rest of the league reads any more missed time.`,
+          `There is more accountability pressure hanging over {team} now. At {total}/5 on the strike board, the margin for another miss is thin.`,
+        ], { coachLead, team, total: Number(profile.accountability.strikeTotal || 0).toFixed(1) }),
+        `accountability:${team}`,
+        'accountability',
+      );
+    }
+
+    if (Number(profile.accountability?.consecutiveSilentWeeks || 0) >= 1) {
+      add(
+        86 + Number(profile.accountability.consecutiveSilentWeeks || 0),
+        seededText(`silent:${team}:${variantSeed}`, [
+          `{coachLead}{team} are drawing more communication heat now. The thread silence is starting to matter as much as the standings.`,
+          `Communication around {team} is getting watched more closely now. Silence in game threads travels quickly around the league.`,
+        ], { coachLead, team }),
+        `silent:${team}`,
+        'accountability',
+      );
+    }
+
+    if (profile.awardLine) {
+      add(
+        77,
+        seededText(`award:${team}:${variantSeed}`, [
+          `{awardLine}`,
+          `One quieter league note: {awardLine}`,
+          `One player note that did carry over from the week: {awardLine}`,
+          `The individual-awards picture also kept a few names alive. {awardLine}`,
+        ], { awardLine: profile.awardLine }),
+        `award:${team}`,
+        'awards',
+      );
     }
   }
 
@@ -719,8 +1599,36 @@ export function buildRumorMillItems(ctx, limit = 8) {
       if (!team) continue;
       const coachTag = coachMentionFor(team, ctx.teamCoachMentions);
       const margin = Number(form.pf || 0) - Number(form.pa || 0);
-      if (form.wins >= 2) add(82 + form.wins, `${coachTag ? `${coachTag} have ` : ''}${team} rolling. ${form.wins} straight wins and a ${margin} scoring margin over that stretch is the kind of form people notice.`, `run:${team}`, 'trend_up');
-      if (form.losses >= 2) add(88 + form.losses, `${coachTag ? `${coachTag} just watched ` : ''}${team} drop ${form.losses} straight while getting outscored by ${Math.abs(margin)}. The urgency is real.`, `cold:${team}`, 'trend_down');
+      if (form.wins >= 2) add(
+        82 + form.wins,
+        seededText(`run:${team}:${variantSeed}`, [
+          `{coachLead}{team} rolling. {wins} straight wins and a {margin} scoring margin over that stretch is the kind of form people notice.`,
+          `{team} have put together a real run. {wins} straight and a {margin} point differential over that stretch will get the league talking.`,
+          `The noise around {team} is getting louder for a reason. {wins} straight wins with that kind of scoring margin reads like a team finding itself.`,
+        ], {
+          coachLead: coachTag ? `${coachTag} have ` : '',
+          team,
+          wins: form.wins,
+          margin,
+        }),
+        `run:${team}`,
+        'trend_up',
+      );
+      if (form.losses >= 2) add(
+        88 + form.losses,
+        seededText(`cold:${team}:${variantSeed}`, [
+          `{coachLead}{team} drop {losses} straight while getting outscored by {margin}. The urgency is real.`,
+          `{team} are sliding. {losses} straight losses and a {margin} point swing over that stretch is the kind of skid people feel quickly.`,
+          `The tone around {team} has changed. {losses} straight losses while getting outscored by {margin} will do that.`,
+        ], {
+          coachLead: coachTag ? `${coachTag} just watched ` : '',
+          team,
+          losses: form.losses,
+          margin: Math.abs(margin),
+        }),
+        `cold:${team}`,
+        'trend_down',
+      );
     }
   }
 
@@ -759,7 +1667,21 @@ export function buildRumorMillItems(ctx, limit = 8) {
   for (const [team, count] of tradeCountsByTeam.entries()) {
     const acceptedCount = tradeStates.filter((trade) => ['committee', 'approved_pending_proof'].includes(trade?.status) && [trade.yourTeam, trade.otherTeam].includes(team)).length;
     if (acceptedCount > 0) {
-      add(84 + acceptedCount, `${coachMentionFor(team, ctx.teamCoachMentions) ? `${coachMentionFor(team, ctx.teamCoachMentions)} and ` : ''}${team} keep showing up around the trade desk. With ${acceptedCount} accepted process${acceptedCount === 1 ? '' : 'es'} alive, the expectation is movement.`, `trade:${team}`, 'trade');
+      add(
+        84 + acceptedCount,
+        seededText(`trade:${team}`, [
+          `{coachLead}{team} keep showing up around the trade desk. With {count} accepted process{suffix} alive, the expectation is movement.`,
+          `{team} continue to sit in the middle of trade chatter. {count} accepted process{suffix} still being alive is enough to keep the heat there.`,
+          `{coachLead}{team} are not out of the trade conversation yet. With {count} accepted process{suffix} still moving, the market still feels live around them.`,
+        ], {
+          coachLead: coachMentionFor(team, ctx.teamCoachMentions) ? `${coachMentionFor(team, ctx.teamCoachMentions)} and ` : '',
+          team,
+          count: acceptedCount,
+          suffix: acceptedCount === 1 ? '' : 'es',
+        }),
+        `trade:${team}`,
+        'trade',
+      );
     }
   }
   for (const trade of tradeStates.slice(0, 4)) {
@@ -827,6 +1749,22 @@ export function buildRumorMillItems(ctx, limit = 8) {
     add(85 + link.count, `There is real smoke around ${coachMentionFor(link.team, ctx.teamCoachMentions) ? `${coachMentionFor(link.team, ctx.teamCoachMentions)} and ` : ''}${link.team} with ${link.player}${link.position ? ` (${link.position})` : ''}. At this point, it reads like more than random scouting noise.`, `scout:${link.team}:${link.player}`, 'scouting');
   }
 
+  const playerChangeBatch = latestPlayerChangeBatch(ctx);
+  const notablePlayerChanges = (playerChangeBatch?.items || [])
+    .map((entry) => ({
+      ...entry,
+      score: Math.max(...(entry.changes || []).map(attributeChangeWeight), 0),
+      importance: playerChangeImportance(entry, ctx),
+    }))
+    .filter((entry) => shouldSurfacePlayerChange(entry, ctx))
+    .sort((a, b) => (b.score + b.importance) - (a.score + a.importance))
+    .slice(0, 4);
+  for (const entry of notablePlayerChanges) {
+    const rumor = describePlayerChangeRumor(entry, coachMentionFor(entry.teamName, ctx.teamCoachMentions));
+    if (!rumor) continue;
+    add(76 + entry.score + Math.floor(entry.importance / 2), rumor, `player_change:${entry.teamName}:${entry.playerName}`, 'player_change');
+  }
+
   for (const signal of mockSignals) {
     add(78, `${phaseLanguage.rumorFrame} ${signal.text}`, signal.key, 'draft');
   }
@@ -839,40 +1777,71 @@ export function buildRumorMillItems(ctx, limit = 8) {
       .filter((player) => Number(player?.injuryLength || 0) >= 4)
       .sort((a, b) => Number(b.playerBestOvr || b.teamSchemeOvr || 0) - Number(a.playerBestOvr || a.teamSchemeOvr || 0))[0];
     if (!injured) continue;
+    const coachTag = coachMentionFor(team, ctx.teamCoachMentions);
     const name = `${injured.firstName || ''} ${injured.lastName || ''}`.trim() || injured.displayName || 'A starter';
-    add(81, `${team} have an injury variable to manage. ${name} missing ${Number(injured.injuryLength || 0)} weeks is the kind of hit that can force a pivot.`, `injury:${team}:${name}`, 'injury');
+    add(
+      81,
+      pickTemplate([
+        `${coachTag ? `${coachTag} and ` : ''}${team} have an availability variable to manage. ${name} is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning.`,
+        `${coachTag ? `${coachTag} and ` : ''}${team} now have an availability issue hanging over the week. Losing ${name} can change how snaps, touches, or short-term roster choices get handled.`,
+        `${team} also left the week with a personnel problem to sort through. ${name} is the kind of absence that can bend usage and short-term planning pretty quickly.`,
+      ], variantSeed + team.length),
+      `injury:${team}:${name}`,
+      'injury',
+    );
   }
 
   const categoryCaps = seasonContext.phase === 'offseason'
-    ? {
-        trade: 2,
-        scouting: 1,
-        draft: 2,
-        player_heat: 1,
+      ? {
+        trade: 3,
+        scouting: 2,
+        draft: 3,
+        identity: 2,
+        trade_posture: 2,
+        accountability: 1,
+        awards: 1,
+        player_heat: 2,
+        player_change: 1,
         player_struggle: 1,
         trend_up: 0,
         trend_down: 1,
-        pressure: 1,
-        injury: 1,
-        misc: 1,
+        pressure: 2,
+        injury: 2,
+        misc: 2,
       }
-    : {
-        trade: 2,
-        scouting: 1,
+      : {
+        trade: 3,
+        scouting: 2,
         draft: seasonContext.phase === 'late_regular' || seasonContext.phase === 'postseason' ? 2 : 1,
-        player_heat: 2,
-        player_struggle: 1,
-        trend_up: 1,
+        identity: 2,
+        trade_posture: 2,
+        accountability: 1,
+        awards: 1,
+        player_heat: 3,
+        player_change: 1,
+        player_struggle: 2,
+        trend_up: 2,
         trend_down: 2,
-        pressure: 1,
-        injury: 1,
-        misc: 1,
+        pressure: 2,
+        injury: 2,
+        misc: 2,
       };
+  const dedupedItems = items
+    .sort((a, b) => {
+      const aPenalty = (recentStoryKeys.has(String(a?.key || '')) ? 18 : 0) + (recentCategories.has(String(a?.category || '')) ? 6 : 0);
+      const bPenalty = (recentStoryKeys.has(String(b?.key || '')) ? 18 : 0) + (recentCategories.has(String(b?.category || '')) ? 6 : 0);
+      return (b.score - bPenalty) - (a.score - aPenalty);
+    })
+    .filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index);
+  const primaryPool = dedupedItems.slice(0, Math.max(limit * 3, 12));
+  const orderedPool = [
+    ...seededOrder(`rumor-pool:${completedWeek}:${variantSeed}`, primaryPool),
+    ...dedupedItems.filter((item) => !primaryPool.includes(item)),
+  ];
+
   const categoryCounts = new Map();
   const selected = [];
-  for (const item of items
-    .sort((a, b) => b.score - a.score)
-    .filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index)) {
+  for (const item of orderedPool) {
     const count = categoryCounts.get(item.category) || 0;
     const cap = categoryCaps[item.category] ?? 1;
     if (count >= cap) continue;
@@ -882,25 +1851,26 @@ export function buildRumorMillItems(ctx, limit = 8) {
   }
 
   if (selected.length < limit) {
-    for (const item of items
-      .sort((a, b) => b.score - a.score)
-      .filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index)) {
+    for (const item of orderedPool) {
       if (selected.some((entry) => entry.key === item.key)) continue;
       selected.push(item);
       if (selected.length >= limit) break;
     }
   }
 
-  return selected.map((item) => item.text);
+  return selected.map((item) => ({ ...item }));
 }
 
-export function buildWeeklyRecapData(ctx) {
-  const currentWeek = latestCompletedWeek(ctx.league);
+export function buildWeeklyRecapData(ctx, options = {}) {
+  const forcedWeek = Number(options.targetWeek ?? ctx?.targetWeek ?? 0);
+  const currentWeek = Number.isFinite(forcedWeek) && forcedWeek > 0 ? forcedWeek - 1 : latestCompletedWeek(ctx.league);
+  const variantSeed = Number(options.variantSeed ?? Date.now());
   const seasonContext = ctx.seasonContext || {};
   const phaseLanguage = buildPhaseLanguage(seasonContext);
   const mockSignals = buildMockDraftSignals(ctx, 2);
   const recentGames = currentWeek == null ? [] : listCompletedGames(ctx.league, currentWeek);
   const selectedGames = selectRecapGames(ctx, recentGames, currentWeek);
+  const recentStoryKeys = getRecentRecapStoryKeys(ctx, currentWeek);
   const sortedGames = selectedGames.map((entry) => entry.game);
   const gameStoryEntries = selectedGames.map((entry, idx) => {
     const awayScore = Number(entry.game.awayScore || 0);
@@ -920,25 +1890,26 @@ export function buildWeeklyRecapData(ctx) {
     const upsetScore = (recordScore(loserStanding) - recordScore(winnerStanding));
     const collapseSignal = loserDelta <= -1 || entry.margin >= 14 || upsetScore >= 2;
     const riseSignal = winnerDelta >= 1 || entry.margin >= 14;
+    const texture = describeGameTexture(entry);
     const winTemplates = [
-      `${winnerCoach ? `${winnerCoach} watched ` : ''}${winner} beat ${loserCoach ? `${loserCoach} and ` : ''}${loser} ${scoreLine}, and the bigger takeaway was the continued rise of ${featuredYoung?.name || winner}. ${featuredYoung ? 'Young production like that changes the shape of a week.' : 'That was the kind of result that felt bigger than one Sunday.'}`,
+      `${winnerCoach ? `${winnerCoach} watched ` : ''}${winner} beat ${loserCoach ? `${loserCoach} and ` : ''}${loser} ${scoreLine}, and the bigger takeaway was the continued rise of ${featuredYoung?.name || winner}. ${featuredYoung ? 'Young production like that changes the shape of a week.' : texture}`,
       `${winnerCoach ? `${winnerCoach} and ` : ''}${winner} came out of the week with one of the cleaner statements on the board, putting away ${loserCoach ? `${loserCoach} and ` : ''}${loser} ${scoreLine}. A result like that usually changes how the rest of the league talks about you.`,
-      `${winnerCoach ? `${winnerCoach} and ` : ''}${winner} got the kind of win that travels, beating ${loserCoach ? `${loserCoach} and ` : ''}${loser} ${scoreLine}. ${entry.margin <= 7 ? 'It took four quarters.' : `The ${entry.margin}-point margin gave it extra weight.`}`,
+      `${winnerCoach ? `${winnerCoach} and ` : ''}${winner} got the kind of win that travels, beating ${loserCoach ? `${loserCoach} and ` : ''}${loser} ${scoreLine}. ${entry.margin <= 7 ? texture : `The ${entry.margin}-point margin gave it extra weight.`}`,
     ];
     const lossTemplates = [
-      `${loserCoach ? `${loserCoach} and ` : ''}${loser} took the week’s roughest hit, falling ${scoreLine} to ${winnerCoach ? `${winnerCoach} and ` : ''}${winner}. For a team already dealing with pressure, that was the kind of result that sticks.`,
-      `${winnerCoach ? `${winnerCoach} and ` : ''}${winner} did more than win ${scoreLine} over ${loserCoach ? `${loserCoach} and ` : ''}${loser}; they shoved ${loser} deeper into a bad week. The score only tells part of why that one felt loud.`,
-      `${loserCoach ? `${loserCoach} and ` : ''}${loser} walked out of the week with more heat after a ${scoreLine} loss to ${winnerCoach ? `${winnerCoach} and ` : ''}${winner}. Whether it was expectation, momentum, or timing, that result landed hard.`,
+      `${loser} took the week’s roughest hit, falling ${scoreLine} to ${winner}. For a team already dealing with pressure, that was the kind of result that sticks.`,
+      `${winner} did more than win ${scoreLine} over ${loser}; they shoved ${loser} deeper into a bad week. ${texture}`,
+      `${loser} walked out of the week with more heat after a ${scoreLine} loss to ${winner}. Whether it was expectation, momentum, or timing, that result landed hard.`,
     ];
     const neutralTemplates = [
-      `${winnerCoach ? `${winnerCoach} and ` : ''}${winner} survived one of the tighter games on the board, getting past ${loserCoach ? `${loserCoach} and ` : ''}${loser} ${scoreLine}. Those are the kind of finishes that can carry weight later in the season.`,
-      `${winnerCoach ? `${winnerCoach} and ` : ''}${winner} edged out ${loserCoach ? `${loserCoach} and ` : ''}${loser} ${scoreLine} in one of the week’s cleaner coin-flip games.`,
-      `${winnerCoach ? `${winnerCoach} and ` : ''}${winner} found a way through ${loserCoach ? `${loserCoach} and ` : ''}${loser} ${scoreLine}. In a week full of noise, that one came down to execution late.`,
+      `${winner} survived one of the tighter games on the board, getting past ${loser} ${scoreLine}. ${texture}`,
+      `${winner} edged out ${loser} ${scoreLine} in one of the week’s cleaner coin-flip games.`,
+      `${winner} found a way through ${loser} ${scoreLine}. ${texture}`,
     ];
     const emphasis = collapseSignal ? 'negative' : (riseSignal ? 'positive' : 'neutral');
     const text = pickTemplate(
       emphasis === 'negative' ? lossTemplates : emphasis === 'positive' ? winTemplates : neutralTemplates,
-      currentWeek + idx,
+      currentWeek + idx + variantSeed,
     );
     const leadScore =
       (collapseSignal ? 18 : 0) +
@@ -966,14 +1937,14 @@ export function buildWeeklyRecapData(ctx) {
     if (delta !== 0) {
       movers.push({
         delta,
-        text: `${coachMentionFor(ctx.teams.get(teamId), ctx.teamCoachMentions) ? `${coachMentionFor(ctx.teams.get(teamId), ctx.teamCoachMentions)}: ` : ''}${ctx.teams.get(teamId)} moved from ${formatRecord(prev)} to ${formatRecord(standing)}.`,
+        text: `${ctx.teams.get(teamId)} moved from ${formatRecord(prev)} to ${formatRecord(standing)}.`,
       });
     }
   }
 
   const topPerformerEntries = ctx.top100.slice(0, 8).map((player) => ({
     team: player.team,
-    text: `${player.name} gave ${coachMentionFor(player.team, ctx.teamCoachMentions) || player.team} a true feature performance with a ${formatGrade(player.grade)} grade. The line: ${formatStatLine(player)}.`,
+    text: `${player.name} gave ${player.team} a true feature performance with a ${formatGrade(player.grade)} grade. The line: ${formatStatLine(player)}.`,
     player,
   }));
   const roughPerformerEntries = ctx.top100
@@ -983,30 +1954,37 @@ export function buildWeeklyRecapData(ctx) {
     .slice(0, 6)
     .map((player) => ({
       team: player.team,
-      text: `${coachMentionFor(player.team, ctx.teamCoachMentions) || player.team} also had to wear a rough outing from ${player.name}. The line was hard to ignore: ${formatStatLine(player)}.`,
+      text: `${player.team} also had to wear a rough outing from ${player.name}. The line was hard to ignore: ${formatStatLine(player)}.`,
       player,
     }));
 
-  const rumors = buildRumorMillItems(ctx, 4);
+  const rumors = buildRumorMillItems(ctx, 10, { variantSeed });
+  const profileFor = (team) => buildFranchiseProfile(ctx.franchiseProfileContext, team);
 
   const leadGameEntry = gameStoryEntries.slice().sort((a, b) => b.leadScore - a.leadScore)[0] || null;
   const leadGame = leadGameEntry?.entry?.game || null;
-  let leadStory = 'The week did not produce a clean lead story from completed game data.';
-  if (leadGameEntry) {
-    leadStory = leadGameEntry.text;
-  }
+  const leadStory = leadGameEntry ? leadGameEntry.text : null;
 
   const notebookEntries = movers
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
     .slice(0, 3)
     .map((entry) => ({ team: ctx.teams.get([...ctx.standings.entries()].find(([teamId, standing]) => entry.text.includes(ctx.teams.get(teamId)))?.[0]), text: entry.text.replace(' moved from ', ' changed its footing from ') }));
-  const watchEntries = rumors.map((text) => {
+  const rumorEntries = seededOrder(`rumor-entries:${currentWeek}:${variantSeed}`, rumors)
+    .sort((a, b) => {
+      const aRecent = recentStoryKeys.has(String(a?.key || '')) ? 1 : 0;
+      const bRecent = recentStoryKeys.has(String(b?.key || '')) ? 1 : 0;
+      if (aRecent !== bRecent) return aRecent - bRecent;
+      return 0;
+    })
+    .map((item) => {
+    const text = item?.text || '';
     const matchedTeams = [...ctx.teams.values()].filter((team) => String(text).includes(team));
-    return { teams: matchedTeams, text };
+    return { ...item, teams: matchedTeams, text };
   });
   const leadTeams = leadGameEntry?.teams || (leadGame ? [ctx.teams.get(Number(leadGame.awayTeamId)), ctx.teams.get(Number(leadGame.homeTeamId))].filter(Boolean) : []);
+  const secondaryGamePool = seededOrder(`games:${currentWeek}:${variantSeed}`, gameStoryEntries.filter((story) => story !== leadGameEntry));
   const secondaryGameNotes = pickDistinctItems(
-    gameStoryEntries.filter((story) => story !== leadGameEntry),
+    secondaryGamePool,
     (story) => story.teams,
     new Set(leadTeams),
     2,
@@ -1015,45 +1993,59 @@ export function buildWeeklyRecapData(ctx) {
   const featureEntry = pickDistinctItems(topPerformerEntries, (entry) => [entry.team], new Set([...leadTeams, ...notebookEntries.map((entry) => entry.team).filter(Boolean)]), 1)[0] || topPerformerEntries[0];
   const featurePlayer = featureEntry?.player || null;
   const roughEntry = pickDistinctItems(roughPerformerEntries, (entry) => [entry.team], new Set([...leadTeams, featurePlayer?.team].filter(Boolean)), 1)[0] || null;
+  const stateTeams = [...new Set([...leadTeams, featurePlayer?.team, roughEntry?.team].filter(Boolean))];
+  const franchiseProfiles = stateTeams
+    .map((team) => profileFor(team))
+    .filter(Boolean);
   const feature = featurePlayer
     ? pickTemplate([
-      `${featurePlayer.name} was the cleanest feature piece on the board this week for ${coachMentionFor(featurePlayer.team, ctx.teamCoachMentions) || featurePlayer.team}. A ${formatGrade(featurePlayer.grade)} grade backed it up, and the production matched the mark: ${formatStatLine(featurePlayer)}.`,
-      `${coachMentionFor(featurePlayer.team, ctx.teamCoachMentions) || featurePlayer.team} got a true star turn from ${featurePlayer.name}, who posted a ${formatGrade(featurePlayer.grade)} grade with a line that deserved the attention: ${formatStatLine(featurePlayer)}.`,
-      `One performance that kept showing up in every conversation belonged to ${featurePlayer.name}. For ${coachMentionFor(featurePlayer.team, ctx.teamCoachMentions) || featurePlayer.team}, the ${formatGrade(featurePlayer.grade)} grade and ${formatStatLine(featurePlayer)} line made him impossible to leave out of the week.`,
-      `If the week needed an individual centerpiece, it was ${featurePlayer.name}. ${coachMentionFor(featurePlayer.team, ctx.teamCoachMentions) || featurePlayer.team} got a ${formatGrade(featurePlayer.grade)} grade and a stat line that read loudly enough on its own: ${formatStatLine(featurePlayer)}.`,
-      `${featurePlayer.name} ended up carrying one of the week’s clearest individual stories. The grade hit ${formatGrade(featurePlayer.grade)}, and ${coachMentionFor(featurePlayer.team, ctx.teamCoachMentions) || featurePlayer.team} got every bit of the production: ${formatStatLine(featurePlayer)}.`,
-    ], currentWeek + 11)
-    : 'No feature performance was available from the current Top 100 pull.';
-  const storylineEntries = pickDistinctItems(
-    watchEntries,
+      `${featurePlayer.name} was the cleanest feature piece on the board this week for ${featurePlayer.team}. A ${formatGrade(featurePlayer.grade)} grade backed it up, and the production matched the mark: ${formatStatLine(featurePlayer)}.`,
+      `${featurePlayer.team} got a true star turn from ${featurePlayer.name}, who posted a ${formatGrade(featurePlayer.grade)} grade with a line that deserved the attention: ${formatStatLine(featurePlayer)}.`,
+      `One performance that kept showing up in every conversation belonged to ${featurePlayer.name}. For ${featurePlayer.team}, the ${formatGrade(featurePlayer.grade)} grade and ${formatStatLine(featurePlayer)} line made him impossible to leave out of the week.`,
+      `If the week needed an individual centerpiece, it was ${featurePlayer.name}. ${featurePlayer.team} got a ${formatGrade(featurePlayer.grade)} grade and a stat line that read loudly enough on its own: ${formatStatLine(featurePlayer)}.`,
+      `${featurePlayer.name} ended up carrying one of the week’s clearest individual stories. The grade hit ${formatGrade(featurePlayer.grade)}, and ${featurePlayer.team} got every bit of the production: ${formatStatLine(featurePlayer)}.`,
+    ], currentWeek + 11 + variantSeed)
+    : null;
+  const storylineEntries = pickDistinctCategoryItems(
+    rumorEntries.filter((entry) => ['player_change', 'scouting', 'injury', 'trade_posture', 'identity', 'pressure', 'misc', 'trade'].includes(entry.category)),
+    (entry) => entry.teams,
+    new Set([...leadTeams, featurePlayer?.team, roughEntry?.team].filter(Boolean)),
+    3,
+  );
+  const franchiseSummaryLines = summarizeFranchiseProfiles(franchiseProfiles).slice(0, 2);
+  const franchiseStateParagraph = franchiseSummaryLines.length
+    ? pickTemplate([
+      `A couple front offices came out of the week looking easier to read. ${franchiseSummaryLines.join(' ')}`,
+      `The week also sharpened a few roster reads. ${franchiseSummaryLines.join(' ')}`,
+      `Away from the scores, a couple team-building angles also came into focus. ${franchiseSummaryLines.join(' ')}`,
+    ], currentWeek + 13 + variantSeed)
+    : null;
+  const usedStorylineCategories = new Set(storylineEntries.map((entry) => entry.category).filter(Boolean));
+  const watchEntries = pickDistinctCategoryItems(
+    rumorEntries.filter((entry) => !storylineEntries.includes(entry) && !usedStorylineCategories.has(entry.category)),
     (entry) => entry.teams,
     new Set([...leadTeams, featurePlayer?.team, roughEntry?.team].filter(Boolean)),
     2,
   );
-  const watchList = pickDistinctItems(
-    watchEntries.filter((entry) => !storylineEntries.includes(entry)),
-    (entry) => entry.teams,
-    new Set([...leadTeams, featurePlayer?.team, roughEntry?.team].filter(Boolean)),
-    2,
-  ).map((entry) => entry.text);
+  const watchList = watchEntries.map((entry) => entry.text);
   const gameParagraph = secondaryGameNotes.length
     ? secondaryGameNotes.join(' ')
-    : (gameStoryEntries.length ? gameStoryEntries.slice(0, 2).map((story) => story.text).join(' ') : 'No completed games created a strong enough game note for this recap window.');
+    : (gameStoryEntries.length ? gameStoryEntries.slice(0, 2).map((story) => story.text).join(' ') : null);
   const notebookParagraph = notebook.length
     ? pickTemplate([
       `Around the league, ${notebook.join(' ')}`,
       `${notebook.join(' ')} Those shifts gave the standings a little more shape coming out of the week.`,
       `Not every story came from the headline game. ${notebook.join(' ')}`,
-    ], currentWeek + 3)
-    : 'The standings did not shift hard enough this week to create a major notebook item.';
+    ], currentWeek + 3 + variantSeed)
+    : null;
   const storylineParagraph = storylineEntries.length
     ? pickTemplate([
-      `The week also kept pushing a few bigger league conversations forward. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
-      `Away from the scores themselves, a couple league storylines kept building. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
-      `There was more moving around the league than just the scoreboard. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
-      `The scoreboard never tells the whole story, and this week was no different. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
-      `A lot of the week’s real movement happened outside the final scores. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
-    ], currentWeek + 5)
+      `The week also pushed a few league conversations forward. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
+      `Away from the scores, the week picked up a few more layers. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
+      `The scoreboard was only part of it. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
+      `Not all of the week’s movement showed up in the final scores. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
+      `Around the league, the week had a little more texture than the box scores alone would say. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
+    ], currentWeek + 5 + variantSeed)
     : null;
   const draftParagraph = mockSignals.length
     ? pickTemplate([
@@ -1062,54 +2054,94 @@ export function buildWeeklyRecapData(ctx) {
       `A few front-office conversations are already drifting toward April. ${mockSignals.map((signal) => signal.text).join(' ')}`,
       `The latest mock draft also gave the week a little extra shape. ${mockSignals.map((signal) => signal.text).join(' ')}`,
       `Some of the week’s quieter talk was already pointing toward the next draft. ${mockSignals.map((signal) => signal.text).join(' ')}`,
-    ], currentWeek + 9)
+    ], currentWeek + 9 + variantSeed)
     : null;
   const buzzParagraph = watchList.length
     ? pickTemplate([
       `${watchList.join(' ')}`,
-      `A few leaguewide conversations also kept building as the week moved along. ${watchList.join(' ')}`,
-      `Beyond the box scores, the league left the week with a couple storylines still hanging in the air: ${watchList.join(' ')}`,
-      `The week also left a little noise behind it. ${watchList.join(' ')}`,
-      `A few threads are still hanging over the league coming out of this one. ${watchList.join(' ')}`,
-    ], currentWeek + 7)
-    : 'Leaguewide buzz stayed relatively quiet coming out of this week.';
+      `A couple side stories also stuck to the week. ${watchList.join(' ')}`,
+      `The week left some extra noise behind it too. ${watchList.join(' ')}`,
+      `A few smaller threads are still hanging in the air coming out of this one. ${watchList.join(' ')}`,
+      `There was still a little extra league buzz around the edges of the week. ${watchList.join(' ')}`,
+    ], currentWeek + 7 + variantSeed)
+    : null;
   const setbackParagraph = roughEntry?.text || null;
+  const sections = [];
+  const taggedLead = tagParagraphFirstMentions(leadStory, ctx.teamCoachMentions, ctx.teams.values());
+  const taggedGames = tagParagraphFirstMentions(gameParagraph, ctx.teamCoachMentions, ctx.teams.values());
+  const taggedNotebook = tagParagraphFirstMentions(notebookParagraph, ctx.teamCoachMentions, ctx.teams.values());
+  const taggedStorylines = tagParagraphFirstMentions(storylineParagraph, ctx.teamCoachMentions, ctx.teams.values());
+  const taggedFranchise = tagParagraphFirstMentions(franchiseStateParagraph, ctx.teamCoachMentions, ctx.teams.values());
+  const taggedFeature = tagParagraphFirstMentions(feature, ctx.teamCoachMentions, ctx.teams.values());
+  const taggedSetback = tagParagraphFirstMentions(setbackParagraph, ctx.teamCoachMentions, ctx.teams.values());
+  const taggedBuzz = tagParagraphFirstMentions(buzzParagraph, ctx.teamCoachMentions, ctx.teams.values());
+  const taggedDraft = tagParagraphFirstMentions(draftParagraph, ctx.teamCoachMentions, ctx.teams.values());
 
-  const paragraphBlocks = {
-    lead: leadStory,
-    phase: phaseLanguage.recapIntro,
-    games: gameParagraph,
-    notebook: notebookParagraph,
-    storylines: storylineParagraph,
-    draft: draftParagraph,
-    feature,
-    setback: setbackParagraph,
-    buzz: buzzParagraph,
+  if (taggedLead) sections.push(taggedLead);
+
+  const recapBlocks = {
+    intro_results: [phaseLanguage.recapIntro, taggedGames, taggedNotebook].filter(Boolean).join(' '),
+    games_only: [taggedGames, taggedNotebook].filter(Boolean).join(' '),
+    context: [taggedStorylines, taggedFranchise].filter(Boolean).join(' '),
+    storylines: taggedStorylines,
+    franchise: taggedFranchise,
+    feature: [taggedFeature, taggedSetback].filter(Boolean).join(' '),
+    feature_only: taggedFeature,
+    setback_only: taggedSetback,
+    buzz: taggedBuzz,
+    draft: taggedDraft,
+    close_mix: [taggedBuzz, taggedDraft].filter(Boolean).join(' '),
   };
-  const orderPatterns = [
-    ['lead', 'phase', 'games', 'storylines', 'feature', 'notebook', 'buzz'],
-    ['lead', 'feature', 'phase', 'games', 'storylines', 'buzz', 'notebook'],
-    ['lead', 'storylines', 'phase', 'games', 'notebook', 'feature', 'buzz'],
-    ['lead', 'games', 'notebook', 'storylines', 'draft', 'buzz', 'feature'],
+
+  const availableKeys = Object.entries(recapBlocks)
+    .filter(([, text]) => text)
+    .map(([key]) => key);
+
+  const articleShapes = [
+    ['intro_results', 'context', 'feature', 'close_mix'],
+    ['intro_results', 'feature', 'storylines', 'buzz'],
+    ['games_only', 'context', 'feature_only', 'draft'],
+    ['intro_results', 'franchise', 'storylines', 'feature'],
+    ['games_only', 'feature', 'context'],
+    ['intro_results', 'storylines', 'close_mix'],
   ];
-  const chosenOrder = orderPatterns[Math.abs(Number(currentWeek) || 0) % orderPatterns.length];
-  const paragraphs = [];
-  chosenOrder.forEach((key, idx) => {
-    const text = paragraphBlocks[key];
-    if (text) paragraphs.push(text);
-    if (setbackParagraph && idx === 1) paragraphs.push(setbackParagraph);
-  });
-  if (setbackParagraph && !paragraphs.includes(setbackParagraph)) paragraphs.push(setbackParagraph);
+  const viableShapes = articleShapes.filter((shape) => shape.every((key) => availableKeys.includes(key)));
+  const chosenShape = viableShapes.length
+    ? pickTemplate(viableShapes, currentWeek + availableKeys.length + variantSeed)
+    : seededOrder(`recap-shape:${currentWeek}:${variantSeed}`, availableKeys.filter((key) => !['feature_only', 'setback_only', 'storylines', 'franchise', 'buzz', 'draft'].includes(key)));
+
+  const used = new Set();
+  for (const key of chosenShape) {
+    const text = recapBlocks[key];
+    if (!text || used.has(text)) continue;
+    sections.push(text);
+    used.add(text);
+  }
+
+  const optionalPool = seededOrder(`recap-optional:${currentWeek}:${variantSeed}`, ['storylines', 'franchise', 'feature_only', 'setback_only', 'buzz', 'draft']);
+  const maxParagraphs = taggedLead ? 4 : 3;
+  for (const key of optionalPool) {
+    if (sections.length >= maxParagraphs) break;
+    const text = recapBlocks[key];
+    if (!text || used.has(text)) continue;
+    if (key === 'draft' && seasonContext.phase === 'early_regular' && sections.length >= 4) continue;
+    sections.push(text);
+    used.add(text);
+  }
+
+  const paragraphs = sections.filter(Boolean);
+  const usedStoryKeys = [...storylineEntries, ...watchEntries].map((entry) => entry?.key).filter(Boolean);
+  saveRecapStoryKeysForWeek(ctx, currentWeek, usedStoryKeys);
 
   return {
     currentWeek,
-    leadStory,
-    biggestWins: gameStoryEntries.map((story) => story.text),
+    leadStory: taggedLead || 'No clean lead story was available for this week.',
+    biggestWins: gameStoryEntries.map((story) => tagParagraphFirstMentions(story.text, ctx.teamCoachMentions, ctx.teams.values())),
     movers: movers.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 4).map((entry) => entry.text),
     notebook,
     tradeDesk: [],
-    topPerformers: topPerformerEntries.map((entry) => entry.text),
-    feature,
+    topPerformers: topPerformerEntries.map((entry) => tagParagraphFirstMentions(entry.text, ctx.teamCoachMentions, ctx.teams.values())),
+    feature: tagParagraphFirstMentions(feature, ctx.teamCoachMentions, ctx.teams.values()),
     watchList,
     rumors,
     paragraphs,
@@ -1123,12 +2155,15 @@ export async function buildCommitteeReviewData(ctx) {
   const pendingProof = queue.filter((trade) => trade.status === 'approved_pending_proof');
   const proofEntries = Object.entries(ctx.pendingProofs || {}).map(([tradeId, proof]) => ({ tradeId, ...proof }));
 
-  const fairCounts = ctx.fairsims?.[`year_${ctx.live?.seasonContext?.calendarYear || new Date().getFullYear()}`]?.counts || {};
-  const strikeLeaders = Object.entries(fairCounts)
-    .filter(([key]) => !String(key).startsWith('team:'))
-    .sort((a, b) => Number(b[1]) - Number(a[1]))
+  const strikeSeason = ensureStrikeSeason(
+    ctx.fairsims || {},
+    `year_${ctx.live?.seasonContext?.calendarYear || new Date().getFullYear()}`,
+  );
+  const strikeLeaders = Object.keys(strikeSeason.weightedCounts || {})
+    .filter((key) => !String(key).startsWith('team:'))
+    .sort((a, b) => weightedCount(strikeSeason, b) - weightedCount(strikeSeason, a))
     .slice(0, 5)
-    .map(([userId, count]) => `<@${userId}>: ${count}/5`);
+    .map((userId) => `<@${userId}>: ${weightedCount(strikeSeason, userId)}/5 • ${formatBreakdown(strikeSeason, userId)}`);
 
   const pendingThreads = Object.entries(ctx.threadState?.threads || {})
     .filter(([, info]) => info?.status === 'pending' && info?.deadlineAt)

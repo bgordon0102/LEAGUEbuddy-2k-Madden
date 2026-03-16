@@ -95,7 +95,7 @@ export async function execute(interaction) {
       `⚖️ Fair Sim — both coaches press; each gets 1 sim strike (max 5/season).`,
       `🏳️ Opponent Win (Forfeit) — press the button with your opponent’s team name when they were ready and your side couldn’t play, or if you need to forfeit early; your side gets 1 strike.`,
       `🤖 CPU — for CPU matchups; no strikes, just stops reminders.`,
-      `🚫 Staff Strike — staff-only; adds 1 strike to the chosen team when unresponsive.`,
+      `🚫 Apply Strike — staff-only; applies a strike to the chosen team when the thread evidence supports it.`,
       `Deadline: <t:${deadline}:R> (<t:${deadline}:f>)`
     ].join('\n'),
     color: 0x00b0f4,
@@ -112,8 +112,8 @@ export async function execute(interaction) {
     new ButtonBuilder().setCustomId(`madden_game_status_cpu|${thread.id}|${encAway}|${encHome}`).setLabel('CPU 🤖').setStyle(ButtonStyle.Secondary),
   );
   const staffRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder().setCustomId(`madden_game_status_staffstrikeaway|${thread.id}|${encAway}|${encHome}`).setLabel(`Staff Strike ${awayLabel} 🚫`).setStyle(ButtonStyle.Danger),
-    new ButtonBuilder().setCustomId(`madden_game_status_staffstrikehome|${thread.id}|${encAway}|${encHome}`).setLabel(`Staff Strike ${homeLabel} 🚫`).setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`madden_game_status_staffstrikeaway|${thread.id}|${encAway}|${encHome}`).setLabel(`Apply Strike ${awayLabel} 🚫`).setStyle(ButtonStyle.Danger),
+    new ButtonBuilder().setCustomId(`madden_game_status_staffstrikehome|${thread.id}|${encAway}|${encHome}`).setLabel(`Apply Strike ${homeLabel} 🚫`).setStyle(ButtonStyle.Danger),
   );
 
   const payload = {

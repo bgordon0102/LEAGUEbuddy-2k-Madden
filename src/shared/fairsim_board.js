@@ -1,11 +1,18 @@
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
+import {
+  loadStrikeStore,
+  ensureStrikeSeason,
+  STRIKE_LIMIT,
+  weightedCount,
+  formatBreakdown,
+  completionRate,
+  communicationSummary,
+} from './madden_strikes.js';
 
-const FAIR_FILE = path.join(process.cwd(), 'data', 'madden', 'fairsims.json');
 const BOARD_FILE = path.join(process.cwd(), 'data', 'madden', 'fairsim_board.json');
 const CHANNEL_ID = '1481327206457413712';
-const SIM_LIMIT = 5;
 const TEAM_EMOJI_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
 
 const normalize = (s = '') => s.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -28,14 +35,16 @@ function seasonKey(snapshot) {
 
 async function buildLines(snapshot, fairData, season, guild) {
   const teams = (snapshot?.teams?.leagueTeamInfoList || []).slice().sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
-  const seasonData = fairData[season] || {};
-  const counts = seasonData.counts || {};
+  const seasonData = ensureStrikeSeason(fairData, season);
   let roleMap = {};
   let emojiMap = {};
   try { emojiMap = JSON.parse(fs.readFileSync(TEAM_EMOJI_FILE, 'utf8')); } catch {}
   try { roleMap = JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch {}
 
-  const lines = [];
+  const active = [];
+  const watch = [];
+  const flaggedComms = [];
+  let cleanCount = 0;
   for (const t of teams) {
     const baseName = t.displayName || t.nickName || t.cityName || 'Team';
     const roleId = roleMap[`${baseName} Coach`] || roleMap[`${t.nickName} Coach`] || roleMap[`${t.cityName} Coach`];
@@ -45,14 +54,42 @@ async function buildLines(snapshot, fairData, season, guild) {
       if (role) members = [...role.members.values()];
     }
     const emoji = emojiMap[baseName] ? `<:${baseName.toLowerCase().replace(/\s+/g, '_')}:${emojiMap[baseName]}> ` : '';
-    const teamKey = `team:${normalize(baseName)}`;
-    const teamCount = counts[teamKey] || 0;
-    // If multiple members share a role, show the highest strike count so the line stays concise.
-    const memberMax = members.reduce((max, m) => Math.max(max, counts[m.id] || 0), 0);
-    const maxCount = Math.max(teamCount, memberMax);
-    lines.push(`${emoji}${baseName}: ${maxCount}/${SIM_LIMIT}`);
+    const memberIds = members.map((m) => m.id);
+    const primaryKey = memberIds
+      .sort((a, b) => weightedCount(seasonData, b) - weightedCount(seasonData, a))[0];
+    if (!primaryKey) {
+      cleanCount += 1;
+      continue;
+    }
+    const total = weightedCount(seasonData, primaryKey);
+    const breakdown = formatBreakdown(seasonData, primaryKey);
+    const rate = completionRate(seasonData, primaryKey);
+    const comm = communicationSummary(seasonData, primaryKey);
+    const rateText = rate == null ? 'NR' : `${rate}%`;
+    const riskText = comm.consecutiveSilent >= 2
+      ? `${comm.consecutiveSilent} straight silent`
+      : comm.silent
+        ? `${comm.silent} silent`
+        : 'clear';
+    const line = { total, text: `${emoji}${baseName} — ${total}/${STRIKE_LIMIT} • ${breakdown} • played ${rateText} • ${riskText}` };
+    if (total >= 3) {
+      watch.push(line);
+    } else if (total > 0) {
+      active.push(line);
+    } else if (comm.silent > 0) {
+      flaggedComms.push(`${emoji}${baseName} — communication flag only • ${riskText}`);
+    } else {
+      cleanCount += 1;
+    }
   }
-  return lines.join('\n');
+  watch.sort((a, b) => b.total - a.total);
+  active.sort((a, b) => b.total - a.total);
+  return {
+    active: active.map((entry) => entry.text),
+    watch: watch.map((entry) => entry.text),
+    flaggedComms,
+    cleanCount,
+  };
 }
 
 async function upsertBoardMessage(client, content) {
@@ -90,23 +127,43 @@ export async function updateFairSimBoard(client, guildId) {
   } catch {
     snapshot = null;
   }
-  const fairData = loadJson(FAIR_FILE, {});
+  const fairData = loadStrikeStore();
   const season = seasonKey(snapshot);
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
-  const usageText = await buildLines(snapshot, fairData, season, guild);
+  const usage = await buildLines(snapshot, fairData, season, guild);
   const seasonLabel = season.replace('year_', '');
 
   const embed = {
-    title: 'Sim Strike Count',
+    title: 'Strike Board',
     description: [
       `Season ${seasonLabel}`,
-      `Each coach may have up to ${SIM_LIMIT} non-play outcomes (fair sims or force-wins) per season.`,
-      'Fair Sim: both coaches must confirm; each gets 1 strike.',
-      'Home/Away Win: only the opposing coach may press; the side that could not play gets 1 strike.',
-      'Game Completed: both coaches confirm to clear reminders.',
-      '',
-      usageText || 'No data yet',
+      'FS 0.5 • FW 1.0 • DS 1.5',
+      'Hard limit: 5.0. Once a coach reaches 5.0, they have no non-play room left.',
+      'Next strike after 5.0 triggers removal review.',
+      'Staff uses thread communication, button usage, reminders, and deadline evidence when applying outcomes.',
     ].join('\n'),
+    fields: [
+      {
+        name: 'At Risk / Removal Range',
+        value: usage.watch.length ? usage.watch.join('\n') : 'No teams currently at 3.0 or higher.',
+      },
+      {
+        name: 'Active Strike Cases',
+        value: usage.active.length ? usage.active.join('\n') : 'No teams currently carrying strike points below the watch range.',
+      },
+      {
+        name: 'Communication Flags',
+        value: usage.flaggedComms.length ? usage.flaggedComms.join('\n') : 'No clean teams are currently carrying separate communication flags.',
+      },
+      {
+        name: 'Clean Teams',
+        value: `${usage.cleanCount} teams currently have no active strike points or communication flags.`,
+      },
+      {
+        name: 'Board Key',
+        value: '`Breakdown` = strike mix • `played` = completion rate • `silent` = silent-week count',
+      },
+    ],
     color: 0xfee75c,
     timestamp: new Date().toISOString(),
   };

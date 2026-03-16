@@ -23,6 +23,10 @@ function loadChannelMap() {
   return safeReadJSON(CHANNEL_MAP_FILE, {});
 }
 
+function getReviewChannelId(channelMap = {}) {
+  return channelMap['LG Logs'] || channelMap['League Staff'] || null;
+}
+
 export function loadContentQueue() {
   return safeReadJSON(QUEUE_FILE, {});
 }
@@ -54,11 +58,11 @@ function buildReviewMetaEmbed(item, guild) {
 
 export async function queueMaddenContentReview(client, guildId, item) {
   const channelMap = loadChannelMap();
-  const staffChannelId = channelMap['League Staff'];
-  if (!staffChannelId) throw new Error('League Staff channel is not configured.');
+  const staffChannelId = getReviewChannelId(channelMap);
+  if (!staffChannelId) throw new Error('LG Logs / League Staff channel is not configured.');
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
   const staffChannel = await client.channels.fetch(staffChannelId).catch(() => null);
-  if (!staffChannel?.isTextBased()) throw new Error('League Staff channel is not accessible.');
+  if (!staffChannel?.isTextBased()) throw new Error('LG Logs / League Staff channel is not accessible.');
 
   const queue = loadContentQueue();
   const id = item.id || `content_${Date.now()}`;

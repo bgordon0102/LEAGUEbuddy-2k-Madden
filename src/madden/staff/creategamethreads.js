@@ -759,18 +759,28 @@ async function execute(interaction) {
           new ButtonBuilder().setCustomId(`madden_game_status_cpu|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel('CPU 🤖').setStyle(ButtonStyle.Secondary),
         );
         const staffRow = new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikeaway|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`Staff Strike ${awayShort} 🚫`).setStyle(ButtonStyle.Danger),
-          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikehome|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`Staff Strike ${homeShort} 🚫`).setStyle(ButtonStyle.Danger),
+          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikeaway|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`Apply Strike ${awayShort} 🚫`).setStyle(ButtonStyle.Danger),
+          new ButtonBuilder().setCustomId(`madden_game_status_staffstrikehome|${thread.id}|${encodeURIComponent(teams[game.awayTeamId])}|${encodeURIComponent(teams[game.homeTeamId])}`).setLabel(`Apply Strike ${homeShort} 🚫`).setStyle(ButtonStyle.Danger),
         );
         const embed = {
           title: brandTitle('LEAGUEbuddy Matchup'),
           description: [
-            `Schedule and play your game. Use the buttons when needed:`,
-            `🏁 Game Completed — both coaches press; clears reminders.`,
-            `⚖️ Fair Sim — both coaches press; each gets 1 sim strike (max 5/season).`,
-            `🏳️ Opponent Win (Forfeit) — press the button with your opponent’s team name when they were ready and your side couldn’t play, or if you need to forfeit early; your side gets 1 strike.`,
-            `🤖 CPU — for CPU matchups; no strikes, just stops reminders.`,
-            `🚫 Staff Strike — staff-only; adds 1 strike to the chosen team when unresponsive.`,
+            `Schedule and play your game in this thread. One outcome button must be used before the advance deadline.`,
+            ``,
+            `🏁 Game Completed`,
+            `Both coaches press this after the game is finished. When one side presses first, the other side will be prompted to confirm.`,
+            ``,
+            `⚖️ Fair Sim`,
+            `Both coaches press this only when both sides agree the game will not be played. Each coach gets 1 non-play strike.`,
+            ``,
+            `🏳️ Opponent Win (Forfeit)`,
+            `Use the button with your opponent's team name when they were ready to play and your side could not get the game done. Your side takes the strike.`,
+            ``,
+            `🤖 CPU`,
+            `Use this only for a CPU matchup. No strikes are applied.`,
+            ``,
+            `🚫 Apply Strike`,
+            `Staff only. Used when the bot's thread evidence supports applying the strike manually.`,
             `Deadline: <t:${deadline}:R> (<t:${deadline}:f>)`
           ].join('\n'),
           color: 0x00b0f4,
@@ -785,7 +795,14 @@ async function execute(interaction) {
         try {
           registerThread(thread.id, {
             mention: mentionText || '',
+            leagueId,
+            seasonKey: `year_${snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || new Date().getFullYear()}`,
+            stageIndex: Number.isFinite(Number(game.stageIndex ?? game.stage)) ? Number(game.stageIndex ?? game.stage) : null,
+            weekIndex: Number.isFinite(Number(game.weekIndex)) ? Number(game.weekIndex) : null,
+            scheduleId: game.scheduleId || null,
             deadlineAt: deadline * 1000,
+            awayTeamId: game.awayTeamId || null,
+            homeTeamId: game.homeTeamId || null,
             awayTeam: teams[game.awayTeamId] || null,
             homeTeam: teams[game.homeTeamId] || null,
             awayRoleIds: coachRoleIds(teams[game.awayTeamId], roleMap),

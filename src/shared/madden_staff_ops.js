@@ -27,6 +27,10 @@ function loadChannelMap() {
   return safeReadJSON(CHANNEL_MAP_FILE, {});
 }
 
+function getOpsChannelId(channelMap = {}) {
+  return channelMap['LG Logs'] || channelMap['League Staff'] || null;
+}
+
 function loadRoleMap() {
   return safeReadJSON(ROLE_MAP_FILE, {});
 }
@@ -45,9 +49,9 @@ export function appendMaddenStaffLog(entry) {
 
 export async function postMaddenStaffLog(client, guildId, title, description, fields = []) {
   const channelMap = loadChannelMap();
-  const staffChannelId = channelMap['League Staff'];
-  if (!staffChannelId) return;
-  const channel = await client.channels.fetch(staffChannelId).catch(() => null);
+  const opsChannelId = getOpsChannelId(channelMap);
+  if (!opsChannelId) return;
+  const channel = await client.channels.fetch(opsChannelId).catch(() => null);
   if (!channel?.isTextBased()) return;
   const embed = new EmbedBuilder()
     .setColor(0x95a5a6)
@@ -60,8 +64,8 @@ export async function postMaddenStaffLog(client, guildId, title, description, fi
 
 export async function postLeagueStaffOpsSnapshot(client, guildId, reason = 'update') {
   const channelMap = loadChannelMap();
-  const staffChannelId = channelMap['League Staff'];
-  if (!staffChannelId) return;
+  const opsChannelId = getOpsChannelId(channelMap);
+  if (!opsChannelId) return;
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
   if (!guild) return;
   const ctx = await buildStoryContext(guild, client);
@@ -95,7 +99,7 @@ export async function postLeagueStaffOpsSnapshot(client, guildId, reason = 'upda
     )
     .setTimestamp();
 
-  const channel = await client.channels.fetch(staffChannelId).catch(() => null);
+  const channel = await client.channels.fetch(opsChannelId).catch(() => null);
   if (!channel?.isTextBased()) return;
   await channel.send({ embeds: [embed] }).catch(() => null);
 }
@@ -130,6 +134,25 @@ function rotateRumorItems(items = [], startIndex = 0, maxItems = 2) {
   return rotated;
 }
 
+function loadRecentRumorHistory(scheduler = {}, guildId) {
+  const history = Array.isArray(scheduler?.rumorHistoryByGuild?.[guildId]) ? scheduler.rumorHistoryByGuild[guildId] : [];
+  return history.slice(-10);
+}
+
+function saveRecentRumorHistory(scheduler = {}, guildId, items = []) {
+  scheduler.rumorHistoryByGuild = scheduler.rumorHistoryByGuild || {};
+  const current = loadRecentRumorHistory(scheduler, guildId);
+  const next = [
+    ...current,
+    ...items.map((item) => ({
+      key: String(item?.key || ''),
+      category: String(item?.category || ''),
+      queuedAt: Date.now(),
+    })),
+  ];
+  scheduler.rumorHistoryByGuild[guildId] = next.slice(-20);
+}
+
 export async function queueScheduledRumorMill(client, guildId, force = false) {
   const scheduler = safeReadJSON(SCHEDULER_FILE, {});
   const queue = loadContentQueue();
@@ -140,12 +163,16 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
     return false;
   }
   appendMaddenStaffLog({ type: 'rumor_queue_start', guildId, detail: 'Starting scheduled rumor queue build.' });
-  const ctx = await buildStoryContext(guild, client, { skipCoachUserTeamMap: true });
+  const ctx = await buildStoryContext(guild, client);
   if (!ctx) {
     appendMaddenStaffLog({ type: 'rumor_queue_skip', guildId, detail: 'Skipped rumor queue: story context unavailable.' });
     return false;
   }
-  const rumorItems = buildRumorMillItems(ctx, 8);
+  const recentRumorHistory = loadRecentRumorHistory(scheduler, guildId);
+  const rumorItems = buildRumorMillItems(ctx, 12, {
+    recentStoryKeys: recentRumorHistory.map((entry) => entry.key).filter(Boolean),
+    recentCategories: recentRumorHistory.map((entry) => entry.category).filter(Boolean),
+  });
   if (!rumorItems.length) {
     appendMaddenStaffLog({ type: 'rumor_queue_skip', guildId, detail: 'Skipped rumor queue: no rumor items generated.' });
     return false;
@@ -161,7 +188,7 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
 
   const rumorCursorByGuild = scheduler.rumorCursorByGuild || {};
   const startIndex = Number(rumorCursorByGuild[guildId] || 0);
-  const rumorWireItems = rotateRumorItems(rumorItems, startIndex, 2);
+  const rumorWireItems = rotateRumorItems(rumorItems, startIndex, 3);
   const queuedThisRun = new Set();
   const alreadyPending = pendingContentFingerprints(queue, guildId, 'rumor_mill');
   let queuedCount = 0;
@@ -205,6 +232,7 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
   scheduler.rumorCursorByGuild[guildId] = rumorItems.length
     ? (startIndex + queuedCount) % rumorItems.length
     : 0;
+  saveRecentRumorHistory(scheduler, guildId, rumorWireItems);
   saveJSON(SCHEDULER_FILE, scheduler);
   appendMaddenStaffLog({ type: 'rumor_queue', guildId, detail: `Scheduled rumor wire queued ${queuedCount} item(s) for approval.` });
   await postMaddenStaffLog(client, guildId, 'Rumor Queue', `Scheduled Madden rumor wire queued ${queuedCount} item(s) for approval.`);
@@ -217,9 +245,10 @@ export function initMaddenStoryScheduler(client) {
       await queueScheduledRumorMill(client, guild.id).catch(() => null);
     }
   };
-  run().catch(() => null);
-  setTimeout(run, 10 * 1000);
-  setInterval(run, 30 * 60 * 1000);
+  const firstDelayMs = 5 * 60 * 1000;
+  const intervalMs = 15 * 60 * 1000;
+  setTimeout(run, firstDelayMs);
+  setInterval(run, intervalMs);
 }
 
 export default {

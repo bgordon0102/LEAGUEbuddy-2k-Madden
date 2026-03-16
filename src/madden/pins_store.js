@@ -24,13 +24,12 @@ export function savePins(pins) {
 }
 
 export function getPinId(key) {
-  if (STATIC_PINS[key]) return STATIC_PINS[key];
   const pins = loadPins();
-  return pins[key] || null;
+  if (pins[key]) return pins[key];
+  return STATIC_PINS[key] || null;
 }
 
 export function setPinId(key, id) {
-  if (STATIC_PINS[key]) return; // do not overwrite fixed pins
   const pins = loadPins();
   pins[key] = id;
   savePins(pins);

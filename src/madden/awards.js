@@ -343,6 +343,70 @@ function hasEligibleStatsForPlayer(p, posSet = null) {
   return hasEligibleDefenseStats(p) || hasEligibleOffenseStats(p);
 }
 
+function hasAwardCaliberStats(p, posSet = null) {
+  const pos = (p?.position || p?.displayPos || '').toUpperCase();
+  const t = p?.totals || {};
+  const passYds = Number(t.passYds || 0);
+  const passTDs = Number(t.passTDs || 0);
+  const passInts = Number(t.passInts || 0);
+  const rushYds = Number(t.rushYds || 0);
+  const rushTDs = Number(t.rushTDs || 0);
+  const recYds = Number(t.recYds || 0);
+  const recTDs = Number(t.recTDs || 0);
+  const catches = Number(t.recCatches || 0);
+  const tackles = Number(t.defTotalTackles || 0);
+  const sacks = Number(t.defSacks || 0);
+  const ints = Number(t.defInts || 0);
+  const pds = Number(t.defPassDeflections || 0);
+  const ff = Number(t.defForcedFumbles || 0);
+  const fr = Number(t.defRecoveredFumbles || 0);
+  const defTDs = Number(t.defTDs || 0);
+  const totalSkillYds = rushYds + recYds;
+  const totalSkillTDs = rushTDs + recTDs;
+  const impactPlays = sacks + ints + ff + fr + defTDs;
+
+  if (posSet) {
+    const offensePositions = new Set(['QB', 'HB', 'RB', 'FB', 'TB', 'WR', 'TE', 'LT', 'LG', 'C', 'RG', 'RT', 'K', 'P']);
+    if (offensePositions.has(pos)) {
+      if (pos === 'QB') {
+        return (
+          passTDs >= 3 ||
+          passYds >= 275 ||
+          (passYds >= 225 && passTDs >= 2) ||
+          ((passYds + rushYds) >= 275 && (passTDs + rushTDs) >= 2) ||
+          (rushYds >= 75 && (passTDs + rushTDs) >= 2)
+        ) && !(passTDs <= 1 && passInts >= 3);
+      }
+      if (['HB', 'RB', 'FB', 'TB'].includes(pos)) {
+        return (
+          totalSkillTDs >= 2 ||
+          totalSkillYds >= 120 ||
+          rushYds >= 95 ||
+          (rushYds >= 75 && catches >= 4) ||
+          (recYds >= 75 && recTDs >= 1)
+        );
+      }
+      return (
+        recTDs >= 2 ||
+        recYds >= 100 ||
+        (recYds >= 80 && catches >= 6) ||
+        (totalSkillYds >= 120 && totalSkillTDs >= 1)
+      );
+    }
+    return (
+      ints >= 2 ||
+      sacks >= 2 ||
+      defTDs >= 1 ||
+      (impactPlays >= 2 && tackles >= 4) ||
+      (tackles >= 8 && (ints >= 1 || sacks >= 1 || pds >= 2)) ||
+      (ints >= 1 && pds >= 2) ||
+      (sacks >= 1 && tackles >= 6 && ff >= 1)
+    );
+  }
+
+  return hasEligibleStatsForPlayer(p, posSet);
+}
+
 function pickWinner(players, conf) {
   let list = Array.from(players.values()).filter(p => p.conference === conf && hasEligibleOffenseStats(p));
   if (!list.length) {
@@ -644,8 +708,8 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
   // Also pull weekly top list grades for tighter alignment with top100 output
   const weeklyTopList = (() => {
     try {
-      const list = computeWeeklyList(snapshot, targetWeekIdx) || [];
-      return list;
+      const list = computeWeeklyList(snapshot, targetWeekIdx);
+      return Array.isArray(list) ? list : (list?.top100 || []);
     } catch {
       return [];
     }
@@ -681,6 +745,7 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
       const isRk = p.isRookie === true;
       if (rookieOnly && !isRk) return false;
       if (!hasEligibleStatsForPlayer(p, posSet)) return false;
+      if (!hasAwardCaliberStats(p, posSet)) return false;
       return true;
     });
     if (!filtered.length) return null;
@@ -725,35 +790,15 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
     return { map, idFor };
   })();
 
-  // Override winners directly from weekly graded list to keep awards in sync with Top100
+  // Use the graded weekly list only as a fallback when raw weekly stats failed to produce a winner.
   if (weeklyTopList.length) {
-    const topAfcOff = pickTopFromGrades('AFC', offensePositionsSet, false);
-    const topNfcOff = pickTopFromGrades('NFC', offensePositionsSet, false);
-    const topAfcDef = pickTopFromGrades('AFC', defensePositionsSet, false);
-    const topNfcDef = pickTopFromGrades('NFC', defensePositionsSet, false);
-    const topRkOff = pickTopFromGrades(null, offensePositionsSet, true);
-    const topRkDef = pickTopFromGrades(null, defensePositionsSet, true);
-    winners.afc_offense = topAfcOff || winners.afc_offense;
-    winners.nfc_offense = topNfcOff || winners.nfc_offense;
-    winners.afc_defense = topAfcDef || winners.afc_defense;
-    winners.nfc_defense = topNfcDef || winners.nfc_defense;
+    if (!winners.afc_offense) winners.afc_offense = pickTopFromGrades('AFC', offensePositionsSet, false) || winners.afc_offense;
+    if (!winners.nfc_offense) winners.nfc_offense = pickTopFromGrades('NFC', offensePositionsSet, false) || winners.nfc_offense;
+    if (!winners.afc_defense) winners.afc_defense = pickTopFromGrades('AFC', defensePositionsSet, false) || winners.afc_defense;
+    if (!winners.nfc_defense) winners.nfc_defense = pickTopFromGrades('NFC', defensePositionsSet, false) || winners.nfc_defense;
     if (!isPlayoffs) {
-      winners.rookie_offense = topRkOff || winners.rookie_offense;
-      winners.rookie_defense = topRkDef || winners.rookie_defense;
-    }
-  }
-
-  // Override winners directly from weekly graded list to keep awards in sync with Top100
-  if (weeklyTopList.length) {
-    winners.afc_offense = pickTopFromGrades('AFC', offensePositionsSet, false) || winners.afc_offense;
-    winners.nfc_offense = pickTopFromGrades('NFC', offensePositionsSet, false) || winners.nfc_offense;
-    const topAfcDef = pickTopFromGrades('AFC', defensePositionsSet, false);
-    const topNfcDef = pickTopFromGrades('NFC', defensePositionsSet, false);
-    if (topAfcDef) winners.afc_defense = topAfcDef;
-    if (topNfcDef) winners.nfc_defense = topNfcDef;
-    if (!isPlayoffs) {
-      winners.rookie_offense = pickTopFromGrades(null, offensePositionsSet, true) || winners.rookie_offense;
-      winners.rookie_defense = pickTopFromGrades(null, defensePositionsSet, true) || winners.rookie_defense;
+      if (!winners.rookie_offense) winners.rookie_offense = pickTopFromGrades(null, offensePositionsSet, true) || winners.rookie_offense;
+      if (!winners.rookie_defense) winners.rookie_defense = pickTopFromGrades(null, defensePositionsSet, true) || winners.rookie_defense;
     }
   }
 

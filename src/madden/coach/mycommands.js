@@ -31,41 +31,46 @@ async function execute(interaction) {
   const staffEmbed = new EmbedBuilder()
     .setColor(0xffd700)
     .setTitle('🏈 Madden Staff Commands')
-    .setDescription('Core staff tools (brief).')
+    .setDescription('Live staff workflow commands.')
     .addFields(
       { name: '/madden-mycommands', value: 'Show this menu' },
-      { name: '/madden-activitycheck', value: 'Post activity check with countdown' },
+      { name: '/madden-set-league', value: 'Set or reset the active Madden league' },
+      { name: '/madden-weeklyupdate', value: 'Refresh league data, pins, logs, and weekly content' },
       { name: '/madden-auth', value: 'Link EA account for league data' },
-      { name: '/madden-set_league', value: 'Set/reset league for this server' },
-      { name: '/madden-update', value: 'Pull latest data, refresh pins/messages' },
+      { name: '/madden-activitycheck', value: 'Post activity check with countdown' },
       { name: '/madden-leagues', value: 'List linked leagues' },
-      { name: '/madden-assignteam', value: 'Assign a coach role to a user' },
-      { name: '/madden-removeteam', value: 'Remove a coach role from a user' },
-      { name: '/madden-availableteams', value: 'Show open teams (with pin auto-update)' },
+      { name: '/madden-assignrole', value: 'Assign a Madden coach role' },
+      { name: '/madden-removerole', value: 'Remove a Madden coach role' },
+      { name: '/madden-availableteams', value: 'Show and refresh the available teams board' },
+      { name: '/madden-promo', value: 'Post the recruiting / open teams promo' },
       { name: '/madden-creategamethreads', value: 'Create weekly/playoff game threads' },
       { name: '/madden-deletegamethreads', value: 'Delete weekly/playoff game threads' },
-      { name: '/madden-remindgame', value: 'Remind coaches in a game thread' },
-      { name: '/madden-health', value: 'Bot health check' },
-      { name: '/madden-retire', value: 'Detect newly retired players' },
-      { name: '/madden-draftexport', value: 'Export full draft results JSON' }
+      { name: '/madden-awards', value: 'Run or post weekly awards' },
+      { name: '/madden-draftexport', value: 'Export the draft results file' }
     )
-    .setFooter({ text: 'Staff access only' });
+    .setFooter({ text: 'Testing and maintenance-only commands are hidden from this menu.' });
 
   const coachEmbed = new EmbedBuilder()
     .setColor(0x1e90ff)
     .setTitle('🏈 Madden Coach Commands')
-    .setDescription('Everyday coach tools (brief).')
+    .setDescription('Live coach tools.')
     .addFields(
       { name: '/madden-mycommands', value: 'Show this menu' },
-      { name: '/madden-schedule [team]', value: 'View schedule (default your team)' },
-      { name: '/madden-standings', value: 'View standings' },
-      { name: '/madden-teams', value: 'List teams (with emojis)' },
-      { name: '/madden-player name', value: 'View player card' },
+      { name: '/madden-schedule', value: 'View your schedule' },
+      { name: '/madden-roster [team]', value: 'View a team roster' },
       { name: '/madden-playersearch name', value: 'Search any player and view a card' },
+      { name: '/madden-franchisehub', value: 'Private hub for your team state, accountability, and front-office direction' },
+      { name: '/madden-gamestrategy', value: 'Private matchup strategy for your current opponent' },
+      { name: '/madden-draftprimer [team]', value: 'Get a strategic draft primer' },
+      { name: '/madden-mockdraft', value: 'Generate the current mock draft' },
+      { name: '/madden-bigboard', value: 'View the active draft class big board' },
       { name: '/madden-tradeblock add|remove', value: 'Manage your trade block' },
+      { name: '/madden-tradevalue', value: 'Check player trade values' },
+      { name: '/madden-pickvalue', value: 'Check pick trade values' },
       { name: '/madden-streamlink', value: 'Post your streaming link to the channel' },
       { name: '/madden-scout', value: 'Scout draft prospects' },
-      { name: '/madden-myscouts', value: 'View your scouted prospects' }
+      { name: '/madden-myscouts', value: 'View and move your scouting board' },
+      { name: '/madden-recruiting', value: 'View recruiting data' }
     )
     .setFooter({ text: 'Coach access only' });
 

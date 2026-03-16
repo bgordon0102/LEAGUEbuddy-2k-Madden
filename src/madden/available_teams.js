@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
 import { draftOrder, applyPickTrades } from './coach/mockdraft.js';
+import { getFullTeamName } from '../shared/madden_team_names.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -49,6 +50,10 @@ function normalizeKey(name = '') {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+function formatTeamName(team) {
+  return getFullTeamName(team, `Team ${team?.teamId}`);
+}
+
 function buildPickMap(league) {
   if (!league) return new Map();
   let order = [];
@@ -86,7 +91,7 @@ function teamRoles(roleMap) {
 }
 
 function formatAssignments(guild, roles, opts = {}) {
-  const { pickMap = new Map(), isOffseason = false, debug = false } = opts;
+  const { pickMap = new Map(), isOffseason = false, teamInfoByName = new Map() } = opts;
   const emojiMap = loadJson(EMOJI_MAP_FILE);
   return roles.map(r => {
     const role = guild.roles.cache.get(r.roleId);
@@ -97,7 +102,29 @@ function formatAssignments(guild, roles, opts = {}) {
       ? members.map(m => m.displayName || m.user?.username || m.user?.tag || m.id).join(', ')
       : 'Open';
     let value = names;
-    // For the pin, do NOT show picks when open
+    if (members.length === 0 && isOffseason) {
+      const teamInfo = teamInfoByName.get(normalizeKey(r.team));
+      const fullName = teamInfo ? formatTeamName(teamInfo) : r.team;
+      const keys = [
+        normalizeKey(fullName),
+        normalizeKey(fullName.split(/\s+/).pop() || fullName),
+        normalizeKey(r.team),
+      ].filter(Boolean);
+      let merged = [];
+      const seen = new Set();
+      for (const key of keys) {
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const picks = pickMap.get(key);
+        if (picks?.length) merged = merged.concat(picks);
+      }
+      const unique = [...new Map(merged.map((pick) => [`${pick.num}|${pick.via || ''}`, pick])).values()]
+        .sort((a, b) => a.num - b.num)
+        .slice(0, 5);
+      if (unique.length) {
+        value = `Open\nOwns picks: ${unique.map((pick) => pick.via ? `${pick.num} via ${pick.via}` : `${pick.num}`).join(', ')}`;
+      }
+    }
     const emojiId = emojiMap[r.team];
     const emoji = emojiId ? `<:team_${r.team.toLowerCase()}:${emojiId}> ` : '';
     return { team: `${emoji}${r.team}`, value, rawTeam: r.team };
@@ -159,7 +186,8 @@ export async function updateAvailableTeamsPin(client, guildId, options = {}) {
       console.log('[available-teams] seasonInfo', seasonInfo);
       console.log('[available-teams] isOffseason', isOffseason);
     }
-    const assignments = formatAssignments(guild, roles, { pickMap, isOffseason, debug });
+    const teamInfoByName = new Map((league?.teams?.leagueTeamInfoList || []).map((team) => [normalizeKey(formatTeamName(team)), team]));
+    const assignments = formatAssignments(guild, roles, { pickMap, isOffseason, teamInfoByName });
 
     const byConf = { AFC: [], NFC: [] };
     assignments.forEach(a => {
@@ -181,23 +209,55 @@ export async function updateAvailableTeamsPin(client, guildId, options = {}) {
       );
     };
 
+    const seasonLabel = isOffseason
+      ? `Offseason${seasonInfo.offSeasonStage ? ` Stage ${seasonInfo.offSeasonStage}` : ''}`
+      : `Week ${seasonInfo.displayWeek ?? seasonInfo.seasonWeek ?? '?'}`;
+
     const embeds = [
       ...makeEmbeds('Available Teams — AFC', byConf.AFC),
       ...makeEmbeds('Available Teams — NFC', byConf.NFC),
     ].filter(e => e && e.data?.fields?.length);
+
+    embeds.forEach((embed, index) => {
+      if (index === 0) {
+        embed.setDescription(`Season ${seasonInfo.seasonNumber ?? seasonInfo.seasonIndex ?? 'Current'} • ${seasonLabel}\nAuto-updated when coaches are assigned or the league updates.`);
+      }
+    });
 
     if (!embeds.length) {
       console.warn('[available-teams] No embeds built (no assignments/teams). Skipping.');
       return false;
     }
 
-    const pinId = '1479545575903858791';
-    const botPin = await channel.messages.fetch(pinId).catch(() => null);
+    const stored = loadJson(PIN_FILE);
+    const staticPinId = '1479545575903858791';
+    const candidateIds = [stored?.pinId, staticPinId].filter(Boolean);
+    let botPin = null;
+    for (const id of candidateIds) {
+      botPin = await channel.messages.fetch(id).catch(() => null);
+      if (botPin) break;
+    }
     if (!botPin) {
-      console.warn('[available-teams] No existing pin found; skipping update.');
+      const pinned = await channel.messages.fetchPinned().catch(() => null);
+      botPin = pinned?.find((msg) => msg.author?.id === client.user?.id) || null;
+    }
+    if (!botPin) {
+      const recent = await channel.messages.fetch({ limit: 20 }).catch(() => null);
+      botPin = recent?.find((msg) => msg.author?.id === client.user?.id && /Available Teams/i.test(msg.embeds?.[0]?.title || '')) || null;
+    }
+    if (botPin) {
+      await botPin.edit({ embeds, content: null }).catch(() => null);
+      if (!botPin.pinned) await botPin.pin().catch(() => null);
+      saveJson(PIN_FILE, { pinId: botPin.id, channelId });
+      return true;
+    }
+    const sent = await channel.send({ embeds, content: null }).catch(() => null);
+    if (!sent) {
+      console.warn('[available-teams] Failed to create available teams pin message.');
       return false;
     }
-    await botPin.edit({ embeds, content: null }).catch(() => null);
+    await sent.pin().catch(() => null);
+    saveJson(PIN_FILE, { pinId: sent.id, channelId });
     return true;
   };
 

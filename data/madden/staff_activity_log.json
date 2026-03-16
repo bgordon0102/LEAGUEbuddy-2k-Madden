@@ -1,346 +1,26 @@
 [
   {
-    "ts": 1773604439578,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773604709129,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773604717514,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773605078784,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor mill queued for approval."
-  },
-  {
-    "ts": 1773605222985,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773605232347,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773605271937,
-    "type": "command",
+    "ts": 1773624790999,
+    "type": "weekly_recap_queue_failed",
     "guildId": "1255691165265821747",
     "userId": "1076243288056664234",
     "username": "rnb.randon",
-    "command": "madden-myscouts"
+    "error": "formatNeedLabel is not defined"
   },
   {
-    "ts": 1773605314331,
-    "type": "command",
-    "guildId": "1255691165265821747",
-    "userId": "1076243288056664234",
-    "username": "rnb.randon",
-    "command": "madden-myscouts"
-  },
-  {
-    "ts": 1773605320369,
-    "type": "command",
-    "guildId": "1255691165265821747",
-    "userId": "1076243288056664234",
-    "username": "rnb.randon",
-    "command": "madden-myscouts"
-  },
-  {
-    "ts": 1773605470520,
+    "ts": 1773624928825,
     "type": "lifecycle",
     "guildId": "1255691165265821747",
     "state": "offline"
   },
   {
-    "ts": 1773605478028,
+    "ts": 1773624943472,
     "type": "lifecycle",
     "guildId": "1255691165265821747",
     "state": "online"
   },
   {
-    "ts": 1773605494820,
-    "type": "command",
-    "guildId": "1255691165265821747",
-    "userId": "1076243288056664234",
-    "username": "rnb.randon",
-    "command": "madden-myscouts"
-  },
-  {
-    "ts": 1773606732819,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773606803511,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773606965533,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773606975055,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773607067787,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773607076742,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773607186982,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773607190414,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773607320571,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773607343854,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773607344061,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773607345213,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773607354065,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773607354914,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773607627072,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773607648259,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773607648472,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773607649100,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773607658474,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773607659421,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773607909271,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773607918879,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773607919097,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773607920156,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773607929099,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773607930264,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773608127468,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773608137500,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773608137705,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773608138529,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773608147707,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773608148846,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773608640199,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "offline"
-  },
-  {
-    "ts": 1773608670467,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773608670669,
-    "type": "lifecycle",
-    "guildId": "1255691165265821747",
-    "state": "online"
-  },
-  {
-    "ts": 1773608671486,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773608680671,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773608681799,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773608684105,
-    "type": "command",
-    "guildId": "1255691165265821747",
-    "userId": "1076243288056664234",
-    "username": "rnb.randon",
-    "command": "madden-auth"
-  },
-  {
-    "ts": 1773608707601,
-    "type": "command",
-    "guildId": "1255691165265821747",
-    "userId": "1076243288056664234",
-    "username": "rnb.randon",
-    "command": "madden-auth"
-  },
-  {
-    "ts": 1773608714567,
-    "type": "command",
-    "guildId": "1255691165265821747",
-    "userId": "1076243288056664234",
-    "username": "rnb.randon",
-    "command": "madden-leagues"
-  },
-  {
-    "ts": 1773608728082,
-    "type": "command",
-    "guildId": "1255691165265821747",
-    "userId": "1076243288056664234",
-    "username": "rnb.randon",
-    "command": "madden-set-league"
-  },
-  {
-    "ts": 1773608736995,
+    "ts": 1773624955603,
     "type": "command",
     "guildId": "1255691165265821747",
     "userId": "1076243288056664234",
@@ -348,96 +28,1595 @@
     "command": "madden-weeklyupdate"
   },
   {
-    "ts": 1773608768793,
+    "ts": 1773625021981,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773625037725,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773625056954,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773625078543,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773625079019,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon"
+  },
+  {
+    "ts": 1773625079046,
+    "type": "weekly_recap_queue_failed",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "error": "formatNeedLabel is not defined"
+  },
+  {
+    "ts": 1773625484550,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773625498240,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773625519103,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773625531387,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773625531760,
+    "type": "weekly_recap_queue_skipped_partial_week",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon"
+  },
+  {
+    "ts": 1773625798246,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773625801707,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-testmatchup"
+  },
+  {
+    "ts": 1773626042477,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773626050885,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773626121309,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773626137022,
     "type": "notable_injuries",
     "guildId": "1255691165265821747",
     "leagueId": "16594549",
     "count": 1,
     "weekLabel": "Offseason Stage 10",
     "lines": [
-      "Kansas City Chiefs: HB Nick Chubb - 78 OVR — out 6 weeks"
+      "Dallas Cowboys: LG Tyler Smith - 90 OVR — out 4 weeks"
     ]
   },
   {
-    "ts": 1773608918771,
+    "ts": 1773626138687,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773626138900,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon"
+  },
+  {
+    "ts": 1773626139037,
+    "type": "weekly_recap_queue_failed",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "error": "(candidateTeams || []).filter is not a function"
+  },
+  {
+    "ts": 1773626350892,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773626712711,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773626850519,
     "type": "lifecycle",
     "guildId": "1255691165265821747",
     "state": "offline"
   },
   {
-    "ts": 1773608930172,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773608930376,
+    "ts": 1773626874599,
     "type": "lifecycle",
     "guildId": "1255691165265821747",
     "state": "online"
   },
   {
-    "ts": 1773608931468,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773608940380,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773608941124,
-    "type": "rumor_queue",
-    "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
-  },
-  {
-    "ts": 1773609048857,
+    "ts": 1773626910473,
     "type": "lifecycle",
     "guildId": "1255691165265821747",
     "state": "offline"
   },
   {
-    "ts": 1773609061563,
-    "type": "rumor_queue_start",
-    "guildId": "1255691165265821747",
-    "detail": "Starting scheduled rumor queue build."
-  },
-  {
-    "ts": 1773609061767,
+    "ts": 1773626919162,
     "type": "lifecycle",
     "guildId": "1255691165265821747",
     "state": "online"
   },
   {
-    "ts": 1773609062897,
-    "type": "rumor_queue",
+    "ts": 1773626931481,
+    "type": "command",
     "guildId": "1255691165265821747",
-    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
   },
   {
-    "ts": 1773609071769,
+    "ts": 1773626947507,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773626947718,
+    "type": "weekly_recap_queue_skipped_partial_week",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon"
+  },
+  {
+    "ts": 1773626989683,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "912729990171357225",
+    "username": ".t0e",
+    "command": "madden-schedule"
+  },
+  {
+    "ts": 1773627090033,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773627134894,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773627141669,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773627158254,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773627158675,
+    "type": "weekly_recap_queue_skipped_partial_week",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon"
+  },
+  {
+    "ts": 1773627163556,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-deletegamethreads"
+  },
+  {
+    "ts": 1773627186660,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-creategamethreads"
+  },
+  {
+    "ts": 1773627289702,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "670446898695503897",
+    "username": "slimycandy37",
+    "customId": "madden_top100test_next|season|0|2|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773627295670,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "670446898695503897",
+    "username": "slimycandy37",
+    "customId": "madden_top100test_next|season|0|2|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773627434903,
     "type": "rumor_queue_start",
     "guildId": "1255691165265821747",
     "detail": "Starting scheduled rumor queue build."
   },
   {
-    "ts": 1773609072904,
+    "ts": 1773627488708,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773627497968,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773627529763,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-assignrole"
+  },
+  {
+    "ts": 1773627542131,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-availableteams"
+  },
+  {
+    "ts": 1773627551758,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773627562105,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773627567679,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-availableteams"
+  },
+  {
+    "ts": 1773627658086,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773627672243,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773627706015,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-mockdraft"
+  },
+  {
+    "ts": 1773627865145,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773627873619,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773627886952,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773627903156,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773627903355,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon"
+  },
+  {
+    "ts": 1773627903491,
+    "type": "weekly_recap_built",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 9
+  },
+  {
+    "ts": 1773627904023,
+    "type": "weekly_recap_queued",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988"
+  },
+  {
+    "ts": 1773628091263,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773628101041,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773628210285,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773628224858,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773628225068,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon"
+  },
+  {
+    "ts": 1773628225201,
+    "type": "weekly_recap_built",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 9
+  },
+  {
+    "ts": 1773628225476,
+    "type": "weekly_recap_queued",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988"
+  },
+  {
+    "ts": 1773628285699,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-mockdraft"
+  },
+  {
+    "ts": 1773628401057,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773628763334,
     "type": "rumor_queue",
     "guildId": "1255691165265821747",
     "detail": "Scheduled rumor wire queued 2 item(s) for approval."
   },
   {
-    "ts": 1773609103589,
-    "type": "content_review",
+    "ts": 1773629001059,
+    "type": "rumor_queue_start",
     "guildId": "1255691165265821747",
-    "reviewId": "content_1773609072614",
-    "kind": "rumor_mill",
-    "action": "approve",
-    "reviewedBy": "1076243288056664234",
-    "targetChannelId": "1482823538309202051"
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773629242298,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773629901066,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773630013344,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773630290757,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773630292907,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-mockdraft"
+  },
+  {
+    "ts": 1773630590760,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773630687269,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773630953175,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773631172569,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773631182028,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773631191144,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773631447037,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-franchisehub"
+  },
+  {
+    "ts": 1773631482034,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773631489849,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-draftprimer"
+  },
+  {
+    "ts": 1773631572542,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773631583480,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773631673035,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773631724019,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773631735341,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773631789991,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-draftprimer"
+  },
+  {
+    "ts": 1773632024026,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773632030065,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773632125457,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773632137082,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773632149865,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773632175571,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-draftprimer"
+  },
+  {
+    "ts": 1773632299476,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773632308420,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773632314596,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-draftprimer"
+  },
+  {
+    "ts": 1773632351132,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-franchisehub"
+  },
+  {
+    "ts": 1773632385933,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773632587266,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "customId": "madden_top100test_next|season|0|2|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773632591862,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "customId": "madden_top100test_next|season|0|2|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773632608423,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773632696678,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773632711447,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773632714303,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "customId": "madden_top100test_next|season|0|2|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773632716119,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "customId": "madden_top100test_prev|season|null|1|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773632725129,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "customId": "madden_top100test_next|season|null|2|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773632728093,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "customId": "madden_top100test_next|season|null|3|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773632731108,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "customId": "madden_top100test_next|season|null|4|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773632753137,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-franchisehub"
+  },
+  {
+    "ts": 1773632762021,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-draftprimer"
+  },
+  {
+    "ts": 1773633011454,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773633096252,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773633106412,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773633112542,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-draftprimer"
+  },
+  {
+    "ts": 1773633406417,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773633427725,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773633442093,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773633531900,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773633546241,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773633553581,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-draftprimer"
+  },
+  {
+    "ts": 1773633846246,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773634207717,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773634446253,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773634706005,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-schedule"
+  },
+  {
+    "ts": 1773634807377,
+    "type": "rumor_queue",
+    "guildId": "1255691165265821747",
+    "detail": "Scheduled rumor wire queued 2 item(s) for approval."
+  },
+  {
+    "ts": 1773634913363,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773634966716,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773635066406,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773635077303,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773635087960,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773635100373,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773635100580,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": null
+  },
+  {
+    "ts": 1773635100740,
+    "type": "weekly_recap_built",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 7,
+    "targetWeek": null
+  },
+  {
+    "ts": 1773635101023,
+    "type": "weekly_recap_queued",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988",
+    "targetWeek": null
+  },
+  {
+    "ts": 1773635131350,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773635134883,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "670446898695503897",
+    "username": "slimycandy37",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773635142368,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773635142569,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773635142678,
+    "type": "weekly_recap_built_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 7,
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773635142920,
+    "type": "weekly_recap_queued_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773635377310,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773635719852,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773635737841,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773635778484,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773635782625,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773635823504,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773635831348,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773635847571,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773635857920,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773635858221,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773635858224,
+    "type": "weekly_recap_queue_failed",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "error": "winnerCoach is not defined"
+  },
+  {
+    "ts": 1773635899929,
+    "type": "button",
+    "guildId": "1255691165265821747",
+    "userId": "670446898695503897",
+    "username": "slimycandy37",
+    "customId": "madden_top100test_next|season|null|5|0",
+    "channelId": "1462629502864851069"
+  },
+  {
+    "ts": 1773635932209,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773635935761,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773635953426,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773635962769,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773635963067,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773635963071,
+    "type": "weekly_recap_queue_failed",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "error": "winnerCoach is not defined"
+  },
+  {
+    "ts": 1773636110564,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773636118234,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773636129583,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773636140338,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773636140759,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773636140975,
+    "type": "weekly_recap_built_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 8,
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773636141331,
+    "type": "weekly_recap_queued_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773636418241,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773636440980,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773636454256,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773636478172,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773636487976,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773636488299,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773636488607,
+    "type": "weekly_recap_built_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 4,
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773636489070,
+    "type": "weekly_recap_queued_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773636716678,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773637200536,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773637225274,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773637237988,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773637238287,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637238520,
+    "type": "weekly_recap_built_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 5,
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637239247,
+    "type": "weekly_recap_queued_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637443147,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773637452390,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773637469536,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773637479579,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773637479875,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637480090,
+    "type": "weekly_recap_built_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 4,
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637480354,
+    "type": "weekly_recap_queued_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637716154,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773637756526,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773637774753,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773637784182,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773637784488,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637784718,
+    "type": "weekly_recap_built_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 4,
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637785054,
+    "type": "weekly_recap_queued_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637848885,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1128898817803169814",
+    "username": "mirakinoo",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773637893279,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773637902941,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773637920884,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773637932316,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773637932621,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637932877,
+    "type": "weekly_recap_built_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 4,
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773637933221,
+    "type": "weekly_recap_queued_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773638202948,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773638250409,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-schedule"
+  },
+  {
+    "ts": 1773638387838,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773638398779,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773638434763,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "offline"
+  },
+  {
+    "ts": 1773638443971,
+    "type": "lifecycle",
+    "guildId": "1255691165265821747",
+    "state": "online"
+  },
+  {
+    "ts": 1773638453060,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773638512559,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1128898817803169814",
+    "username": "mirakinoo",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773638672202,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "command": "madden-weeklyupdate"
+  },
+  {
+    "ts": 1773638681691,
+    "type": "weekly_recap_queue_attempt",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "hasWeeklyRecapChannel": true
+  },
+  {
+    "ts": 1773638681985,
+    "type": "weekly_recap_context_ready",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773638682208,
+    "type": "weekly_recap_built_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "paragraphCount": 4,
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773638682677,
+    "type": "weekly_recap_queued_forced",
+    "guildId": "1255691165265821747",
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "targetChannelId": "1482823904065097988",
+    "targetWeek": 5
+  },
+  {
+    "ts": 1773638743983,
+    "type": "rumor_queue_start",
+    "guildId": "1255691165265821747",
+    "detail": "Starting scheduled rumor queue build."
+  },
+  {
+    "ts": 1773638906473,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "817610144460308501",
+    "username": "braveminoaur64",
+    "command": "madden-gamestrategy"
+  },
+  {
+    "ts": 1773638968696,
+    "type": "command",
+    "guildId": "1255691165265821747",
+    "userId": "817610144460308501",
+    "username": "braveminoaur64",
+    "command": "madden-scout"
   }
 ]

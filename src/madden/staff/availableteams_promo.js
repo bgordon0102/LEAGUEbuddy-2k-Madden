@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { draftOrder, applyPickTrades } from '../coach/mockdraft.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
@@ -65,10 +66,7 @@ function resolveRoleId(team, roleMap) {
 }
 
 function formatTeamName(team) {
-  const nick = normalizeName(team?.displayName) || normalizeName(team?.nickName);
-  const city = team?.cityName;
-  if (city && nick) return `${city} ${nick}`;
-  return nick || city || `Team ${team?.teamId}`;
+  return getFullTeamName(team, `Team ${team?.teamId}`);
 }
 
 function normalizeKey(name = '') {
@@ -225,23 +223,24 @@ export async function execute(interaction) {
     }
 
     const promoLines = [
-      '**🚀 Ghost Legacy + LEAGUEbuddy**',
-      'The Madden league that runs itself — so you can just ball.',
+      '**Ghost Legacy Madden**',
+      `Season ${seasonNumber} • ${weekNumber}`,
       '',
-      '**Why it’s different:**',
-      '🤖 Powered by LEAGUEbuddy (all-in-one manager for serious franchises)',
-      '📡 Live exported league data (stats, rankings, awards from your season)',
-      '🎮 Auto matchup threads + reminders',
-      '🕵️ In-Discord scouting + trade tools',
-      '📊 Auto Power Rankings & Weekly Awards',
-      '🏅 End-of-Year Top 100',
-      '🧬 Custom draft classes',
+      'A modern franchise league powered by LEAGUEbuddy.',
+      '48 HR advances • All-Madden • Streaming Required',
+      'Discord economy for player upgrades',
       '',
-      `**Available Teams — Season ${seasonNumber}, Week ${weekNumber}**`,
+      '**What the league offers:**',
+      '📡 Live league updates, standings, power rankings, awards, and stat boards',
+      '🎮 Automated game threads, reminders, and clean trade flow',
+      '🕵️ Private scouting, trade workflow, draft primer, mock draft, and weekly strategy tools',
+      '📰 Rumor mill, weekly recap, and league storytelling built from your real season data',
+      '',
+      '**Open Teams**',
       openLines.length ? openLines.join('\n') : 'No open teams right now.',
       '',
-      includeLink ? '🔗 **Join:** https://discord.gg/ghostsgaming' : null,
-    ].filter(Boolean).join('\n\n');
+      includeLink ? '**Join:** https://discord.gg/ghostsgaming' : null,
+    ].filter(Boolean).join('\n');
 
     await safeEditReply(interaction, { content: promoLines });
   } catch (err) {

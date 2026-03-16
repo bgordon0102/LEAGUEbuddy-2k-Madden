@@ -8,6 +8,7 @@ import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 let currentCalendarYear = 2025;
 const DRAFT_CLASS_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
+const DRAFT_ORDER_OVERRIDES_FILE = path.join(process.cwd(), 'data', 'madden', 'draft_order_overrides.json');
 const CURRENT_CLASS_ID = 'CUS02';
 // Utility: pick latest league snapshot
 function getLatestLeagueFile() {
@@ -388,6 +389,26 @@ export function draftOrder(league) {
   const schedule = league.schedule?.schedules || [];
   const weekly = league.weeklyStats || [];
 
+  const rankDrivenOrder = standings
+    .filter((t) => Number.isFinite(Number(t?.rank)))
+    .map((t) => ({
+      id: Number(t.teamId),
+      name: t.teamName,
+      nick: t.teamNickName,
+      w: Number(t.totalWins || 0),
+      l: Number(t.totalLosses || 0),
+      ties: Number(t.totalTies || 0),
+      net: Number(t.netPts || 0),
+      pf: Number(t.ptsFor || 0),
+      playoff: Number(t.playoffStatus || 0),
+      rank: Number(t.rank),
+      seed: Number(t.seed || 0),
+    }))
+    .sort((a, b) => b.rank - a.rank || a.id - b.id);
+  if (rankDrivenOrder.length >= 32) {
+    return rankDrivenOrder.slice(0, 32);
+  }
+
   const teams = standings.map(t => ({
     id: t.teamId,
     name: t.teamName,
@@ -520,6 +541,64 @@ export function draftOrder(league) {
   ];
 
   return order.slice(0, 32);
+}
+
+function loadOfficialDraftOrderOverride(league, seasonYear) {
+  if (!fs.existsSync(DRAFT_ORDER_OVERRIDES_FILE)) return null;
+  try {
+    const raw = JSON.parse(fs.readFileSync(DRAFT_ORDER_OVERRIDES_FILE, 'utf8'));
+    const seasonEntry = raw?.[String(seasonYear)];
+    const items = Array.isArray(seasonEntry) ? seasonEntry : seasonEntry?.round1;
+    if (!Array.isArray(items) || !items.length) return null;
+
+    const teamInfo = league?.teams?.leagueTeamInfoList || [];
+    const standings = league?.standings?.teamStandingInfoList || [];
+    const standingById = new Map(standings.map((t) => [Number(t.teamId), t]));
+    const teamEntries = teamInfo.map((team) => {
+      const fullName = getFullTeamName(team, team.teamName || `Team ${team.teamId}`);
+      const standing = standingById.get(Number(team.teamId));
+      return {
+        id: Number(team.teamId),
+        name: fullName,
+        nick: team.teamNickName || fullName.split(/\s+/).slice(-1)[0],
+        w: Number(standing?.totalWins || 0),
+        l: Number(standing?.totalLosses || 0),
+        ties: Number(standing?.totalTies || 0),
+        net: Number(standing?.netPts || 0),
+        pf: Number(standing?.ptsFor || 0),
+      };
+    });
+
+    const lookup = new Map();
+    const addVariant = (key, team) => {
+      const norm = normalizeTeamKey(key || '');
+      if (norm) lookup.set(norm, team);
+    };
+    teamEntries.forEach((team) => {
+      addVariant(team.name, team);
+      addVariant(team.nick, team);
+      const mascot = (team.name || '').split(/\s+/).slice(-1)[0];
+      addVariant(mascot, team);
+      addVariant((team.name || '').replace(/^new\s+/i, ''), team);
+    });
+
+    const order = items.map((item, idx) => {
+      const team = lookup.get(normalizeTeamKey(item.team || item.owner || ''));
+      if (!team) {
+        console.warn('[mockdraft] official draft order team not resolved', { seasonYear, slot: idx + 1, team: item.team || item.owner });
+        return null;
+      }
+      return {
+        ...team,
+        via: item.via || null,
+      };
+    }).filter(Boolean);
+
+    return order.length === items.length ? order : null;
+  } catch (error) {
+    console.warn('[mockdraft] failed to load official draft order override', error?.message || error);
+    return null;
+  }
 }
 
 // Pick trades/forfeitures (manual overrides)
@@ -1186,8 +1265,9 @@ export async function execute(interaction) {
   const draftYear = isRegularOrPost
     ? Number(currentCalendarYear) + 1
     : Number(currentCalendarYear || 2025);
-  const rawOrder = draftOrder(league);
-  const order = applyPickTrades(rawOrder, draftYear);
+  const officialOrder = loadOfficialDraftOrderOverride(league, draftYear);
+  const rawOrder = officialOrder || draftOrder(league);
+  const order = officialOrder || applyPickTrades(rawOrder, draftYear);
   const needProfiles = deriveTeamNeedsDetailed(league);
   const needs = Object.fromEntries(Object.entries(needProfiles).map(([key, profile]) => [key, profile?.needs || ['BPA']]));
   const prospects = loadDraftClass();

@@ -11,7 +11,7 @@ export async function execute(interaction) {
     const week = parts[2] === 'null' ? null : Number(parts[2]);
     const page = Number(parts[3] || 1);
     const isPublic = parts[4] === '1';
-    const mod = await import('../commands/madden/staff/top100test.js');
+    const mod = await import('../madden/staff/top100test.js');
     const top100test = mod?.execute || mod?.default;
     if (typeof top100test !== 'function') throw new Error('top100test handler missing');
     console.log('[madden_top100test_next] Calling top100test handler...', { scope, week, page, isPublic });

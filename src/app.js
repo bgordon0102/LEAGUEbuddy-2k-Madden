@@ -11,6 +11,7 @@ import { startAutoSync } from './madden/auto_sync.js';
 import { startLocalSidecar } from './madden/local_sidecar.js';
 import { initNotifier } from './shared/madden_thread_notifier.js';
 import { appendMaddenStaffLog, postMaddenStaffLog, initMaddenStoryScheduler } from './shared/madden_staff_ops.js';
+import { updateFairSimBoard } from './shared/fairsim_board.js';
 
 dotenv.config();
 
@@ -144,6 +145,31 @@ client.on('interactionCreate', async interaction => {
   // Improved logging for other interaction types
   if (interaction.isButton()) {
     console.log(`[INTERACTION] Button pressed: customId=${interaction.customId}, user=${interaction.user?.id}, channel=${interaction.channel?.id}, thread=${interaction.channel?.isThread ? interaction.channel.id : 'N/A'}`);
+    const customId = String(interaction.customId || '').toLowerCase();
+    const isMaddenButton =
+      customId.includes('madden') ||
+      customId.startsWith('trade_') ||
+      customId.startsWith('builder_') ||
+      customId.startsWith('fairsim') ||
+      customId.startsWith('forcewin') ||
+      customId.startsWith('staff_strike');
+    if (isMaddenButton) {
+      appendMaddenStaffLog({
+        type: 'button',
+        guildId: interaction.guildId,
+        userId: interaction.user?.id,
+        username: interaction.user?.tag,
+        customId: interaction.customId,
+        channelId: interaction.channel?.id,
+      });
+      postMaddenStaffLog(
+        client,
+        interaction.guildId,
+        'Madden Button Used',
+        `<@${interaction.user.id}> pressed \`${interaction.customId}\`.`,
+        [{ name: 'Channel', value: interaction.channel?.id ? `<#${interaction.channel.id}>` : 'Unknown', inline: true }],
+      ).catch(() => null);
+    }
   } else if (interaction.isStringSelectMenu()) {
     console.log(`[INTERACTION] StringSelectMenu used: customId=${interaction.customId}, user=${interaction.user?.id}`);
   } else if (interaction.isAutocomplete()) {
@@ -228,6 +254,9 @@ client.once('clientReady', (readyClient) => {
   for (const guild of readyClient.guilds.cache.values()) {
     appendMaddenStaffLog({ type: 'lifecycle', guildId: guild.id, state: 'online' });
     postMaddenStaffLog(client, guild.id, 'Bot Online', 'LEAGUEbuddy Madden services are online.').catch(() => null);
+    updateFairSimBoard(client, guild.id).catch((e) => {
+      console.warn('[fairsim_board] startup refresh failed', guild.id, e?.message || e);
+    });
   }
 });
 

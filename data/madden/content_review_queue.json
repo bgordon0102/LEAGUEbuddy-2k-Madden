@@ -827,5 +827,1547 @@
     "staffChannelId": "1460287771838255350",
     "reviewedBy": "1076243288056664234",
     "reviewedAt": 1773609103587
+  },
+  "content_1773609737136": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399428945842270> and Los Angeles Chargers are catching mixed reviews around C.J. Stroud after 380 pass yds, 4 pass TD, 2 INT, 5 rush yds. The creation was obvious, but so was the volatility.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:22:17.135Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773609737136",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773609737136,
+    "reviewMessageId": "1482851457190592665",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773609737714": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "San Francisco 49ers have an injury variable to manage. Christian McCaffrey missing 4 weeks is the kind of hit that can force a pivot.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:22:17.713Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773609737714",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773609737714,
+    "reviewMessageId": "1482851458645889036",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773609747343": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:22:27.343Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773609747343",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773609747343,
+    "reviewMessageId": "1482851499376906331",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773609747666": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399437141639210> and Pittsburgh Steelers are climbing. The move from 2-2 to 3-2 has people around the league treating them more seriously.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:22:27.666Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773609747666",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773609747666,
+    "reviewMessageId": "1482851500584865954",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773611537456": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399431353372733> and Miami Dolphins are still talking through an up-and-down day from Jaylen Kelly. 161 pass yds, 1 pass TD, 2 INT, 100 rush yds showed how much stress he can put on a defense, but the interceptions kept the full review mixed.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:52:17.455Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773611537456",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773611537456,
+    "reviewMessageId": "1482859007398903921",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773611537694": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399423116021821> and Houston Texans are slipping. The drop from 2-2 to 2-3 is creating more pressure than anyone there would want.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:52:17.693Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773611537694",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773611537694,
+    "reviewMessageId": "1482859009064042637",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773611847694": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399420691451999> and Denver Broncos are slipping. The drop from 0-4 to 0-5 is creating more pressure than anyone there would want.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:57:27.690Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773611847694",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773611847694,
+    "reviewMessageId": "1482860309755592865",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773611848242": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399431353372733> and Miami Dolphins have a young name turning into real conversation with Jaylen Kelly. When a rookie starts stacking 95.0-level weeks, people notice fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:57:28.241Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773611848242",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773611848242,
+    "reviewMessageId": "1482860311148236820",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773611858880": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399428945842270> and Los Angeles Chargers are catching mixed reviews around C.J. Stroud after 380 pass yds, 4 pass TD, 2 INT, 5 rush yds. The creation was obvious, but so was the volatility.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:57:38.879Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773611858880",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773611858880,
+    "reviewMessageId": "1482860355666579458",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773611859210": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "San Francisco 49ers have an injury variable to manage. Christian McCaffrey missing 4 weeks is the kind of hit that can force a pivot.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:57:39.210Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773611859210",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773611859210,
+    "reviewMessageId": "1482860357100769382",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773611991332": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:59:51.330Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773611991332",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773611991332,
+    "reviewMessageId": "1482860912577872056",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773611991993": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399437141639210> and Pittsburgh Steelers are climbing. The move from 2-2 to 3-2 has people around the league treating them more seriously.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T21:59:51.992Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773611991993",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773611991993,
+    "reviewMessageId": "1482860920064577577",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612001974": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399431353372733> and Miami Dolphins are still talking through an up-and-down day from Jaylen Kelly. 161 pass yds, 1 pass TD, 2 INT, 100 rush yds showed how much stress he can put on a defense, but the interceptions kept the full review mixed.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:00:01.973Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612001974",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612001974,
+    "reviewMessageId": "1482860956525793422",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612002705": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399423116021821> and Houston Texans are slipping. The drop from 2-2 to 2-3 is creating more pressure than anyone there would want.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:00:02.690Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612002705",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612002705,
+    "reviewMessageId": "1482860958790455327",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612066321": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399420691451999> and Denver Broncos are slipping. The drop from 0-4 to 0-5 is creating more pressure than anyone there would want.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:01:06.319Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612066321",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612066321,
+    "reviewMessageId": "1482861226529783939",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612066775": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399431353372733> and Miami Dolphins have a young name turning into real conversation with Jaylen Kelly. When a rookie starts stacking 95.0-level weeks, people notice fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:01:06.774Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612066775",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612066775,
+    "reviewMessageId": "1482861227691737108",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612076605": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399428945842270> and Los Angeles Chargers are catching mixed reviews around C.J. Stroud after 380 pass yds, 4 pass TD, 2 INT, 5 rush yds. The creation was obvious, but so was the volatility.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:01:16.604Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612076605",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612076605,
+    "reviewMessageId": "1482861268908904680",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612076945": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "San Francisco 49ers have an injury variable to manage. Christian McCaffrey missing 4 weeks is the kind of hit that can force a pivot.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:01:16.944Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612076945",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612076945,
+    "reviewMessageId": "1482861270527905962",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612127549": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:02:07.542Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612127549",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612127549,
+    "reviewMessageId": "1482861485255294978",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612128792": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399437141639210> and Pittsburgh Steelers are climbing. The move from 2-2 to 3-2 has people around the league treating them more seriously.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:02:08.789Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612128792",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612128792,
+    "reviewMessageId": "1482861487805435914",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612138091": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399431353372733> and Miami Dolphins are still talking through an up-and-down day from Jaylen Kelly. 161 pass yds, 1 pass TD, 2 INT, 100 rush yds showed how much stress he can put on a defense, but the interceptions kept the full review mixed.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:02:18.090Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612138091",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612138091,
+    "reviewMessageId": "1482861526736965853",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612138377": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399423116021821> and Houston Texans are slipping. The drop from 2-2 to 2-3 is creating more pressure than anyone there would want.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:02:18.377Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612138377",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612138377,
+    "reviewMessageId": "1482861527869689990",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612313756": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "New York Giants took another hit, moving from 1-3 to 1-4, and the pressure is building now.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:05:13.754Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612313756",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612313756,
+    "reviewMessageId": "1482862263965581474",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612314196": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399431353372733> and Miami Dolphins have a young name turning into real conversation with Jaylen Kelly. When a rookie starts stacking 95.0-level weeks, people notice fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:05:14.195Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612314196",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612314196,
+    "reviewMessageId": "1482862266377310279",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612324068": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399428945842270> and Los Angeles Chargers are catching mixed reviews around C.J. Stroud after 380 pass yds, 4 pass TD, 2 INT, 5 rush yds. The creation was obvious, but so was the volatility.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:05:24.068Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612324068",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612324068,
+    "reviewMessageId": "1482862307225899138",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612324531": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "San Francisco 49ers have an injury variable to manage. Christian McCaffrey missing 4 weeks is the kind of hit that can force a pivot.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:05:24.530Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612324531",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612324531,
+    "reviewMessageId": "1482862308827992207",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612446711": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:07:26.706Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612446711",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612446711,
+    "reviewMessageId": "1482862822550671485",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612447292": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399431353372733> and Miami Dolphins are climbing. The move from 3-1 to 4-1 has people around the league treating them more seriously.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:07:27.291Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612447292",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612447292,
+    "reviewMessageId": "1482862823586402384",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612457937": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399431353372733> and Miami Dolphins are still talking through an up-and-down day from Jaylen Kelly. 161 pass yds, 1 pass TD, 2 INT, 100 rush yds showed how much stress he can put on a defense, but the interceptions kept the full review mixed.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:07:37.937Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612457937",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612457937,
+    "reviewMessageId": "1482862868406993171",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773612458203": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399420691451999> and Denver Broncos are slipping. The drop from 0-4 to 0-5 is creating more pressure than anyone there would want.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:07:38.202Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773612458203",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773612458203,
+    "reviewMessageId": "1482862869660958775",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773615198279": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399420691451999> and Denver Broncos are slipping. The drop from 0-4 to 0-5 is creating more pressure than anyone there would want.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:53:18.277Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773615198279",
+    "guildId": "1255691165265821747",
+    "status": "approved",
+    "createdAt": 1773615198279,
+    "reviewMessageId": "1482874362225758360",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773615493958
+  },
+  "content_1773615198623": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "New York Giants took another hit, moving from 1-3 to 1-4, and the pressure is building now.",
+        "color": 16757575,
+        "timestamp": "2026-03-15T22:53:18.621Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773615198623",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773615198623,
+    "reviewMessageId": "1482874363228192861",
+    "staffChannelId": "1460287771838255350"
+  },
+  "content_1773626711611": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "New England Patriots took another hit, moving from 1-3 to 1-4, and the pressure is building now.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T02:05:11.610Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773626711611",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773626711611,
+    "reviewMessageId": "1482922652933951731",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773626712383": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399431353372733> and Miami Dolphins have a young name turning into real conversation with Jaylen Kelly. When a rookie starts stacking 79.8-level weeks, people notice fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T02:05:12.382Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773626712383",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773626712383,
+    "reviewMessageId": "1482922655995924671",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773627903493": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> League Update Recap",
+        "description": "The week did not produce a clean lead story from completed game data.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest.\n\n<@&1460399431353372733> and Miami Dolphins also had to wear a rough outing from Jaylen Kelly. The line was hard to ignore: 370 pass yds, 5 pass TD, 2 INT, 12 rush yds.\n\nNo completed games created a strong enough game note for this recap window.\n\nThe week also kept pushing a few bigger league conversations forward. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.\n\nA couple teams also left the week with their front-office direction looking clearer. <@&1460399408163066071> and Arizona Cardinals: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build. <@&1460399431353372733> and Miami Dolphins: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build.\n\n<@&1460399408163066071> and Arizona Cardinals got a true star turn from Kyler Murray, who posted a 82.0 grade with a line that deserved the attention: 353 pass yds, 7 pass TD, 3 INT, 72 rush yds.\n\nThe standings did not shift hard enough this week to create a major notebook item.\n\nBeyond the box scores, the league left the week with a couple storylines still hanging in the air: <@&1460399408163066071> and Arizona Cardinals are still talking through an up-and-down day from Kyler Murray. 353 pass yds, 7 pass TD, 3 INT, 72 rush yds showed how much stress he can put on a defense, but the interceptions kept the full review mixed. <@&1460399431353372733> and Miami Dolphins have a young name turning into real conversation with Jaylen Kelly. When a rookie starts stacking 79.8-level weeks, people notice fast.",
+        "timestamp": "2026-03-16T02:25:03.491Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773627903493",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773627903493,
+    "reviewMessageId": "1482927651835351193",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773628225203": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> League Update Recap",
+        "description": "The week did not produce a clean lead story from completed game data.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest.\n\n<@&1460399431353372733> and Miami Dolphins also had to wear a rough outing from Jaylen Kelly. The line was hard to ignore: 370 pass yds, 5 pass TD, 2 INT, 12 rush yds.\n\nNo completed games created a strong enough game note for this recap window.\n\nThe week also kept pushing a few bigger league conversations forward. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.\n\nA couple teams also left the week with their front-office direction looking clearer. <@&1460399408163066071> and Arizona Cardinals: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build. <@&1460399431353372733> and Miami Dolphins: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build.\n\n<@&1460399408163066071> and Arizona Cardinals got a true star turn from Kyler Murray, who posted a 82.0 grade with a line that deserved the attention: 353 pass yds, 7 pass TD, 3 INT, 72 rush yds.\n\nThe standings did not shift hard enough this week to create a major notebook item.\n\nBeyond the box scores, the league left the week with a couple storylines still hanging in the air: <@&1460399408163066071> and Arizona Cardinals are still talking through an up-and-down day from Kyler Murray. 353 pass yds, 7 pass TD, 3 INT, 72 rush yds showed how much stress he can put on a defense, but the interceptions kept the full review mixed. <@&1460399431353372733> and Miami Dolphins have a young name turning into real conversation with Jaylen Kelly. When a rookie starts stacking 79.8-level weeks, people notice fast.",
+        "timestamp": "2026-03-16T02:30:25.201Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773628225203",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773628225203,
+    "reviewMessageId": "1482929000857997407",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773628761683": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "San Francisco 49ers have an injury variable to manage. Christian McCaffrey missing 4 weeks is the kind of hit that can force a pivot.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T02:39:21.682Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773628761683",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773628761683,
+    "reviewMessageId": "1482931251135385754",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773628762029": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T02:39:22.028Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773628762029",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773628762029,
+    "reviewMessageId": "1482931253111160966",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773629241688": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Arizona Cardinals are still talking through an up-and-down day from Kyler Murray. 353 pass yds, 7 pass TD, 3 INT, 72 rush yds showed how much stress he can put on a defense, but the interceptions kept the full review mixed.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T02:47:21.687Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773629241688",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773629241688,
+    "reviewMessageId": "1482933264531587323",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773629242008": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "There is real smoke around <@&1460399420691451999> and Broncos with Riley Cardenas (MIKE). At this point, it reads like more than random scouting noise.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T02:47:22.007Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773629242008",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773629242008,
+    "reviewMessageId": "1482933265739284642",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773630952405": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T03:15:52.402Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773630952405",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773630952405,
+    "reviewMessageId": "1482940439832035328",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773630952719": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "San Francisco 49ers have an injury variable to manage. Christian McCaffrey missing 4 weeks is the kind of hit that can force a pivot.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T03:15:52.718Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773630952719",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773630952719,
+    "reviewMessageId": "1482940440821895270",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773634206860": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T04:10:06.859Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773634206860",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773634206860,
+    "reviewMessageId": "1482954089863053452",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773634207090": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399424785223680> and Jacksonville Jaguars have Braiden McGregor at PMV +3 (71->74); the power rush is coming on.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T04:10:07.089Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773634207090",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773634207090,
+    "reviewMessageId": "1482954091016491180",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773634806871": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "There is real smoke around <@&1460399420691451999> and Broncos with Rontay Jenkins (QB). At this point, it reads like more than random scouting noise.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T04:20:06.870Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773634806871",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773634806871,
+    "reviewMessageId": "1482956606479138908",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773634807098": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "There is real smoke around <@&1460399420691451999> and Broncos with C.J. Jones (LT). At this point, it reads like more than random scouting noise.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T04:20:07.098Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773634807098",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773634807098,
+    "reviewMessageId": "1482956606995173519",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773635100748": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> League Update Recap",
+        "description": "The week did not produce a clean lead story from completed game data.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest.\n\nNo completed games created a strong enough game note for this recap window.\n\nThe week also kept pushing a few bigger league conversations forward. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.\n\nNo feature performance was available from the current Top 100 pull.\n\nThe standings did not shift hard enough this week to create a major notebook item.\n\nBeyond the box scores, the league left the week with a couple storylines still hanging in the air: <@&1460399438693531709> and San Francisco 49ers have an availability variable to manage. Christian McCaffrey is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning. <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.",
+        "timestamp": "2026-03-16T04:25:00.739Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773635100748",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773635100748,
+    "reviewMessageId": "1482957839012987054",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773635142679": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "The week did not produce a clean lead story from completed game data.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest.\n\nNo completed games created a strong enough game note for this recap window.\n\nA lot of the week’s real movement happened outside the final scores. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.\n\nNo feature performance was available from the current Top 100 pull.\n\nThe standings did not shift hard enough this week to create a major notebook item.\n\nA few leaguewide conversations also kept building as the week moved along. <@&1460399438693531709> and San Francisco 49ers have an availability variable to manage. Christian McCaffrey is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning. <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.",
+        "timestamp": "2026-03-16T04:25:42.678Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773635142679",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773635142679,
+    "reviewMessageId": "1482958014817501444",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773636140977": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "<@&1460399421597552642> and Detroit Lions took the week’s roughest hit, falling 41-25 to <@&1460399438693531709> and San Francisco 49ers. For a team already dealing with pressure, that was the kind of result that sticks.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest.\n\n<@&1460399433941389594> and New Orleans Saints edged out <@&1460399418464538848> and Cleveland Browns 23-20 in one of the week’s cleaner coin-flip games. <@&1460399437141639210> and Pittsburgh Steelers found a way through <@&1460399423116021821> and Houston Texans 21-20. In a week full of noise, that one came down to execution late.\n\nA lot of the week’s real movement happened outside the final scores. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.\n\nA couple teams also left the week with their front-office direction looking clearer. <@&1460399438693531709> and San Francisco 49ers: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build. <@&1460399421597552642> and Detroit Lions: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build.\n\nNo feature performance was available from the current Top 100 pull.\n\nThe standings did not shift hard enough this week to create a major notebook item.\n\nA few leaguewide conversations also kept building as the week moved along. <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled. <@&1460399438693531709> and San Francisco 49ers have an availability variable to manage. Christian McCaffrey is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning.",
+        "timestamp": "2026-03-16T04:42:20.975Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773636140977",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773636140977,
+    "reviewMessageId": "1482962202099978291",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773636488609": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "<@&1460399421597552642> and Detroit Lions took the week’s roughest hit, falling 41-25 to <@&1460399438693531709> and San Francisco 49ers. For a team already dealing with pressure, that was the kind of result that sticks.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399433941389594> and New Orleans Saints edged out <@&1460399418464538848> and Cleveland Browns 23-20 in one of the week’s cleaner coin-flip games. <@&1460399437141639210> and Pittsburgh Steelers found a way through <@&1460399423116021821> and Houston Texans 21-20. In a week full of noise, that one came down to execution late.\n\nA lot of the week’s real movement happened outside the final scores. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle. A couple teams also left the week with their front-office direction looking clearer. <@&1460399438693531709> and San Francisco 49ers: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build. <@&1460399421597552642> and Detroit Lions: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build.\n\nA few leaguewide conversations also kept building as the week moved along. <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled. <@&1460399438693531709> and San Francisco 49ers have an availability variable to manage. Christian McCaffrey is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning.",
+        "timestamp": "2026-03-16T04:48:08.607Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773636488609",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773636488609,
+    "reviewMessageId": "1482963660237438986",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773637238523": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "<@&1460399421597552642> and Detroit Lions took the week’s roughest hit, falling 41-25 to <@&1460399438693531709> and San Francisco 49ers. For a team already dealing with pressure, that was the kind of result that sticks.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399433941389594> and New Orleans Saints edged out <@&1460399418464538848> and Cleveland Browns 23-20 in one of the week’s cleaner coin-flip games. <@&1460399437141639210> and Pittsburgh Steelers found a way through <@&1460399423116021821> and Houston Texans 21-20. In a week full of noise, that one came down to execution late.\n\nA lot of the week’s real movement happened outside the final scores. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle. <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.\n\nA few leaguewide conversations also kept building as the week moved along. Jeffery Simmons is playing well enough to keep <@&1460399442472472577> and Tennessee Titans in the defensive-awards conversation. <@&1460399424785223680> and Jacksonville Jaguars have Braiden McGregor at PMV +3 (71->74); the power rush is coming on.\n\nAway from the scores, the roster picture also got clearer. <@&1460399438693531709> and San Francisco 49ers: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build. <@&1460399421597552642> and Detroit Lions: The front office profile points toward premium positions first. Quarterback, tackle, corner, and edge pressure still shape the way this team should build.",
+        "timestamp": "2026-03-16T05:00:38.520Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773637238523",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773637238523,
+    "reviewMessageId": "1482966806317764728",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773637480092": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "<@&1460399421597552642> and Detroit Lions took the week’s roughest hit, falling 41-25 to <@&1460399438693531709> and San Francisco 49ers. For a team already dealing with pressure, that was the kind of result that sticks.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399433941389594> and New Orleans Saints edged out <@&1460399418464538848> and Cleveland Browns 23-20 in one of the week’s cleaner coin-flip games. <@&1460399437141639210> and Pittsburgh Steelers found a way through <@&1460399423116021821> and Houston Texans 21-20. In a week full of noise, that one came down to execution late.\n\nAround the league, the week had a little more texture than the box scores alone would say. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle. <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.\n\nA couple side stories also stuck to the week. Jeffery Simmons is playing well enough to keep <@&1460399442472472577> and Tennessee Titans in the defensive-awards conversation. <@&1460399438693531709> and San Francisco 49ers have an availability variable to manage. Christian McCaffrey is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning.",
+        "timestamp": "2026-03-16T05:04:40.089Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773637480092",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773637480092,
+    "reviewMessageId": "1482967818730340464",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773637784720": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "<@&1460399421597552642> and Detroit Lions walked out of the week with more heat after a 41-25 loss to <@&1460399438693531709> and San Francisco 49ers. Whether it was expectation, momentum, or timing, that result landed hard.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399433941389594> and New Orleans Saints survived one of the tighter games on the board, getting past <@&1460399418464538848> and Cleveland Browns 23-20. That game sat on one or two swings all the way through. <@&1460399437141639210> and Pittsburgh Steelers edged out <@&1460399423116021821> and Houston Texans 21-20 in one of the week’s cleaner coin-flip games.\n\nNot all of the week’s movement showed up in the final scores. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle. <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.\n\nJeffery Simmons is playing well enough to keep <@&1460399442472472577> and Tennessee Titans in the defensive-awards conversation. <@&1460399438693531709> and San Francisco 49ers have an availability variable to manage. Christian McCaffrey is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning.",
+        "timestamp": "2026-03-16T05:09:44.718Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773637784720",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773637784720,
+    "reviewMessageId": "1482969096445493278",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773637932880": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "<@&1460399438693531709> and San Francisco 49ers did more than win 41-25 over <@&1460399421597552642> and Detroit Lions; they shoved Detroit Lions deeper into a bad week. Points came quickly enough that it never really settled down.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399420691451999> and Denver Broncos walked out of the week with more heat after a 61-33 loss to <@&1460399408163066071> and Arizona Cardinals. Whether it was expectation, momentum, or timing, that result landed hard. <@&1460399437141639210> and Pittsburgh Steelers survived one of the tighter games on the board, getting past <@&1460399423116021821> and Houston Texans 21-20. That game sat on one or two swings all the way through.\n\nAway from the scores, the week picked up a few more layers. <@&1460399436747378931> and Philadelphia Eagles have an availability variable to manage. Landon Dickerson is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.\n\nA few smaller threads are still hanging in the air coming out of this one. Jeffery Simmons is playing well enough to keep <@&1460399442472472577> and Tennessee Titans in the defensive-awards conversation. <@&1460399420691451999> and Denver Broncos continue to draw seller chatter. Around the league, the expectation is that they listen on expiring vets and look for younger answers at cornerback.",
+        "timestamp": "2026-03-16T05:12:12.877Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773637932880",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773637932880,
+    "reviewMessageId": "1482969718016053248",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773638682209": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "<@&1460399438693531709> and San Francisco 49ers did more than win 41-25 over <@&1460399421597552642> and Detroit Lions; they shoved Detroit Lions deeper into a bad week. Points came quickly enough that it never really settled down.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399437141639210> and Pittsburgh Steelers survived one of the tighter games on the board, getting past <@&1460399423116021821> and Houston Texans 21-20. That game sat on one or two swings all the way through. <@&1460399420691451999> and Denver Broncos walked out of the week with more heat after a 61-33 loss to <@&1460399408163066071> and Arizona Cardinals. Whether it was expectation, momentum, or timing, that result landed hard.\n\nThe week also pushed a few league conversations forward. <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled. <@&1460399434528587920> and New York Giants continue to draw seller chatter. Around the league, the expectation is that they listen on expiring vets and look for younger answers at interior ol. <@&1460399436747378931> and Philadelphia Eagles also left the week with a personnel problem to sort through. Landon Dickerson is the kind of absence that can bend usage and short-term planning pretty quickly.\n\nThe week left some extra noise behind it too. One quieter league note: Jeffery Simmons is playing well enough to keep <@&1460399442472472577> and Tennessee Titans in the defensive-awards conversation. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up.",
+        "timestamp": "2026-03-16T05:24:42.207Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773638682209",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773638682209,
+    "reviewMessageId": "1482972860925481023",
+    "staffChannelId": "1482917978734329956"
   }
 }

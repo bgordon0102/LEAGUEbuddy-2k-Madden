@@ -631,7 +631,7 @@
       "mention": "<@&1460399420691451999> <@&1460399408163066071> <@&1460399404241522759> <@&1460399405436768431>"
     },
     "1482205904987488400": {
-      "status": "pending",
+      "status": "complete",
       "created": 1773455826387,
       "lastReminder": 1773562702513,
       "mention": "<@&1460399416098689065> <@&1460399422126030851> <@&1460399404241522759> <@&1460399405436768431>"
@@ -650,6 +650,29 @@
       "deadlineAt": 1773774914000,
       "awayTeam": "Cardinals",
       "homeTeam": "Broncos",
+      "awayRoleIds": [
+        "1460399408163066071"
+      ],
+      "homeRoleIds": [
+        "1460399420691451999"
+      ]
+    },
+    "1482918837815869460": {
+      "threadId": "1482918837815869460",
+      "status": "pending",
+      "created": 1773625803023,
+      "lastReminder": 1773625803023,
+      "mention": "<@&1460399408163066071> <@&1460399420691451999> <@&1460399404241522759> <@&1460399405436768431>",
+      "deadlineAt": 1773798602000,
+      "leagueId": null,
+      "seasonKey": null,
+      "stageIndex": null,
+      "weekIndex": null,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Arizona Cardinals",
+      "homeTeam": "Denver Broncos",
       "awayRoleIds": [
         "1460399408163066071"
       ],

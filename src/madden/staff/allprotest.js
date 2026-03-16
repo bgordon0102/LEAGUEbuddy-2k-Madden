@@ -227,7 +227,8 @@ function loadSeasonList(leagueId) {
 
 function loadWeeklyList(snapshot, weekIndex) {
   try {
-    return computeWeeklyList(snapshot, weekIndex);
+    const weekly = computeWeeklyList(snapshot, weekIndex);
+    return Array.isArray(weekly) ? weekly : (weekly?.top100 || []);
   } catch {
     return [];
   }

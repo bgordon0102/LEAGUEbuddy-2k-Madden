@@ -13,6 +13,20 @@
         "New York Giants"
       ],
       "updatedAt": 1773606868116
+    },
+    {
+      "week": 4,
+      "teams": [
+        "Cleveland Browns",
+        "New Orleans Saints",
+        "Houston Texans",
+        "Pittsburgh Steelers",
+        "San Francisco 49ers",
+        "Detroit Lions",
+        "Denver Broncos",
+        "Arizona Cardinals"
+      ],
+      "updatedAt": 1773638681988
     }
   ]
 }

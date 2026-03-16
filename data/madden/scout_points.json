@@ -1,0 +1,165 @@
+{
+  "821387556343382046": {
+    "players": {
+      "cus_02": {
+        "Will Smyth": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Taylor Morrow": [
+          "arch",
+          "ovr",
+          "dev"
+        ]
+      }
+    },
+    "weeklyPoints": {
+      "year_2026_week_5": 10
+    },
+    "scoutingBonusBySeason": {
+      "year_2026": 10
+    },
+    "scoutingBonusAwardedWeeks": {
+      "year_2026_week_5": true
+    },
+    "order": {
+      "cus_02": [
+        "Will Smyth",
+        "Taylor Morrow"
+      ]
+    }
+  },
+  "1076243288056664234": {
+    "players": {
+      "cus_02": {
+        "Rontay Jenkins": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "C.J. Jones": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "C.J. Nielsen": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Dylan Fredericks": [
+          "arch"
+        ],
+        "Ryan Hodges III": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Xavion Hill": [
+          "arch"
+        ],
+        "Riley Cardenas": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Devoreaux Flowers": [
+          "arch"
+        ],
+        "Jordyn Honeycutt": [
+          "arch"
+        ],
+        "Sefu Diya": [
+          "arch",
+          "ovr"
+        ],
+        "Danny Leyton": [
+          "arch"
+        ],
+        "King Atkins": [
+          "arch"
+        ],
+        "Armaann Newman": [
+          "arch"
+        ],
+        "Tylor Davis": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Will Smyth": [
+          "arch",
+          "ovr",
+          "dev"
+        ]
+      }
+    },
+    "weeklyPoints": {},
+    "order": {
+      "cus_02": [
+        "Rontay Jenkins",
+        "C.J. Jones",
+        "C.J. Nielsen",
+        "Dylan Fredericks",
+        "Ryan Hodges III",
+        "Xavion Hill",
+        "Riley Cardenas",
+        "Devoreaux Flowers",
+        "Jordyn Honeycutt",
+        "Sefu Diya",
+        "Danny Leyton",
+        "King Atkins",
+        "Armaann Newman",
+        "Tylor Davis",
+        "Will Smyth"
+      ]
+    },
+    "scoutingBonusBySeason": {},
+    "suggestedScout": {
+      "cus_02": {
+        "year_2026_week_5": "James Rodriquez"
+      }
+    },
+    "boardUi": {
+      "cus_02": {
+        "activeName": null
+      }
+    }
+  },
+  "817610144460308501": {
+    "players": {
+      "cus_02": {
+        "Emmanuel Mbwakwe": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Mahlik McCray": [
+          "arch",
+          "ovr",
+          "dev"
+        ],
+        "Dominique Tyler": [
+          "arch"
+        ]
+      }
+    },
+    "weeklyPoints": {
+      "year_2026_week_5": 0
+    },
+    "scoutingBonusBySeason": {
+      "year_2026": 10
+    },
+    "scoutingBonusAwardedWeeks": {
+      "year_2026_week_5": true
+    },
+    "order": {
+      "cus_02": [
+        "Emmanuel Mbwakwe",
+        "Mahlik McCray",
+        "Dominique Tyler"
+      ]
+    }
+  }
+}

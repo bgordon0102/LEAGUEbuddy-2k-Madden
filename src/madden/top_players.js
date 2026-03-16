@@ -286,6 +286,17 @@ function scoreOffense(p) {
     const longPass = Number(t.passLongest || t.passLong || 0);
     if (longPass >= 45) base += 4;
     if (ints === 0 && tds >= 2) base += 8; // clean sheet bonus
+    const totalYds = yds + rYds;
+    const totalTDs = tds + rTds;
+    if (totalTDs >= 7 && totalYds >= 400) {
+      base = base * 1.22 + 20;
+    } else if (totalTDs >= 6 && totalYds >= 380) {
+      base = base * 1.16 + 16;
+    } else if (totalTDs >= 5 && totalYds >= 330) {
+      base = base * 1.10 + 10;
+    } else if (totalTDs >= 4 && totalYds >= 325) {
+      base = base * 1.05 + 6;
+    }
   } else if (['HB', 'FB'].includes(pos)) {
     base = rushScore + recScore;
     // RB-specific rushing tiers
@@ -330,6 +341,13 @@ function scoreOffense(p) {
     } else if (rbTotalTDs >= 3 && rbTotalYds >= 120) {
       base = base * 1.22 + 10;
     }
+    if (rbTotalTDs >= 2 && rbTotalYds < 60) {
+      base *= 0.48;
+    } else if (rbTotalTDs >= 2 && rbTotalYds < 85) {
+      base *= 0.66;
+    } else if (rbTotalTDs >= 3 && rbTotalYds < 110) {
+      base *= 0.74;
+    }
   } else {
     base = recScore + rushScore;
   }
@@ -349,8 +367,8 @@ function scoreOffense(p) {
     else if (recYds >= 75) base += 8;
     // Receiving TD multipliers for skill players
     const recTDs = t.recTDs || 0;
-    if (recTDs >= 3) base *= 1.28;
-    else if (recTDs === 2) base *= 1.20;
+    if (recTDs >= 3 && recYds >= 100) base *= 1.28;
+    else if (recTDs === 2 && recYds >= 70) base *= 1.20;
     if (recYds >= 175 || catches >= 10) base *= 1.16;
     else if (recYds >= 150 || catches >= 9) base *= 1.12;
     // Light boost for RBs hitting receiving marks
@@ -417,27 +435,36 @@ function scoreOffense(p) {
         base = Math.max(base, base + 3);
       }
     }
+    if (pos !== 'QB' && totalTDs >= 2 && totalYds < 70) {
+      base *= 0.62;
+    } else if (pos !== 'QB' && totalTDs >= 2 && totalYds < 95) {
+      base *= 0.78;
+    }
   }
   // Offensive skill TD boost (QB/HB/RB/FB/WR/TE)
   const skillPositions = new Set(['QB', 'HB', 'RB', 'FB', 'WR', 'TE', 'TB']);
   const totalTDs = (t.passTDs || 0) + (t.rushTDs || 0) + (t.recTDs || 0);
+  const totalSkillYds = (t.passYds || 0) + (t.rushYds || 0) + (t.recYds || 0);
   if (skillPositions.has(pos) && totalTDs >= 2) {
-    base *= totalTDs >= 3 ? 1.12 : 1.08;
-    if (totalTDs >= 3) base += 4;
+    if (pos === 'QB' || totalSkillYds >= 100) {
+      base *= totalTDs >= 3 ? 1.12 : 1.08;
+      if (totalTDs >= 3) base += 4;
+    }
   }
   // Extra multiplier for multi-TD games (all skill positions including QBs)
   if (skillPositions.has(pos)) {
-    if (totalTDs >= 4) {
+    if (totalTDs >= 4 && (pos === 'QB' || totalSkillYds >= 120)) {
       base = base * 1.18 + 6;
-    } else if (totalTDs === 3) {
+    } else if (totalTDs === 3 && (pos === 'QB' || totalSkillYds >= 100)) {
       base = base * 1.12 + 4;
     }
   }
   // High TD explosion boost for non-QB skill players
   if (isSkill && pos !== 'QB') {
-    if (totalTDs >= 4) {
+    const skillYds = (t.rushYds || 0) + (t.recYds || 0);
+    if (totalTDs >= 4 && skillYds >= 130) {
       base = base * 1.30 + 14;
-    } else if (totalTDs >= 3) {
+    } else if (totalTDs >= 3 && skillYds >= 110) {
       base = base * 1.22 + 10;
     }
   }
@@ -555,20 +582,19 @@ function computeOlTeamScore(teamStats, winPct = 0.5) {
   const expPass = Math.min(1, (teamStats.passLong || 0) / 50);
   const expRun = Math.min(1, (teamStats.rushLong || 0) / 40);
   const volume = Math.min(1, Math.log(plays) / Math.log(70));
-  let score = 50;
-  score += ypa * 2.5;
-  score += passTDr * 400;
-  score -= intRate * 200;
-  score -= sackRate * 800;
-  score += expPass * 6;
-  score += ypc * 2.0;
-  score += rushTDr * 300;
-  score -= brokenRate * 500; // broken tackles against run blocking
-  score += expRun * 6;
-  score += volume * 5;
-  score *= (1 + 0.05 * winPct);
-  score *= 0.6; // heavily downweight to align with skill-position award scale
-  return Math.max(40, Math.min(82, score));
+  let score = 38;
+  score += ypa * 1.35;
+  score += passTDr * 180;
+  score -= intRate * 120;
+  score -= sackRate * 520;
+  score += expPass * 2.5;
+  score += ypc * 1.2;
+  score += rushTDr * 135;
+  score -= brokenRate * 260;
+  score += expRun * 2.5;
+  score += volume * 2.5;
+  score *= (1 + 0.03 * winPct);
+  return Math.max(40, Math.min(68, score));
 }
 
 function applyBanding(list, bandDefs) {
@@ -642,6 +668,106 @@ function getPositionGroup(posRaw = '') {
   return 'OTHER';
 }
 
+function getWeeklyParticipationBounds(player) {
+  const pos = (player?.position || '').toUpperCase();
+  const t = player?.totals || {};
+  const passAtt = Number(t.passAtt || 0);
+  const rushAtt = Number(t.rushAtt || 0);
+  const recCatches = Number(t.recCatches || 0);
+  const passYds = Number(t.passYds || 0);
+  const rushYds = Number(t.rushYds || 0);
+  const recYds = Number(t.recYds || 0);
+  const passTDs = Number(t.passTDs || 0);
+  const rushTDs = Number(t.rushTDs || 0);
+  const recTDs = Number(t.recTDs || 0);
+  const tackles = Number(t.defTotalTackles || 0);
+  const sacks = Number(t.defSacks || 0);
+  const ints = Number(t.defInts || 0);
+  const pd = Number(t.defPassDeflections || 0);
+  const ff = Number(t.defForcedFumbles || 0);
+  const fr = Number(t.defRecoveredFumbles || 0);
+  const tfl = Number(t.defTacklesForLoss || 0);
+  const defTDs = Number(t.defTDs || 0);
+  const offensiveTDs = passTDs + rushTDs + recTDs;
+  const defensiveImpact = sacks + ints + pd + ff + fr + tfl + defTDs;
+
+  const clampBand = (floor, ceiling) => ({
+    floor,
+    ceiling: Math.max(floor, ceiling),
+  });
+
+  if (pos === 'QB') {
+    const actions = passAtt + rushAtt;
+    const totalYds = passYds + rushYds;
+    if (actions <= 2 && totalYds < 25 && offensiveTDs === 0) return clampBand(45, 50);
+    if (actions < 10 && totalYds < 140 && offensiveTDs <= 1) return clampBand(40, 66);
+    if (actions < 18 && totalYds < 220 && offensiveTDs <= 1) return clampBand(40, 76);
+    return clampBand(40, 99.8);
+  }
+
+  if (['HB', 'RB', 'FB', 'TB'].includes(pos)) {
+    const touches = rushAtt + recCatches;
+    const totalYds = rushYds + recYds;
+    if (touches === 0 && totalYds === 0 && offensiveTDs === 0) return clampBand(45, 50);
+    if (touches < 5 && totalYds < 45 && offensiveTDs === 0) return clampBand(40, 60);
+    if (touches < 8 && totalYds < 75 && offensiveTDs <= 1) return clampBand(40, 72);
+    return clampBand(40, 99.8);
+  }
+
+  if (['WR', 'TE'].includes(pos)) {
+    const touches = recCatches + rushAtt;
+    const totalYds = rushYds + recYds;
+    if (touches === 0 && totalYds === 0 && offensiveTDs === 0) return clampBand(45, 50);
+    if (touches < 3 && totalYds < 40 && offensiveTDs === 0) return clampBand(40, 58);
+    if (touches < 5 && totalYds < 70 && offensiveTDs <= 1) return clampBand(40, 70);
+    return clampBand(40, 99.8);
+  }
+
+  if (['LT', 'LG', 'C', 'RG', 'RT'].includes(pos)) {
+    return clampBand(45, 92);
+  }
+
+  const isDefense = !['QB', 'HB', 'RB', 'FB', 'TB', 'WR', 'TE', 'LT', 'LG', 'C', 'RG', 'RT', 'K', 'P'].includes(pos);
+  if (isDefense) {
+    if (tackles <= 1 && defensiveImpact === 0) return clampBand(45, 50);
+    if (tackles < 4 && defensiveImpact === 0) return clampBand(40, 60);
+    if (tackles < 6 && defensiveImpact < 2) return clampBand(40, 72);
+    return clampBand(40, 99.8);
+  }
+
+  return clampBand(40, 99.8);
+}
+
+function gradeWeeklyPool(list = []) {
+  if (!Array.isArray(list) || !list.length) return [];
+  const ordered = [...list].sort((a, b) => Number(b?.score || 0) - Number(a?.score || 0));
+  const scoreValues = ordered
+    .map((p) => Number(p.score || 0))
+    .filter((score) => Number.isFinite(score));
+  const topScore = scoreValues.length ? Math.max(...scoreValues) : 0;
+  const bottomScore = scoreValues.length ? Math.min(...scoreValues) : 0;
+  const scoreSpan = Math.max(1, topScore - bottomScore);
+
+  return ordered.map((p, idx, arr) => {
+    const score = Number(p.score || 0);
+    const scoreNorm = Math.min(1, Math.max(0, (score - bottomScore) / scoreSpan));
+    const rankNorm = arr.length <= 1 ? 1 : 1 - (idx / (arr.length - 1));
+    const { floor, ceiling } = getWeeklyParticipationBounds(p);
+    return {
+      ...p,
+      weeklyGrade: computePffStyleGrade(scoreNorm, rankNorm, {
+        min: floor,
+        max: Math.min(97.8, ceiling),
+        scoreWeight: 0.62,
+        rankWeight: 0.38,
+        rankPower: 0.76,
+        eliteFloor: 0.93,
+        eliteBump: 1.5,
+      }),
+    };
+  });
+}
+
 function computePffStyleGrade(scoreNorm, rankNorm, opts = {}) {
   const min = opts.min ?? 69;
   const max = opts.max ?? 97.5;
@@ -657,6 +783,34 @@ function computePffStyleGrade(scoreNorm, rankNorm, opts = {}) {
     grade += ((scoreNorm - eliteFloor) / Math.max(0.0001, 1 - eliteFloor)) * eliteBump;
   }
   return Number(clamp(grade, min, max).toFixed(1));
+}
+
+function gradePublishedTop100(list = []) {
+  if (!Array.isArray(list) || !list.length) return [];
+  const ordered = [...list].sort((a, b) => Number(b?.score || 0) - Number(a?.score || 0));
+  const scores = ordered.map((p) => Number(p?.score || 0)).filter((v) => Number.isFinite(v));
+  const topScore = scores.length ? Math.max(...scores) : 0;
+  const bottomScore = scores.length ? Math.min(...scores) : 0;
+  const span = Math.max(1, topScore - bottomScore);
+
+  return ordered.map((p, idx, arr) => {
+    const score = Number(p?.score || 0);
+    const scoreNorm = clamp((score - bottomScore) / span, 0, 1);
+    const rankNorm = arr.length <= 1 ? 1 : 1 - (idx / (arr.length - 1));
+    const min = idx < 10 ? 84 : idx < 25 ? 80 : idx < 50 ? 76 : 72;
+    return {
+      ...p,
+      grade: computePffStyleGrade(scoreNorm, rankNorm, {
+        min,
+        max: 97.8,
+        scoreWeight: 0.68,
+        rankWeight: 0.32,
+        rankPower: 0.60,
+        eliteFloor: 0.88,
+        eliteBump: 2.2,
+      }),
+    };
+  });
 }
 
 function computeWeeklyList(snapshot, weekIndex) {
@@ -787,7 +941,21 @@ function computeWeeklyList(snapshot, weekIndex) {
     const winPct = (winMap[p.teamId] !== undefined && winMap[p.teamId] !== null) ? winMap[p.teamId] : 0.5;
     const ovr = Number(p.playerBestOvr || p.playerSchemeOvr || p.ovr || rosterEntry?.playerBestOvr || 0);
     const qualityScore = clamp((ovr - 78) * 0.35, -4, 7);
-    const score = baseScore + usageScore + efficiencyScore + contextScore + qualityScore + (winPct * 5.5);
+    let score = baseScore + usageScore + efficiencyScore + contextScore + qualityScore + (winPct * 5.5);
+    if (!isDefense) {
+      const totalSkillYds = Number(t.passYds || 0) + Number(t.rushYds || 0) + Number(t.recYds || 0);
+      const totalSkillTDs = Number(t.passTDs || 0) + Number(t.rushTDs || 0) + Number(t.recTDs || 0);
+      if (pos === 'QB') {
+        if (totalSkillTDs >= 7 && totalSkillYds >= 400) score += 26;
+        else if (totalSkillTDs >= 6 && totalSkillYds >= 360) score += 20;
+        else if (totalSkillTDs >= 5 && totalSkillYds >= 325) score += 13;
+      } else {
+        const scrimYds = Number(t.rushYds || 0) + Number(t.recYds || 0);
+        if (totalSkillTDs >= 2 && scrimYds < 60) score *= 0.32;
+        else if (totalSkillTDs >= 2 && scrimYds < 85) score *= 0.50;
+        else if (totalSkillTDs >= 3 && scrimYds < 110) score *= 0.62;
+      }
+    }
     const rosterInfo = rosterEntry || rosterLookup.get(p.rosterId);
     const yearsPro = rosterInfo?.yearsPro ?? p.yearsPro;
     const isRookie = yearsPro !== undefined && yearsPro !== null ? Number(yearsPro) === 0 : (p.isRookie ?? undefined);
@@ -823,7 +991,7 @@ function computeWeeklyList(snapshot, weekIndex) {
     if (!pool.length) return;
     const teamStat = teamStats.get(Number(teamId)) || {};
     const winPct = (winMap[teamId] !== undefined && winMap[teamId] !== null) ? winMap[teamId] : 0.5;
-    const baseOlScore = computeOlTeamScore(teamStat, winPct) + (winPct * 4);
+    const baseOlScore = computeOlTeamScore(teamStat, winPct) + (winPct * 2);
     const passShare = Math.min(1, Math.max(0, (teamStat.passAtt || 0) / Math.max(1, (teamStat.passAtt || 0) + (teamStat.rushAtt || 0))));
     const runShare = 1 - passShare;
     const scoredPool = pool.map(pl => {
@@ -848,7 +1016,7 @@ function computeWeeklyList(snapshot, weekIndex) {
       if (pos === 'RT') posPenalty += 0.015;
       if (pos === 'C') posPenalty += 0.01;
       const raw = baseOlScore * posMult * posPenalty * (1 + ovrAdj);
-      const maxCap = (pos === 'LT' || pos === 'RT') ? 75 : 72;
+      const maxCap = (pos === 'LT' || pos === 'RT') ? 62 : 59;
       const playerScore = Math.max(40, Math.min(maxCap, raw));
       return { pl, playerScore };
     }).sort((a, b) => b.playerScore - a.playerScore);
@@ -864,7 +1032,7 @@ function computeWeeklyList(snapshot, weekIndex) {
     starters.forEach((entry, idx) => {
       const { pl, playerScore } = entry;
       const pos = pl.position;
-      const finalScore = Math.max(34, playerScore - idx * 4);
+      const finalScore = Math.max(28, playerScore - idx * 3);
       rawList.push({
         id: pl.rosterId || `${pl.firstName || ''}-${pl.lastName || ''}-${teamId}-${pos}`,
         name: `${pl.firstName || ''} ${pl.lastName || ''}`.trim() || pos,
@@ -880,10 +1048,11 @@ function computeWeeklyList(snapshot, weekIndex) {
     });
   });
   rawList.sort((a, b) => (b.score || 0) - (a.score || 0));
+  const gradedPool = gradeWeeklyPool(rawList);
   const groupMin = { QB: 4, RB: 6, WR: 12, TE: 4, OL: 6, EDG: 8, LB: 8, DB: 12 };
   const groupCap = { QB: 12, RB: 14, WR: 24, TE: 8, OL: 10, EDG: 16, LB: 16, DB: 24, SPECIAL: 4, OTHER: 8 };
   const grouped = new Map();
-  rawList.forEach((p) => {
+  gradedPool.forEach((p) => {
     const group = getPositionGroup(p.position);
     if (!grouped.has(group)) grouped.set(group, []);
     grouped.get(group).push(p);
@@ -910,12 +1079,12 @@ function computeWeeklyList(snapshot, weekIndex) {
       addPlayer(list[i]);
     }
   });
-  for (const p of rawList) {
+  for (const p of gradedPool) {
     if (selected.length >= 100) break;
     addPlayer(p);
   }
   if (selected.length < 100) {
-    for (const p of rawList) {
+    for (const p of gradedPool) {
       const id = p.id || `${p.name}-${p.teamId || ''}`;
       if (used.has(id)) continue;
       used.add(id);
@@ -924,36 +1093,21 @@ function computeWeeklyList(snapshot, weekIndex) {
     }
   }
 
-  const top100Raw = selected.slice(0, 100);
-  const scoreValues = top100Raw
-    .map((p) => Number(p.score || 0))
-    .filter((score) => Number.isFinite(score));
-  const topScore = scoreValues.length ? Math.max(...scoreValues) : 0;
-  const bottomScore = scoreValues.length ? Math.min(...scoreValues) : 0;
-  const scoreSpan = Math.max(1, topScore - bottomScore);
-  const rescaled = top100Raw.map((p, idx, arr) => {
-    const score = Number(p.score || 0);
-    const scoreNorm = Math.min(1, Math.max(0, (score - bottomScore) / scoreSpan));
-    const rankNorm = arr.length <= 1 ? 1 : 1 - (idx / (arr.length - 1));
-    return {
-      ...p,
-      grade: computePffStyleGrade(scoreNorm, rankNorm, {
-        min: 69.5,
-        max: 97.8,
-        scoreWeight: 0.74,
-        rankWeight: 0.26,
-        rankPower: 0.62,
-        eliteFloor: 0.96,
-        eliteBump: 0.9,
-      }),
-    };
+  // Position balancing can add players in group-order; resort before grading so
+  // weekly grades follow actual performance, not insertion order.
+  selected.sort((a, b) => {
+    const as = Number(a?.score || 0);
+    const bs = Number(b?.score || 0);
+    return bs - as;
   });
+
+  const rescaled = gradePublishedTop100(selected.slice(0, 100));
   if (process.env.MOCK_DEBUG) {
     const posTop = {}; rescaled.forEach(p => { posTop[p.position] = (posTop[p.position] || 0) + 1; });
     console.log('[top_players] post-balance counts', posTop);
     console.log('[top_players] top/bottom grades', rescaled[0]?.grade, rescaled[rescaled.length - 1]?.grade);
   }
-  return rescaled;
+  return { top100: rescaled, allGraded: gradedPool };
 }
 function buildTop100(totals) {
   const sorted = Object.values(totals || {}).sort((a, b) => {
@@ -994,6 +1148,19 @@ function saveWeeklyAll(leagueId, weekIndex, list) {
     weekIndex,
     generatedAt: new Date().toISOString(),
     players: list
+  };
+  fs.writeFileSync(file, JSON.stringify(payload, null, 2));
+}
+
+function saveWeeklyTop(leagueId, weekIndex, list) {
+  const dir = path.join(TOP_HISTORY_DIR, leagueId);
+  fs.mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `week-${weekIndex}-top.json`);
+  const payload = {
+    leagueId,
+    weekIndex,
+    generatedAt: new Date().toISOString(),
+    top100: list
   };
   fs.writeFileSync(file, JSON.stringify(payload, null, 2));
 }
@@ -1347,7 +1514,15 @@ async function updateTopPlayers(client, leagueId, snapshot, currentWeek, options
   const { isWildcard = false, postChannelId = DEFAULT_POST_CHANNEL } = options;
   // Use previous week's stats (as requested)
   const targetWeekIdx = Math.max(0, Number(currentWeek) - 1);
-  const list = computeWeeklyList(snapshot, targetWeekIdx);
+  const weekly = computeWeeklyList(snapshot, targetWeekIdx);
+  const list = Array.isArray(weekly) ? weekly : (weekly?.top100 || []);
+  const allGraded = Array.isArray(weekly?.allGraded) ? weekly.allGraded : list;
+  try {
+    saveWeeklyAll(leagueId, targetWeekIdx, allGraded);
+    saveWeeklyTop(leagueId, targetWeekIdx, list);
+  } catch (err) {
+    console.warn('[updateTopPlayers] failed to save weekly history:', err?.message || err);
+  }
   // Persist latest list for getTop100Page
   const state = loadJson(TOP_FILE, {});
   state[leagueId] = state[leagueId] || {};

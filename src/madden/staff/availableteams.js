@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { draftOrder, applyPickTrades } from '../coach/mockdraft.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -63,10 +64,7 @@ function hasStaffRole(member, roleMap) {
 }
 
 function formatTeamName(team) {
-  const nick = normalizeName(team?.displayName) || normalizeName(team?.nickName);
-  const city = team?.cityName;
-  if (city && nick) return `${city} ${nick}`;
-  return nick || city || `Team ${team?.teamId}`;
+  return getFullTeamName(team, `Team ${team?.teamId}`);
 }
 
 function teamEmoji(team, emojiMap = {}) {
@@ -200,6 +198,10 @@ async function execute(interaction) {
     const pickMap = buildPickMap(snapshot);
 
     const lines = [];
+    const seasonNumber = seasonInfo.seasonNumber ?? seasonInfo.seasonIndex ?? 'Current';
+    const phaseLabel = isOffseason
+      ? `Offseason${seasonInfo.offSeasonStage ? ` Stage ${seasonInfo.offSeasonStage}` : ''}`
+      : `Week ${seasonInfo.displayWeek ?? seasonInfo.seasonWeek ?? '?'}`;
     for (const t of teams) {
       const roleId = resolveRoleId(t, roleMap);
       let assigned = false;
@@ -243,7 +245,11 @@ async function execute(interaction) {
 
     const embed = new EmbedBuilder()
       .setTitle('Madden Available Teams')
-      .setDescription(lines.length ? lines.join('\n') : 'No open teams.')
+      .setDescription([
+        `Season ${seasonNumber} • ${phaseLabel}`,
+        '',
+        lines.length ? lines.join('\n') : 'No open teams.',
+      ].join('\n'))
       .setColor(0x00b0f4);
     await safeEditReply(interaction, { embeds: [embed] });
   } catch (err) {

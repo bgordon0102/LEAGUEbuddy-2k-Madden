@@ -8,9 +8,15 @@ const LEAGUE_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const PREV_DIR = path.join(LEAGUE_DIR, 'previous');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
+const PLAYER_CHANGES_FILE = path.join(process.cwd(), 'data', 'madden', 'player_changes.json');
 
 function loadJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
+}
+
+function saveJson(file, data) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
 function loadChannelMap() {
@@ -220,6 +226,13 @@ export async function updatePlayerChanges(client, leagueId) {
   const teams = teamNameMap(curr);
   const prevPlayers = buildPlayerMap(prev).players;
   const currTeamMap = buildPlayerMap(curr).byTeam;
+  const savedChanges = loadJson(PLAYER_CHANGES_FILE) || { leagueId: String(leagueId), history: [] };
+  const batch = {
+    leagueId: String(leagueId),
+    createdAt: Date.now(),
+    weekLabel: null,
+    items: [],
+  };
 
   // Label with the previous completed week
   const prevWeekIdx = Math.max(0, (curr.currentWeek ?? 1) - 1);
@@ -229,6 +242,7 @@ export async function updatePlayerChanges(client, leagueId) {
   const offSeasonStage = curr.info?.careerHubInfo?.seasonInfo?.offSeasonStage ?? 0;
   const last = lastCompletedWeek(curr);
   const weekLabel = getMessageForWeek((last.wk ?? prevWeekIdx) + 1, last.st ?? stageForWeek, offSeasonStage);
+  batch.weekLabel = weekLabel;
 
   for (const [teamId, players] of Object.entries(currTeamMap)) {
     const lines = [];
@@ -239,6 +253,19 @@ export async function updatePlayerChanges(client, leagueId) {
       const diffs = diffPlayer(prevPlayer, currPlayer);
       if (!diffs.length) continue;
       if (diffs.some(d => d.label === 'Position')) positionChangedForTeam = true;
+      batch.items.push({
+        teamId: Number(teamId),
+        teamName: teams[teamId]?.name || 'Team',
+        playerName: `${currPlayer.firstName || ''} ${currPlayer.lastName || ''}`.trim() || currPlayer.fullName || 'Unknown',
+        position: currPlayer.position || '',
+        overall: Number(currPlayer.playerBestOvr || currPlayer.teamSchemeOvr || currPlayer.playerSchemeOvr || 0),
+        devTrait: currPlayer.devTrait ?? null,
+        changes: diffs.map((diff) => ({
+          label: diff.label,
+          from: diff.from,
+          to: diff.to,
+        })),
+      });
       const header = `**${playerLabel(currPlayer)}**`;
       const body = diffs.map(d => `${d.label}: ${d.from}->${d.to}`).join('\n');
       lines.push(`${header}\n${body}`);
@@ -258,6 +285,14 @@ export async function updatePlayerChanges(client, leagueId) {
       const content = positionChangedForTeam ? commishMentions : null;
       await channel.send({ content: content || undefined, embeds: [embed] }).catch(() => null);
     }
+  }
+
+  if (batch.items.length) {
+    const history = Array.isArray(savedChanges.history) ? savedChanges.history : [];
+    history.push(batch);
+    savedChanges.leagueId = String(leagueId);
+    savedChanges.history = history.slice(-20);
+    saveJson(PLAYER_CHANGES_FILE, savedChanges);
   }
 }
 

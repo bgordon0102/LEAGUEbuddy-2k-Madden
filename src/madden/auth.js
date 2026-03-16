@@ -10,7 +10,7 @@ const data = new SlashCommandBuilder()
   .setDescription('Link your EA account for Madden sync.')
   .addStringOption(option =>
     option.setName('redirect_url')
-      .setDescription('Paste the URL you land on after EA login (starts with http://127.0.0.1/success?code=...)')
+      .setDescription('Paste the EA callback URL from 127.0.0.1:4001/madden/callback')
       .setRequired(false)
   )
   .addBooleanOption(option =>
@@ -56,7 +56,7 @@ async function execute(interaction) {
       .setDescription('Link your EA account so the bot can sync your league.')
       .addFields(
         { name: 'Step 1', value: `Click and sign in: ${EA_LOGIN_URL}` },
-        { name: 'Step 2', value: 'You will land on a page at http://127.0.0.1/success?... Copy that entire URL.' },
+        { name: 'Step 2', value: 'You will land on a page at http://127.0.0.1:4001/madden/callback?... Copy that entire URL.' },
         { name: 'Step 3', value: 'Run /madden-auth again and paste the URL into redirect_url. Tokens will be saved locally.' }
       )
       .setColor(0x5865f2);

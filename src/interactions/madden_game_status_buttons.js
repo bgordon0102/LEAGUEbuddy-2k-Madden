@@ -2,15 +2,27 @@ import { ButtonInteraction, EmbedBuilder, ActionRowBuilder, ButtonBuilder } from
 import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
-import { markThreadDone, getThreadState } from '../shared/madden_thread_notifier.js';
+import { markThreadDone, getThreadState, collectParticipation } from '../shared/madden_thread_notifier.js';
 import { updateFairSimBoard } from '../shared/fairsim_board.js';
 import { registerThread } from '../shared/madden_thread_notifier.js';
 import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
+import { queueRemovalReview, queueImmediateRemedyReview } from '../shared/madden_removal_review.js';
+import { sendCoachReceipt } from '../shared/madden_coach_receipts.js';
+import {
+  STRIKE_LIMIT,
+  loadStrikeStore,
+  saveStrikeStore,
+  ensureStrikeSeason,
+  weightedOverLimit,
+  addStrikeOutcome,
+  resetCompletedOutcome,
+  recordCommunicationWeek,
+  remainingWeighted,
+  weightedCount,
+} from '../shared/madden_strikes.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
-const FAIR_FILE = path.join(process.cwd(), 'data', 'madden', 'fairsims.json');
 const COMMISH_ROLE_IDS = ['1460399404241522759', '1460399405436768431']; // Legacy commish roles
-const SIM_LIMIT = 5;
 const PENDING_FILE = path.join(process.cwd(), 'data', 'madden', 'pending.json');
 const pendingFair = new Map(); // threadId or threadId:complete -> { away: bool, home: bool }
 
@@ -37,14 +49,6 @@ loadPendingFile();
 function loadRoleMap() {
   try { return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8')); } catch { return {}; }
 }
-function loadFair() {
-  try { return JSON.parse(fs.readFileSync(FAIR_FILE, 'utf8')); } catch { return {}; }
-}
-function saveFair(data) {
-  fs.mkdirSync(path.dirname(FAIR_FILE), { recursive: true });
-  fs.writeFileSync(FAIR_FILE, JSON.stringify(data, null, 2));
-}
-
 function normalize(name) {
   if (!name) return name;
   const lower = name.toLowerCase();
@@ -131,51 +135,19 @@ function seasonKeyFromSnapshot(snapshot) {
 }
 
 function ensureSeason(fairData, seasonKey) {
-  fairData[seasonKey] = fairData[seasonKey] || {};
-  const seasonData = fairData[seasonKey];
-  if (!seasonData.counts) {
-    const counts = {};
-    Object.entries(seasonData).forEach(([k, v]) => { counts[k] = v; });
-    seasonData.counts = counts;
-  }
-  seasonData.consecutive = seasonData.consecutive || {};
-  return seasonData;
+  return ensureStrikeSeason(fairData, seasonKey);
 }
 
 function fairCountExceeded(users, seasonData) {
-  const over = [];
-  users.forEach(u => {
-    const c = seasonData.counts?.[u] || 0;
-    if (c >= SIM_LIMIT) over.push(u);
-  });
-  return over;
-}
-
-function incrementFair(users, fairData, seasonKey, teams = []) {
-  const seasonData = ensureSeason(fairData, seasonKey);
-  users.forEach(u => {
-    seasonData.counts[u] = (seasonData.counts[u] || 0) + 1;
-    seasonData.consecutive[u] = (seasonData.consecutive[u] || 0) + 1;
-  });
-  // Teams kept for possible future use
-  teams.forEach(t => {
-    const norm = normalize(t || '');
-    const key = `team:${norm}`;
-    seasonData.counts[key] = (seasonData.counts[key] || 0) + 1;
-  });
+  return weightedOverLimit(seasonData, users);
 }
 
 function resetConsecutive(users, fairData, seasonKey) {
-  const seasonData = ensureSeason(fairData, seasonKey);
-  users.forEach(u => { seasonData.consecutive[u] = 0; });
+  resetCompletedOutcome(fairData, seasonKey, users);
 }
 
 function remainingFair(users, seasonData) {
-  const res = {};
-  users.forEach(u => {
-    res[u] = SIM_LIMIT - (seasonData.counts?.[u] || 0);
-  });
-  return res;
+  return remainingWeighted(seasonData, users);
 }
 
 function consecutiveWarnings(users, seasonData) {
@@ -212,13 +184,22 @@ function setPendingFair(threadId, side) {
 async function sendWarnings(thread, users, seasonData, commishMention) {
   const lines = [];
   users.forEach(u => {
-    const total = seasonData.counts?.[u] || 0;
-    if (total === 2) lines.push(`<@${u}> is at 2/5 sim strikes. 3 left this season.`);
-    else if (total === 4) lines.push(`<@${u}> is at 4/5 sim strikes. 1 left this season.`);
-    else if (total === 5) lines.push(`<@${u}> is at 5/5 sim strikes. All remaining games this season must be played.`);
+    const total = weightedCount(seasonData, u);
+    if (total >= 2 && total < 4) lines.push(`<@${u}> is at ${total}/5 weighted strike points.`);
+    else if (total >= 4 && total < STRIKE_LIMIT) lines.push(`<@${u}> is at ${total}/5 weighted strike points. One more issue puts them on the edge.`);
+    else if (total >= STRIKE_LIMIT) lines.push(`<@${u}> is at ${total}/5 weighted strike points. All remaining games this season should be treated as must-play.`);
   });
   if (lines.length) {
     await thread.send({ content: `${lines.join('\n')} ${commishMention || ''}`.trim() });
+  }
+}
+
+async function maybeQueueRemovalReview(client, guild, seasonKey, teamName, roleIds = [], userIds = []) {
+  for (const roleId of roleIds) {
+    for (const userId of userIds) {
+      await queueRemovalReview(client, guild.id, { seasonKey, userId, roleId, teamName }).catch(() => null);
+      await queueImmediateRemedyReview(client, guild.id, { seasonKey, userId, roleId, teamName }).catch(() => null);
+    }
   }
 }
 
@@ -293,12 +274,24 @@ export async function execute(interaction) {
     }
   })();
 
-  const fairData = loadFair();
+  const fairData = loadStrikeStore();
   const seasonData = ensureSeason(fairData, seasonKey);
   const userIds = [
     ...(await coachUserIds(interaction.guild, away, roleMap)),
     ...(await coachUserIds(interaction.guild, home, roleMap)),
   ];
+  const awayUserIds = await coachUserIds(interaction.guild, away, roleMap);
+  const homeUserIds = await coachUserIds(interaction.guild, home, roleMap);
+  const participation = await collectParticipation(thread, {
+    awayRoleIds: awayCoachRoles,
+    homeRoleIds: homeCoachRoles,
+    lastReminder: getThreadState(threadId)?.lastReminder,
+  });
+  const onTimeOutcome = (() => {
+    const state = getThreadState(threadId);
+    const deadlineAt = Number(state?.deadlineAt || 0);
+    return !deadlineAt || Date.now() <= deadlineAt;
+  })();
 
   // Staff-awarded strike (targeted to home/away coaches)
   if (action === 'staffstrikeaway' || action === 'staffstrikehome') {
@@ -312,20 +305,26 @@ export async function execute(interaction) {
     const over = fairCountExceeded(targetUsers, seasonData);
     if (over.length) {
       const names = over.map(id => `<@${id}>`).join(', ');
-      const msg = `Strike denied: ${names} already at ${SIM_LIMIT}/5. All remaining games must be played.`;
+      const msg = `Strike denied: ${names} already at ${STRIKE_LIMIT}/5 weighted strike points. All remaining games must be played.`;
       await interaction.reply({ content: msg, ephemeral: true });
       try { await thread.send({ content: `${commishMention} ${msg}`.trim(), allowedMentions: { parse: ['roles'] } }); } catch {}
       return;
     }
-    incrementFair(targetUsers, fairData, seasonKey, [targetTeam].filter(Boolean));
-    saveFair(fairData);
+    if (!targetUsers.length) {
+      await interaction.reply({ content: 'No coach user is currently resolved for that team. Fix the coach role before applying a strike.', ephemeral: true });
+      return;
+    }
+    addStrikeOutcome(fairData, seasonKey, targetUsers, 'determined_strike', 'DS');
+    recordCommunicationWeek(fairData, seasonKey, awayUserIds, { responded: participation.awayCount > 0, onTime: onTimeOutcome });
+    recordCommunicationWeek(fairData, seasonKey, homeUserIds, { responded: participation.homeCount > 0, onTime: onTimeOutcome });
+    saveStrikeStore(fairData);
     markThreadDone(threadId, action);
     const seasonDataAfter = ensureSeason(fairData, seasonKey);
     const remaining = remainingFair(targetUsers, seasonDataAfter);
     const remLine = targetUsers.length
-      ? Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem,0)} sim strikes left this season`).join('\n')
+      ? Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem,0)}/5 weighted strike room left this season`).join('\n')
       : 'Team strike recorded (no coach role members found).';
-    const label = action === 'staffstrikeaway' ? 'Staff Strike (Away)' : 'Staff Strike (Home)';
+    const label = action === 'staffstrikeaway' ? 'Determined Strike (Away)' : 'Determined Strike (Home)';
     baseEmbed
       .setTitle(label)
       .setColor(0xED4245)
@@ -335,10 +334,11 @@ export async function execute(interaction) {
     if (targetUsers.length) {
       await sendWarnings(thread, targetUsers, seasonDataAfter, commishMention);
     }
+    await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, targetTeam, action === 'staffstrikeaway' ? awayCoachRoles : homeCoachRoles, targetUsers);
     try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
     try { await disableButtons(interaction); } catch {}
     appendMaddenStaffLog({
-      type: 'staff_strike',
+      type: 'determined_strike',
       guildId: interaction.guildId,
       threadId,
       targetTeam,
@@ -348,10 +348,19 @@ export async function execute(interaction) {
     await postMaddenStaffLog(
       interaction.client,
       interaction.guildId,
-      'Staff Strike Applied',
-      `${targetTeam || 'Unknown team'} received a staff-applied strike in <#${threadId}>.`,
+      'Determined Strike Applied',
+      `${targetTeam || 'Unknown team'} received a determined strike in <#${threadId}>.`,
     ).catch(() => null);
-    await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'staff strike applied').catch(() => null);
+    await sendCoachReceipt(interaction.guild, action === 'staffstrikeaway' ? awayCoachRoles : homeCoachRoles, {
+      title: 'Determined Strike Applied',
+      description: `${targetTeam || 'Your team'} received a determined strike.`,
+      fields: [
+        { name: 'Reason', value: 'The thread evidence supported a determined strike for nonresponse / fault.' },
+        { name: 'Thread', value: `<#${threadId}>` },
+      ],
+      color: 0xED4245,
+    }).catch(() => null);
+    await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'determined strike applied').catch(() => null);
     await interaction.reply({ content: teamOnly ? 'Strike recorded for the team (no coach users found in the role).' : 'Strike issued and recorded.', ephemeral: true });
     clearPendingFair(threadId);
     return;
@@ -368,18 +377,21 @@ export async function execute(interaction) {
     }
     const pending = setPendingFair(key, side);
     if (!(pending.away && pending.home)) {
-      const waitMsg = 'Game Completed pending. Waiting for the other side to press Game Completed.';
+      const waitMsg = 'Game completed pending. Your opponent still needs to press Game Completed to confirm and stop reminders.';
       await interaction.reply({ content: waitMsg, ephemeral: true });
       const otherTeam = side === 'away' ? home : away;
       const otherMentions = await buildCoachMentions(interaction.guild, otherTeam, roleMap);
-      const mentionText = [...otherMentions, ...COMMISH_ROLE_IDS.map(id => `<@&${id}>`)].join(' ');
-      try { await thread.send({ content: `${mentionText} ${waitMsg}`.trim(), allowedMentions: { parse: ['roles', 'users'] } }); } catch {}
+      const mentionText = [...otherMentions].join(' ');
+      const coachPrompt = `${mentionText} Your opponent marked the game complete. Press **Game Completed** too if the game is finished so the thread can fully close.`.trim();
+      try { await thread.send({ content: coachPrompt, allowedMentions: { parse: ['roles', 'users'] } }); } catch {}
       return;
     }
     clearPendingFair(threadId + ':complete');
 
     resetConsecutive(userIds, fairData, seasonKey);
-    saveFair(fairData);
+    recordCommunicationWeek(fairData, seasonKey, awayUserIds, { responded: participation.awayCount > 0, onTime: onTimeOutcome });
+    recordCommunicationWeek(fairData, seasonKey, homeUserIds, { responded: participation.homeCount > 0, onTime: onTimeOutcome });
+    saveStrikeStore(fairData);
     markThreadDone(threadId, 'complete');
     baseEmbed.setTitle('Game Completed').setColor(0x57F287).setDescription(`Marked by ${interaction.user}`);
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
@@ -425,28 +437,35 @@ export async function execute(interaction) {
     }
     const pending = setPendingFair(threadId, side);
     if (!(pending.away && pending.home)) {
-      const waitMsg = 'Fair sim pending. Waiting for the other side to press Fair Sim.';
+      const waitMsg = 'Fair sim pending. Your opponent still needs to press Fair Sim to confirm the non-play result.';
       await interaction.reply({ content: waitMsg, ephemeral: true });
       const otherTeam = side === 'away' ? home : away;
       const otherMentions = await buildCoachMentions(interaction.guild, otherTeam, roleMap);
-      const mentionText = [...otherMentions, ...COMMISH_ROLE_IDS.map(id => `<@&${id}>`)].join(' ');
-      try { await thread.send({ content: `${mentionText} ${waitMsg}`.trim(), allowedMentions: { parse: ['roles', 'users'] } }); } catch {}
+      const mentionText = [...otherMentions].join(' ');
+      const coachPrompt = `${mentionText} Your opponent requested **Fair Sim**. Press **Fair Sim** too only if both sides agree the game will not be played.`.trim();
+      try { await thread.send({ content: coachPrompt, allowedMentions: { parse: ['roles', 'users'] } }); } catch {}
       return;
     }
     clearPendingFair(threadId);
     const over = fairCountExceeded(userIds, seasonData);
     if (over.length) {
       const names = over.map(id => `<@${id}>`).join(', ');
-      await interaction.reply({ content: `Fair sim denied: ${names} have already used ${SIM_LIMIT} non-play outcomes (fair sims or force wins) this season. They must play the game.`, ephemeral: true });
-      try { await thread.send({ content: `${commishMention || ''} Fair sim denied: ${names} at limit (${SIM_LIMIT}). Game must be played.`.trim() }); } catch {}
+      await interaction.reply({ content: `Fair sim denied: ${names} are already at ${STRIKE_LIMIT}/5 weighted strike points this season. They must play the game.`, ephemeral: true });
+      try { await thread.send({ content: `${commishMention || ''} Fair sim denied: ${names} are already at the weighted limit. Game must be played.`.trim() }); } catch {}
       return;
     }
-    incrementFair(userIds, fairData, seasonKey, [away, home].filter(Boolean));
-    saveFair(fairData);
+    if (!awayUserIds.length || !homeUserIds.length) {
+      await interaction.reply({ content: 'Both coach roles must resolve to users before a Fair Sim can be logged.', ephemeral: true });
+      return;
+    }
+    addStrikeOutcome(fairData, seasonKey, userIds, 'fair_sim', 'FS');
+    recordCommunicationWeek(fairData, seasonKey, awayUserIds, { responded: participation.awayCount > 0, onTime: onTimeOutcome });
+    recordCommunicationWeek(fairData, seasonKey, homeUserIds, { responded: participation.homeCount > 0, onTime: onTimeOutcome });
+    saveStrikeStore(fairData);
     markThreadDone(threadId, 'fairsim');
     const remaining = remainingFair(userIds, ensureSeason(fairData, seasonKey));
-    const remLine = Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem,0)} non-play outcomes (fair sims or force wins) left`).join('\n');
-    baseEmbed.setTitle('Fair Sim Requested').setColor(0xFEE75C).setDescription(`Requested by ${interaction.user}\nTeams: ${away || 'Away'} vs ${home || 'Home'}`).addFields({ name: 'Fair sim remaining', value: remLine || 'N/A', inline: false });
+    const remLine = Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem,0)}/5 weighted strike room left`).join('\n');
+    baseEmbed.setTitle('Fair Sim Logged').setColor(0xFEE75C).setDescription(`Confirmed by both coaches\nTeams: ${away || 'Away'} vs ${home || 'Home'}`).addFields({ name: 'Weighted strike room', value: remLine || 'N/A', inline: false });
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
     await sendWarnings(thread, userIds, ensureSeason(fairData, seasonKey), commishMention);
     // Refresh fair-sim board (best effort)
@@ -467,7 +486,17 @@ export async function execute(interaction) {
       `${away || 'Away'} vs ${home || 'Home'} was logged as a fair sim in <#${threadId}>.`,
     ).catch(() => null);
     await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'fair sim logged').catch(() => null);
+    await sendCoachReceipt(interaction.guild, [...awayCoachRoles, ...homeCoachRoles], {
+      title: 'Fair Sim Receipt',
+      description: `${away || 'Away'} vs ${home || 'Home'} was recorded as a Fair Sim.`,
+      fields: [
+        { name: 'Weight', value: 'Each coach received 0.5 strike points.' },
+        { name: 'Thread', value: `<#${threadId}>` },
+      ],
+    }).catch(() => null);
     await interaction.reply({ content: 'Fair sim logged and commish notified. Reminders stopped.', ephemeral: true });
+    await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, away, awayCoachRoles, awayUserIds);
+    await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, home, homeCoachRoles, homeUserIds);
     return;
   }
 
@@ -478,12 +507,18 @@ export async function execute(interaction) {
     const over = fairCountExceeded(chargeUsers, seasonData);
     if (over.length) {
       const names = over.map(id => `<@${id}>`).join(', ');
-      await interaction.reply({ content: `Force win denied: ${names} have already used ${SIM_LIMIT} non-play outcomes (fair sims or force wins)/force-wins this season. They must play the game.`, ephemeral: true });
-      try { await thread.send({ content: `${commishMention || ''} Force win denied: ${names} at limit (${SIM_LIMIT}). Game must be played.`.trim() }); } catch {}
+      await interaction.reply({ content: `Force win denied: ${names} are already at ${STRIKE_LIMIT}/5 weighted strike points this season. They must play the game.`, ephemeral: true });
+      try { await thread.send({ content: `${commishMention || ''} Force win denied: ${names} are already at the weighted limit. Game must be played.`.trim() }); } catch {}
       return;
     }
-    incrementFair(chargeUsers, fairData, seasonKey, [away, home].filter(Boolean));
-    saveFair(fairData);
+    if (!chargeUsers.length) {
+      await interaction.reply({ content: 'No coach user is resolved for the charged team. Fix the coach role before logging this outcome.', ephemeral: true });
+      return;
+    }
+    addStrikeOutcome(fairData, seasonKey, chargeUsers, 'force_win', 'FW');
+    recordCommunicationWeek(fairData, seasonKey, awayUserIds, { responded: participation.awayCount > 0, onTime: onTimeOutcome });
+    recordCommunicationWeek(fairData, seasonKey, homeUserIds, { responded: participation.homeCount > 0, onTime: onTimeOutcome });
+    saveStrikeStore(fairData);
     markThreadDone(threadId, action);
     const label = action === 'homewin' ? 'Home Win Requested' : 'Away Win Requested';
     baseEmbed.setTitle(label).setColor(0x5865F2).setDescription(`Requested by ${interaction.user}\nTeams: ${away || 'Away'} vs ${home || 'Home'}`);
@@ -506,8 +541,19 @@ export async function execute(interaction) {
       'Force Win Logged',
       `${away || 'Away'} vs ${home || 'Home'} was resolved with a force-win style outcome in <#${threadId}>.`,
     ).catch(() => null);
+    await sendCoachReceipt(interaction.guild, action === 'homewin' ? awayCoachRoles : homeCoachRoles, {
+      title: 'Force Win Receipt',
+      description: `${action === 'homewin' ? away : home || 'Your team'} was charged with a non-play outcome.`,
+      fields: [
+        { name: 'Weight', value: 'This outcome added 1.0 strike points.' },
+        { name: 'Thread', value: `<#${threadId}>` },
+      ],
+      color: 0xED4245,
+    }).catch(() => null);
     await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'force win logged').catch(() => null);
     await interaction.reply({ content: 'Force-win request sent and reminders stopped.', ephemeral: true });
+    if (action === 'homewin') await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, away, awayCoachRoles, chargeUsers);
+    if (action === 'awaywin') await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, home, homeCoachRoles, chargeUsers);
     clearPendingFair(threadId);
     return;
   }

@@ -212,6 +212,54 @@ function topPunting(weeklyStats, teams) {
   return lines;
 }
 
+function safeFieldValue(lines = [], fallback = 'No data yet.') {
+  const joined = (lines || []).join('\n').trim();
+  if (!joined) return fallback;
+  if (joined.length <= 1024) return joined;
+  let out = '';
+  for (const line of lines || []) {
+    const next = out ? `${out}\n${line}` : line;
+    if (next.length > 1000) break;
+    out = next;
+  }
+  return out ? `${out}\n...` : fallback;
+}
+
+async function resolveStatLeadersMessage(channel, pinId) {
+  if (pinId) {
+    const direct = await channel.messages.fetch(pinId).catch(() => null);
+    if (direct) return direct;
+  }
+
+  const pinned = await channel.messages.fetchPinned().catch(() => null);
+  const pinnedMatch = pinned?.find((msg) =>
+    (msg.embeds || []).some((embed) => (embed?.title || '').includes('Madden Stat Leaders'))
+  );
+  if (pinnedMatch) return pinnedMatch;
+
+  const recent = await channel.messages.fetch({ limit: 50 }).catch(() => null);
+  const recentMatch = recent?.find((msg) =>
+    (msg.embeds || []).some((embed) => (embed?.title || '').includes('Madden Stat Leaders'))
+  );
+  if (recentMatch) return recentMatch;
+
+  return null;
+}
+
+async function ensureStatLeadersMessage(channel, embed, pinId) {
+  const existing = await resolveStatLeadersMessage(channel, pinId);
+  if (existing) {
+    await existing.edit({ embeds: [embed], content: null });
+    return existing;
+  }
+
+  const created = await channel.send({ embeds: [embed] });
+  await created.pin().catch(() => null);
+  setPinId('stat_leaders', created.id);
+  console.log('[stat_leaders] replacement created', { channelId: channel.id, messageId: created.id, oldPinId: pinId || null });
+  return created;
+}
+
 export async function updateStatLeaders(client, leagueId) {
   const snapshot = loadSnapshot(leagueId);
   const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
@@ -278,7 +326,7 @@ export async function updateStatLeaders(client, leagueId) {
     const lines = fn(weeklyStats, teams);
     fields.push({
       name: title,
-      value: lines.length ? lines.join('\n') : 'No data yet.',
+      value: safeFieldValue(lines, 'No data yet.'),
       inline: true,
     });
   });
@@ -297,14 +345,13 @@ export async function updateStatLeaders(client, leagueId) {
     timestamp: new Date().toISOString(),
   };
 
-  const pinId = getPinId('stat_leaders');
-  if (!pinId) return;
-  const msg = await channel.messages.fetch(pinId).catch(() => null);
-  if (!msg) {
-    console.warn('[stat_leaders] pin not found; skipping create');
-    return;
+  try {
+    const pinId = getPinId('stat_leaders');
+    const msg = await ensureStatLeadersMessage(channel, embed, pinId);
+    console.log('[stat_leaders] updated', { channelId, messageId: msg.id, pinId, latestWeek: latestStage1 != null ? latestStage1 + 1 : null });
+  } catch (e) {
+    console.warn('[stat_leaders] edit failed', e?.message || e);
   }
-  await msg.edit({ embeds: [embed], content: null }).catch(() => null);
 }
 
 export async function resetStatLeaders(client) {
@@ -330,12 +377,11 @@ export async function resetStatLeaders(client) {
     fields,
     timestamp: new Date().toISOString(),
   };
-  const pinId = getPinId('stat_leaders');
-  if (!pinId) return;
-  const msg = await channel.messages.fetch(pinId).catch(() => null);
-  if (!msg) {
-    console.warn('[stat_leaders] pin not found; skipping create');
-    return;
+  try {
+    const pinId = getPinId('stat_leaders');
+    const msg = await ensureStatLeadersMessage(channel, embed, pinId);
+    console.log('[stat_leaders] reset', { channelId, messageId: msg.id, pinId });
+  } catch (e) {
+    console.warn('[stat_leaders] reset edit failed', e?.message || e);
   }
-  await msg.edit({ embeds: [embed], content: null }).catch(() => null);
 }

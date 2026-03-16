@@ -1,18 +1,58 @@
 {
   "year_2026": {
     "counts": {
-      "1354477316742447105": 1,
-      "team:Bengals": 1
+      "817610144460308501": 0,
+      "760700161675493416": 0
+    },
+    "weightedCounts": {
+      "817610144460308501": 0,
+      "760700161675493416": 0
     },
     "consecutive": {
-      "1354477316742447105": 1,
-      "582608393160884285": 0,
-      "534797551962947594": 0,
-      "821387556343382046": 0,
-      "1043965589988843532": 0,
-      "1076243288056664234": 0,
-      "670446898695503897": 0,
-      "422227963292155904": 0
+      "817610144460308501": 0,
+      "760700161675493416": 0
+    },
+    "categories": {
+      "817610144460308501": {},
+      "760700161675493416": {}
+    },
+    "communication": {
+      "817610144460308501": {
+        "respondedWeeks": 1,
+        "silentWeeks": 0,
+        "consecutiveSilentWeeks": 0,
+        "onTimeOutcomes": 1,
+        "completedGames": 1,
+        "nonPlayOutcomes": 0,
+        "faultOutcomes": 0,
+        "history": [
+          {
+            "kind": "played",
+            "type": "complete",
+            "label": "PLAY",
+            "weight": 0,
+            "ts": 1773618397720
+          }
+        ]
+      },
+      "760700161675493416": {
+        "respondedWeeks": 1,
+        "silentWeeks": 0,
+        "consecutiveSilentWeeks": 0,
+        "onTimeOutcomes": 1,
+        "completedGames": 1,
+        "nonPlayOutcomes": 0,
+        "faultOutcomes": 0,
+        "history": [
+          {
+            "kind": "played",
+            "type": "complete",
+            "label": "PLAY",
+            "weight": 0,
+            "ts": 1773618397720
+          }
+        ]
+      }
     }
   }
 }

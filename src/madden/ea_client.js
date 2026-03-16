@@ -49,8 +49,11 @@ const headers = (t) => ({
 });
 
 async function refreshToken(token) {
-  const now = new Date();
-  if (now <= token.expiry) return token;
+  const expiryMs = token?.expiry instanceof Date
+    ? token.expiry.getTime()
+    : Number(token?.expiry || 0);
+  const refreshBufferMs = 5 * 60 * 1000;
+  if (expiryMs && Date.now() < expiryMs - refreshBufferMs) return token;
 
   const body = `grant_type=refresh_token&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&release_type=prod&refresh_token=${token.refreshToken}&authentication_source=${AUTH_SOURCE}&token_format=JWS`;
   const res = await fetch(`https://accounts.ea.com/connect/token`, {

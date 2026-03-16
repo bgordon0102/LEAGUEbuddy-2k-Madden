@@ -2,7 +2,15 @@ import http from 'http';
 import url from 'url';
 import fs from 'fs';
 import path from 'path';
-import { EA_LOGIN_URL, CLIENT_SECRET, CLIENT_ID, AUTH_SOURCE, APP_REDIRECT_URL } from './ea_constants.js';
+import { EA_LOGIN_URL, CLIENT_SECRET, CLIENT_ID, AUTH_SOURCE, APP_REDIRECT_URL, YEAR } from './ea_constants.js';
+import {
+  fetchTokenInfo,
+  fetchEntitlements,
+  fetchPersonas,
+  extractValidPersonas,
+  exchangePersonaToken,
+} from './ea_personas.js';
+import { saveTokens as saveTokensDb } from './madden_db.js';
 
 const TOKEN_FILE = path.join(process.cwd(), 'data', 'madden', 'tokens.json');
 const PORT = Number(process.env.MADDEN_AUTH_PORT || 4001);
@@ -39,6 +47,66 @@ async function exchangeCode(code) {
 function saveTokens(tokens) {
   fs.mkdirSync(path.dirname(TOKEN_FILE), { recursive: true });
   fs.writeFileSync(TOKEN_FILE, JSON.stringify(tokens, null, 2));
+  saveTokensDb(tokens);
+}
+
+function chooseBestPersona(personas) {
+  const score = (p) => {
+    let s = 0;
+    const ent = `${p.entitlement || ''}`.toUpperCase();
+    const ns = `${p.namespaceName || ''}`.toUpperCase();
+    if (p.systemConsole && p.systemConsole.toLowerCase() === 'ps5') s += 5;
+    if (p.systemConsole && p.systemConsole.toLowerCase() === 'xbsx') s += 4;
+    if (ent.includes('MADDEN_26')) s += 3;
+    if (ns.includes('MADDEN')) s += 1;
+    return s;
+  };
+  return [...personas].sort((a, b) => score(b) - score(a))[0] || null;
+}
+
+async function buildPersonaScopedTokens(code) {
+  const loginTokens = await exchangeCode(code);
+  const tokenInfo = await fetchTokenInfo(loginTokens.accessToken);
+  const pid = tokenInfo?.pid_id;
+  if (!pid) {
+    throw new Error('No pid_id returned from tokeninfo.');
+  }
+
+  const entRes = await fetchEntitlements(pid, loginTokens.accessToken);
+  const entitlements = entRes?.entitlements?.entitlement || [];
+  const personaResponses = await Promise.all(
+    entitlements.map(async (ent) => ({
+      ent,
+      personas: await fetchPersonas(ent.pidUri, loginTokens.accessToken),
+    })),
+  );
+  const personas = extractValidPersonas(entRes, personaResponses, 'Default');
+  if (!personas.length) {
+    throw new Error('No valid Madden personas found for this EA account.');
+  }
+
+  const chosen = chooseBestPersona(personas);
+  if (!chosen) {
+    throw new Error('Could not resolve a Madden persona to save.');
+  }
+
+  const personaToken = await exchangePersonaToken(
+    loginTokens.accessToken,
+    chosen.personaId,
+    chosen.namespaceName,
+  );
+
+  return {
+    accessToken: personaToken.access_token,
+    refreshToken: personaToken.refresh_token,
+    expiry: Date.now() + (personaToken.expires_in || 0) * 1000,
+    console: chosen.systemConsole || 'ps5',
+    blazeId: `${chosen.personaId}`,
+    gameYear: YEAR,
+    personaName: chosen.displayName,
+    entitlement: chosen.entitlement,
+    namespace: chosen.namespaceName,
+  };
 }
 
 export function startAuthServer() {
@@ -66,12 +134,15 @@ export function startAuthServer() {
         return;
       }
       try {
-        const tokens = await exchangeCode(code);
-        // console default if provided in query, else ps5
-        tokens.console = parsed.query.console || 'ps5';
-        tokens.blazeId = parsed.query.blazeId || '';
+        const tokens = await buildPersonaScopedTokens(code);
         saveTokens(tokens);
-        res.end(html(`<h3>Tokens saved</h3><p>Access/refresh tokens stored at data/madden/tokens.json. You can close this tab and run /madden-sync in Discord.</p>`));
+        res.end(html(`
+          <h3>Tokens saved</h3>
+          <p>Your persona-scoped Madden tokens were stored successfully.</p>
+          <p><strong>Console:</strong> ${tokens.console}</p>
+          <p><strong>Persona:</strong> ${tokens.personaName} (${tokens.blazeId})</p>
+          <p>You can close this tab and use the bot normally without reauthing again unless EA invalidates the refresh token.</p>
+        `));
       } catch (e) {
         res.end(html(`<h3>Exchange failed</h3><pre>${e.message}</pre>`));
       }

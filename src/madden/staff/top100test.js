@@ -141,7 +141,7 @@ export async function execute(interaction, options = {}) {
     ? Math.max(0, (weekOpt != null ? weekOpt - 1 : currentWeek(snapshot) - 1))
     : null;
 
-  let allPlayers;
+  let allPlayers = [];
   if (scope === 'season') {
     // Prefer fresh history; if stale/missing, compute from current snapshot's latest Stage 1 week
     if (historyFresh()) {
@@ -167,7 +167,8 @@ export async function execute(interaction, options = {}) {
         .map(w => Number(w.weekIndex));
       const latest = stage1Weeks.length ? Math.max(...stage1Weeks) : null;
       if (latest != null) {
-        allPlayers = computeWeeklyList(snapshot, latest);
+        const weekly = computeWeeklyList(snapshot, latest);
+        allPlayers = Array.isArray(weekly) ? weekly : (weekly?.top100 || []);
       }
     }
     if (!allPlayers.length) {
@@ -178,7 +179,8 @@ export async function execute(interaction, options = {}) {
   } else {
     // For weekly scope always compute from the current snapshot to avoid stale history bleed
     console.log('[top100test] computing weekly list from snapshot', { week });
-    allPlayers = computeWeeklyList(snapshot, week);
+    const weekly = computeWeeklyList(snapshot, week);
+    allPlayers = Array.isArray(weekly) ? weekly : (weekly?.top100 || []);
   }
   if (!allPlayers.length) {
     if (!isButton) await interaction.editReply('No player stats found for the latest week.');
