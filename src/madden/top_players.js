@@ -4,6 +4,8 @@ import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'disc
 import { loadJson, saveJson } from '../shared/json.js';
 import { gatherWeeklyStats } from './awards.js';
 import { getFullTeamName } from '../shared/madden_team_names.js';
+import { loadLeagueSnapshot } from './madden_data.js';
+import { getPinId, setPinId } from './pins_store.js';
 
 const TOP_FILE = path.join(process.cwd(), 'data', 'madden', 'top_players.json');
 const TOP_HISTORY_DIR = path.join(process.cwd(), 'data', 'madden', 'top_players_history');
@@ -1062,11 +1064,11 @@ function computeWeeklyList(snapshot, weekIndex) {
   const selected = [];
   const used = new Set();
   const capCount = {};
-  const addPlayer = (p) => {
+  const addPlayer = (p, capMap = groupCap) => {
     const id = p.id || `${p.name}-${p.teamId || ''}`;
     if (used.has(id)) return false;
     const group = getPositionGroup(p.position);
-    if ((capCount[group] || 0) >= (groupCap[group] ?? 100)) return false;
+    if ((capCount[group] || 0) >= (capMap[group] ?? 100)) return false;
     used.add(id);
     capCount[group] = (capCount[group] || 0) + 1;
     selected.push(p);
@@ -1173,27 +1175,145 @@ function loadWeeklyHistory(leagueId) {
   }
   if (!fs.existsSync(dir)) return [];
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'));
-  const history = [];
+  const byWeek = new Map();
   files.forEach(f => {
     try {
       const data = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
       const players = data?.players || data?.top100;
       if (Array.isArray(players)) {
-        history.push({ ...data, players, top100: players.slice(0, 100) });
+        const weekIndex = Number(data.weekIndex);
+        const sourceType = /-all\.json$/i.test(f) || Array.isArray(data?.players) ? 'all' : 'top';
+        const priority = sourceType === 'all' ? 2 : 1;
+        const sortedPlayers = players
+          .slice()
+          .sort((a, b) => {
+            const as = Number(a?.score ?? a?.grade ?? a?.seasonScore ?? 0);
+            const bs = Number(b?.score ?? b?.grade ?? b?.seasonScore ?? 0);
+            return bs - as;
+          });
+        const existing = byWeek.get(weekIndex);
+        if (!existing || priority > existing._priority) {
+          byWeek.set(weekIndex, {
+            ...data,
+            weekIndex,
+            players: sortedPlayers,
+            top100: sortedPlayers.slice(0, 100),
+            sourceType,
+            _priority: priority,
+          });
+        }
       }
     } catch { }
   });
+  const history = Array.from(byWeek.values()).map(({ _priority, ...entry }) => entry);
   history.sort((a, b) => (Number(a.weekIndex) || 0) - (Number(b.weekIndex) || 0));
   return history;
 }
 
-function computeSeasonTop100FromHistory(leagueId) {
-  const history = loadWeeklyHistory(leagueId);
+function buildSeasonHistoryFromSnapshot(leagueId) {
+  let snapshot;
+  try {
+    snapshot = loadLeagueSnapshot(leagueId);
+  } catch {
+    return [];
+  }
+  const stageOneWeeks = (snapshot?.weeklyStats || [])
+    .filter((entry) => Number(entry?.stage ?? entry?.stageIndex ?? 0) === 1)
+    .map((entry) => Number(entry?.weekIndex))
+    .filter((value) => Number.isFinite(value))
+    .sort((a, b) => a - b);
+  const uniqueWeeks = [...new Set(stageOneWeeks)];
+  const history = [];
+  for (const weekIndex of uniqueWeeks) {
+    try {
+      const weekly = computeWeeklyList(snapshot, weekIndex);
+      const players = Array.isArray(weekly?.allGraded) && weekly.allGraded.length
+        ? weekly.allGraded
+        : Array.isArray(weekly?.top100)
+          ? weekly.top100
+          : Array.isArray(weekly)
+            ? weekly
+            : [];
+      if (!players.length) continue;
+      history.push({
+        weekIndex,
+        players: players
+          .slice()
+          .sort((a, b) => Number(b?.score ?? b?.grade ?? 0) - Number(a?.score ?? a?.grade ?? 0)),
+        sourceType: 'snapshot',
+      });
+    } catch {
+      // ignore week-level compute failures and keep building from the remaining weeks
+    }
+  }
+  return history;
+}
+
+function topOffSeasonListFromRoster(snapshot, currentTop = [], targetCount = 100) {
+  if (!snapshot || currentTop.length >= targetCount) return currentTop;
+  const existingIds = new Set(currentTop.map((p) => String(p.id || `${p.name}-${p.teamId || ''}`)));
+  const teamNames = teamNameMap(snapshot);
+  const groupCounts = {};
+  currentTop.forEach((p) => {
+    const group = getPositionGroup(p.position);
+    groupCounts[group] = (groupCounts[group] || 0) + 1;
+  });
+  const capMap = { QB: 10, RB: 14, WR: 22, TE: 8, OL: 14, EDG: 18, LB: 16, DB: 22, SPECIAL: 4, OTHER: 12 };
+  const rosterPool = [];
+  const teams = snapshot?.rosters?.teams || {};
+  Object.entries(teams).forEach(([teamId, team]) => {
+    (team?.rosterInfoList || []).forEach((player) => {
+      const id = String(player?.rosterId || player?.playerId || player?.esnId || `${player?.firstName || ''}-${player?.lastName || ''}-${teamId}`);
+      if (!id || existingIds.has(id)) return;
+      const name = `${player?.firstName || ''} ${player?.lastName || ''}`.trim() || player?.displayName || player?.name || 'Unknown Player';
+      const position = String(player?.position || '').toUpperCase() || 'UNK';
+      const ovr = Number(player?.playerBestOvr || player?.playerSchemeOvr || player?.overall || 0);
+      rosterPool.push({
+        id,
+        name,
+        position,
+        teamId: Number(teamId),
+        team: teamNames[teamId] || `Team ${teamId}`,
+        seasonScore: Number((40 + ovr * 0.6).toFixed(3)),
+        seasonGrade: Number(Math.max(72, Math.min(84.5, ovr * 0.92)).toFixed(2)),
+        avgGrade: Number(Math.max(72, Math.min(84.5, ovr * 0.92)).toFixed(2)),
+        appearances: 0,
+        weeks90: 0,
+        weeks80: 0,
+        streak90: 0,
+        streak80: 0,
+        streak: 0,
+        bestRank: 999,
+        injuryHits: 0,
+        winPct: 0.5,
+      });
+    });
+  });
+  rosterPool.sort((a, b) => Number(b.seasonScore || 0) - Number(a.seasonScore || 0));
+
+  for (const player of rosterPool) {
+    if (currentTop.length >= targetCount) break;
+    const group = getPositionGroup(player.position);
+    if ((groupCounts[group] || 0) >= (capMap[group] ?? 100)) continue;
+    existingIds.add(player.id);
+    groupCounts[group] = (groupCounts[group] || 0) + 1;
+    currentTop.push(player);
+  }
+  for (const player of rosterPool) {
+    if (currentTop.length >= targetCount) break;
+    if (existingIds.has(player.id)) continue;
+    existingIds.add(player.id);
+    currentTop.push(player);
+  }
+  return currentTop.slice(0, targetCount);
+}
+
+function computeSeasonTop100FromEntries(history = []) {
   if (!history.length) return [];
   const agg = new Map(); // id -> data
   history.forEach(entry => {
     const week = Number(entry.weekIndex);
-    (entry.top100 || []).forEach((p, idx) => {
+    (entry.players || entry.top100 || []).forEach((p, idx) => {
       const id = p.id || `${p.name}-${p.teamId || ''}`;
       const getVal = (obj, keys) => {
         for (const k of keys) {
@@ -1438,21 +1558,75 @@ function computeSeasonTop100FromHistory(leagueId) {
     };
 
     if (v.appearances >= 5 && entry.meetsUsage) seasonList.push(entry);
-    else if (v.appearances >= 2) fallbackList.push(entry);
+    else if (v.appearances >= 1) fallbackList.push(entry);
   });
 
   const combined = [
     ...seasonList.sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0)),
     ...fallbackList.sort((a, b) => (b.seasonScore || 0) - (a.seasonScore || 0)),
-  ].slice(0, 100);
+  ];
 
   if (!combined.length) return [];
 
-  const topScore = Math.max(...combined.map((p) => Number(p.seasonScore || 0)));
-  const bottomScore = Math.min(...combined.map((p) => Number(p.seasonScore || 0)));
+  const groupMin = { QB: 4, RB: 8, WR: 14, TE: 4, OL: 8, EDG: 10, LB: 8, DB: 14 };
+  const groupCap = { QB: 8, RB: 12, WR: 20, TE: 6, OL: 12, EDG: 16, LB: 14, DB: 18, SPECIAL: 4, OTHER: 8 };
+  const grouped = new Map();
+  combined.forEach((p) => {
+    const group = getPositionGroup(p.position);
+    if (!grouped.has(group)) grouped.set(group, []);
+    grouped.get(group).push(p);
+  });
+  grouped.forEach((list) => list.sort((a, b) => Number(b.seasonScore || 0) - Number(a.seasonScore || 0)));
+
+  const selected = [];
+  const used = new Set();
+  const capCount = {};
+  const addPlayer = (p) => {
+    const id = p.id || `${p.name}-${p.teamId || ''}`;
+    if (used.has(id)) return false;
+    const group = getPositionGroup(p.position);
+    if ((capCount[group] || 0) >= (groupCap[group] ?? 100)) return false;
+    used.add(id);
+    capCount[group] = (capCount[group] || 0) + 1;
+    selected.push(p);
+    return true;
+  };
+
+  Object.entries(groupMin).forEach(([group, minCount]) => {
+    const list = grouped.get(group) || [];
+    for (let i = 0; i < list.length && (capCount[group] || 0) < minCount; i += 1) {
+      addPlayer(list[i]);
+    }
+  });
+  for (const p of combined) {
+    if (selected.length >= 100) break;
+    addPlayer(p);
+  }
+  if (selected.length < 100) {
+    const overflowCap = { QB: 10, RB: 14, WR: 22, TE: 8, OL: 14, EDG: 20, LB: 18, DB: 22, SPECIAL: 4, OTHER: 10 };
+    for (const p of combined) {
+      if (selected.length >= 100) break;
+      addPlayer(p, overflowCap);
+    }
+  }
+  if (selected.length < 100) {
+    const finalCap = { QB: 12, RB: 16, WR: 24, TE: 10, OL: 16, EDG: 24, LB: 22, DB: 24, SPECIAL: 4, OTHER: 12 };
+    for (const p of combined) {
+      if (selected.length >= 100) break;
+      addPlayer(p, finalCap);
+      if (selected.length >= 100) break;
+    }
+  }
+
+  const ranked = selected
+    .sort((a, b) => Number(b.seasonScore || 0) - Number(a.seasonScore || 0))
+    .slice(0, 100);
+
+  const topScore = Math.max(...ranked.map((p) => Number(p.seasonScore || 0)));
+  const bottomScore = Math.min(...ranked.map((p) => Number(p.seasonScore || 0)));
   const scoreSpan = Math.max(1, topScore - bottomScore);
 
-  const top = combined
+  const top = ranked
     .map((p, idx, arr) => {
       const scoreNorm = Math.min(1, Math.max(0, ((p.seasonScore || 0) - bottomScore) / scoreSpan));
       const rankNorm = arr.length <= 1 ? 1 : 1 - (idx / (arr.length - 1));
@@ -1478,12 +1652,68 @@ function computeSeasonTop100FromHistory(leagueId) {
   return top;
 }
 
-function buildPageEmbed(list, page, leagueId) {
+function computeSeasonTop100FromHistory(leagueId) {
+  const savedHistory = loadWeeklyHistory(leagueId);
+  const snapshotHistory = buildSeasonHistoryFromSnapshot(leagueId);
+  let history = savedHistory;
+  if (snapshotHistory.length > history.length) history = snapshotHistory;
+
+  let top = computeSeasonTop100FromEntries(history);
+  if (top.length < 100 && snapshotHistory.length && history !== snapshotHistory) {
+    top = computeSeasonTop100FromEntries(snapshotHistory);
+  }
+  if (top.length < 100) {
+    try {
+      const snapshot = loadLeagueSnapshot(leagueId);
+      const stageOneWeeks = (snapshot?.weeklyStats || [])
+        .filter((entry) => Number(entry?.stage ?? entry?.stageIndex ?? 0) === 1)
+        .map((entry) => Number(entry?.weekIndex))
+        .filter((value) => Number.isFinite(value));
+      const latestWeek = stageOneWeeks.length ? Math.max(...stageOneWeeks) : null;
+      if (latestWeek != null) {
+        const weekly = computeWeeklyList(snapshot, latestWeek);
+        const weeklyTop = Array.isArray(weekly?.allGraded) && weekly.allGraded.length
+          ? weekly.allGraded
+          : Array.isArray(weekly?.top100)
+            ? weekly.top100
+          : Array.isArray(weekly)
+            ? weekly
+            : [];
+        const used = new Set(top.map((p) => String(p.id || `${p.name}-${p.teamId || ''}`)));
+        for (const player of weeklyTop) {
+          const id = String(player.id || `${player.name}-${player.teamId || ''}`);
+          if (used.has(id)) continue;
+          used.add(id);
+          top.push({
+            ...player,
+            seasonScore: Number(player.seasonScore ?? player.score ?? player.grade ?? 0),
+            seasonGrade: Number(player.seasonGrade ?? player.grade ?? player.weeklyGrade ?? 0),
+          });
+          if (top.length >= 100) break;
+        }
+      }
+    } catch {
+      // ignore fallback fill failures
+    }
+  }
+  if (top.length < 100) {
+    try {
+      const snapshot = loadLeagueSnapshot(leagueId);
+      top = topOffSeasonListFromRoster(snapshot, top, 100);
+    } catch {
+      // ignore roster top-off failures
+    }
+  }
+  return top;
+}
+
+function buildPageEmbed(list, page, leagueId, meta = {}) {
   const perPage = 10;
   const totalPages = Math.max(1, Math.ceil(list.length / perPage));
   const safePage = Math.min(Math.max(1, page), totalPages);
   const start = (safePage - 1) * perPage;
   const slice = list.slice(start, start + perPage);
+  const titleLabel = meta.label || 'Top 100';
 
   const teamEmoji = (team) => {
     if (!team) return '';
@@ -1502,10 +1732,15 @@ function buildPageEmbed(list, page, leagueId) {
     return `${rank}. ${p.name} (${p.position}, ${p.team}) ${em ? em + ' ' : ''}— ${grade}`;
   });
   const embed = new EmbedBuilder()
-    .setTitle('NFL Top 100')
+    .setTitle(`Madden Player Grades — ${titleLabel}`)
     .setDescription(lines.join('\n') || 'No players available.')
     .setFooter({ text: `Page ${safePage}/${totalPages} • League ${leagueId}` });
   return { embed, totalPages, page: safePage };
+}
+
+function shouldDisplaySeasonTop100(snapshot, currentWeek) {
+  const seasonWeekType = Number(snapshot?.info?.careerHubInfo?.seasonInfo?.seasonWeekType ?? snapshot?.seasonWeekType ?? 1);
+  return seasonWeekType !== 1 || Number(currentWeek || 0) > 18;
 }
 
 
@@ -1527,32 +1762,56 @@ async function updateTopPlayers(client, leagueId, snapshot, currentWeek, options
   const state = loadJson(TOP_FILE, {});
   state[leagueId] = state[leagueId] || {};
   state[leagueId].top100 = list;
-  saveJson(TOP_FILE, state);
-  // Post to channel during Wildcard week
-  if (isWildcard && client && postChannelId) {
-    try {
-      await postTop100(client, leagueId, list, postChannelId);
-    } catch (err) {
-      console.error('[updateTopPlayers] failed to post Top 100:', err);
-    }
-  }
   // Keep a running season Top 100 from history for end-of-year/season scope
   try {
     const seasonTop = computeSeasonTop100FromHistory(leagueId);
     state[leagueId].seasonTop100 = seasonTop.slice(0, 100);
     // Keep the latest weekly list trimmed as well (defensive)
     state[leagueId].top100 = (state[leagueId].top100 || []).slice(0, 100);
+    const useSeason = shouldDisplaySeasonTop100(snapshot, currentWeek);
+    state[leagueId].top100Display = (useSeason ? state[leagueId].seasonTop100 : state[leagueId].top100).slice(0, 100);
+    state[leagueId].top100DisplayLabel = useSeason ? 'Season' : `Week ${targetWeekIdx + 1}`;
     saveJson(TOP_FILE, state);
   } catch (err) {
     console.warn('[updateTopPlayers] failed to compute season Top 100:', err?.message || err);
   }
+  if (client && postChannelId) {
+    try {
+      const currentState = loadJson(TOP_FILE, {});
+      const displayList = currentState?.[leagueId]?.top100Display || currentState?.[leagueId]?.top100 || list;
+      const displayLabel = currentState?.[leagueId]?.top100DisplayLabel || `Week ${targetWeekIdx + 1}`;
+      await postTop100(client, leagueId, displayList, postChannelId, { label: displayLabel });
+    } catch (err) {
+      console.error('[updateTopPlayers] failed to post Top 100:', err);
+    }
+  }
 }
 
-async function postTop100(client, leagueId, list, channelId) {
+async function findExistingTop100Message(client, preferredChannelId, pinId) {
+  if (!pinId) return { channel: null, message: null };
+  const preferredChannel = preferredChannelId
+    ? await client.channels.fetch(preferredChannelId).catch(() => null)
+    : null;
+  if (preferredChannel?.isTextBased()) {
+    const existing = await preferredChannel.messages.fetch(pinId).catch(() => null);
+    if (existing) return { channel: preferredChannel, message: existing };
+  }
+
+  const guild = preferredChannel?.guild || client.guilds.cache.first();
+  const channels = guild?.channels?.cache
+    ? [...guild.channels.cache.values()].filter((channel) => channel?.isTextBased?.())
+    : [];
+  for (const channel of channels) {
+    if (preferredChannel && channel.id === preferredChannel.id) continue;
+    const existing = await channel.messages.fetch(pinId).catch(() => null);
+    if (existing) return { channel, message: existing };
+  }
+  return { channel: preferredChannel, message: null };
+}
+
+async function postTop100(client, leagueId, list, channelId, meta = {}) {
   try {
-    const channel = await client.channels.fetch(channelId);
-    if (!channel || !channel.isTextBased()) return;
-    const { embed, totalPages, page } = buildPageEmbed(list, 1, leagueId);
+    const { embed, totalPages, page } = buildPageEmbed(list, 1, leagueId, meta);
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId(`madden_top100|prev|${page}|${totalPages}|${leagueId}`)
@@ -1565,7 +1824,15 @@ async function postTop100(client, leagueId, list, channelId) {
         .setStyle(ButtonStyle.Primary)
         .setDisabled(totalPages <= 1)
     );
-    await channel.send({ embeds: [embed], components: [row] });
+    const pinId = getPinId('top100');
+    const { channel, message } = await findExistingTop100Message(client, channelId, pinId);
+    if (!channel || !channel.isTextBased()) return;
+    if (message) {
+      await message.edit({ embeds: [embed], components: [row] });
+      return;
+    }
+    const sent = await channel.send({ embeds: [embed], components: [row] });
+    if (sent?.id) setPinId('top100', sent.id);
   } catch (err) {
     console.error('[top_players] Failed to post Top 100:', err);
   }
@@ -1573,8 +1840,9 @@ async function postTop100(client, leagueId, list, channelId) {
 
 function getTop100Page(leagueId, page) {
   const state = loadJson(TOP_FILE, {});
-  const list = state?.[leagueId]?.top100 || [];
-  return buildPageEmbed(list, page, leagueId);
+  const list = state?.[leagueId]?.top100Display || state?.[leagueId]?.top100 || [];
+  const label = state?.[leagueId]?.top100DisplayLabel || 'Top 100';
+  return buildPageEmbed(list, page, leagueId, { label });
 }
 
 function computeGradeFromRank(rank, total) {

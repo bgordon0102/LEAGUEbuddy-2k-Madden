@@ -1,7 +1,9 @@
 import { ButtonInteraction, ActionRowBuilder, ButtonBuilder } from 'discord.js';
 import { loadContentQueue, saveContentQueue } from '../shared/madden_content_review_queue.js';
 import { hasStaffRole, loadRoleMap } from '../madden/staff/staffUtils.js';
-import { appendMaddenStaffLog, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
+import { appendMaddenStaffLog, postMaddenStaffDecision, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
+import { queueScheduledRumorMill } from '../shared/madden_staff_ops.js';
+import { recordRumorReviewFeedback } from '../shared/madden_rumor_feedback.js';
 
 export const customId = /^madden_content_review\|(approve|deny)\|(.+)$/;
 
@@ -56,6 +58,14 @@ export async function execute(interaction) {
   item.reviewedAt = Date.now();
   queue[reviewId] = item;
   saveContentQueue(queue);
+  if (item.kind === 'rumor_mill') {
+    recordRumorReviewFeedback({
+      guildId: interaction.guildId,
+      action,
+      item,
+      reviewedBy: interaction.user.id,
+    });
+  }
   appendMaddenStaffLog({
     type: 'content_review',
     guildId: interaction.guildId,
@@ -65,7 +75,8 @@ export async function execute(interaction) {
     reviewedBy: interaction.user.id,
     targetChannelId: item.targetChannelId,
   });
-  await postMaddenStaffLog(
+  const postReviewUpdate = item.kind === 'rumor_mill' ? postMaddenStaffLog : postMaddenStaffDecision;
+  await postReviewUpdate(
     interaction.client,
     interaction.guildId,
     'Content Review',
@@ -75,6 +86,10 @@ export async function execute(interaction) {
   await interaction.message.edit({
     components: disableRows(interaction.message.components),
   }).catch(() => null);
+
+  if (item.kind === 'rumor_mill') {
+    await queueScheduledRumorMill(interaction.client, interaction.guildId).catch(() => null);
+  }
 
   await interaction.editReply({ content: action === 'approve' ? 'Content approved and posted.' : 'Content denied.' });
 }

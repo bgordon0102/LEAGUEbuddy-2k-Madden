@@ -5,6 +5,8 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/m
 import { draftOrder, applyPickTrades } from '../coach/mockdraft.js';
 import { registerThread } from '../../shared/madden_thread_notifier.js';
 import { brandTitle } from '../../shared/madden_branding.js';
+import { setRecognitionGameOfWeek } from '../../shared/league_recognition.js';
+import { postSportsbookWeek } from '../../shared/madden_sportsbook.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -179,6 +181,25 @@ function teamMentions(game, teams, roleMap) {
   ids.push(...commishIds);
   const text = ids.length ? ids.map(id => `<@&${id}>`).join(' ') : '';
   return { text, ids };
+}
+
+async function userIdsForRoleIds(guild, roleIds = []) {
+  const users = new Set();
+  for (const roleId of roleIds) {
+    const role = guild.roles.cache.get(roleId) || await guild.roles.fetch(roleId).catch(() => null);
+    if (!role) continue;
+    if (role.members?.size) {
+      role.members.forEach((member) => users.add(member.id));
+      continue;
+    }
+    try {
+      const all = await guild.members.fetch();
+      all.filter((member) => member.roles.cache.has(roleId)).forEach((member) => users.add(member.id));
+    } catch {
+      // ignore
+    }
+  }
+  return [...users];
 }
 
 function pickField(obj, keys) {
@@ -534,6 +555,77 @@ function deriveWinnersByConference(games, seedsMap) {
   return winners;
 }
 
+function selectGameOfWeek(games, teams, rankMaps, currentWeek = 1) {
+  const standings = rankMaps?.standings || {};
+  const values = rankMaps?.values || {};
+  const scoreGame = (game) => {
+    const awayStanding = standings[game.awayTeamId] || {};
+    const homeStanding = standings[game.homeTeamId] || {};
+    const awayWins = Number(awayStanding.totalWins || 0);
+    const homeWins = Number(homeStanding.totalWins || 0);
+    const awayLosses = Number(awayStanding.totalLosses || 0);
+    const homeLosses = Number(homeStanding.totalLosses || 0);
+    const awayGames = Math.max(1, awayWins + awayLosses + Number(awayStanding.totalTies || 0));
+    const homeGames = Math.max(1, homeWins + homeLosses + Number(homeStanding.totalTies || 0));
+    const awayPct = awayWins / awayGames;
+    const homePct = homeWins / homeGames;
+    const combinedStrength = awayPct + homePct;
+    const closeness = 1 - Math.min(1, Math.abs(awayPct - homePct));
+    const combinedWins = awayWins + homeWins;
+    const bothCompetitive = awayPct >= 0.35 && homePct >= 0.35;
+    const bothRelevant = awayPct >= 0.45 && homePct >= 0.45;
+    const oneHopeless = awayPct <= 0.2 || homePct <= 0.2;
+    const awayOff = Number(values[game.awayTeamId]?.offPtsPerG || 0);
+    const homeOff = Number(values[game.homeTeamId]?.offPtsPerG || 0);
+    const awayDef = Number(values[game.awayTeamId]?.defPtsPerG || 0);
+    const homeDef = Number(values[game.homeTeamId]?.defPtsPerG || 0);
+    const projectedPoints = awayOff + homeOff;
+    const defensiveResistance = 70 - Math.min(70, awayDef + homeDef);
+    const lateSeason = Number(currentWeek || 1) >= 11;
+    const playoffImplicationBoost = lateSeason
+      ? (bothRelevant ? 10 : bothCompetitive ? 5 : 0)
+      : 0;
+    const badGamePenalty =
+      (combinedWins <= 2 ? 12 : combinedWins <= 4 ? 6 : 0) +
+      (oneHopeless ? 8 : 0);
+    const score =
+      (combinedStrength * 18) +
+      (closeness * 12) +
+      Math.min(12, projectedPoints / 4) +
+      Math.max(0, defensiveResistance / 10) +
+      playoffImplicationBoost -
+      badGamePenalty;
+    return {
+      score,
+      awayRecord: `${awayWins}-${awayLosses}`,
+      homeRecord: `${homeWins}-${homeLosses}`,
+      projectedPoints: Math.round(projectedPoints * 10) / 10,
+      combinedWins,
+      playoffImplicationBoost,
+    };
+  };
+
+  const ranked = (games || [])
+    .filter((game) => game?.awayTeamId && game?.homeTeamId)
+    .map((game) => ({
+      game,
+      ...scoreGame(game),
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  if (!ranked.length) return null;
+  const top = ranked[0];
+  return {
+    awayTeam: teams[top.game.awayTeamId] || 'Away',
+    homeTeam: teams[top.game.homeTeamId] || 'Home',
+    awayTeamId: top.game.awayTeamId,
+    homeTeamId: top.game.homeTeamId,
+    awayRecord: top.awayRecord,
+    homeRecord: top.homeRecord,
+    projectedPoints: top.projectedPoints,
+  };
+}
+
 function pairFromSeeds(seeds, roundName) {
   // seeds: [{teamId, seed}]
   const sorted = [...seeds].sort((a, b) => a.seed - b.seed);
@@ -724,6 +816,8 @@ async function execute(interaction) {
       return;
     }
     const teams = teamMap(snapshot);
+    const rankMaps = buildRankMaps(snapshot);
+    const featuredGame = !playoffRound ? selectGameOfWeek(gamesFinal, teams, rankMaps, wkNumeric) : null;
     // Stats removed per request; keep flow lean and focused on buttons/strike instructions.
     let created = 0;
     const deadline = Math.floor((Date.now() + 48 * 3600 * 1000) / 1000);
@@ -814,6 +908,38 @@ async function execute(interaction) {
         console.warn('[madden-creategamethreads] Failed to create thread', name, e?.message || e);
       }
     }
+    if (featuredGame) {
+      try {
+        const awayRoleIds = coachRoleIds(featuredGame.awayTeam, roleMap);
+        const homeRoleIds = coachRoleIds(featuredGame.homeTeam, roleMap);
+        setRecognitionGameOfWeek({
+          guildId: interaction.guildId,
+          league: 'madden',
+          seasonKey: `year_${snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || new Date().getFullYear()}`,
+          weekKey: `week_${wkNumeric}`,
+          awayTeam: featuredGame.awayTeam,
+          homeTeam: featuredGame.homeTeam,
+          awayUserIds: await userIdsForRoleIds(interaction.guild, awayRoleIds),
+          homeUserIds: await userIdsForRoleIds(interaction.guild, homeRoleIds),
+          label: `${featuredGame.awayTeam} vs ${featuredGame.homeTeam}`,
+        });
+      } catch (e) {
+        console.warn('[madden-creategamethreads] failed to set suggested game of the week', e?.message || e);
+      }
+    }
+    try {
+      await postSportsbookWeek({
+        client: interaction.client,
+        guild: interaction.guild,
+        seasonKey: `year_${snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || new Date().getFullYear()}`,
+        weekNumber: wkNumeric,
+        snapshot,
+        games: gamesFinal,
+        teamsById: teams,
+      });
+    } catch (e) {
+      console.warn('[madden-creategamethreads] sportsbook post failed', e?.message || e);
+    }
     try {
       const announceChannelId = channelMap['Madden League Buddy Announcements'];
       const coachRoleId = roleMap['Ghost Legacy'];
@@ -821,9 +947,25 @@ async function execute(interaction) {
       if (announceChannelId) {
         const announce = await interaction.client.channels.fetch(announceChannelId).catch(() => null);
         if (announce && announce.isTextBased()) {
+          const featuredLine = featuredGame
+            ? `**Game of the Week:** ${featuredGame.awayTeam} (${featuredGame.awayRecord}) vs ${featuredGame.homeTeam} (${featuredGame.homeRecord})`
+            : null;
+          const textureLine = featuredGame
+            ? wkNumeric >= 11 && featuredGame.playoffImplicationBoost > 0
+              ? `This one carries real late-season weight. Winner earns double impact recognition.`
+              : `This is the featured matchup on the slate. Winner earns double impact recognition.`
+            : null;
           const embed = {
             title: brandTitle(playoffRound ? `${playoffRound} Threads Created` : `Week ${wkNumeric} Threads Created`),
-            description: `Deadline to play: <t:${deadline}:F> (<t:${deadline}:R>).`,
+            description: [
+              `${created} matchup threads are live for ${playoffRound ? playoffRound : `Week ${wkNumeric}`}.`,
+              `Deadline to play: <t:${deadline}:F> (<t:${deadline}:R>).`,
+              '',
+              featuredLine,
+              textureLine,
+              '',
+              `This week's clean recognition checklist: use strategy, post stream, touch a front-office tool, respond in-thread, and finish on time.`,
+            ].filter(Boolean).join('\n'),
             color: 0x00b0f4,
             timestamp: new Date().toISOString(),
           };

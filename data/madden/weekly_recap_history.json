@@ -26,7 +26,80 @@
         "Denver Broncos",
         "Arizona Cardinals"
       ],
-      "updatedAt": 1773638681988
+      "storyKeys": [
+        "trade_posture:Miami Dolphins:buy",
+        "player_change:Jacksonville Jaguars:Devin Lloyd",
+        "injury:Dallas Cowboys:Quinnen Williams",
+        "pressure:New York Jets",
+        "award:Tennessee Titans"
+      ],
+      "updatedAt": 1773639278125
+    },
+    {
+      "week": 5,
+      "teams": [
+        "Baltimore Ravens",
+        "Buffalo Bills",
+        "Washington Commanders",
+        "Philadelphia Eagles",
+        "Atlanta Falcons",
+        "Carolina Panthers",
+        "Chicago Bears",
+        "Indianapolis Colts"
+      ],
+      "storyKeys": [
+        "injury:Arizona Cardinals:Trey Benson",
+        "trade_posture:Tennessee Titans:sell",
+        "pressure:Houston Texans",
+        "slide:New England Patriots",
+        "rise:Arizona Cardinals"
+      ],
+      "updatedAt": 1773647693337,
+      "generations": [
+        {
+          "ts": 1773647693337,
+          "storyKeys": [
+            "injury:Arizona Cardinals:Trey Benson",
+            "trade_posture:Tennessee Titans:sell",
+            "pressure:Houston Texans",
+            "slide:New England Patriots",
+            "rise:Arizona Cardinals"
+          ]
+        }
+      ]
+    },
+    {
+      "week": 6,
+      "teams": [
+        "Miami Dolphins",
+        "Kansas City Chiefs",
+        "New York Jets",
+        "New England Patriots",
+        "Jacksonville Jaguars",
+        "Las Vegas Raiders",
+        "Seattle Seahawks",
+        "Los Angeles Rams"
+      ],
+      "storyKeys": [
+        "injury:Washington Commanders:Laremy Tunsil",
+        "trade_posture:Cleveland Browns:sell",
+        "player_change:Houston Texans:Isiah Flowers",
+        "player:Kyler Murray",
+        "rough:Miami Dolphins:Jaylen Kelly"
+      ],
+      "updatedAt": 1773685445871,
+      "generations": [
+        {
+          "ts": 1773685445871,
+          "storyKeys": [
+            "injury:Washington Commanders:Laremy Tunsil",
+            "trade_posture:Cleveland Browns:sell",
+            "player_change:Houston Texans:Isiah Flowers",
+            "player:Kyler Murray",
+            "rough:Miami Dolphins:Jaylen Kelly"
+          ]
+        }
+      ]
     }
   ]
 }

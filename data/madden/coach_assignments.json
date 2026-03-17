@@ -1,0 +1,1022 @@
+{
+  "1255691165265821747": {
+    "users": {
+      "670446898695503897": {
+        "teams": {
+          "cardinals": {
+            "teamName": "Cardinals",
+            "roleId": "1460399408163066071",
+            "active": true,
+            "assignedAt": 1773649877589,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Cardinals",
+            "roleId": "1460399408163066071",
+            "at": 1773649023358,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Cardinals",
+            "roleId": "1460399408163066071",
+            "at": 1773649182841,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Cardinals",
+            "roleId": "1460399408163066071",
+            "at": 1773649877589,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "926210487123857429": {
+        "teams": {
+          "falcons": {
+            "teamName": "Falcons",
+            "roleId": "1460399409706696896",
+            "active": true,
+            "assignedAt": 1773649877594,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Falcons",
+            "roleId": "1460399409706696896",
+            "at": 1773649023363,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Falcons",
+            "roleId": "1460399409706696896",
+            "at": 1773649182846,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Falcons",
+            "roleId": "1460399409706696896",
+            "at": 1773649877594,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "522832067843850251": {
+        "teams": {
+          "ravens": {
+            "teamName": "Ravens",
+            "roleId": "1460399410520264798",
+            "active": true,
+            "assignedAt": 1773649877598,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Ravens",
+            "roleId": "1460399410520264798",
+            "at": 1773649023368,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Ravens",
+            "roleId": "1460399410520264798",
+            "at": 1773649182850,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Ravens",
+            "roleId": "1460399410520264798",
+            "at": 1773649877598,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "841368118047801366": {
+        "teams": {
+          "bills": {
+            "teamName": "Bills",
+            "roleId": "1460399412047249512",
+            "active": true,
+            "assignedAt": 1773649877602,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Bills",
+            "roleId": "1460399412047249512",
+            "at": 1773649023371,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Bills",
+            "roleId": "1460399412047249512",
+            "at": 1773649182854,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Bills",
+            "roleId": "1460399412047249512",
+            "at": 1773649877602,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "912729990171357225": {
+        "teams": {
+          "panthers": {
+            "teamName": "Panthers",
+            "roleId": "1460399414865825843",
+            "active": true,
+            "assignedAt": 1773649877605,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Panthers",
+            "roleId": "1460399414865825843",
+            "at": 1773649023375,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Panthers",
+            "roleId": "1460399414865825843",
+            "at": 1773649182858,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Panthers",
+            "roleId": "1460399414865825843",
+            "at": 1773649877605,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "817610144460308501": {
+        "teams": {
+          "bears": {
+            "teamName": "Bears",
+            "roleId": "1460399416098689065",
+            "active": true,
+            "assignedAt": 1773649877608,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Bears",
+            "roleId": "1460399416098689065",
+            "at": 1773649023378,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Bears",
+            "roleId": "1460399416098689065",
+            "at": 1773649182861,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Bears",
+            "roleId": "1460399416098689065",
+            "at": 1773649877608,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1354477316742447105": {
+        "teams": {
+          "bengals": {
+            "teamName": "Bengals",
+            "roleId": "1460399417214501007",
+            "active": true,
+            "assignedAt": 1773649877612,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Bengals",
+            "roleId": "1460399417214501007",
+            "at": 1773649023382,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Bengals",
+            "roleId": "1460399417214501007",
+            "at": 1773649182864,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Bengals",
+            "roleId": "1460399417214501007",
+            "at": 1773649877612,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1076243288056664234": {
+        "teams": {
+          "broncos": {
+            "teamName": "Broncos",
+            "roleId": "1460399420691451999",
+            "active": true,
+            "assignedAt": 1773683186375,
+            "assignedByUserId": "1076243288056664234",
+            "assignedByTag": "rnb.randon"
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Broncos",
+            "roleId": "1460399420691451999",
+            "at": 1773649023391,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Broncos",
+            "roleId": "1460399420691451999",
+            "at": 1773649182873,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Broncos",
+            "roleId": "1460399420691451999",
+            "at": 1773649877621,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Broncos",
+            "roleId": "1460399420691451999",
+            "at": 1773683186375,
+            "assignedByUserId": "1076243288056664234",
+            "assignedByTag": "rnb.randon"
+          }
+        ]
+      },
+      "1218001419991515196": {
+        "teams": {
+          "lions": {
+            "teamName": "Lions",
+            "roleId": "1460399421597552642",
+            "active": true,
+            "assignedAt": 1773649877624,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Lions",
+            "roleId": "1460399421597552642",
+            "at": 1773649023395,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Lions",
+            "roleId": "1460399421597552642",
+            "at": 1773649182876,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Lions",
+            "roleId": "1460399421597552642",
+            "at": 1773649877624,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "760700161675493416": {
+        "teams": {
+          "packers": {
+            "teamName": "Packers",
+            "roleId": "1460399422126030851",
+            "active": true,
+            "assignedAt": 1773649877627,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Packers",
+            "roleId": "1460399422126030851",
+            "at": 1773649023398,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Packers",
+            "roleId": "1460399422126030851",
+            "at": 1773649182880,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Packers",
+            "roleId": "1460399422126030851",
+            "at": 1773649877627,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "422227963292155904": {
+        "teams": {
+          "texans": {
+            "teamName": "Texans",
+            "roleId": "1460399423116021821",
+            "active": true,
+            "assignedAt": 1773649877630,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Texans",
+            "roleId": "1460399423116021821",
+            "at": 1773649023402,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Texans",
+            "roleId": "1460399423116021821",
+            "at": 1773649182883,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Texans",
+            "roleId": "1460399423116021821",
+            "at": 1773649877630,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "472219952472915969": {
+        "teams": {
+          "colts": {
+            "teamName": "Colts",
+            "roleId": "1460399423925522496",
+            "active": true,
+            "assignedAt": 1773649877634,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Colts",
+            "roleId": "1460399423925522496",
+            "at": 1773649023405,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Colts",
+            "roleId": "1460399423925522496",
+            "at": 1773649182886,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Colts",
+            "roleId": "1460399423925522496",
+            "at": 1773649877634,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "419350615664361475": {
+        "teams": {
+          "jaguars": {
+            "teamName": "Jaguars",
+            "roleId": "1460399424785223680",
+            "active": true,
+            "assignedAt": 1773649877637,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Jaguars",
+            "roleId": "1460399424785223680",
+            "at": 1773649023409,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Jaguars",
+            "roleId": "1460399424785223680",
+            "at": 1773649182889,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Jaguars",
+            "roleId": "1460399424785223680",
+            "at": 1773649877637,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1459291692808274031": {
+        "teams": {
+          "raiders": {
+            "teamName": "Raiders",
+            "roleId": "1460399427725426699",
+            "active": true,
+            "assignedAt": 1773649877643,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Raiders",
+            "roleId": "1460399427725426699",
+            "at": 1773649023415,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Raiders",
+            "roleId": "1460399427725426699",
+            "at": 1773649182895,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Raiders",
+            "roleId": "1460399427725426699",
+            "at": 1773649877643,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1003814203825602630": {
+        "teams": {
+          "chargers": {
+            "teamName": "Chargers",
+            "roleId": "1460399428945842270",
+            "active": true,
+            "assignedAt": 1773649877646,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Chargers",
+            "roleId": "1460399428945842270",
+            "at": 1773649023418,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Chargers",
+            "roleId": "1460399428945842270",
+            "at": 1773649182898,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Chargers",
+            "roleId": "1460399428945842270",
+            "at": 1773649877646,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "582608393160884285": {
+        "teams": {
+          "rams": {
+            "teamName": "Rams",
+            "roleId": "1460399430329958514",
+            "active": true,
+            "assignedAt": 1773649877649,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Rams",
+            "roleId": "1460399430329958514",
+            "at": 1773649023421,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Rams",
+            "roleId": "1460399430329958514",
+            "at": 1773649182901,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Rams",
+            "roleId": "1460399430329958514",
+            "at": 1773649877649,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1236835406654210172": {
+        "teams": {
+          "dolphins": {
+            "teamName": "Dolphins",
+            "roleId": "1460399431353372733",
+            "active": true,
+            "assignedAt": 1773649877652,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Dolphins",
+            "roleId": "1460399431353372733",
+            "at": 1773649023425,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Dolphins",
+            "roleId": "1460399431353372733",
+            "at": 1773649182904,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Dolphins",
+            "roleId": "1460399431353372733",
+            "at": 1773649877652,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1432527300410474683": {
+        "teams": {
+          "vikings": {
+            "teamName": "Vikings",
+            "roleId": "1460399432137969694",
+            "active": true,
+            "assignedAt": 1773649877655,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Vikings",
+            "roleId": "1460399432137969694",
+            "at": 1773649023429,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Vikings",
+            "roleId": "1460399432137969694",
+            "at": 1773649182907,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Vikings",
+            "roleId": "1460399432137969694",
+            "at": 1773649877655,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "727880173621346316": {
+        "teams": {
+          "saints": {
+            "teamName": "Saints",
+            "roleId": "1460399433941389594",
+            "active": true,
+            "assignedAt": 1773649877661,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Saints",
+            "roleId": "1460399433941389594",
+            "at": 1773649023435,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Saints",
+            "roleId": "1460399433941389594",
+            "at": 1773649182913,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Saints",
+            "roleId": "1460399433941389594",
+            "at": 1773649877661,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "534797551962947594": {
+        "teams": {
+          "giants": {
+            "teamName": "Giants",
+            "roleId": "1460399434528587920",
+            "active": true,
+            "assignedAt": 1773649877664,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Giants",
+            "roleId": "1460399434528587920",
+            "at": 1773649023438,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Giants",
+            "roleId": "1460399434528587920",
+            "at": 1773649182917,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Giants",
+            "roleId": "1460399434528587920",
+            "at": 1773649877664,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1128898817803169814": {
+        "teams": {
+          "jets": {
+            "teamName": "Jets",
+            "roleId": "1460399435879158037",
+            "active": true,
+            "assignedAt": 1773649877668,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Jets",
+            "roleId": "1460399435879158037",
+            "at": 1773649023442,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Jets",
+            "roleId": "1460399435879158037",
+            "at": 1773649182920,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Jets",
+            "roleId": "1460399435879158037",
+            "at": 1773649877668,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "814341012754792460": {
+        "teams": {
+          "49ers": {
+            "teamName": "49ers",
+            "roleId": "1460399438693531709",
+            "active": true,
+            "assignedAt": 1773649877676,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "49ers",
+            "roleId": "1460399438693531709",
+            "at": 1773649023451,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "49ers",
+            "roleId": "1460399438693531709",
+            "at": 1773649182928,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "49ers",
+            "roleId": "1460399438693531709",
+            "at": 1773649877676,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1043965589988843532": {
+        "teams": {
+          "seahawks": {
+            "teamName": "Seahawks",
+            "roleId": "1460399440203481331",
+            "active": true,
+            "assignedAt": 1773649877679,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Seahawks",
+            "roleId": "1460399440203481331",
+            "at": 1773649023454,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Seahawks",
+            "roleId": "1460399440203481331",
+            "at": 1773649182931,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Seahawks",
+            "roleId": "1460399440203481331",
+            "at": 1773649877679,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "885772759240679425": {
+        "teams": {
+          "buccaneers": {
+            "teamName": "Buccaneers",
+            "roleId": "1460399441365307478",
+            "active": true,
+            "assignedAt": 1773649877683,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Buccaneers",
+            "roleId": "1460399441365307478",
+            "at": 1773649023457,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Buccaneers",
+            "roleId": "1460399441365307478",
+            "at": 1773649182934,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Buccaneers",
+            "roleId": "1460399441365307478",
+            "at": 1773649877683,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1481840402599252072": {
+        "teams": {
+          "titans": {
+            "teamName": "Titans",
+            "roleId": "1460399442472472577",
+            "active": true,
+            "assignedAt": 1773649877686,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Titans",
+            "roleId": "1460399442472472577",
+            "at": 1773649023460,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Titans",
+            "roleId": "1460399442472472577",
+            "at": 1773649182938,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Titans",
+            "roleId": "1460399442472472577",
+            "at": 1773649877686,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "821387556343382046": {
+        "teams": {
+          "commanders": {
+            "teamName": "Commanders",
+            "roleId": "1460399443210670082",
+            "active": true,
+            "assignedAt": 1773649877689,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        },
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Commanders",
+            "roleId": "1460399443210670082",
+            "at": 1773649023463,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Commanders",
+            "roleId": "1460399443210670082",
+            "at": 1773649182941,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          },
+          {
+            "action": "assigned",
+            "teamName": "Commanders",
+            "roleId": "1460399443210670082",
+            "at": 1773649877689,
+            "assignedByUserId": null,
+            "assignedByTag": null
+          }
+        ]
+      },
+      "1195843329477328978": {
+        "teams": {},
+        "history": [
+          {
+            "action": "assigned",
+            "teamName": "Patriots",
+            "roleId": "1460399433014444207",
+            "at": 1773682061305,
+            "assignedByUserId": "1076243288056664234",
+            "assignedByTag": "rnb.randon"
+          },
+          {
+            "action": "removed",
+            "teamName": "Patriots",
+            "roleId": "1460399433014444207",
+            "at": 1773682978457
+          }
+        ]
+      }
+    },
+    "updatedAt": 1773683186375
+  }
+}

@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { loadActiveTrades, saveActiveTrades, loadTradeCounts, saveTradeCounts, updateTradeCountsEmbed, computeApprovedTradeCounts } from '../shared/madden_trade_utils.js';
 import { addPickOverridesFromTrade } from '../madden/pick_overrides_store.js';
-import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
+import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffDecision } from '../shared/madden_staff_ops.js';
 
 const PENDING_PATH = path.join(process.cwd(), 'data', 'madden', 'pending_proofs.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
@@ -129,7 +129,7 @@ export async function execute(interaction) {
         yourTeam: activeTrade.yourTeam,
         otherTeam: activeTrade.otherTeam,
       });
-      await postMaddenStaffLog(
+      await postMaddenStaffDecision(
         interaction.client,
         interaction.guildId,
         'Trade Proof Approved',
@@ -179,7 +179,7 @@ export async function execute(interaction) {
       yourTeam: activeTrade.yourTeam,
       otherTeam: activeTrade.otherTeam,
     });
-    await postMaddenStaffLog(
+    await postMaddenStaffDecision(
       interaction.client,
       interaction.guildId,
       'Trade Proof Denied',
@@ -303,7 +303,7 @@ export async function execute(interaction) {
       otherTeam: trade.otherTeam,
       proofBy: interaction.user.id,
     });
-    await postMaddenStaffLog(
+    await postMaddenStaffDecision(
       interaction.client,
       interaction.guildId,
       'Trade Proof Submitted',

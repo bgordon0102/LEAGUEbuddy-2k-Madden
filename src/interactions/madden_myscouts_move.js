@@ -1,8 +1,4 @@
-import fs from 'fs';
-import path from 'path';
 import { buildPagesForUser, buildMyScoutsComponents, saveBoardOrder, updateBoardUiState } from '../madden/coach/myscouts.js';
-
-const SCOUT_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_points.json');
 
 export const customId = /^madden_myscouts_move\|/;
 
@@ -19,12 +15,7 @@ export async function execute(interaction) {
     return;
   }
 
-  const scoutData = (() => {
-    try { return JSON.parse(fs.readFileSync(SCOUT_PATH, 'utf8')); } catch { return {}; }
-  })();
-  const activeName = scoutData?.[targetUserId]?.boardUi?.[classKey]?.activeName || null;
-
-  const { pages, error, order } = buildPagesForUser(targetUserId, interaction.guildId);
+  const { pages, error, order, activeName, seasonKey } = buildPagesForUser(targetUserId, interaction.guildId);
   if (error) {
     await interaction.update({ content: error, embeds: [], components: [] });
     return;
@@ -43,9 +34,9 @@ export async function execute(interaction) {
     const newOrder = [...order];
     newOrder.splice(idx, 1);
     newOrder.splice(newIdx, 0, activeName);
-    saveBoardOrder(targetUserId, classKey, newOrder);
+    saveBoardOrder(targetUserId, classKey, newOrder, seasonKey);
   }
-  updateBoardUiState(targetUserId, classKey, { activeName });
+  updateBoardUiState(targetUserId, classKey, { activeName }, seasonKey);
   const rebuilt = buildPagesForUser(targetUserId, interaction.guildId);
   const pages2 = rebuilt.pages;
   const order2 = rebuilt.order;

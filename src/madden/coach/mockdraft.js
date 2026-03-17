@@ -5,6 +5,7 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/m
 import { getEffectiveFirstRoundOverrides } from '../pick_overrides_store.js';
 import { buildLiveDraftContext } from './draft_live_data.js';
 import { getFullTeamName } from '../../shared/madden_team_names.js';
+import { coachCommandDescription, coachVoiceFooter, coachErrorBlurb } from '../../shared/madden_coach_voice.js';
 
 let currentCalendarYear = 2025;
 const DRAFT_CLASS_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
@@ -1237,7 +1238,7 @@ function premiumPositionValue(group) {
 
 export const data = new SlashCommandBuilder()
   .setName('madden-mockdraft')
-  .setDescription('Show a mock draft for the top 32 picks using current standings and the active draft class');
+  .setDescription(coachCommandDescription('mockdraft'));
 
 export async function execute(interaction) {
   // Defer immediately to avoid interaction timeout; use flags for ephemeral-like behavior
@@ -1247,7 +1248,7 @@ export async function execute(interaction) {
 
   const leagueFile = getLatestLeagueFile();
   if (!leagueFile) {
-    const payload = { content: 'No league snapshot found in data/madden/leagues.' };
+    const payload = { content: coachErrorBlurb('noSnapshot', 'No league snapshot found in data/madden/leagues.') };
     if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
     else await interaction.reply({ ...payload, flags: 64 });
     return;
@@ -1272,7 +1273,7 @@ export async function execute(interaction) {
   const needs = Object.fromEntries(Object.entries(needProfiles).map(([key, profile]) => [key, profile?.needs || ['BPA']]));
   const prospects = loadDraftClass();
   if (!prospects.length) {
-    const payload = { content: 'No Madden draft class found.' };
+    const payload = { content: 'The draft board is not loaded yet.' };
     if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
     else await interaction.reply({ ...payload, flags: 64 });
     return;
@@ -1476,7 +1477,7 @@ export async function execute(interaction) {
     .setTitle('Madden Mock Draft (Picks 1–32)')
     .setDescription(picks.join('\n'))
     .setColor(0x1e90ff)
-    .setFooter({ text: `Snapshot: ${path.basename(leagueFile)}` });
+    .setFooter({ text: `${coachVoiceFooter('mockdraft', 'Live board, live order, live class')} • ${path.basename(leagueFile)}` });
 
   const payload = { embeds: [embed] };
   if (interaction.deferred || interaction.replied) await interaction.editReply(payload);

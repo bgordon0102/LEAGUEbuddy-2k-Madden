@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { coachCommandDescription } from '../../shared/madden_coach_voice.js';
 
 const ROUND_OPTIONS = ['1', '2', '3', '4', '5', '6', '7'];
 const PICK_OPTIONS = Array.from({ length: 32 }, (_, i) => String(i + 1));
@@ -94,7 +95,7 @@ function buildPickPages(startYear, seasonYear, leagueId) {
 
 export const data = new SlashCommandBuilder()
   .setName('madden-pickvalue')
-  .setDescription('View paged draft pick values (32 picks per page)')
+  .setDescription(coachCommandDescription('pickvalue'))
   .addIntegerOption(o =>
     o.setName('start_year')
       .setDescription('First draft year to show')

@@ -8,6 +8,7 @@ const STATIC_PINS = {
   standings: '1479314692999479326',
   playoff_picture: '1479314696728346654',
   power_rankings: '1479314701732282480',
+  top100: '1478035474609209515',
 };
 
 export function loadPins() {

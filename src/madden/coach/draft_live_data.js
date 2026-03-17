@@ -142,7 +142,7 @@ export function buildLiveDraftContext(league) {
         teamName: teamNameById[teamId] || String(teamId),
         pass: { yds: 0, td: 0, int: 0, sacksTaken: 0, comp: 0, att: 0 },
         rush: { yds: 0, td: 0, att: 0 },
-        rec: { yds: 0, td: 0 },
+        rec: { yds: 0, td: 0, catches: 0 },
         def: { sacks: 0, ints: 0, passYdsAllowed: 0, rushYdsAllowed: 0 },
         labels: {},
         games: 0,
@@ -170,7 +170,7 @@ export function buildLiveDraftContext(league) {
         overall: meta.overall ?? 0,
         pass: { yds: 0, td: 0, int: 0, comp: 0, att: 0 },
         rush: { yds: 0, td: 0, att: 0 },
-        rec: { yds: 0, td: 0 },
+        rec: { yds: 0, td: 0, catches: 0 },
         def: { sacks: 0, ints: 0, tackles: 0, tfl: 0, pds: 0, ff: 0, fr: 0 },
       };
     }
@@ -226,11 +226,13 @@ export function buildLiveDraftContext(league) {
       const team = ensureTeam(teamId);
       team.rec.yds += Number(stat.recYds || 0);
       team.rec.td += Number(stat.recTDs || 0);
+      team.rec.catches += Number(stat.recCatches || 0);
       ensureCount(teamId, 'rec');
       if (stat.rosterId != null) {
         const player = ensurePlayer(stat.rosterId, teamId, stat.fullName || 'Player');
         player.rec.yds += Number(stat.recYds || 0);
         player.rec.td += Number(stat.recTDs || 0);
+        player.rec.catches += Number(stat.recCatches || 0);
       }
     }
 
@@ -287,6 +289,7 @@ export function buildLiveDraftContext(league) {
       ypc: Number((Number(teamStats.rush.yds || 0) / rushAtt).toFixed(2)),
       recYds: teamStats.rec.yds,
       recTD: teamStats.rec.td,
+      recCatches: teamStats.rec.catches,
       defSacks: teamStats.def.sacks,
       defINT: teamStats.def.ints,
       passYdsAllowed: teamStats.def.passYdsAllowed,
@@ -315,6 +318,7 @@ export function buildLiveDraftContext(league) {
     currentPlayer.rushAtt = currentPlayer.rush.att;
     currentPlayer.recYds = currentPlayer.rec.yds;
     currentPlayer.recTDs = currentPlayer.rec.td;
+    currentPlayer.recCatches = currentPlayer.rec.catches;
     currentPlayer.sacks = currentPlayer.def.sacks;
     currentPlayer.interceptions = currentPlayer.def.ints;
     if (!currentPlayersByTeamId[meta.teamId]) currentPlayersByTeamId[meta.teamId] = [];

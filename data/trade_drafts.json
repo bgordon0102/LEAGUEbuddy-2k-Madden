@@ -1,324 +1,57 @@
 {
-  "builder_1076243288056664234_1773525725701": {
-    "draftId": "builder_1076243288056664234_1773525725701",
-    "userId": "1076243288056664234",
+  "builder_670446898695503897_1773694256160": {
+    "draftId": "builder_670446898695503897_1773694256160",
+    "userId": "670446898695503897",
     "guildId": "1255691165265821747",
     "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773525725701
-  },
-  "builder_1076243288056664234_1773525790411": {
-    "draftId": "builder_1076243288056664234_1773525790411",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553029",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Browns",
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773525793208,
-    "yourTeam": "Broncos",
-    "otherTeam": "Browns"
-  },
-  "builder_1076243288056664234_1773525861180": {
-    "draftId": "builder_1076243288056664234_1773525861180",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773525861180
-  },
-  "builder_1076243288056664234_1773526032529": {
-    "draftId": "builder_1076243288056664234_1773526032529",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773526032529
-  },
-  "builder_1076243288056664234_1773526099159": {
-    "draftId": "builder_1076243288056664234_1773526099159",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773526099160
-  },
-  "builder_1076243288056664234_1773526219718": {
-    "draftId": "builder_1076243288056664234_1773526219718",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773526219718
-  },
-  "builder_1076243288056664234_1773526236550": {
-    "draftId": "builder_1076243288056664234_1773526236550",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773526236550
-  },
-  "builder_1076243288056664234_1773526236794": {
-    "draftId": "builder_1076243288056664234_1773526236794",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773526236796
-  },
-  "builder_1076243288056664234_1773526403363": {
-    "draftId": "builder_1076243288056664234_1773526403363",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553029",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Browns",
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773526406161,
-    "yourTeam": "Broncos",
-    "otherTeam": "Browns"
-  },
-  "builder_1076243288056664234_1773526460901": {
-    "draftId": "builder_1076243288056664234_1773526460901",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553047",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Lions",
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773526465126,
-    "yourTeam": "Broncos",
-    "otherTeam": "Lions"
-  },
-  "builder_1076243288056664234_1773526479316": {
-    "draftId": "builder_1076243288056664234_1773526479316",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553031",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Cardinals",
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773526485894,
-    "yourTeam": "Broncos",
-    "otherTeam": "Cardinals"
-  },
-  "builder_1076243288056664234_1773526831051": {
-    "draftId": "builder_1076243288056664234_1773526831051",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553031",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Cardinals",
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773526837559,
-    "yourTeam": "Broncos",
-    "otherTeam": "Cardinals"
-  },
-  "builder_1076243288056664234_1773526909491": {
-    "draftId": "builder_1076243288056664234_1773526909491",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553029",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Browns",
-    "assets": {
-      "your": [],
-      "other": [
-        {
-          "type": "pick",
-          "raw": "2027 Round 1",
-          "year": 2027,
-          "round": 1,
-          "pickNum": null,
-          "value": 359,
-          "label": "2027 Round 1",
-          "viaTeam": null,
-          "originalOwner": null
-        },
-        {
-          "type": "pick",
-          "raw": "2027 Round 2",
-          "year": 2027,
-          "round": 2,
-          "pickNum": null,
-          "value": 215,
-          "label": "2027 Round 2",
-          "viaTeam": null,
-          "originalOwner": null
-        },
-        {
-          "type": "pick",
-          "raw": "2028 Round 1",
-          "year": 2028,
-          "round": 1,
-          "pickNum": null,
-          "value": 359,
-          "label": "2028 Round 1",
-          "viaTeam": null,
-          "originalOwner": null
-        }
-      ]
-    },
-    "savedAt": 1773526930261,
-    "yourTeam": "Broncos",
-    "otherTeam": "Browns",
-    "assetsSent": "",
-    "assetsReceived": "2027 Round 1 — 359.0\n2027 Round 2 — 215.0\n2028 Round 1 — 359.0"
-  },
-  "builder_1076243288056664234_1773527064565": {
-    "draftId": "builder_1076243288056664234_1773527064565",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553029",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Browns",
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773527251140,
-    "yourTeam": "Broncos",
-    "otherTeam": "Browns",
-    "assetsSent": "",
-    "assetsReceived": ""
-  },
-  "builder_1076243288056664234_1773527255090": {
-    "draftId": "builder_1076243288056664234_1773527255090",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773527255090
-  },
-  "builder_1076243288056664234_1773527351086": {
-    "draftId": "builder_1076243288056664234_1773527351086",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553038",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Cowboys",
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773527356981,
-    "yourTeam": "Broncos",
-    "otherTeam": "Cowboys"
-  },
-  "builder_1076243288056664234_1773527374477": {
-    "draftId": "builder_1076243288056664234_1773527374477",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553046",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Jets",
+    "yourTeamId": 775553031,
+    "otherTeamId": "775553037",
+    "yourTeamName": "Cardinals",
+    "otherTeamName": "Washington Commanders",
     "assets": {
       "your": [
         {
           "type": "player",
-          "rosterId": "553388549",
-          "key": "patrick surtain ii",
-          "label": "Patrick Surtain II",
-          "pos": "CB"
+          "rosterId": "553388415",
+          "key": "rashawn slater",
+          "label": "Rashawn Slater",
+          "pos": "LT"
+        }
+      ],
+      "other": []
+    },
+    "savedAt": 1773694280464,
+    "yourTeam": "Cardinals",
+    "otherTeam": "Washington Commanders",
+    "assetsSent": "Rashawn Slater (LT) — 406.7",
+    "assetsReceived": ""
+  },
+  "builder_670446898695503897_1773694549451": {
+    "draftId": "builder_670446898695503897_1773694549451",
+    "userId": "670446898695503897",
+    "guildId": "1255691165265821747",
+    "leagueId": "16594549",
+    "yourTeamId": 775553031,
+    "otherTeamId": "775553037",
+    "yourTeamName": "Cardinals",
+    "otherTeamName": "Washington Commanders",
+    "assets": {
+      "your": [
+        {
+          "type": "player",
+          "rosterId": "553388415",
+          "key": "rashawn slater",
+          "label": "Rashawn Slater",
+          "pos": "LT"
         },
         {
           "type": "pick",
-          "raw": "2028 Round 3",
-          "year": 2028,
-          "round": 3,
+          "raw": "2027 Round 5",
+          "year": 2027,
+          "round": 5,
           "pickNum": null,
-          "value": 108,
-          "label": "2028 Round 3",
+          "value": 53,
+          "label": "2027 Round 5",
           "viaTeam": null,
           "originalOwner": null
         }
@@ -336,203 +69,18 @@
           "originalOwner": null
         },
         {
-          "type": "pick",
-          "raw": "2027 Round 3",
-          "year": 2027,
-          "round": 3,
-          "pickNum": null,
-          "value": 135,
-          "label": "2027 Round 3",
-          "viaTeam": null,
-          "originalOwner": null
-        },
-        {
-          "type": "pick",
-          "raw": "2028 Round 1",
-          "year": 2028,
-          "round": 1,
-          "pickNum": null,
-          "value": 287,
-          "label": "2028 Round 1",
-          "viaTeam": null,
-          "originalOwner": null
-        },
-        {
           "type": "player",
-          "rosterId": "553388500",
-          "key": "brandon stephens",
-          "label": "Brandon Stephens",
-          "pos": "CB"
+          "rosterId": "553386492",
+          "key": "josh conerly jr",
+          "label": "Josh Conerly Jr",
+          "pos": "RT"
         }
       ]
     },
-    "savedAt": 1773527460698,
-    "yourTeam": "Broncos",
-    "otherTeam": "Jets",
-    "assetsSent": "Patrick Surtain II (CB) — 766.4\n2028 Round 3 — 108.0",
-    "assetsReceived": "2027 Round 1 — 359.0\n2027 Round 3 — 135.0\n2028 Round 1 — 287.0\nBrandon Stephens (CB) — 141.0"
-  },
-  "builder_1076243288056664234_1773528198031": {
-    "draftId": "builder_1076243288056664234_1773528198031",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773528198032
-  },
-  "builder_1076243288056664234_1773528630013": {
-    "draftId": "builder_1076243288056664234_1773528630013",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553046",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Jets",
-    "assets": {
-      "your": [],
-      "other": [
-        {
-          "type": "pick",
-          "raw": "2027 Round 1",
-          "year": 2027,
-          "round": 1,
-          "pickNum": null,
-          "value": 359,
-          "label": "2027 Round 1",
-          "viaTeam": null,
-          "originalOwner": null
-        },
-        {
-          "type": "pick",
-          "raw": "2027 Round 2",
-          "year": 2027,
-          "round": 2,
-          "pickNum": null,
-          "value": 215,
-          "label": "2027 Round 2",
-          "viaTeam": null,
-          "originalOwner": null
-        }
-      ]
-    },
-    "savedAt": 1773528799470,
-    "yourTeam": "Broncos",
-    "otherTeam": "Jets",
-    "assetsSent": "",
-    "assetsReceived": "2027 Round 1 — 359.0\n2027 Round 2 — 215.0"
-  },
-  "builder_1076243288056664234_1773528801112": {
-    "draftId": "builder_1076243288056664234_1773528801112",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553046",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Jets",
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773528918949,
-    "yourTeam": "Broncos",
-    "otherTeam": "Jets",
-    "assetsSent": "",
-    "assetsReceived": ""
-  },
-  "builder_1076243288056664234_1773528923142": {
-    "draftId": "builder_1076243288056664234_1773528923142",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": "775553046",
-    "yourTeamName": "Broncos",
-    "otherTeamName": "Jets",
-    "assets": {
-      "your": [
-        {
-          "type": "player",
-          "rosterId": "553388549",
-          "key": "patrick surtain ii",
-          "label": "Patrick Surtain II",
-          "pos": "CB"
-        }
-      ],
-      "other": [
-        {
-          "type": "pick",
-          "raw": "2027 Round 1",
-          "year": 2027,
-          "round": 1,
-          "pickNum": null,
-          "value": 359,
-          "label": "2027 Round 1",
-          "viaTeam": null,
-          "originalOwner": null
-        },
-        {
-          "type": "pick",
-          "raw": "2028 Round 1",
-          "year": 2028,
-          "round": 1,
-          "pickNum": null,
-          "value": 287,
-          "label": "2028 Round 1",
-          "viaTeam": null,
-          "originalOwner": null
-        },
-        {
-          "type": "player",
-          "rosterId": "553388500",
-          "key": "brandon stephens",
-          "label": "Brandon Stephens",
-          "pos": "CB"
-        }
-      ]
-    },
-    "savedAt": 1773528959011,
-    "yourTeam": "Broncos",
-    "otherTeam": "Jets",
-    "assetsSent": "Patrick Surtain II (CB) — 766.4",
-    "assetsReceived": "2027 Round 1 — 359.0\n2028 Round 1 — 287.0\nBrandon Stephens (CB) — 141.0"
-  },
-  "builder_1076243288056664234_1773529316235": {
-    "draftId": "builder_1076243288056664234_1773529316235",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773529316236
-  },
-  "builder_1076243288056664234_1773598988517": {
-    "draftId": "builder_1076243288056664234_1773598988517",
-    "userId": "1076243288056664234",
-    "guildId": "1255691165265821747",
-    "leagueId": "16594549",
-    "yourTeamId": 775553028,
-    "otherTeamId": null,
-    "yourTeamName": "Broncos",
-    "otherTeamName": null,
-    "assets": {
-      "your": [],
-      "other": []
-    },
-    "savedAt": 1773598988518
+    "savedAt": 1773694590061,
+    "yourTeam": "Cardinals",
+    "otherTeam": "Washington Commanders",
+    "assetsSent": "Rashawn Slater (LT) — 406.7\n2027 Round 5 — 53.0",
+    "assetsReceived": "2027 Round 1 — 359.0\nJosh Conerly Jr (RT) — 122.8"
   }
 }

@@ -9,12 +9,13 @@ import path from 'path';
 import { loadLeagueSnapshot, currentWeek, getDefaultLeagueId } from '../../../madden/madden_data.js';
 import { getFullTeamName } from '../../shared/madden_team_names.js';
 import { loadWeeklyGameLog } from '../weekly_game_log.js';
+import { coachCommandDescription } from '../../shared/madden_coach_voice.js';
 
 const TEAM_EMOJIS_PATH = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
 
 export const data = new SlashCommandBuilder()
   .setName('madden-schedule')
-  .setDescription('Browse the regular-season league schedule and open played games.');
+  .setDescription(coachCommandDescription('schedule'));
 
 function safeReadJSON(file, fallback) {
   try {

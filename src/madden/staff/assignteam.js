@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { updateAvailableTeamsPin } from '../../../madden/available_teams.js';
 import { updateFairSimBoard } from '../../shared/fairsim_board.js';
+import { setCoachAssignment } from '../../shared/madden_coach_assignments.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
@@ -78,6 +79,18 @@ export async function execute(interaction) {
   try {
     await guildMember.roles.add(r1);
     if (r2) await guildMember.roles.add(r2);
+    for (const role of [r1, r2].filter(Boolean)) {
+      if (!/ coach$/i.test(role.name)) continue;
+      const teamName = role.name.replace(/ coach$/i, '').trim();
+      setCoachAssignment({
+        guildId: interaction.guildId,
+        userId: target.id,
+        teamName,
+        roleId: role.id,
+        assignedByUserId: interaction.user.id,
+        assignedByTag: interaction.user.tag,
+      });
+    }
     await interaction.editReply({ content: `Assigned ${r2 ? `"${r1.name}" and "${r2.name}"` : `"${r1.name}"`} to ${target.tag}.` });
     // Refresh available teams pin
     try {

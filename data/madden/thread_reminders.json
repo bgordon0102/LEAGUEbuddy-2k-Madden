@@ -679,6 +679,316 @@
       "homeRoleIds": [
         "1460399420691451999"
       ]
+    },
+    "1482924699163033780": {
+      "threadId": "1482924699163033780",
+      "status": "pending",
+      "created": 1773696794604,
+      "lastReminder": 1773696794604,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 1,
+      "weekIndex": 5,
+      "awayTeam": "Cowboys",
+      "homeTeam": "Niners",
+      "awayRoleIds": [
+        "1460399419408122041"
+      ],
+      "homeRoleIds": []
+    },
+    "1482924696474226830": {
+      "threadId": "1482924696474226830",
+      "status": "pending",
+      "created": 1773696795117,
+      "lastReminder": 1773696795117,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 1,
+      "weekIndex": 5,
+      "awayTeam": "Cardinals",
+      "homeTeam": "Patriots",
+      "awayRoleIds": [
+        "1460399408163066071"
+      ],
+      "homeRoleIds": [
+        "1460399433014444207"
+      ]
+    },
+    "1482924694012301425": {
+      "threadId": "1482924694012301425",
+      "status": "pending",
+      "created": 1773697115229,
+      "lastReminder": 1773697115229,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Saints",
+      "homeTeam": "Packers",
+      "awayRoleIds": [
+        "1460399433941389594"
+      ],
+      "homeRoleIds": [
+        "1460399422126030851"
+      ]
+    },
+    "1482924691441188957": {
+      "threadId": "1482924691441188957",
+      "status": "pending",
+      "created": 1773697115381,
+      "lastReminder": 1773697115381,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Steelers",
+      "homeTeam": "Browns",
+      "awayRoleIds": [
+        "1460399437141639210"
+      ],
+      "homeRoleIds": [
+        "1460399418464538848"
+      ]
+    },
+    "1482924683681599619": {
+      "threadId": "1482924683681599619",
+      "status": "pending",
+      "created": 1773697115502,
+      "lastReminder": 1773697115502,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Raiders",
+      "homeTeam": "Chargers",
+      "awayRoleIds": [
+        "1460399427725426699"
+      ],
+      "homeRoleIds": [
+        "1460399428945842270"
+      ]
+    },
+    "1482924681123201166": {
+      "threadId": "1482924681123201166",
+      "status": "pending",
+      "created": 1773697115623,
+      "lastReminder": 1773697115623,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Rams",
+      "homeTeam": "Broncos",
+      "awayRoleIds": [
+        "1460399430329958514"
+      ],
+      "homeRoleIds": [
+        "1460399420691451999"
+      ]
+    },
+    "1482924677302190080": {
+      "threadId": "1482924677302190080",
+      "status": "pending",
+      "created": 1773697115745,
+      "lastReminder": 1773697115745,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Chiefs",
+      "homeTeam": "Jets",
+      "awayRoleIds": [
+        "1460399425900777516"
+      ],
+      "homeRoleIds": [
+        "1460399435879158037"
+      ]
+    },
+    "1482924674894794862": {
+      "threadId": "1482924674894794862",
+      "status": "pending",
+      "created": 1773697115868,
+      "lastReminder": 1773697115868,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Falcons",
+      "homeTeam": "Panthers",
+      "awayRoleIds": [
+        "1460399409706696896"
+      ],
+      "homeRoleIds": [
+        "1460399414865825843"
+      ]
+    },
+    "1482924671103012885": {
+      "threadId": "1482924671103012885",
+      "status": "pending",
+      "created": 1773697115991,
+      "lastReminder": 1773697115991,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Texans",
+      "homeTeam": "Titans",
+      "awayRoleIds": [
+        "1460399423116021821"
+      ],
+      "homeRoleIds": [
+        "1460399442472472577"
+      ]
+    },
+    "1482924658792857672": {
+      "threadId": "1482924658792857672",
+      "status": "pending",
+      "created": 1773697116113,
+      "lastReminder": 1773697116113,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Dolphins",
+      "homeTeam": "Jaguars",
+      "awayRoleIds": [
+        "1460399431353372733"
+      ],
+      "homeRoleIds": [
+        "1460399424785223680"
+      ]
+    },
+    "1482924655311327396": {
+      "threadId": "1482924655311327396",
+      "status": "pending",
+      "created": 1773697116233,
+      "lastReminder": 1773697116233,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Commanders",
+      "homeTeam": "Eagles",
+      "awayRoleIds": [
+        "1460399443210670082"
+      ],
+      "homeRoleIds": [
+        "1460399436747378931"
+      ]
+    },
+    "1482924652723568790": {
+      "threadId": "1482924652723568790",
+      "status": "pending",
+      "created": 1773697116358,
+      "lastReminder": 1773697116358,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Vikings",
+      "homeTeam": "Lions",
+      "awayRoleIds": [
+        "1460399432137969694"
+      ],
+      "homeRoleIds": [
+        "1460399421597552642"
+      ]
+    },
+    "1482924649305342087": {
+      "threadId": "1482924649305342087",
+      "status": "pending",
+      "created": 1773697116509,
+      "lastReminder": 1773697116509,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Ravens",
+      "homeTeam": "Bills",
+      "awayRoleIds": [
+        "1460399410520264798"
+      ],
+      "homeRoleIds": [
+        "1460399412047249512"
+      ]
+    },
+    "1482924646943948840": {
+      "threadId": "1482924646943948840",
+      "status": "pending",
+      "created": 1773697116630,
+      "lastReminder": 1773697116630,
+      "mention": "",
+      "deadlineAt": null,
+      "leagueId": "16594549",
+      "seasonKey": "year_2026",
+      "stageIndex": 0,
+      "weekIndex": 5,
+      "scheduleId": null,
+      "awayTeamId": null,
+      "homeTeamId": null,
+      "awayTeam": "Bears",
+      "homeTeam": "Colts",
+      "awayRoleIds": [
+        "1460399416098689065"
+      ],
+      "homeRoleIds": [
+        "1460399423925522496"
+      ]
     }
   }
 }

@@ -3,10 +3,10 @@ import path from 'path';
 import { EmbedBuilder } from 'discord.js';
 import { getMessageForWeek } from './madden_utils.js';
 import { getFullTeamName } from '../shared/madden_team_names.js';
+import { loadMaddenChannelMap } from '../shared/madden_metadata.js';
 
 const LEAGUE_DIR = path.join(process.cwd(), 'data', 'madden', 'leagues');
 const PREV_DIR = path.join(LEAGUE_DIR, 'previous');
-const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const PLAYER_CHANGES_FILE = path.join(process.cwd(), 'data', 'madden', 'player_changes.json');
 
@@ -20,7 +20,7 @@ function saveJson(file, data) {
 }
 
 function loadChannelMap() {
-  return loadJson(CHANNEL_MAP_FILE) || {};
+  return loadMaddenChannelMap();
 }
 
 function teamNameMap(snapshot) {

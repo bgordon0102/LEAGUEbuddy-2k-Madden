@@ -1,16 +1,9 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
-import fs from 'fs';
-import path from 'path';
 import { getPinId, setPinId } from './pins_store.js';
-
-const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
-
-function loadJson(file, fallback = {}) {
-  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return fallback; }
-}
+import { loadMaddenChannelMap } from '../shared/madden_metadata.js';
 
 export async function ensureMaddenAwardsButton(client) {
-  const channelMap = loadJson(CHANNEL_MAP_FILE);
+  const channelMap = loadMaddenChannelMap();
   const channelId = channelMap['Yearly Awards'] || channelMap['Awards'] || '1459456657229873419';
   if (!channelId) return;
   const channel = await client.channels.fetch(channelId).catch(() => null);

@@ -92,6 +92,9 @@
           "arch",
           "ovr",
           "dev"
+        ],
+        "Nicky Epps": [
+          "arch"
         ]
       }
     },
@@ -112,7 +115,8 @@
         "King Atkins",
         "Armaann Newman",
         "Tylor Davis",
-        "Will Smyth"
+        "Will Smyth",
+        "Nicky Epps"
       ]
     },
     "scoutingBonusBySeason": {},
@@ -124,6 +128,112 @@
     "boardUi": {
       "cus_02": {
         "activeName": null
+      }
+    },
+    "seasons": {
+      "year_2026": {
+        "players": {
+          "cus_02": {
+            "Rontay Jenkins": [
+              "arch",
+              "ovr",
+              "dev"
+            ],
+            "C.J. Jones": [
+              "arch",
+              "ovr",
+              "dev"
+            ],
+            "C.J. Nielsen": [
+              "arch",
+              "ovr",
+              "dev"
+            ],
+            "Dylan Fredericks": [
+              "arch"
+            ],
+            "Ryan Hodges III": [
+              "arch",
+              "ovr",
+              "dev"
+            ],
+            "Xavion Hill": [
+              "arch"
+            ],
+            "Riley Cardenas": [
+              "arch",
+              "ovr",
+              "dev"
+            ],
+            "Devoreaux Flowers": [
+              "arch"
+            ],
+            "Jordyn Honeycutt": [
+              "arch"
+            ],
+            "Sefu Diya": [
+              "arch",
+              "ovr"
+            ],
+            "Danny Leyton": [
+              "arch"
+            ],
+            "King Atkins": [
+              "arch"
+            ],
+            "Armaann Newman": [
+              "arch"
+            ],
+            "Tylor Davis": [
+              "arch",
+              "ovr",
+              "dev"
+            ],
+            "Will Smyth": [
+              "arch",
+              "ovr",
+              "dev"
+            ],
+            "Nicky Epps": [
+              "arch"
+            ]
+          }
+        },
+        "order": {
+          "cus_02": [
+            "Rontay Jenkins",
+            "C.J. Jones",
+            "C.J. Nielsen",
+            "Dylan Fredericks",
+            "Ryan Hodges III",
+            "Xavion Hill",
+            "Riley Cardenas",
+            "Devoreaux Flowers",
+            "Jordyn Honeycutt",
+            "Sefu Diya",
+            "Danny Leyton",
+            "King Atkins",
+            "Armaann Newman",
+            "Tylor Davis",
+            "Will Smyth",
+            "Nicky Epps"
+          ]
+        },
+        "boardUi": {
+          "cus_02": {
+            "activeName": null
+          }
+        },
+        "suggestedScout": {
+          "cus_02": {
+            "year_2026_week_5": "James Rodriquez"
+          }
+        },
+        "weeklyPoints": {
+          "year_2026_week_6": 50
+        },
+        "scoutingBonus": 0,
+        "scoutingBonusAwardedWeeks": {}
       }
     }
   },

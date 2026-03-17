@@ -1,10 +1,11 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { classIdForSeason, buildPages } from '../../../madden/helpers/bigboard_helpers.js';
+import { coachCommandDescription, coachErrorBlurb } from '../../shared/madden_coach_voice.js';
 
 export const data = new SlashCommandBuilder()
   .setName('madden-bigboard')
-  .setDescription('View the Madden draft big board (paged, 32 prospects per page)');
+  .setDescription(coachCommandDescription('bigboard'));
 
 export async function execute(interaction) {
   if (!interaction.deferred && !interaction.replied) {
@@ -12,7 +13,7 @@ export async function execute(interaction) {
   }
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
-    const payload = { content: 'No league set. Run /madden-set-league first.' };
+    const payload = { content: coachErrorBlurb('noLeague', 'No league set. Run /madden-set-league first.') };
     if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
     else await interaction.reply({ ...payload, flags: 64 });
     return;

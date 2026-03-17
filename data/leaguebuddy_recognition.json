@@ -1,0 +1,3931 @@
+{
+  "1255691165265821747": {
+    "madden": {
+      "seasons": {
+        "year_2026": {
+          "users": {
+            "1076243288056664234": {
+              "activity": 126,
+              "impact": 143,
+              "legacy": 53,
+              "interactionCount": 294,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_6": {
+                  "checklist": {
+                    "strategy": true,
+                    "stream": true,
+                    "frontOffice": true,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": true,
+                    "stream": true,
+                    "frontOffice": true,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 115,
+                  "finalized": false,
+                  "updatedAt": 1773710544385
+                }
+              },
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Used front-office tool",
+                  "weekKey": "week_6",
+                  "ts": 1773643587363
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Used weekly strategy prep",
+                  "weekKey": "week_6",
+                  "ts": 1773646845624
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773647690883
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: deeper scouting volume already logged",
+                  "weekKey": null,
+                  "ts": 1773647690883
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773647690883
+                },
+                {
+                  "tier": "activity",
+                  "amount": 5,
+                  "reason": "Recognition backfill: existing bot interaction and prep usage",
+                  "weekKey": null,
+                  "ts": 1773647690883
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773648071973
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: deeper scouting volume already logged",
+                  "weekKey": null,
+                  "ts": 1773648071973
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773648071973
+                },
+                {
+                  "tier": "activity",
+                  "amount": 5,
+                  "reason": "Recognition backfill: existing bot interaction and prep usage",
+                  "weekKey": null,
+                  "ts": 1773648071973
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: deeper scouting volume already logged",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 5,
+                  "reason": "Recognition backfill: existing bot interaction and prep usage",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: deeper scouting volume already logged",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 5,
+                  "reason": "Recognition backfill: existing bot interaction and prep usage",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698066460
+                },
+                {
+                  "tier": "activity",
+                  "amount": 74,
+                  "reason": "Founder recognition grant",
+                  "weekKey": null,
+                  "ts": 1773702500000
+                },
+                {
+                  "tier": "impact",
+                  "amount": 59,
+                  "reason": "Founder recognition grant",
+                  "weekKey": null,
+                  "ts": 1773702500000
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 50,
+                  "reason": "Founder recognition grant",
+                  "weekKey": null,
+                  "ts": 1773702500000
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Posted stream link",
+                  "weekKey": "week_6",
+                  "ts": 1773699870269
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: season still has life if the slide gets stopped now",
+                  "weekKey": null,
+                  "ts": 1773702506339
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                },
+                {
+                  "tier": "impact",
+                  "amount": 43,
+                  "reason": "Staff reset: refunded all Week 6 perk purchases",
+                  "weekKey": "week_6",
+                  "ts": 1773711000000
+                },
+                {
+                  "tier": "impact",
+                  "amount": -14,
+                  "reason": "Activated All Game Plan Bundle",
+                  "weekKey": "week_6",
+                  "ts": 1773708549805
+                }
+              ],
+              "spent": {
+                "activity": 0,
+                "impact": 14,
+                "legacy": 0
+              },
+              "activePerks": {
+                "week_6": {
+                  "offensiveGamePlan": true,
+                  "defensiveGamePlan": true,
+                  "tendencyBreakdown": true,
+                  "allGamePlanBundle": true
+                }
+              }
+            },
+            "670446898695503897": {
+              "activity": 4,
+              "impact": 61,
+              "legacy": 19,
+              "interactionCount": 7,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_6": {
+                  "checklist": {
+                    "strategy": true,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": true,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 3,
+                  "finalized": false,
+                  "updatedAt": 1773710512965
+                },
+                "week_2": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                },
+                "week_5": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                }
+              },
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Used weekly strategy prep",
+                  "weekKey": "week_6",
+                  "ts": 1773644892725
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: existing bot interaction and prep usage",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_2",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: weekly award representation",
+                  "weekKey": "week_5",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong season foundation already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: undefeated run still intact",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: existing bot interaction and prep usage",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_2",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: weekly award representation",
+                  "weekKey": "week_5",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 9,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: early playoff positioning",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong season foundation already established",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: undefeated run still intact",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773697197218
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 4,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 6,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ],
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "activePerks": {}
+            },
+            "817610144460308501": {
+              "activity": 9,
+              "impact": 61,
+              "legacy": 12,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 4,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_1": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                },
+                "week_3": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709789684
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: responded game-thread weeks",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: on-time game outcomes",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_3",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: responded game-thread weeks",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: on-time game outcomes",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_3",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 9,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: early playoff positioning",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698192717
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 4,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 3,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "760700161675493416": {
+              "activity": 7,
+              "impact": 44,
+              "legacy": 0,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_1": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773710513851
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: responded game-thread weeks",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: on-time game outcomes",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: responded game-thread weeks",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: on-time game outcomes",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773697496610
+                }
+              ]
+            },
+            "912729990171357225": {
+              "activity": 9,
+              "impact": 56,
+              "legacy": 10,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 2,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_2": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                },
+                "week_3": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773710227482
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_2",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_3",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_2",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_3",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 6,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698067969
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 4,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "1128898817803169814": {
+              "activity": 8,
+              "impact": 45,
+              "legacy": 3,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 4,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_5": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: deeper scouting volume already logged",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: existing bot interaction and prep usage",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: deeper scouting volume already logged",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: existing bot interaction and prep usage",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: season still has life if the slide gets stopped now",
+                  "weekKey": null,
+                  "ts": 1773702506339
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "522832067843850251": {
+              "activity": 2,
+              "impact": 46,
+              "legacy": 0,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_4": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_4",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_4",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                }
+              ]
+            },
+            "821387556343382046": {
+              "activity": 2,
+              "impact": 61,
+              "legacy": 22,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_5": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong season foundation already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: undefeated run still intact",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: current conference top seed",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Recognition backfill: scouting weeks already logged",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 9,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: early playoff positioning",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong season foundation already established",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: undefeated run still intact",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: current conference top seed",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 4,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 7,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "472219952472915969": {
+              "activity": 7,
+              "impact": 57,
+              "legacy": 22,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_1": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709662812
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong season foundation already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: undefeated run still intact",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: current conference top seed",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 9,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: early playoff positioning",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong season foundation already established",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: undefeated run still intact",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: current conference top seed",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698192846
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 4,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 7,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "729435455350636654": {
+              "activity": 4,
+              "impact": 0,
+              "legacy": 0,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {},
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                }
+              ]
+            },
+            "422227963292155904": {
+              "activity": 6,
+              "impact": 48,
+              "legacy": 1,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_1": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 4,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                }
+              ]
+            },
+            "1003814203825602630": {
+              "activity": 7,
+              "impact": 44,
+              "legacy": 2,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709412524
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 3,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 4,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: early playoff positioning",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698065667
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "1459291692808274031": {
+              "activity": 5,
+              "impact": 42,
+              "legacy": 0,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709412403
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 2,
+                  "reason": "Recognition backfill: 2025 scouting carryover",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698104624
+                }
+              ]
+            },
+            "885772759240679425": {
+              "activity": 0,
+              "impact": 58,
+              "legacy": 4,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_1": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                },
+                "week_4": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                },
+                "week_5": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_4",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_4",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 6,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: early playoff positioning",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "814341012754792460": {
+              "activity": 0,
+              "impact": 48,
+              "legacy": 2,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_1": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                },
+                "week_5": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                }
+              ]
+            },
+            "1043965589988843532": {
+              "activity": 0,
+              "impact": 53,
+              "legacy": 4,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_1": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 7,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 4,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                }
+              ]
+            },
+            "841368118047801366": {
+              "activity": 1,
+              "impact": 50,
+              "legacy": 3,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_1": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709660090
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 6,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five defense profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 3,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773704643826
+                }
+              ]
+            },
+            "926210487123857429": {
+              "activity": 1,
+              "impact": 46,
+              "legacy": 2,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_1": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709536428
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: statement win already on the books",
+                  "weekKey": "week_1",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 4,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698067849
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                }
+              ]
+            },
+            "727880173621346316": {
+              "activity": 0,
+              "impact": 46,
+              "legacy": 0,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_3": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182947
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_3",
+                  "ts": 1773649182947
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_3",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                }
+              ]
+            },
+            "1354477316742447105": {
+              "activity": 0,
+              "impact": 46,
+              "legacy": 0,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_3": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_3",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_3",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                }
+              ]
+            },
+            "534797551962947594": {
+              "activity": 0,
+              "impact": 45,
+              "legacy": 4,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_4": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_4",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_4",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: season still has life if the slide gets stopped now",
+                  "weekKey": null,
+                  "ts": 1773702506339
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "1481840402599252072": {
+              "activity": 0,
+              "impact": 45,
+              "legacy": 3,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_5": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: upset win already on the books",
+                  "weekKey": "week_5",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: season still has life if the slide gets stopped now",
+                  "weekKey": null,
+                  "ts": 1773702506339
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "1236835406654210172": {
+              "activity": 1,
+              "impact": 60,
+              "legacy": 12,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_5": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709537894
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: weekly award representation",
+                  "weekKey": "week_5",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: weekly award representation",
+                  "weekKey": "week_5",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 8,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: driving convincing weekly results",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: active win streak",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 1,
+                  "reason": "Recognition backfill: early playoff positioning",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current division lead",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698070503
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 4,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 3,
+                  "reason": "Recognition backfill: legacy economy reprice for current season results",
+                  "weekKey": null,
+                  "ts": 1773702987554
+                }
+              ]
+            },
+            "1432527300410474683": {
+              "activity": 1,
+              "impact": 44,
+              "legacy": 0,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_5": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709659292
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: weekly award representation",
+                  "weekKey": "week_5",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: weekly award representation",
+                  "weekKey": "week_5",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 2,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698191602
+                }
+              ]
+            },
+            "419350615664361475": {
+              "activity": 1,
+              "impact": 51,
+              "legacy": 3,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_5": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773649182948
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false,
+                    "legacyWeekly": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709538018
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: weekly award representation",
+                  "weekKey": "week_5",
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: weekly award representation",
+                  "weekKey": "week_5",
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 7,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 3,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773707595241
+                }
+              ]
+            },
+            "1218001419991515196": {
+              "activity": 1,
+              "impact": 48,
+              "legacy": 2,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709659412
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 6,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: top-five offense profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698191722
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 2,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                }
+              ]
+            },
+            "582608393160884285": {
+              "activity": 1,
+              "impact": 49,
+              "legacy": 3,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 0,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773709413752
+                }
+              },
+              "activePerks": {},
+              "history": [
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649182948
+                },
+                {
+                  "tier": "impact",
+                  "amount": 40,
+                  "reason": "Recognition backfill: launch impact grant for current coach",
+                  "weekKey": null,
+                  "ts": 1773649877812
+                },
+                {
+                  "tier": "impact",
+                  "amount": 7,
+                  "reason": "Recognition backfill: current season profile",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "impact",
+                  "amount": 1,
+                  "reason": "Recognition backfill: strong current form already established",
+                  "weekKey": null,
+                  "ts": 1773649877813
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773698066334
+                },
+                {
+                  "tier": "legacy",
+                  "amount": 3,
+                  "reason": "Recognition backfill: recent five-game profile and team output",
+                  "weekKey": null,
+                  "ts": 1773702741711
+                }
+              ]
+            },
+            "1382548966020747364": {
+              "activity": 0,
+              "impact": 0,
+              "legacy": 0,
+              "spent": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "interactionCount": 1,
+              "currentStreak": 0,
+              "bestStreak": 0,
+              "lastFinalizedWeek": null,
+              "weeks": {
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": false,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false
+                  },
+                  "commandCount": 1,
+                  "finalized": false,
+                  "updatedAt": 1773679546507
+                }
+              },
+              "activePerks": {},
+              "history": []
+            }
+          },
+          "gameOfWeek": {},
+          "backfills": {
+            "year_2026_metadata_v2_carryover_2025": {
+              "backfillKey": "year_2026_metadata_v2_carryover_2025",
+              "appliedAt": 1773647690883,
+              "usersAffected": 1,
+              "historyEntries": 4,
+              "interactionUsers": 1,
+              "totals": {
+                "activity": 12,
+                "impact": 0,
+                "legacy": 0
+              },
+              "metadata": {
+                "activity": {
+                  "coaches": 1,
+                  "points": 12
+                },
+                "impact": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "legacy": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "carryover2025": {
+                  "coaches": 1,
+                  "points": 1
+                },
+                "totalCoaches": 1,
+                "awardEntries": 4,
+                "interactionUsers": 1
+              }
+            },
+            "year_2026_metadata_v3_impact_expanded": {
+              "backfillKey": "year_2026_metadata_v3_impact_expanded",
+              "appliedAt": 1773648071973,
+              "usersAffected": 1,
+              "historyEntries": 4,
+              "interactionUsers": 1,
+              "totals": {
+                "activity": 12,
+                "impact": 0,
+                "legacy": 0
+              },
+              "metadata": {
+                "activity": {
+                  "coaches": 1,
+                  "points": 12
+                },
+                "impact": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "legacy": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "carryover2025": {
+                  "coaches": 1,
+                  "points": 1
+                },
+                "totalCoaches": 1,
+                "awardEntries": 4,
+                "interactionUsers": 1
+              }
+            },
+            "year_2026_metadata_v4_member_fetch": {
+              "backfillKey": "year_2026_metadata_v4_member_fetch",
+              "appliedAt": 1773648616135,
+              "usersAffected": 0,
+              "historyEntries": 0,
+              "interactionUsers": 0,
+              "totals": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "metadata": {}
+            },
+            "year_2026_metadata_v6_assignment_history": {
+              "backfillKey": "year_2026_metadata_v6_assignment_history",
+              "appliedAt": 1773649023283,
+              "usersAffected": 0,
+              "historyEntries": 0,
+              "interactionUsers": 0,
+              "totals": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 0
+              },
+              "metadata": {}
+            },
+            "year_2026_metadata_v7_async_payload_fix": {
+              "backfillKey": "year_2026_metadata_v7_async_payload_fix",
+              "appliedAt": 1773649182948,
+              "usersAffected": 28,
+              "historyEntries": 93,
+              "interactionUsers": 5,
+              "totals": {
+                "activity": 44,
+                "impact": 68,
+                "legacy": 20
+              },
+              "metadata": {
+                "activity": {
+                  "coaches": 14,
+                  "points": 44
+                },
+                "impact": {
+                  "coaches": 23,
+                  "points": 68
+                },
+                "legacy": {
+                  "coaches": 6,
+                  "points": 20
+                },
+                "carryover2025": {
+                  "coaches": 8,
+                  "points": 18
+                },
+                "totalCoaches": 32,
+                "awardEntries": 93,
+                "interactionUsers": 5
+              }
+            },
+            "year_2026_metadata_v10_season_profile_tuning": {
+              "backfillKey": "year_2026_metadata_v10_season_profile_tuning",
+              "appliedAt": 1773649877813,
+              "usersAffected": 28,
+              "historyEntries": 152,
+              "interactionUsers": 5,
+              "totals": {
+                "activity": 44,
+                "impact": 1227,
+                "legacy": 27
+              },
+              "metadata": {
+                "activity": {
+                  "coaches": 14,
+                  "points": 44
+                },
+                "impact": {
+                  "coaches": 26,
+                  "points": 1227
+                },
+                "legacy": {
+                  "coaches": 8,
+                  "points": 27
+                },
+                "carryover2025": {
+                  "coaches": 8,
+                  "points": 18
+                },
+                "totalCoaches": 32,
+                "awardEntries": 152,
+                "interactionUsers": 5
+              }
+            },
+            "year_2026_metadata_v11_legacy_stop_the_slide": {
+              "backfillKey": "year_2026_metadata_v11_legacy_stop_the_slide",
+              "appliedAt": 1773702506339,
+              "usersAffected": 4,
+              "historyEntries": 4,
+              "interactionUsers": 0,
+              "totals": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 4
+              },
+              "metadata": {
+                "activity": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "impact": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "legacy": {
+                  "coaches": 4,
+                  "points": 4
+                },
+                "carryover2025": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "totalCoaches": 4,
+                "awardEntries": 4,
+                "interactionUsers": 0
+              }
+            },
+            "year_2026_metadata_v12_recent_legacy_profile": {
+              "backfillKey": "year_2026_metadata_v12_recent_legacy_profile",
+              "appliedAt": 1773702741711,
+              "usersAffected": 16,
+              "historyEntries": 16,
+              "interactionUsers": 0,
+              "totals": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 47
+              },
+              "metadata": {
+                "activity": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "impact": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "legacy": {
+                  "coaches": 16,
+                  "points": 47
+                },
+                "carryover2025": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "totalCoaches": 16,
+                "awardEntries": 16,
+                "interactionUsers": 0
+              }
+            },
+            "year_2026_metadata_v13_legacy_economy_reprice": {
+              "backfillKey": "year_2026_metadata_v13_legacy_economy_reprice",
+              "appliedAt": 1773702987554,
+              "usersAffected": 12,
+              "historyEntries": 12,
+              "interactionUsers": 0,
+              "totals": {
+                "activity": 0,
+                "impact": 0,
+                "legacy": 38
+              },
+              "metadata": {
+                "activity": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "impact": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "legacy": {
+                  "coaches": 12,
+                  "points": 38
+                },
+                "carryover2025": {
+                  "coaches": 0,
+                  "points": 0
+                },
+                "totalCoaches": 12,
+                "awardEntries": 12,
+                "interactionUsers": 0
+              }
+            }
+          },
+          "archivedUsers": {
+            "1195843329477328978": [
+              {
+                "ts": 1773682978605,
+                "reason": "Coach role removed via /madden-removerole (Patriots Coach)",
+                "snapshot": {
+                  "activity": 3,
+                  "impact": 0,
+                  "legacy": 0,
+                  "spent": {
+                    "activity": 0,
+                    "impact": 0,
+                    "legacy": 0
+                  },
+                  "interactionCount": 2,
+                  "currentStreak": 0,
+                  "bestStreak": 0,
+                  "lastFinalizedWeek": null,
+                  "weeks": {
+                    "week_6": {
+                      "checklist": {
+                        "strategy": false,
+                        "stream": false,
+                        "frontOffice": true,
+                        "threadResponse": false,
+                        "gameCompletedOnTime": false
+                      },
+                      "awards": {
+                        "strategy": false,
+                        "stream": false,
+                        "frontOffice": true,
+                        "threadResponse": false,
+                        "gameCompletedOnTime": false,
+                        "checklistBonus": false,
+                        "gotwWin": false
+                      },
+                      "commandCount": 2,
+                      "finalized": false,
+                      "updatedAt": 1773682088736
+                    }
+                  },
+                  "activePerks": {},
+                  "history": [
+                    {
+                      "tier": "activity",
+                      "amount": 1,
+                      "reason": "Recognition backfill: 2025 scouting carryover",
+                      "weekKey": null,
+                      "ts": 1773649182947
+                    },
+                    {
+                      "tier": "activity",
+                      "amount": 1,
+                      "reason": "Recognition backfill: 2025 scouting carryover",
+                      "weekKey": null,
+                      "ts": 1773649877812
+                    },
+                    {
+                      "tier": "activity",
+                      "amount": 1,
+                      "reason": "Used front-office tool",
+                      "weekKey": "week_6",
+                      "ts": 1773681988172
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

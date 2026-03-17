@@ -3,10 +3,11 @@ import { getThreadState, collectParticipation, buildProjectedOutcome, markThread
 import { loadRoleMap, hasStaffRole } from '../madden/staff/staffUtils.js';
 import { loadStrikeStore, saveStrikeStore, addStrikeOutcome, ensureStrikeSeason, remainingWeighted } from '../shared/madden_strikes.js';
 import { updateFairSimBoard } from '../shared/fairsim_board.js';
-import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
+import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffDecision } from '../shared/madden_staff_ops.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_data.js';
 import { queueRemovalReview, queueImmediateRemedyReview } from '../shared/madden_removal_review.js';
 import { sendCoachReceipt } from '../shared/madden_coach_receipts.js';
+import { consumeRecognitionPerk, hasRecognitionPerk } from '../shared/league_recognition.js';
 
 export const customId = /^madden_apply_determined_strikes\|([^|]+)$/;
 
@@ -45,6 +46,36 @@ function disableButtons(interaction) {
   return interaction.message.edit({ components: updatedRows });
 }
 
+function splitUsersByPerk({ guildId, seasonKey, weekKey, userIds = [], perkKey }) {
+  const protectedUsers = [];
+  const standardUsers = [];
+  for (const userId of userIds) {
+    if (weekKey && hasRecognitionPerk({ guildId, league: 'madden', seasonKey, weekKey, userId, perkKey })) {
+      protectedUsers.push(userId);
+    } else {
+      standardUsers.push(userId);
+    }
+  }
+  return { protectedUsers, standardUsers };
+}
+
+function consumeUsersPerk({ guildId, seasonKey, weekKey, userIds = [], perkKey, reason }) {
+  const consumed = [];
+  for (const userId of userIds) {
+    const ok = consumeRecognitionPerk({
+      guildId,
+      league: 'madden',
+      seasonKey,
+      weekKey,
+      userId,
+      perkKey,
+      reason,
+    });
+    if (ok) consumed.push(userId);
+  }
+  return consumed;
+}
+
 export async function execute(interaction) {
   if (!(interaction instanceof ButtonInteraction)) return;
   const [, threadId] = interaction.customId.match(customId) || [];
@@ -78,6 +109,7 @@ export async function execute(interaction) {
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   const snapshot = loadLeagueSnapshot(leagueId);
   const seasonKey = seasonKeyFromSnapshot(snapshot);
+  const recognitionWeekKey = Number.isFinite(Number(info?.weekIndex)) ? `week_${Number(info.weekIndex) + 1}` : null;
   const store = loadStrikeStore();
 
   if (determined.strikeAway) {
@@ -85,26 +117,66 @@ export async function execute(interaction) {
       await interaction.reply({ content: 'No coach user is resolved for the away team. Fix the coach role before applying determined strikes.', ephemeral: true });
       return;
     }
-    addStrikeOutcome(
-      store,
+    const { protectedUsers: cushionedUsers, standardUsers } = splitUsersByPerk({
+      guildId: interaction.guildId,
       seasonKey,
-      awayUsers,
-      'determined_strike',
-      'DS',
-    );
+      weekKey: recognitionWeekKey,
+      userIds: awayUsers,
+      perkKey: 'strikeCushion',
+    });
+    if (standardUsers.length) addStrikeOutcome(store, seasonKey, standardUsers, 'determined_strike', 'DS');
+    if (cushionedUsers.length) {
+      addStrikeOutcome(store, seasonKey, cushionedUsers, 'force_win', 'FW');
+      consumeUsersPerk({
+        guildId: interaction.guildId,
+        seasonKey,
+        weekKey: recognitionWeekKey,
+        userIds: cushionedUsers,
+        perkKey: 'strikeCushion',
+        reason: 'Consumed Strike Cushion on determined strike',
+      });
+      appendMaddenStaffLog({
+        type: 'recognition_perk_consumed',
+        guildId: interaction.guildId,
+        threadId,
+        perkKey: 'strikeCushion',
+        users: cushionedUsers,
+        action: 'determined_strikes_apply',
+      });
+    }
   }
   if (determined.strikeHome) {
     if (!homeUsers.length) {
       await interaction.reply({ content: 'No coach user is resolved for the home team. Fix the coach role before applying determined strikes.', ephemeral: true });
       return;
     }
-    addStrikeOutcome(
-      store,
+    const { protectedUsers: cushionedUsers, standardUsers } = splitUsersByPerk({
+      guildId: interaction.guildId,
       seasonKey,
-      homeUsers,
-      'determined_strike',
-      'DS',
-    );
+      weekKey: recognitionWeekKey,
+      userIds: homeUsers,
+      perkKey: 'strikeCushion',
+    });
+    if (standardUsers.length) addStrikeOutcome(store, seasonKey, standardUsers, 'determined_strike', 'DS');
+    if (cushionedUsers.length) {
+      addStrikeOutcome(store, seasonKey, cushionedUsers, 'force_win', 'FW');
+      consumeUsersPerk({
+        guildId: interaction.guildId,
+        seasonKey,
+        weekKey: recognitionWeekKey,
+        userIds: cushionedUsers,
+        perkKey: 'strikeCushion',
+        reason: 'Consumed Strike Cushion on determined strike',
+      });
+      appendMaddenStaffLog({
+        type: 'recognition_perk_consumed',
+        guildId: interaction.guildId,
+        threadId,
+        perkKey: 'strikeCushion',
+        users: cushionedUsers,
+        action: 'determined_strikes_apply',
+      });
+    }
   }
   saveStrikeStore(store);
   const seasonData = ensureStrikeSeason(store, seasonKey);
@@ -140,12 +212,15 @@ export async function execute(interaction) {
     appliedBy: interaction.user.id,
     determined,
   });
-  await postMaddenStaffLog(
+  await postMaddenStaffDecision(
     interaction.client,
     interaction.guildId,
     'Determined Strikes Applied',
     `${info.awayTeam || 'Away'} vs ${info.homeTeam || 'Home'} had determined strikes applied by ${interaction.user}.`,
-    [{ name: 'Applied', value: appliedLines.join('\n') || 'No strike lines recorded.' }],
+    [
+      { name: 'Applied', value: appliedLines.join('\n') || 'No strike lines recorded.' },
+      ...(recognitionWeekKey ? [{ name: 'Recognition Week', value: recognitionWeekKey, inline: true }] : []),
+    ],
   ).catch(() => null);
   await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'determined strikes applied').catch(() => null);
   if (determined.strikeAway) {

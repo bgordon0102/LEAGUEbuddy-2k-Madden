@@ -14,8 +14,8 @@ export async function execute(interaction) {
     return;
   }
   const selection = interaction.values?.[0];
-  updateBoardUiState(targetUserId, classKey, { activeName: selection });
-  const { pages, error } = buildPagesForUser(targetUserId, interaction.guildId);
+  const { pages, error, seasonKey } = buildPagesForUser(targetUserId, interaction.guildId);
+  updateBoardUiState(targetUserId, classKey, { activeName: selection }, seasonKey);
   if (error) {
     await interaction.update({ content: error, embeds: [], components: [] });
     return;

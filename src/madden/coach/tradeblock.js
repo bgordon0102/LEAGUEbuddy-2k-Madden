@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { computePlayerValue as computeValueBase } from '../../../madden/madden_trade_modal_submit.js';
+import { coachCommandDescription } from '../../shared/madden_coach_voice.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const BLOCK_FILE = path.join(process.cwd(), 'data', 'madden', 'trade_block.json');
@@ -151,7 +152,7 @@ function formatDev(dev) {
 
 const data = new SlashCommandBuilder()
   .setName('madden-tradeblock')
-  .setDescription('Manage your Madden trade block (coaches only).')
+  .setDescription(coachCommandDescription('tradeblock'))
   .addStringOption(o =>
     o.setName('action')
       .setDescription('add or remove')

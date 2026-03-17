@@ -25,10 +25,13 @@
     },
     "id": "content_1773605077888",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773605077888,
     "reviewMessageId": "1482831916280582286",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607344066": {
     "kind": "rumor_mill",
@@ -56,10 +59,13 @@
     },
     "id": "content_1773607344066",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607344066,
     "reviewMessageId": "1482841419755556864",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607344612": {
     "kind": "rumor_mill",
@@ -87,10 +93,13 @@
     },
     "id": "content_1773607344612",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607344612,
     "reviewMessageId": "1482841421156450448",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607354275": {
     "kind": "rumor_mill",
@@ -118,10 +127,13 @@
     },
     "id": "content_1773607354275",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607354275,
     "reviewMessageId": "1482841461996261456",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607354633": {
     "kind": "rumor_mill",
@@ -149,10 +161,13 @@
     },
     "id": "content_1773607354633",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607354633,
     "reviewMessageId": "1482841463430578306",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607648476": {
     "kind": "rumor_mill",
@@ -177,10 +192,13 @@
     },
     "id": "content_1773607648476",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607648476,
     "reviewMessageId": "1482842696648228993",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607648899": {
     "kind": "rumor_mill",
@@ -205,10 +223,13 @@
     },
     "id": "content_1773607648899",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607648899,
     "reviewMessageId": "1482842697168453753",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607658681": {
     "kind": "rumor_mill",
@@ -233,10 +254,13 @@
     },
     "id": "content_1773607658681",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607658681,
     "reviewMessageId": "1482842738947788862",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607659073": {
     "kind": "rumor_mill",
@@ -261,10 +285,13 @@
     },
     "id": "content_1773607659073",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607659073,
     "reviewMessageId": "1482842740080251102",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607919102": {
     "kind": "rumor_mill",
@@ -289,10 +316,13 @@
     },
     "id": "content_1773607919102",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607919102,
     "reviewMessageId": "1482843832201773057",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607919919": {
     "kind": "rumor_mill",
@@ -317,10 +347,13 @@
     },
     "id": "content_1773607919919",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607919920,
     "reviewMessageId": "1482843834281889822",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607929307": {
     "kind": "rumor_mill",
@@ -345,10 +378,13 @@
     },
     "id": "content_1773607929307",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607929307,
     "reviewMessageId": "1482843874941730856",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773607929870": {
     "kind": "rumor_mill",
@@ -373,10 +409,13 @@
     },
     "id": "content_1773607929870",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773607929870,
     "reviewMessageId": "1482843876334108773",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608137709": {
     "kind": "rumor_mill",
@@ -401,10 +440,13 @@
     },
     "id": "content_1773608137709",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608137709,
     "reviewMessageId": "1482844749038747738",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608138228": {
     "kind": "rumor_mill",
@@ -429,10 +471,13 @@
     },
     "id": "content_1773608138228",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608138228,
     "reviewMessageId": "1482844750087196804",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608147916": {
     "kind": "rumor_mill",
@@ -457,10 +502,13 @@
     },
     "id": "content_1773608147916",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608147916,
     "reviewMessageId": "1482844790839050300",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608148240": {
     "kind": "rumor_mill",
@@ -485,10 +533,13 @@
     },
     "id": "content_1773608148240",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608148240,
     "reviewMessageId": "1482844792563171439",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608670674": {
     "kind": "rumor_mill",
@@ -513,10 +564,13 @@
     },
     "id": "content_1773608670674",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608670674,
     "reviewMessageId": "1482846984292532404",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608671178": {
     "kind": "rumor_mill",
@@ -541,10 +595,13 @@
     },
     "id": "content_1773608671178",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608671178,
     "reviewMessageId": "1482846985542308139",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608680960": {
     "kind": "rumor_mill",
@@ -569,10 +626,13 @@
     },
     "id": "content_1773608680960",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608680960,
     "reviewMessageId": "1482847026420125696",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608681283": {
     "kind": "rumor_mill",
@@ -597,10 +657,13 @@
     },
     "id": "content_1773608681283",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608681283,
     "reviewMessageId": "1482847027925880885",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608930380": {
     "kind": "rumor_mill",
@@ -625,10 +688,13 @@
     },
     "id": "content_1773608930380",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608930380,
     "reviewMessageId": "1482848073465069651",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608931092": {
     "kind": "rumor_mill",
@@ -653,10 +719,13 @@
     },
     "id": "content_1773608931092",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608931092,
     "reviewMessageId": "1482848075788582942",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608940575": {
     "kind": "rumor_mill",
@@ -681,10 +750,13 @@
     },
     "id": "content_1773608940575",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608940575,
     "reviewMessageId": "1482848115408109668",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773608940838": {
     "kind": "rumor_mill",
@@ -709,10 +781,13 @@
     },
     "id": "content_1773608940838",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773608940838,
     "reviewMessageId": "1482848116548964392",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773609061771": {
     "kind": "rumor_mill",
@@ -737,10 +812,13 @@
     },
     "id": "content_1773609061771",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773609061771,
     "reviewMessageId": "1482848625246867536",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773609062548": {
     "kind": "rumor_mill",
@@ -765,10 +843,13 @@
     },
     "id": "content_1773609062548",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773609062548,
     "reviewMessageId": "1482848627029315825",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773609071961": {
     "kind": "rumor_mill",
@@ -793,10 +874,13 @@
     },
     "id": "content_1773609071961",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773609071961,
     "reviewMessageId": "1482848666829193438",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773609072614": {
     "kind": "rumor_mill",
@@ -851,10 +935,13 @@
     },
     "id": "content_1773609737136",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773609737136,
     "reviewMessageId": "1482851457190592665",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773609737714": {
     "kind": "rumor_mill",
@@ -879,10 +966,13 @@
     },
     "id": "content_1773609737714",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773609737714,
     "reviewMessageId": "1482851458645889036",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773609747343": {
     "kind": "rumor_mill",
@@ -907,10 +997,13 @@
     },
     "id": "content_1773609747343",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773609747343,
     "reviewMessageId": "1482851499376906331",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773609747666": {
     "kind": "rumor_mill",
@@ -935,10 +1028,13 @@
     },
     "id": "content_1773609747666",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773609747666,
     "reviewMessageId": "1482851500584865954",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773611537456": {
     "kind": "rumor_mill",
@@ -963,10 +1059,13 @@
     },
     "id": "content_1773611537456",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773611537456,
     "reviewMessageId": "1482859007398903921",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773611537694": {
     "kind": "rumor_mill",
@@ -991,10 +1090,13 @@
     },
     "id": "content_1773611537694",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773611537694,
     "reviewMessageId": "1482859009064042637",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773611847694": {
     "kind": "rumor_mill",
@@ -1019,10 +1121,13 @@
     },
     "id": "content_1773611847694",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773611847694,
     "reviewMessageId": "1482860309755592865",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773611848242": {
     "kind": "rumor_mill",
@@ -1047,10 +1152,13 @@
     },
     "id": "content_1773611848242",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773611848242,
     "reviewMessageId": "1482860311148236820",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773611858880": {
     "kind": "rumor_mill",
@@ -1075,10 +1183,13 @@
     },
     "id": "content_1773611858880",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773611858880,
     "reviewMessageId": "1482860355666579458",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773611859210": {
     "kind": "rumor_mill",
@@ -1103,10 +1214,13 @@
     },
     "id": "content_1773611859210",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773611859210,
     "reviewMessageId": "1482860357100769382",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773611991332": {
     "kind": "rumor_mill",
@@ -1131,10 +1245,13 @@
     },
     "id": "content_1773611991332",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773611991332,
     "reviewMessageId": "1482860912577872056",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773611991993": {
     "kind": "rumor_mill",
@@ -1159,10 +1276,13 @@
     },
     "id": "content_1773611991993",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773611991993,
     "reviewMessageId": "1482860920064577577",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612001974": {
     "kind": "rumor_mill",
@@ -1187,10 +1307,13 @@
     },
     "id": "content_1773612001974",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612001974,
     "reviewMessageId": "1482860956525793422",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612002705": {
     "kind": "rumor_mill",
@@ -1215,10 +1338,13 @@
     },
     "id": "content_1773612002705",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612002705,
     "reviewMessageId": "1482860958790455327",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612066321": {
     "kind": "rumor_mill",
@@ -1243,10 +1369,13 @@
     },
     "id": "content_1773612066321",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612066321,
     "reviewMessageId": "1482861226529783939",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612066775": {
     "kind": "rumor_mill",
@@ -1271,10 +1400,13 @@
     },
     "id": "content_1773612066775",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612066775,
     "reviewMessageId": "1482861227691737108",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612076605": {
     "kind": "rumor_mill",
@@ -1299,10 +1431,13 @@
     },
     "id": "content_1773612076605",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612076605,
     "reviewMessageId": "1482861268908904680",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612076945": {
     "kind": "rumor_mill",
@@ -1327,10 +1462,13 @@
     },
     "id": "content_1773612076945",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612076945,
     "reviewMessageId": "1482861270527905962",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612127549": {
     "kind": "rumor_mill",
@@ -1355,10 +1493,13 @@
     },
     "id": "content_1773612127549",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612127549,
     "reviewMessageId": "1482861485255294978",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612128792": {
     "kind": "rumor_mill",
@@ -1383,10 +1524,13 @@
     },
     "id": "content_1773612128792",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612128792,
     "reviewMessageId": "1482861487805435914",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612138091": {
     "kind": "rumor_mill",
@@ -1411,10 +1555,13 @@
     },
     "id": "content_1773612138091",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612138091,
     "reviewMessageId": "1482861526736965853",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612138377": {
     "kind": "rumor_mill",
@@ -1439,10 +1586,13 @@
     },
     "id": "content_1773612138377",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612138377,
     "reviewMessageId": "1482861527869689990",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612313756": {
     "kind": "rumor_mill",
@@ -1467,10 +1617,13 @@
     },
     "id": "content_1773612313756",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612313756,
     "reviewMessageId": "1482862263965581474",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612314196": {
     "kind": "rumor_mill",
@@ -1495,10 +1648,13 @@
     },
     "id": "content_1773612314196",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612314196,
     "reviewMessageId": "1482862266377310279",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612324068": {
     "kind": "rumor_mill",
@@ -1523,10 +1679,13 @@
     },
     "id": "content_1773612324068",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612324068,
     "reviewMessageId": "1482862307225899138",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612324531": {
     "kind": "rumor_mill",
@@ -1551,10 +1710,13 @@
     },
     "id": "content_1773612324531",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612324531,
     "reviewMessageId": "1482862308827992207",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612446711": {
     "kind": "rumor_mill",
@@ -1579,10 +1741,13 @@
     },
     "id": "content_1773612446711",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612446711,
     "reviewMessageId": "1482862822550671485",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612447292": {
     "kind": "rumor_mill",
@@ -1607,10 +1772,13 @@
     },
     "id": "content_1773612447292",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612447292,
     "reviewMessageId": "1482862823586402384",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612457937": {
     "kind": "rumor_mill",
@@ -1635,10 +1803,13 @@
     },
     "id": "content_1773612457937",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612457937,
     "reviewMessageId": "1482862868406993171",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773612458203": {
     "kind": "rumor_mill",
@@ -1663,10 +1834,13 @@
     },
     "id": "content_1773612458203",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773612458203,
     "reviewMessageId": "1482862869660958775",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773615198279": {
     "kind": "rumor_mill",
@@ -1721,10 +1895,13 @@
     },
     "id": "content_1773615198623",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773615198623,
     "reviewMessageId": "1482874363228192861",
-    "staffChannelId": "1460287771838255350"
+    "staffChannelId": "1460287771838255350",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773626711611": {
     "kind": "rumor_mill",
@@ -1749,10 +1926,13 @@
     },
     "id": "content_1773626711611",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773626711611,
     "reviewMessageId": "1482922652933951731",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773626712383": {
     "kind": "rumor_mill",
@@ -1777,10 +1957,13 @@
     },
     "id": "content_1773626712383",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773626712383,
     "reviewMessageId": "1482922655995924671",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773627903493": {
     "kind": "weekly_recap",
@@ -1861,10 +2044,13 @@
     },
     "id": "content_1773628761683",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773628761683,
     "reviewMessageId": "1482931251135385754",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773628762029": {
     "kind": "rumor_mill",
@@ -1889,10 +2075,13 @@
     },
     "id": "content_1773628762029",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773628762029,
     "reviewMessageId": "1482931253111160966",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773629241688": {
     "kind": "rumor_mill",
@@ -1917,10 +2106,13 @@
     },
     "id": "content_1773629241688",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773629241688,
     "reviewMessageId": "1482933264531587323",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773629242008": {
     "kind": "rumor_mill",
@@ -1945,10 +2137,13 @@
     },
     "id": "content_1773629242008",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773629242008,
     "reviewMessageId": "1482933265739284642",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773630952405": {
     "kind": "rumor_mill",
@@ -1973,10 +2168,13 @@
     },
     "id": "content_1773630952405",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773630952405,
     "reviewMessageId": "1482940439832035328",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773630952719": {
     "kind": "rumor_mill",
@@ -2001,10 +2199,13 @@
     },
     "id": "content_1773630952719",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773630952719,
     "reviewMessageId": "1482940440821895270",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773634206860": {
     "kind": "rumor_mill",
@@ -2029,10 +2230,13 @@
     },
     "id": "content_1773634206860",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773634206860,
     "reviewMessageId": "1482954089863053452",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773634207090": {
     "kind": "rumor_mill",
@@ -2057,10 +2261,13 @@
     },
     "id": "content_1773634207090",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773634207090,
     "reviewMessageId": "1482954091016491180",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773634806871": {
     "kind": "rumor_mill",
@@ -2085,10 +2292,13 @@
     },
     "id": "content_1773634806871",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773634806871,
     "reviewMessageId": "1482956606479138908",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773634807098": {
     "kind": "rumor_mill",
@@ -2113,10 +2323,13 @@
     },
     "id": "content_1773634807098",
     "guildId": "1255691165265821747",
-    "status": "pending",
+    "status": "expired",
     "createdAt": 1773634807098,
     "reviewMessageId": "1482956606995173519",
-    "staffChannelId": "1482917978734329956"
+    "staffChannelId": "1482917978734329956",
+    "reviewedAt": 1773684070445,
+    "reviewedBy": "system",
+    "reviewNote": "Expired by rumor queue cleanup"
   },
   "content_1773635100748": {
     "kind": "weekly_recap",
@@ -2368,6 +2581,2180 @@
     "status": "pending",
     "createdAt": 1773638682209,
     "reviewMessageId": "1482972860925481023",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773639072850": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "<@&1460399421597552642> and Detroit Lions walked out of the week with more heat after a 41-25 loss to <@&1460399438693531709> and San Francisco 49ers. Whether it was expectation, momentum, or timing, that result landed hard.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399433941389594> and New Orleans Saints survived one of the tighter games on the board, getting past <@&1460399418464538848> and Cleveland Browns 23-20. That game sat on one or two swings all the way through. <@&1460399437141639210> and Pittsburgh Steelers edged out <@&1460399423116021821> and Houston Texans 21-20 in one of the week’s cleaner coin-flip games.\n\nAway from the scores, the week picked up a few more layers. <@&1460399435879158037> and New York Jets are being tied to a bigger-picture reset. The read around the league is that <@&1460399435879158037> may have to settle the quarterback future before anything else really comes into focus. <@&1460399425900777516> and Kansas City Chiefs also left the week with a personnel problem to sort through. Creed Humphrey is the kind of absence that can bend usage and short-term planning pretty quickly. The market read on <@&1460399423925522496> and Indianapolis Colts is still buyer-leaning. The better fit sounds like one meaningful wide receiver move, not volume for the sake of volume.\n\nA few smaller threads are still hanging in the air coming out of this one. <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. Jeffery Simmons is playing well enough to keep <@&1460399442472472577> and Tennessee Titans in the defensive-awards conversation.",
+        "timestamp": "2026-03-16T05:31:12.848Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773639072850",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773639072850,
+    "reviewMessageId": "1482974499342389278",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773639278128": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 5 Recap",
+        "description": "<@&1460399421597552642> and Detroit Lions took the week’s roughest hit, falling 41-25 to <@&1460399438693531709> and San Francisco 49ers. For a team already dealing with pressure, that was the kind of result that sticks.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399433941389594> and New Orleans Saints edged out <@&1460399418464538848> and Cleveland Browns 23-20 in one of the week’s cleaner coin-flip games. <@&1460399408163066071> and Arizona Cardinals did more than win 61-33 over <@&1460399420691451999> and Denver Broncos; they shoved Denver Broncos deeper into a bad week. Points came quickly enough that it never really settled down.\n\nAround the league, the week had a little more texture than the box scores alone would say. The market read on <@&1460399431353372733> and Miami Dolphins is still buyer-leaning. The better fit sounds like one meaningful cornerback move, not volume for the sake of volume. Elsewhere, <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. On a different front, <@&1460399419408122041> and Dallas Cowboys also left the week with a personnel problem to sort through. Quinnen Williams is the kind of absence that can bend usage and short-term planning pretty quickly.\n\nA couple side stories also stuck to the week. <@&1460399435879158037> and New York Jets keep circling back to the same question. Around the league, the feeling is that <@&1460399435879158037> may have to get the quarterback picture settled before the rest of the roster can make sense. At the same time, One player note that did carry over from the week: Jeffery Simmons is playing well enough to keep <@&1460399442472472577> and Tennessee Titans in the defensive-awards conversation.",
+        "timestamp": "2026-03-16T05:34:38.126Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773639278128",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773639278128,
+    "reviewMessageId": "1482975360755699824",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773647693340": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 6 Recap",
+        "description": "<@&1460399436747378931> and Philadelphia Eagles did more than win 0-0 over <@&1460399443210670082> and Washington Commanders; they shoved Washington Commanders deeper into a bad week. That one stayed tight because neither side gave much away.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399412047249512> and Buffalo Bills survived one of the tighter games on the board, getting past <@&1460399410520264798> and Baltimore Ravens 0-0. That one stayed tight because neither side gave much away. <@&1460399414865825843> and Carolina Panthers found a way through <@&1460399409706696896> and Atlanta Falcons 0-0. That one stayed tight because neither side gave much away. Around the league, <@&1460399433014444207> and New England Patriots changed its footing from 1-4 to 1-5. At the same time, <@&1460399408163066071> and Arizona Cardinals changed its footing from 5-0 to 6-0.\n\nThe week also pushed a few league conversations forward. <@&1460399408163066071> and Arizona Cardinals have an availability variable to manage. Trey Benson is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning. Elsewhere, <@&1460399442472472577> and Tennessee Titans continue to draw seller chatter. Around the league, the expectation is that they listen on expiring vets and look for younger answers at wide receiver. At the same time, <@&1460399423116021821> and Houston Texans are drawing real offensive-line scrutiny. The sense around the league is that <@&1460399423116021821> may have to stabilize tackle before the offense can feel settled.\n\nThe week left some extra noise behind it too. <@&1460399433014444207> and New England Patriots are taking on more heat now. The move from 1-4 to 1-5 made the week feel heavier around them. Meanwhile, <@&1460399408163066071> and Arizona Cardinals pushed themselves into a more serious light this week. The jump from 5-0 to 6-0 landed around the league.",
+        "timestamp": "2026-03-16T07:54:53.338Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773647693340",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773647693341,
+    "reviewMessageId": "1483010655995953164",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773648217137": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 7 Recap",
+        "description": "<@&1460399425900777516> and Kansas City Chiefs did more than win 0-0 over <@&1460399431353372733> and Miami Dolphins; they shoved Miami Dolphins deeper into a bad week. That one stayed tight because neither side gave much away.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399430329958514> and Los Angeles Rams edged out <@&1460399440203481331> and Seattle Seahawks 0-0 in one of the week’s cleaner coin-flip games. <@&1460399433014444207> and New England Patriots found a way through <@&1460399435879158037> and New York Jets 0-0. That one stayed tight because neither side gave much away.\n\nAway from the scores, a couple team-building angles also came into focus. <@&1460399425900777516> and Kansas City Chiefs: Kansas City Chiefs do not need to force movement. If they push a deal, it should clearly improve wide receiver or running back, not just shuffle depth. <@&1460399431353372733> and Miami Dolphins: Miami Dolphins should be open to buying if the market fits. Consolidating depth or picks for a real cornerback answer is the cleanest push.\n\nThe scoreboard was only part of it. <@&1460399412047249512> and Buffalo Bills also left the week with a personnel problem to sort through. Dion Dawkins is the kind of absence that can bend usage and short-term planning pretty quickly. Meanwhile, <@&1460399420691451999> and Denver Broncos are starting to feel more like a seller than a holder. The cleaner league read is that younger answers at cornerback matter more than hanging onto expiring veterans. At the same time, <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up.\n\nIf the week needed an individual centerpiece, it was Kyler Murray. <@&1460399408163066071> and Arizona Cardinals got a 92.1 grade and a stat line that read loudly enough on its own: 353 pass yds, 7 pass TD, 3 INT, 72 rush yds. <@&1460399431353372733> and Miami Dolphins also had to wear a rough outing from Jaylen Kelly. The line was hard to ignore: 370 pass yds, 5 pass TD, 2 INT, 12 rush yds.",
+        "timestamp": "2026-03-16T08:03:37.135Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773648217137",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773648217137,
+    "reviewMessageId": "1483012853324845086",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773648397728": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 7 Recap",
+        "description": "<@&1460399431353372733> and Miami Dolphins walked out of the week with more heat after a 0-0 loss to <@&1460399425900777516> and Kansas City Chiefs. Whether it was expectation, momentum, or timing, that result landed hard.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399430329958514> and Los Angeles Rams found a way through <@&1460399440203481331> and Seattle Seahawks 0-0. That one stayed tight because neither side gave much away. <@&1460399427725426699> and Las Vegas Raiders did more than win 0-0 over <@&1460399424785223680> and Jacksonville Jaguars; they shoved Jacksonville Jaguars deeper into a bad week. That one stayed tight because neither side gave much away.\n\nAround the league, the week had a little more texture than the box scores alone would say. Washington Commanders also left the week with a personnel problem to sort through. Laremy Tunsil is the kind of absence that can bend usage and short-term planning pretty quickly. Leaguewide, <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. On a different front, <@&1460399443210670082> and Washington Commanders are still getting buyer noise, but the cleaner expectation is one real move at edge rusher, not a scattershot push.\n\nA couple side stories also stuck to the week. <@&1460399431353372733> and Miami Dolphins are carrying real quarterback heat behind Jaylen Kelly after 370 pass yds, 5 pass TD, 2 INT, 12 rush yds. That is the kind of line the rest of the league takes seriously. Meanwhile, <@&1460399425900777516> and Kansas City Chiefs have a young name turning into real conversation with Nohl Williams. When a rookie starts stacking 97.8-level weeks, people notice fast.",
+        "timestamp": "2026-03-16T08:06:37.725Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773648397728",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773648397728,
+    "reviewMessageId": "1483013610522284124",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773648618566": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 7 Recap",
+        "description": "<@&1460399431353372733> and Miami Dolphins took the week’s roughest hit, falling 0-0 to <@&1460399425900777516> and Kansas City Chiefs. For a team already dealing with pressure, that was the kind of result that sticks.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399424785223680> and Jacksonville Jaguars walked out of the week with more heat after a 0-0 loss to <@&1460399427725426699> and Las Vegas Raiders. Whether it was expectation, momentum, or timing, that result landed hard. <@&1460399433014444207> and New England Patriots edged out <@&1460399435879158037> and New York Jets 0-0 in one of the week’s cleaner coin-flip games.\n\nOne performance that kept showing up in every conversation belonged to Kyler Murray. For <@&1460399408163066071> and Arizona Cardinals, the 92.1 grade and 353 pass yds, 7 pass TD, 3 INT, 72 rush yds line made him impossible to leave out of the week. <@&1460399431353372733> and Miami Dolphins also had to wear a rough outing from Jaylen Kelly. The line was hard to ignore: 370 pass yds, 5 pass TD, 2 INT, 12 rush yds.\n\nAway from the scores, the week picked up a few more layers. <@&1460399420691451999> and Denver Broncos are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at cornerback or wide receiver. Meanwhile, <@&1460399416098689065> and Chicago Bears now have an availability issue hanging over the week. Losing Ozzy Trapilo can change how snaps, touches, or short-term roster choices get handled. Leaguewide, <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up.\n\nA few smaller threads are still hanging in the air coming out of this one. <@&1460399408163066071> and Arizona Cardinals have a real offensive spark with Marvin Harrison Jr. A 91.1 grade and 124 rec yds, 5 rec TD, 6 catches is the kind of passing-game heat that changes coverage math. Elsewhere, <@&1460399425900777516> and Kansas City Chiefs have a young name turning into real conversation with Nohl Williams. When a rookie starts stacking 97.8-level weeks, people notice fast.",
+        "timestamp": "2026-03-16T08:10:18.563Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773648618566",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773648618566,
+    "reviewMessageId": "1483014536758956173",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773649026327": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 7 Recap",
+        "description": "<@&1460399431353372733> and Miami Dolphins walked out of the week with more heat after a 0-0 loss to <@&1460399425900777516> and Kansas City Chiefs. Whether it was expectation, momentum, or timing, that result landed hard.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399430329958514> and Los Angeles Rams found a way through <@&1460399440203481331> and Seattle Seahawks 0-0. That one stayed tight because neither side gave much away. <@&1460399427725426699> and Las Vegas Raiders did more than win 0-0 over <@&1460399424785223680> and Jacksonville Jaguars; they shoved Jacksonville Jaguars deeper into a bad week. That one stayed tight because neither side gave much away.\n\nA couple front offices came out of the week looking easier to read. <@&1460399425900777516> and Kansas City Chiefs: Kansas City Chiefs do not need to force movement. If they push a deal, it should clearly improve wide receiver or running back, not just shuffle depth. <@&1460399431353372733> and Miami Dolphins: Miami Dolphins should be open to buying if the market fits. Consolidating depth or picks for a real cornerback answer is the cleanest push.\n\nThe scoreboard was only part of it. <@&1460399417214501007> and Cincinnati Bengals also left the week with a personnel problem to sort through. Chase Brown is the kind of absence that can bend usage and short-term planning pretty quickly. Elsewhere, The market tone around <@&1460399436747378931> and Philadelphia Eagles keeps bending sell-side. Around the league, the expectation is that they at least listen if a move helps them get younger at running back or offensive tackle. Meanwhile, <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up.\n\nIf the week needed an individual centerpiece, it was Kyler Murray. <@&1460399408163066071> and Arizona Cardinals got a 92.1 grade and a stat line that read loudly enough on its own: 353 pass yds, 7 pass TD, 3 INT, 72 rush yds. <@&1460399431353372733> and Miami Dolphins also had to wear a rough outing from Jaylen Kelly. The line was hard to ignore: 370 pass yds, 5 pass TD, 2 INT, 12 rush yds.",
+        "timestamp": "2026-03-16T08:17:06.323Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773649026327",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773649026327,
+    "reviewMessageId": "1483016247204642837",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773649185719": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 7 Recap",
+        "description": "<@&1460399431353372733> and Miami Dolphins took the week’s roughest hit, falling 0-0 to <@&1460399425900777516> and Kansas City Chiefs. For a team already dealing with pressure, that was the kind of result that sticks.\n\n<@&1460399424785223680> and Jacksonville Jaguars walked out of the week with more heat after a 0-0 loss to <@&1460399427725426699> and Las Vegas Raiders. Whether it was expectation, momentum, or timing, that result landed hard. <@&1460399433014444207> and New England Patriots edged out <@&1460399435879158037> and New York Jets 0-0 in one of the week’s cleaner coin-flip games.\n\nKyler Murray ended up carrying one of the week’s clearest individual stories. The grade hit 92.1, and <@&1460399408163066071> and Arizona Cardinals got every bit of the production: 353 pass yds, 7 pass TD, 3 INT, 72 rush yds. <@&1460399431353372733> and Miami Dolphins also had to wear a rough outing from Jaylen Kelly. The line was hard to ignore: 370 pass yds, 5 pass TD, 2 INT, 12 rush yds.\n\nNot all of the week’s movement showed up in the final scores. <@&1460399416098689065> and Chicago Bears now have an availability issue hanging over the week. Losing Ozzy Trapilo can change how snaps, touches, or short-term roster choices get handled. Leaguewide, <@&1460399423925522496> and Indianapolis Colts are still getting buyer noise, but the cleaner expectation is one real move at wide receiver, not a scattershot push. On a different front, <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. The week also sharpened a few roster reads. <@&1460399425900777516> and Kansas City Chiefs: Kansas City Chiefs do not need to force movement. If they push a deal, it should clearly improve wide receiver or running back, not just shuffle depth. <@&1460399431353372733> and Miami Dolphins: Miami Dolphins should be open to buying if the market fits. Consolidating depth or picks for a real cornerback answer is the cleanest push.",
+        "timestamp": "2026-03-16T08:19:45.717Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773649185719",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773649185720,
+    "reviewMessageId": "1483016915398955009",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773649880410": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 7 Recap",
+        "description": "<@&1460399431353372733> and Miami Dolphins walked out of the week with more heat after a 0-0 loss to <@&1460399425900777516> and Kansas City Chiefs. Whether it was expectation, momentum, or timing, that result landed hard.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399430329958514> and Los Angeles Rams found a way through <@&1460399440203481331> and Seattle Seahawks 0-0. That one stayed tight because neither side gave much away. <@&1460399427725426699> and Las Vegas Raiders did more than win 0-0 over <@&1460399424785223680> and Jacksonville Jaguars; they shoved Jacksonville Jaguars deeper into a bad week. That one stayed tight because neither side gave much away.\n\nThe week also pushed a few league conversations forward. <@&1460399417214501007> and Cincinnati Bengals also left the week with a personnel problem to sort through. Chase Brown is the kind of absence that can bend usage and short-term planning pretty quickly. Elsewhere, <@&1460399418464538848> and Cleveland Browns are starting to feel more like a seller than a holder. The cleaner league read is that younger answers at interior ol matter more than hanging onto expiring veterans. Meanwhile, <@&1460399424785223680> and Jacksonville Jaguars have Devin Lloyd at BSH +3 (81->84); BSH is trending up. A couple front offices came out of the week looking easier to read. <@&1460399425900777516> and Kansas City Chiefs: Kansas City Chiefs do not need to force movement. If they push a deal, it should clearly improve wide receiver or running back, not just shuffle depth. <@&1460399431353372733> and Miami Dolphins: Miami Dolphins should be open to buying if the market fits. Consolidating depth or picks for a real cornerback answer is the cleanest push.\n\n<@&1460399408163066071> and Arizona Cardinals got a true star turn from Kyler Murray, who posted a 92.1 grade with a line that deserved the attention: 353 pass yds, 7 pass TD, 3 INT, 72 rush yds. <@&1460399431353372733> and Miami Dolphins also had to wear a rough outing from Jaylen Kelly. The line was hard to ignore: 370 pass yds, 5 pass TD, 2 INT, 12 rush yds.\n\nThe week left some extra noise behind it too. <@&1460399408163066071> and Arizona Cardinals are still sorting through the volatility around Kyler Murray after 353 pass yds, 7 pass TD, 3 INT, 72 rush yds. The mistakes were real, but so was the kind of production that can blow a game open. At the same time, <@&1460399431353372733> and Miami Dolphins are carrying real quarterback heat behind Jaylen Kelly after 370 pass yds, 5 pass TD, 2 INT, 12 rush yds. That is the kind of line the rest of the league takes seriously.",
+        "timestamp": "2026-03-16T08:31:20.407Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773649880410",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773649880410,
+    "reviewMessageId": "1483019829723140096",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773685445885": {
+    "kind": "weekly_recap",
+    "createdBy": "1076243288056664234",
+    "targetChannelId": "1482823904065097988",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "color": 5763719,
+        "title": "<:LEAGUEbuddy:1428128921056051261> Week 7 Recap",
+        "description": "<@&1460399425900777516> and Kansas City Chiefs did more than win 0-0 over <@&1460399431353372733> and Miami Dolphins; they shoved Miami Dolphins deeper into a bad week. That one stayed tight because neither side gave much away.\n\nBy the middle of the season, the league starts looking a lot less theoretical and a lot more honest. <@&1460399433014444207> and New England Patriots found a way through <@&1460399435879158037> and New York Jets 0-0. That one stayed tight because neither side gave much away. <@&1460399430329958514> and Los Angeles Rams edged out <@&1460399440203481331> and Seattle Seahawks 0-0 in one of the week’s cleaner coin-flip games.\n\nThe week also pushed a few league conversations forward. <@&1460399443210670082> and Washington Commanders now have an availability issue hanging over the week. Losing Laremy Tunsil can change how snaps, touches, or short-term roster choices get handled. Elsewhere, <@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle. On a different front, <@&1460399423116021821> and Houston Texans have Isiah Flowers at RBK +3 (74->77); the run blocking is trending the right way. Away from the scores, a couple team-building angles also came into focus. <@&1460399425900777516> and Kansas City Chiefs: Kansas City Chiefs do not need to force movement. If they push a deal, it should clearly improve wide receiver or running back, not just shuffle depth. <@&1460399431353372733> and Miami Dolphins: Miami Dolphins should be open to buying if the market fits. Consolidating depth or picks for a real cornerback answer is the cleanest push.\n\n<@&1460399408163066071> and Arizona Cardinals got a true star turn from Kyler Murray, who posted a 92.1 grade with a line that deserved the attention: 353 pass yds, 7 pass TD, 3 INT, 72 rush yds. <@&1460399431353372733> and Miami Dolphins also had to wear a rough outing from Jaylen Kelly. The line was hard to ignore: 370 pass yds, 5 pass TD, 2 INT, 12 rush yds.\n\nThe week left some extra noise behind it too. <@&1460399408163066071> and Arizona Cardinals are still buzzing about the kind of high-wire day Kyler Murray just put on tape. 353 pass yds, 7 pass TD, 3 INT, 72 rush yds was explosive enough to tilt a game by itself, even if the interceptions kept it from looking completely clean. At the same time, <@&1460399431353372733> and Miami Dolphins are carrying real quarterback heat behind Jaylen Kelly after 370 pass yds, 5 pass TD, 2 INT, 12 rush yds. That is the kind of line the rest of the league takes seriously.",
+        "timestamp": "2026-03-16T18:24:05.873Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773685445885",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773685445885,
+    "reviewMessageId": "1483169001864560823",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773687143788": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:52:23.786Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687143788",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687143788,
+    "reviewMessageId": "1483176123545424033",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687299483
+  },
+  "content_1773687144242": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399435879158037> and New York Jets are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at quarterback or interior ol.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:52:24.240Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687144242",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687144243,
+    "reviewMessageId": "1483176125206237225",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687297370
+  },
+  "content_1773687144514": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399423116021821> and Houston Texans have Isiah Flowers at RBK +3 (74->77); the run blocking is trending the right way.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:52:24.513Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687144514",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687144514,
+    "reviewMessageId": "1483176126280110268",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687295413
+  },
+  "content_1773687147150": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Arizona Cardinals have a real offensive spark with Marvin Harrison Jr. A 91.1 grade and 124 rec yds, 5 rec TD, 6 catches is the kind of passing-game heat that changes coverage math.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:52:27.148Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687147150",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687147150,
+    "reviewMessageId": "1483176137138900993",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687293321
+  },
+  "content_1773687147548": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "New York Jets keep circling back to the same question. Around the league, the feeling is that <@&1460399435879158037> may have to get the quarterback picture settled before the rest of the roster can make sense.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:52:27.540Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687147548",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687147548,
+    "reviewMessageId": "1483176139382980639",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687309338
+  },
+  "content_1773687147907": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399425900777516> and Kansas City Chiefs have a young name turning into real conversation with Nohl Williams. When a rookie starts stacking 97.8-level weeks, people notice fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:52:27.905Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687147907",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687147907,
+    "reviewMessageId": "1483176140691603506",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687305311
+  },
+  "content_1773687474658": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "The tackle conversation is not leaving Houston Texans alone. Around the league, the expectation is that <@&1460399423116021821> may have to get steadier there before the offense feels fully built.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:57:54.656Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687474658",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687474658,
+    "reviewMessageId": "1483177511507460309",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687528822
+  },
+  "content_1773687475023": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "The quarterback angle still hangs over Las Vegas Raiders. The outside read is that <@&1460399427725426699> may have to answer that first before the rest of the build really clears up.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:57:55.021Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687475023",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687475023,
+    "reviewMessageId": "1483177512673480725",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687529881
+  },
+  "content_1773687475349": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399423116021821> and Houston Texans have Isiah Flowers at RBK +3 (74->77); the run blocking is trending the right way.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:57:55.348Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687475349",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687475349,
+    "reviewMessageId": "1483177514204663978",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687532066
+  },
+  "content_1773687478134": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399425900777516> and Kansas City Chiefs have a young name turning into real conversation with Nohl Williams. When a rookie starts stacking 97.8-level weeks, people notice fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:57:58.133Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687478134",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687478134,
+    "reviewMessageId": "1483177525814497330",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687534475
+  },
+  "content_1773687478442": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Arizona Cardinals have a real offensive spark with Marvin Harrison Jr. A 91.1 grade and 124 rec yds, 5 rec TD, 6 catches is the kind of passing-game heat that changes coverage math.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:57:58.440Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687478442",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687478442,
+    "reviewMessageId": "1483177527207002213",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687537385
+  },
+  "content_1773687478851": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Tampa Bay Buccaneers also left the week with a personnel problem to sort through. Vita Vea is the kind of absence that can bend usage and short-term planning pretty quickly.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T18:57:58.850Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687478851",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687478851,
+    "reviewMessageId": "1483177528683139184",
+    "staffChannelId": "1460287771838255350",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687614648
+  },
+  "content_1773687672670": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Denver Broncos continue to draw seller chatter. Around the league, the expectation is that they listen on expiring vets and look for younger answers at cornerback.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:01:12.669Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687672670",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687672670,
+    "reviewMessageId": "1483178341904158983",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687833098
+  },
+  "content_1773687673116": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399434528587920> and New York Giants are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:01:13.114Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687673116",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687673116,
+    "reviewMessageId": "1483178343464439880",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687828355
+  },
+  "content_1773687673373": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Arizona Cardinals are getting a different level of quarterback buzz behind Kyler Murray. 383 pass yds, 5 pass TD, 2 INT, 7 rush yds was the kind of takeover line that changes the whole week around a team.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:01:13.371Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687673373",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687673373,
+    "reviewMessageId": "1483178344517468253",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687820145
+  },
+  "content_1773687679860": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Arizona Cardinals also left the week with a personnel problem to sort through. Trey Benson is the kind of absence that can bend usage and short-term planning pretty quickly.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:01:19.858Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687679860",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687679860,
+    "reviewMessageId": "1483178374389174355",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687812286
+  },
+  "content_1773687681907": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399412047249512> and Buffalo Bills now have an availability issue hanging over the week. Losing Dion Dawkins can change how snaps, touches, or short-term roster choices get handled.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:01:21.906Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687681907",
+    "guildId": "1255691165265821747",
+    "status": "approved",
+    "createdAt": 1773687681907,
+    "reviewMessageId": "1483178380336824322",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687709260
+  },
+  "content_1773687682264": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Kyler Murray is keeping Arizona Cardinals in real award-race conversation.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:01:22.263Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687682264",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687682264,
+    "reviewMessageId": "1483178382035390594",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773687808288
+  },
+  "content_1773687850233": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399420691451999> and Denver Broncos also left the week with a personnel problem to sort through. Garett Bolles is the kind of absence that can bend usage and short-term planning pretty quickly.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:04:10.233Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687850233",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687850233,
+    "reviewMessageId": "1483179086502301897",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688370762
+  },
+  "content_1773687850548": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399423116021821> and Houston Texans have Isiah Flowers at RBK +3 (74->77); the run blocking is trending the right way.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:04:10.548Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687850548",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687850548,
+    "reviewMessageId": "1483179087743815780",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688367586
+  },
+  "content_1773687850837": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Xzavier Fox is giving <@&1460399433014444207> and New England Patriots live rookie-race juice right now.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:04:10.836Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687850837",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687850837,
+    "reviewMessageId": "1483179090206003270",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688367119
+  },
+  "content_1773687859083": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Arizona Cardinals are getting a different level of quarterback buzz behind Kyler Murray. 383 pass yds, 5 pass TD, 2 INT, 7 rush yds was the kind of takeover line that changes the whole week around a team.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:04:19.082Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687859083",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687859083,
+    "reviewMessageId": "1483179123097473108",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688362364
+  },
+  "content_1773687859347": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Xzavier Fox is giving <@&1460399433014444207> and New England Patriots live rookie-race juice right now.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:04:19.345Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687859347",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687859347,
+    "reviewMessageId": "1483179124599033938",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688359849
+  },
+  "content_1773687859642": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "The tackle conversation is not leaving <@&1460399423116021821> and Houston Texans alone. Around the league, the expectation is that <@&1460399423116021821> may have to get steadier there before the offense feels fully built.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:04:19.641Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773687859642",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773687859642,
+    "reviewMessageId": "1483179125765181625",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688357034
+  },
+  "content_1773688443410": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399436747378931> and Philadelphia Eagles continue to draw seller chatter. The expectation around the league is that they listen on expiring vets and look for younger answers at running back.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:14:03.409Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688443410",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688443411,
+    "reviewMessageId": "1483181574378881064",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688542119
+  },
+  "content_1773688443663": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "The market read on <@&1460399424785223680> and Jacksonville Jaguars is still buyer-leaning. The better fit sounds like one meaningful cornerback move, not volume for the sake of volume.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:14:03.662Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688443663",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688443663,
+    "reviewMessageId": "1483181575716995202",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688537414
+  },
+  "content_1773688444149": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399428945842270> and Los Angeles Chargers also left the week with a personnel problem to sort through. Omarion Hampton is the kind of absence that can bend usage and short-term planning pretty quickly.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:14:04.146Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688444149",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688444149,
+    "reviewMessageId": "1483181577637724441",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688524180
+  },
+  "content_1773688450326": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399425900777516> and Kansas City Chiefs have an availability variable to manage. Creed Humphrey is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:14:10.325Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688450326",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688450326,
+    "reviewMessageId": "1483181603781087242",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688517829
+  },
+  "content_1773688450796": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399418464538848> and Cleveland Browns now have an availability issue hanging over the week. Losing Myles Garrett can change how snaps, touches, or short-term roster choices get handled.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:14:10.795Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688450796",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688450796,
+    "reviewMessageId": "1483181605362073765",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688513508
+  },
+  "content_1773688451073": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Marvin Harrison Jr is becoming a real passing-game spark for Arizona Cardinals. A 97.8 grade and 207 rec yds, 3 rec TD, 7 catches is the kind of output that changes coverage math.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:14:11.072Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688451073",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688451073,
+    "reviewMessageId": "1483181607040057485",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773688506468
+  },
+  "content_1773688559558": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "League evaluators still bring the conversation back to quarterback with New York Jets. The read is that <@&1460399435879158037> may have to answer that first before the rest of the build sharpens into focus.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:15:59.558Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688559558",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688559558,
+    "reviewMessageId": "1483182061798948894",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773689038867
+  },
+  "content_1773688559990": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "The quarterback storyline is still hanging over Las Vegas Raiders. The outside view is that <@&1460399427725426699> may have to define that position before anything else about the roster feels settled.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:15:59.990Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688559990",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688559990,
+    "reviewMessageId": "1483182063648510203",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773689036868
+  },
+  "content_1773688560369": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Kyler Murray is keeping <@&1460399408163066071> and Arizona Cardinals in real award-race conversation.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:16:00.368Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688560369",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688560369,
+    "reviewMessageId": "1483182065103933462",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773689034954
+  },
+  "content_1773688566794": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Xzavier Fox is giving <@&1460399433014444207> and New England Patriots live rookie-race juice right now.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:16:06.793Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688566794",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688566794,
+    "reviewMessageId": "1483182092907970560",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773689032248
+  },
+  "content_1773688567316": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Marvin Harrison Jr is becoming a real passing-game spark for Arizona Cardinals. A 97.8 grade and 207 rec yds, 3 rec TD, 7 catches is the kind of output that changes coverage math.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:16:07.315Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688567316",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688567316,
+    "reviewMessageId": "1483182094246219866",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773689030533
+  },
+  "content_1773688567683": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399434528587920> and New York Giants are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:16:07.681Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773688567683",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773688567683,
+    "reviewMessageId": "1483182095676477463",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773689028254
+  },
+  "content_1773689338306": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Kyler Murray has people around the league talking after what he just put on tape for Arizona Cardinals. 383 pass yds, 5 pass TD, 2 INT, 7 rush yds was the kind of takeover performance that shifts the conversation fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:28:58.303Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773689338306",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773689338306,
+    "reviewMessageId": "1483185328255926292",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773691443491
+  },
+  "content_1773689338848": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399442472472577> and Tennessee Titans are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at wide receiver or cornerback.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:28:58.846Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773689338848",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773689338848,
+    "reviewMessageId": "1483185330344431738",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773689339146": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Tackle is still one of the first things people bring up with Houston Texans. Around the league, the expectation is that <@&1460399423116021821> may have to show that room can hold up before the offense feels complete. They already invested there with rookies like Trevon Williams and Isiah Flowers, so the real question now is how quickly that young tackle group develops into a dependable answer.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:28:59.143Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773689339146",
+    "guildId": "1255691165265821747",
+    "status": "approved",
+    "createdAt": 1773689339146,
+    "reviewMessageId": "1483185331183419448",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773690418791
+  },
+  "content_1773689689989": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "injury:Buffalo Bills:Dion Dawkins",
+    "rumorCategory": "injury",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399412047249512> and Buffalo Bills now have an availability issue hanging over the week. In the middle of the season, injuries stop feeling temporary and start changing real plans. Losing Dion Dawkins can change how snaps, touches, or short-term roster choices get handled.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:34:49.986Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773689689989",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773689689989,
+    "reviewMessageId": "1483186805980266650",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773689691090": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "player_change:Houston Texans:Isiah Flowers",
+    "rumorCategory": "player_change",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Isiah Flowers is up +3 in RBK (74->77) for <@&1460399423116021821> and Houston Texans. the run blocking is trending the right way.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:34:51.088Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773689691090",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773689691090,
+    "reviewMessageId": "1483186814016684083",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773690285362": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "trade_posture:Philadelphia Eagles:sell",
+    "rumorCategory": "trade_posture",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399436747378931> and Philadelphia Eagles continue to draw seller chatter. By the middle of the season, buy/sell posture gets a lot more real around the league. The expectation around the league is that they listen on expiring vets and look for younger answers at running back.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:44:45.361Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773690285362",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773690285362,
+    "reviewMessageId": "1483189300177801418",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773691434556
+  },
+  "content_1773690420831": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "rookie:Xzavier Fox",
+    "rumorCategory": "player_heat",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399433014444207> and New England Patriots have a young name turning into real conversation with Xzavier Fox. When a rookie starts stacking 92.4-level weeks, people notice fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T19:47:00.830Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773690420831",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773690420831,
+    "reviewMessageId": "1483189868518440971",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773691431076
+  },
+  "content_1773691433610": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "injury:Kansas City Chiefs:Creed Humphrey",
+    "rumorCategory": "injury",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399425900777516> and Kansas City Chiefs have an availability variable to manage. In the middle of the season, injuries stop feeling temporary and start changing real plans. Creed Humphrey is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:03:53.609Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773691433610",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773691433610,
+    "reviewMessageId": "1483194116211872005",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773692830673
+  },
+  "content_1773691437068": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "player:Marvin Harrison Jr",
+    "rumorCategory": "player_heat",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Marvin Harrison Jr is becoming a real passing-game spark for Arizona Cardinals. A 97.8 grade and 207 rec yds, 3 rec TD, 7 catches is the kind of output that changes coverage math.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:03:57.067Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773691437068",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773691437068,
+    "reviewMessageId": "1483194151477706980",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773692819884
+  },
+  "content_1773691458588": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "player:Kyler Murray",
+    "rumorCategory": "player_heat",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Kyler Murray has people around the league talking after what he just put on tape for Arizona Cardinals. 383 pass yds, 5 pass TD, 2 INT, 7 rush yds was the kind of takeover performance that shifts the conversation fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:04:18.587Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773691458588",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773691458588,
+    "reviewMessageId": "1483194226400301156",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773692811787
+  },
+  "content_1773692813916": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "rookie:Xzavier Fox",
+    "rumorCategory": "player_heat",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399433014444207> and New England Patriots have a young name turning into real conversation with Xzavier Fox. When a rookie starts stacking 92.4-level weeks, people notice fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:26:53.916Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773692813916",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773692813916,
+    "reviewMessageId": "1483199907144667217",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773692880466
+  },
+  "content_1773692821900": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "pressure:New Orleans Saints",
+    "rumorCategory": "pressure",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "New Orleans Saints are hearing more noise about the secondary. The feeling around the league is that <@&1460399433941389594> may have to find another corner who can hold up on an island.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:27:01.900Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773692821900",
+    "guildId": "1255691165265821747",
+    "status": "approved",
+    "createdAt": 1773692821900,
+    "reviewMessageId": "1483199939852112117",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773692847156
+  },
+  "content_1773692832967": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "rookie:Xzavier Fox",
+    "rumorCategory": "player_heat",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399433014444207> and New England Patriots have a young name turning into real conversation with Xzavier Fox. When a rookie starts stacking 92.4-level weeks, people notice fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:27:12.966Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773692832967",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773692832967,
+    "reviewMessageId": "1483199985460973710",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773692875261
+  },
+  "content_1773692849214": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "trade_posture:Cleveland Browns:sell",
+    "rumorCategory": "trade_posture",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399418464538848> and Cleveland Browns are getting stronger sell-side noise. By the middle of the season, buy/sell posture gets a lot more real around the league. The cleanest read is that expiring veterans matter less than getting younger at interior ol or offensive tackle.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:27:29.213Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773692849214",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773692849214,
+    "reviewMessageId": "1483200053483929784",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773692870400
+  },
+  "content_1773692871918": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "pressure:New York Jets",
+    "rumorCategory": "pressure",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "League evaluators still bring the conversation back to quarterback with New York Jets. The read is that <@&1460399435879158037> may have to answer that first before the rest of the build sharpens into focus.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:27:51.918Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773692871918",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773692871918,
+    "reviewMessageId": "1483200149080641729",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773698609337
+  },
+  "content_1773692877150": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "injury:Chicago Bears:Ozzy Trapilo",
+    "rumorCategory": "injury",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399416098689065> and Chicago Bears now have an availability issue hanging over the week. In the middle of the season, injuries stop feeling temporary and start changing real plans. Losing Ozzy Trapilo can change how snaps, touches, or short-term roster choices get handled.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:27:57.150Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773692877150",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773692877150,
+    "reviewMessageId": "1483200171159584880",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773698604744
+  },
+  "content_1773692884370": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "player_change:Houston Texans:Isiah Flowers",
+    "rumorCategory": "player_change",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Isiah Flowers is up +3 in RBK (74->77) for <@&1460399423116021821> and Houston Texans. the run blocking is trending the right way.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T20:28:04.369Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773692884370",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773692884370,
+    "reviewMessageId": "1483200202822254763",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773698595486
+  },
+  "content_1773698599713": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "pressure:Denver Broncos",
+    "rumorCategory": "pressure",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "The secondary still feels unresolved around Denver Broncos. From the outside, it looks like <@&1460399420691451999> may have to need one more corner with real one-on-one value.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T22:03:19.712Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773698599713",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773698599713,
+    "reviewMessageId": "1483224172640473191",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773699452258
+  },
+  "content_1773698607759": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "trade_posture:Tennessee Titans:sell",
+    "rumorCategory": "trade_posture",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399442472472577> and Tennessee Titans are getting stronger sell-side noise. By the middle of the season, buy/sell posture gets a lot more real around the league. The cleanest read is that expiring veterans matter less than getting younger at wide receiver or cornerback.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T22:03:27.758Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773698607759",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773698607759,
+    "reviewMessageId": "1483224206429782150",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773699447771
+  },
+  "content_1773698612133": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "award:New England Patriots",
+    "rumorCategory": "awards",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Xzavier Fox is giving <@&1460399433014444207> and New England Patriots live rookie-race juice right now.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T22:03:32.132Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773698612133",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773698612133,
+    "reviewMessageId": "1483224225073598555",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773699436892
+  },
+  "content_1773699440021": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "trade_posture:Baltimore Ravens:hold",
+    "rumorCategory": "trade_posture",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399410520264798> and Baltimore Ravens are getting read more as a selective hold than an all-in push. By the middle of the season, buy/sell posture gets a lot more real around the league. If they move, it will probably have to clearly improve interior ol.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T22:17:20.021Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773699440021",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773699440021,
+    "reviewMessageId": "1483227697781145723",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773705188054
+  },
+  "content_1773699449365": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "trade_posture:Chicago Bears:buy",
+    "rumorCategory": "trade_posture",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399416098689065> and Chicago Bears are still getting buyer noise, but By the middle of the season, buy/sell posture gets a lot more real around the league. the cleaner expectation is one real move at interior ol, not a scattershot push.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T22:17:29.365Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773699449365",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773699449365,
+    "reviewMessageId": "1483227736645308416",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773699453930": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "award:Arizona Cardinals",
+    "rumorCategory": "awards",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "Kyler Murray is keeping <@&1460399408163066071> and Arizona Cardinals in real award-race conversation.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T22:17:33.930Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773699453930",
+    "guildId": "1255691165265821747",
+    "status": "approved",
+    "createdAt": 1773699453930,
+    "reviewMessageId": "1483227756043964548",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773699473056
+  },
+  "content_1773699474758": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "player:Kyler Murray",
+    "rumorCategory": "player_heat",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "<@&1460399408163066071> and Kyler Murray has people around the league talking after what he just put on tape for Arizona Cardinals. 383 pass yds, 5 pass TD, 2 INT, 7 rush yds was the kind of takeover performance that shifts the conversation fast.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T22:17:54.757Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773699474758",
+    "guildId": "1255691165265821747",
+    "status": "denied",
+    "createdAt": 1773699474758,
+    "reviewMessageId": "1483227843369369650",
+    "staffChannelId": "1482917978734329956",
+    "reviewedBy": "1076243288056664234",
+    "reviewedAt": 1773705192531
+  },
+  "content_1773705189970": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "rookie_dev:Jacksonville Jaguars:Sufyan Joseph",
+    "rumorCategory": "rookie_development",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "At this point in the season, trends stop feeling accidental. The developmental buzz around <@&1460399424785223680> and Jacksonville Jaguars rookie Sufyan Joseph (CB) is getting louder. If he comes fast, the whole read on their cornerback room changes.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T23:53:09.968Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773705189970",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773705189970,
+    "reviewMessageId": "1483251814618103971",
+    "staffChannelId": "1482917978734329956"
+  },
+  "content_1773705198654": {
+    "kind": "rumor_mill",
+    "createdBy": "system",
+    "targetChannelId": "1482823538309202051",
+    "rumorKey": "rookie_dev:Houston Texans:Trevon Williams",
+    "rumorCategory": "rookie_development",
+    "content": "<@&1460399406397522145>",
+    "embeds": [
+      {
+        "title": "<:LEAGUEbuddy:1428128921056051261> Madden Rumor Mill",
+        "description": "At this point in the season, trends stop feeling accidental. The developmental buzz around <@&1460399423116021821> and Houston Texans rookie Trevon Williams (LT) is getting louder. If he comes fast, the whole read on their offensive tackle room changes.",
+        "color": 16757575,
+        "timestamp": "2026-03-16T23:53:18.652Z"
+      }
+    ],
+    "previewAllowedMentions": {
+      "parse": []
+    },
+    "postAllowedMentions": {
+      "parse": [
+        "roles"
+      ]
+    },
+    "id": "content_1773705198654",
+    "guildId": "1255691165265821747",
+    "status": "pending",
+    "createdAt": 1773705198654,
+    "reviewMessageId": "1483251850978529541",
     "staffChannelId": "1482917978734329956"
   }
 }

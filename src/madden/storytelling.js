@@ -34,6 +34,12 @@ function titleCase(text = '') {
   return String(text).replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function rumorCategoryFamily(category = '') {
+  const value = String(category || '').toLowerCase();
+  if (value.startsWith('draft')) return 'draft';
+  return value;
+}
+
 function saveJSON(file, data) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
@@ -42,6 +48,41 @@ function saveJSON(file, data) {
 function toDisplayTeam(team = '') {
   return String(team || '').replace(/\bcoach\b/ig, '').trim();
 }
+
+const TEAM_ALIAS_MAP = {
+  arizonacardinals: ['cards'],
+  atlantafalcons: ['falcs'],
+  baltimoreravens: ['ravens'],
+  buffalobills: ['bills'],
+  carolinapanthers: ['panthers'],
+  chicagobears: ['bears'],
+  cincinnatibengals: ['bengals'],
+  clevelandbrowns: ['browns'],
+  dallascowboys: ['cowboys'],
+  denverbroncos: ['broncos'],
+  detroitlions: ['lions'],
+  greenbaypackers: ['pack', 'packers'],
+  houstontexans: ['texans'],
+  indianapoliscolts: ['colts'],
+  jacksonvillejaguars: ['jags', 'jaguars'],
+  kansascitychiefs: ['chiefs'],
+  lasvegasraiders: ['raiders'],
+  losangeleschargers: ['bolts', 'chargers'],
+  losangelesrams: ['rams'],
+  miamidolphins: ['fins', 'dolphins'],
+  minnesotavikings: ['vikes', 'vikings'],
+  newenglandpatriots: ['pats', 'patriots'],
+  neworleanssaints: ['saints'],
+  newyorkgiants: ['giants'],
+  newyorkjets: ['jets'],
+  philadelphiaeagles: ['eagles', 'birds'],
+  pittsburghsteelers: ['steelers'],
+  sanfrancisco49ers: ['niners', '49ers'],
+  seattleseahawks: ['hawks', 'seahawks'],
+  tampabaybuccaneers: ['bucs', 'buccaneers'],
+  tennesseetitans: ['titans'],
+  washingtoncommanders: ['commanders', 'commies'],
+};
 
 function buildTeamCoachMentionMap(roleMap = {}) {
   const map = new Map();
@@ -60,14 +101,21 @@ function addLeagueTeamCoachAliases(map, league) {
     const fullName = getFullTeamName(team, '').trim();
     const mascot = String(team?.displayName || team?.nickName || '').trim();
     const abbr = String(team?.abbrName || '').trim();
+    const city = String(team?.cityName || '').trim();
+    const normFull = normalizeName(fullName);
+    const aliasCandidates = [
+      fullName,
+      mascot,
+      abbr,
+      city,
+      ...(TEAM_ALIAS_MAP[normFull] || []),
+    ].filter(Boolean);
     const mention =
-      map.get(normalizeName(fullName)) ||
-      map.get(normalizeName(mascot)) ||
-      map.get(normalizeName(abbr));
+      aliasCandidates
+        .map((value) => map.get(normalizeName(value)))
+        .find(Boolean);
     if (!mention) continue;
-    if (fullName) map.set(normalizeName(fullName), mention);
-    if (mascot) map.set(normalizeName(mascot), mention);
-    if (abbr) map.set(normalizeName(abbr), mention);
+    aliasCandidates.forEach((value) => map.set(normalizeName(value), mention));
   }
   return map;
 }
@@ -91,6 +139,7 @@ function tagParagraphFirstMentions(paragraph, mentionMap, candidateTeams = []) {
   for (const team of teams) {
     const mention = coachMentionFor(team, mentionMap);
     if (!mention) continue;
+    if (text.includes(mention)) continue;
     if (text.includes(`${mention} and ${team}`)) continue;
     const pattern = new RegExp(`(^|[^\\w>])(${escapeRegex(team)})(?=([^\\w<]|$))`);
     text = text.replace(pattern, (match, prefix, matched) => `${prefix}${mention} and ${matched}`);
@@ -153,8 +202,16 @@ function formatGrade(value) {
 function isBadStatLine(player) {
   const pos = String(player?.position || '').toUpperCase();
   const totals = player?.totals || {};
+  const grade = Number(player?.grade ?? player?.weeklyGrade ?? 0);
   if (pos === 'QB') {
-    return Number(totals.passInts || 0) >= 2 || ((Number(totals.passYds || 0) <= 180) && Number(totals.passTDs || 0) === 0 && Number(totals.passInts || 0) >= 1);
+    const passYds = Number(totals.passYds || 0);
+    const passTDs = Number(totals.passTDs || 0);
+    const passInts = Number(totals.passInts || 0);
+    const totalTDs = passTDs + Number(totals.rushTDs || 0);
+    if (passInts >= 4) return true;
+    if (passInts >= 3) return totalTDs <= 3 || passYds < 325 || grade < 84;
+    if (passInts >= 2) return totalTDs <= 2 && passYds < 260 && grade < 80;
+    return passYds <= 180 && passTDs === 0 && passInts >= 1;
   }
   if (['HB', 'RB', 'FB'].includes(pos)) {
     return Number(totals.rushFumblesLost || 0) >= 1 || (Number(totals.rushAtt || 0) >= 12 && Number(totals.rushYds || 0) <= 35);
@@ -186,28 +243,28 @@ function describePerformanceRumor(player, mode = 'heat') {
     if (mode === 'heat') {
       if (monsterGame) {
         if (passInts >= 3) {
-          return `${team} are still buzzing about the kind of high-wire day ${name} just put on tape. ${line} was explosive enough to tilt a game by itself, even if the interceptions kept it from looking completely clean.`;
+          return `${name} just gave ${team} the kind of headline performance people around the league notice immediately. ${line} was explosive enough to swing the whole game, even if the interceptions kept the review mixed.`;
         }
-        return `${team} are getting a different level of quarterback buzz behind ${name}. ${line} was the kind of takeover line that changes the whole week around a team.`;
+        return `${name} has people around the league talking after what he just put on tape for ${team}. ${line} was the kind of takeover performance that shifts the conversation fast.`;
       }
       if (passInts >= 2 && (passTDs >= 3 || passYds >= 300 || eliteDualThreat)) {
-        return `${team} are still talking through an up-and-down day from ${name}. ${line} showed how much stress he can put on a defense, but the interceptions kept the full review mixed.`;
+        return `${name} gave ${team} a big-time line with some real volatility attached to it. ${line} showed how much pressure he can put on a defense, but the turnovers kept it from feeling completely clean.`;
       }
       if (eliteDualThreat) {
-        return `${team} keep getting stronger buzz behind ${name}. A ${grade} grade and a line like ${line} showed both the arm talent and the rushing pressure he can add to an offense.`;
+        return `${name} is starting to build real momentum around the league for ${team}. A ${grade} grade and a line like ${line} showed both the arm talent and the rushing threat he brings to the offense.`;
       }
-      return `${team} keep getting stronger buzz behind ${name}. A ${grade} grade and a line like ${line} changes the ceiling fast.`;
+      return `${name} is getting real quarterback buzz around the league after another strong showing for ${team}. A ${grade} grade and a line like ${line} changes the outlook fast.`;
     }
     if (monsterGame) {
       if (passInts >= 3) {
         return `${team} are still sorting through the volatility around ${name} after ${line}. The mistakes were real, but so was the kind of production that can blow a game open.`;
       }
-      return `${team} are carrying real quarterback heat behind ${name} after ${line}. That is the kind of line the rest of the league takes seriously.`;
+      return `${name} has the rest of the league paying attention after what he just did for ${team}. ${line} is the kind of stat line that gets taken seriously fast.`;
     }
     if (passInts >= 2 && (passTDs >= 3 || passYds >= 300 || eliteDualThreat)) {
-      return `${team} are catching mixed reviews around ${name} after ${line}. The creation was obvious, but so was the volatility.`;
+      return `${name} left evaluators with a mixed review after ${line}. The creation was obvious, but so was the volatility.`;
     }
-    return `${team} are catching some bad noise around ${name} after ${line}. That is the kind of quarterback week that usually follows a team for a few days.`;
+    return `${name} is drawing some rough quarterback feedback after ${line}. That is the kind of week that tends to stick around a team for a few days.`;
   }
 
   if (['HB', 'RB', 'FB'].includes(pos)) {
@@ -216,11 +273,11 @@ function describePerformanceRumor(player, mode = 'heat') {
     const fumbles = Number(totals.rushFumblesLost || 0);
     if (mode === 'heat') {
       if (fumbles >= 1 && (rushYds >= 100 || rushTDs >= 2)) {
-        return `${team} got an explosive but uneven day from ${name}. ${line} was big enough to matter, but the ball-security issues kept it from reading cleanly.`;
+        return `${name} gave ${team} an explosive but uneven performance. ${line} mattered, but the ball-security issues kept the full review from sounding clean.`;
       }
-      return `${team} are getting real juice from ${name}. A ${grade} grade and ${line} is the kind of backfield production that gets noticed fast.`;
+      return `${name} is giving ${team} real backfield juice right now. A ${grade} grade and ${line} is the kind of production that gets noticed around the league fast.`;
     }
-    return `${team} are hearing some frustration around ${name} after ${line}. The yardage only goes so far if the mistakes stay in the frame.`;
+    return `${name} is catching some frustration after ${line}. The production only goes so far when the mistakes stay in the picture.`;
   }
 
   if (['WR', 'TE'].includes(pos)) {
@@ -229,11 +286,11 @@ function describePerformanceRumor(player, mode = 'heat') {
     const drops = Number(totals.recDrops || 0);
     if (mode === 'heat') {
       if (drops >= 2 && (recYds >= 100 || recTDs >= 1)) {
-        return `${team} got a loud but uneven receiver day from ${name}. ${line} moved the offense, but the drops kept the reviews mixed.`;
+        return `${name} gave ${team} a loud but uneven receiving day. ${line} moved the offense, but the drops kept the reviews mixed.`;
       }
-      return `${team} have a real offensive spark with ${name}. A ${grade} grade and ${line} is the kind of passing-game heat that changes coverage math.`;
+      return `${name} is becoming a real passing-game spark for ${team}. A ${grade} grade and ${line} is the kind of output that changes coverage math.`;
     }
-    return `${team} are hearing mixed reaction to ${name} after ${line}. The production showed up, but so did the inconsistency.`;
+    return `${name} is getting a mixed review after ${line}. The production showed up, but so did the inconsistency.`;
   }
 
   if (['CB', 'FS', 'SS', 'MLB', 'LB', 'WILL', 'MIKE', 'SAM', 'REDGE', 'LEDGE', 'DE', 'DT', 'LE', 'RE', 'EDGE'].includes(pos)) {
@@ -242,12 +299,12 @@ function describePerformanceRumor(player, mode = 'heat') {
     const tackles = Number(totals.defTotalTackles || 0);
     const pd = Number(totals.defPassDeflections || 0);
     if (mode === 'heat') {
-      return `${team} are getting real defensive noise from ${name}. A ${grade} grade backed up ${line}, and that is the kind of line evaluators buy into.`;
+      return `${name} is generating real defensive buzz for ${team}. A ${grade} grade backed up ${line}, and that is the kind of tape evaluators buy into.`;
     }
     if (sacks || ints || pd || tackles >= 8) {
-      return `${team} are still sorting out what to make of ${name}'s line: ${line}. The activity was real, even if the full review was more complicated than the raw numbers suggest.`;
+      return `${name} left a more complicated defensive review than the raw line suggests. ${line} showed real activity, even if the full picture was not that simple.`;
     }
-    return `${team} are not thrilled with how ${name}'s week landed. ${line} was not enough to quiet the questions.`;
+    return `${name} did not do enough to quiet the questions this week. ${line} was not the kind of answer ${team} needed.`;
   }
 
   return mode === 'heat'
@@ -323,36 +380,144 @@ function seededOrder(seedKey, values = []) {
   return out;
 }
 
-function describeNeedPressureRumor(team, coachTag, need, variantSeed = 0) {
+function joinStoryTexts(entries = [], seedKey = 'story-join') {
+  const texts = entries
+    .map((entry) => typeof entry === 'string' ? entry : entry?.text)
+    .filter(Boolean);
+  if (!texts.length) return '';
+  if (texts.length === 1) return texts[0];
+
+  const bridges = seededOrder(seedKey, [
+    'Meanwhile,',
+    'Elsewhere,',
+    'At the same time,',
+    'On a different front,',
+    'Leaguewide,',
+  ]);
+
+  let out = texts[0];
+  for (let i = 1; i < texts.length; i += 1) {
+    out += ` ${bridges[(i - 1) % bridges.length]} ${texts[i]}`;
+  }
+  return out;
+}
+
+function buildNeedReason(need) {
+  switch (String(need || '').toUpperCase()) {
+    case 'QB': return 'the quarterback future still frames the whole build';
+    case 'OT':
+    case 'LT':
+    case 'RT': return 'the edge protection is still shaping the offense week to week';
+    case 'IOL': return 'the middle of the pocket still needs to hold up better';
+    case 'WR': return 'they still need another target who changes coverage';
+    case 'TE': return 'they could still use a cleaner middle-of-the-field answer';
+    case 'RB': return 'the run game still lacks enough weekly punch';
+    case 'EDGE': return 'they still need more heat off the edge';
+    case 'DT': return 'the interior front still needs to control the game better';
+    case 'LB': return 'the middle of the defense still needs more range and steadiness';
+    case 'CB': return 'the coverage room still needs a cleaner answer outside';
+    case 'S': return 'the back end still needs more range and reliability';
+    default: return 'the roster still has a real hole to solve';
+  }
+}
+
+function buildRookieNeedOutlook(ctx, team, need) {
+  const teamEntry = (ctx?.league?.teams?.leagueTeamInfoList || []).find((entry) => getFullTeamName(entry, '').trim() === team);
+  const teamId = Number(teamEntry?.teamId);
+  if (!Number.isFinite(teamId)) return '';
+  const roster = ctx?.league?.rosters?.teams?.[teamId]?.rosterInfoList || [];
+  const normalizedNeed = String(need || '').toUpperCase();
+  const matchesNeed = (player) => {
+    const pos = String(player?.position || '').toUpperCase();
+    if (['OT', 'LT', 'RT'].includes(normalizedNeed)) return ['LT', 'RT'].includes(pos);
+    if (normalizedNeed === 'IOL') return ['LG', 'RG', 'C'].includes(pos);
+    if (normalizedNeed === 'WR') return pos === 'WR';
+    if (normalizedNeed === 'RB') return ['HB', 'RB', 'FB'].includes(pos);
+    if (normalizedNeed === 'TE') return pos === 'TE';
+    if (normalizedNeed === 'QB') return pos === 'QB';
+    if (normalizedNeed === 'EDGE') return ['LE', 'RE', 'DE', 'EDGE', 'EDG', 'LEDGE', 'REDGE'].includes(pos);
+    if (normalizedNeed === 'DT') return ['DT', 'NT'].includes(pos);
+    if (normalizedNeed === 'LB') return ['MLB', 'ILB', 'LB', 'LOLB', 'ROLB', 'OLB', 'SAM', 'MIKE', 'WILL'].includes(pos);
+    if (normalizedNeed === 'CB') return pos === 'CB';
+    if (normalizedNeed === 'S') return ['FS', 'SS'].includes(pos);
+    return false;
+  };
+  const rookies = roster
+    .filter((player) => Number(player?.yearsPro ?? 99) <= 1)
+    .filter(matchesNeed)
+    .sort((a, b) => Number(b?.playerBestOvr || b?.teamSchemeOvr || 0) - Number(a?.playerBestOvr || a?.teamSchemeOvr || 0))
+    .slice(0, 3);
+  if (!rookies.length) return '';
+  const names = rookies
+    .map((player) => `${player.firstName || ''} ${player.lastName || ''}`.trim())
+    .filter(Boolean);
+  if (!names.length) return '';
+  if (rookies.length >= 2) {
+    return ` They already invested there with rookies like ${names.slice(0, 2).join(' and ')}, so the real question now is how quickly that young tackle group develops into a dependable answer.`;
+  }
+  return ` There is also real curiosity around rookie ${names[0]} and whether that development curve is going to move fast enough to change the outlook there.`;
+}
+
+function describeNeedPressureRumor(team, coachTag, need, variantSeed = 0, ctx = null) {
   const side = coachTag ? `${coachTag} may have to` : `${team} may have to`;
   const key = String(need || '').toUpperCase();
+  const rookieOutlook = buildRookieNeedOutlook(ctx, team, key);
+  const seasonContext = ctx?.seasonContext || {};
   switch (key) {
     case 'QB':
-      return pickTemplate([
-        `${team} are being tied to a bigger-picture reset. The read around the league is that ${side} settle the quarterback future before anything else really comes into focus.`,
-        `${team} keep circling back to the same question. Around the league, the feeling is that ${side} get the quarterback picture settled before the rest of the roster can make sense.`,
-        `The quarterback angle still hangs over ${team}. The outside read is that ${side} answer that first before the rest of the build really clears up.`,
-      ], variantSeed + team.length);
+      return pickTemplate(phaseTemplates(seasonContext, {
+        early_regular: [
+          `${team} keep getting tied to the quarterback question. It is early, but around the league the feeling is still that ${side} clear that up before the rest of the roster direction really means anything.`,
+          `Even this early, evaluators keep bringing the conversation back to quarterback with ${team}. The read is that ${side} answer that before the bigger picture sharpens.`,
+        ],
+        late_regular: [
+          `${team} are carrying a real quarterback question into the stretch run. Around the league, the feeling is that ${side} define that spot before anything else about the roster feels stable.`,
+          `Late-season pressure keeps dragging the conversation back to quarterback with ${team}. The outside read is that ${side} answer that before the next phase of the build can make sense.`,
+        ],
+        postseason: [
+          `With more eyes turning toward next steps, ${team} keep getting tied to the quarterback question. Around the league, the feeling is that ${side} clear that up before anything else really matters.`,
+          `The postseason lens keeps bringing the conversation back to quarterback with ${team}. The read is that ${side} define that spot before the offseason direction becomes clear.`,
+        ],
+        default: [
+          `${team} keep getting tied to the quarterback question. Around the league, the feeling is that ${side} clear that up before the rest of the roster direction really means anything.`,
+          `League evaluators still bring the conversation back to quarterback with ${team}. The read is that ${side} answer that first before the rest of the build sharpens into focus.`,
+          `The quarterback storyline is still hanging over ${team}. The outside view is that ${side} define that position before anything else about the roster feels settled.`,
+        ],
+      }), variantSeed + team.length);
     case 'OT':
     case 'LT':
     case 'RT':
-      return pickTemplate([
-        `${team} are drawing real offensive-line scrutiny. The sense around the league is that ${side} stabilize tackle before the offense can feel settled.`,
-        `${team} still have people around the league staring at the edges of the line. The read is that ${side} settle tackle before the offense can really breathe.`,
-        `The tackle conversation is not leaving ${team} alone. Around the league, the expectation is that ${side} get steadier there before the offense feels fully built.`,
-      ], variantSeed + team.length);
+      return pickTemplate(phaseTemplates(seasonContext, {
+        early_regular: [
+          `${team} are already getting tackle chatter. Even this early, the league read is that ${side} prove the edge protection is good enough to stop dragging the offense back.${rookieOutlook}`,
+          `The league has not moved off the tackle question with ${team}, even in the early part of the year. The sense around it is that ${side} need cleaner answers on the edge before the offense really takes off.${rookieOutlook}`,
+        ],
+        late_regular: [
+          `Tackle is still one of the first things people bring up with ${team} heading into the stretch run. Around the league, the expectation is that ${side} show that room can hold up before the offense feels complete.${rookieOutlook}`,
+          `${team} are still getting real tackle chatter this late in the year. The league read is that ${side} need the edge protection to hold up if the offense is going to go anywhere.${rookieOutlook}`,
+        ],
+        postseason: [
+          `With more of the conversation turning toward next year, the tackle issue is still hanging over ${team}. Around the league, the expectation is that ${side} come out of this cycle with a clearer answer there.${rookieOutlook}`,
+          `The tackle conversation has not gone away for ${team}. The outside read is that ${side} need a more believable long-term answer on the edge.${rookieOutlook}`,
+        ],
+        default: [
+          `${team} are still getting real tackle chatter. The league read is that ${side} prove the edge protection is good enough to stop dragging the offense back.${rookieOutlook}`,
+          `The league has not moved off the tackle question with ${team}. The sense around it is that ${side} need cleaner answers on the edge before the offense really takes off.${rookieOutlook}`,
+          `Tackle is still one of the first things people bring up with ${team}. Around the league, the expectation is that ${side} show that room can hold up before the offense feels complete.${rookieOutlook}`,
+        ],
+      }), variantSeed + team.length);
     case 'WR':
       return pickTemplate([
-        `${team} are getting tied to help on the perimeter. Around the league, the feeling is that ${side} add another receiver who can actually change coverages.`,
-        `${team} keep getting linked to another real target outside. The league read is that ${side} find a receiver who changes the way defenses line up.`,
-        `There is still receiver smoke around ${team}. The outside view is that ${side} need one more pass-game piece who can tilt coverage.`,
+        `${team} keep drawing receiver chatter. Around the league, the feeling is that ${side} add one more target who can actually change coverage rules.`,
+        `${team} are still getting linked to another real perimeter threat. The read is that ${side} need a receiver defenses have to treat differently.`,
+        `Receiver help still follows ${team} in league talk. The outside view is that ${side} need one more pass-game piece who changes how teams line up.`,
       ], variantSeed + team.length);
     case 'RB':
     case 'HB':
       return pickTemplate([
-        `${team} are drawing quiet backfield questions. The read around the league is that ${side} find more explosive runner help before the offense feels complete.`,
-        `${team} still have a little backfield doubt hanging around them. The sense is that ${side} add more juice at running back before the offense feels whole.`,
-        `The runner room around ${team} is still getting a second look. Around the league, people think ${side} need more explosiveness there.`,
+        `${team} are still drawing backfield questions. Around the league, the read is that ${side} need more burst there before the offense feels complete.`,
+        `${team} keep getting tied to running back help. The sense is that ${side} need more juice in the run game than they have shown so far.`,
+        `The run-game conversation is still hanging around ${team}. The outside view is that ${side} could use a more explosive answer in the backfield.`,
       ], variantSeed + team.length);
     case 'TE':
       return pickTemplate([
@@ -540,41 +705,41 @@ function describePlayerChangeRumor(entry, coachTag) {
       'LB->DE': 'asking him to play more directly into the rush',
     }[moveKey];
     if (moveText) {
-      return `${teamLead} have ${entry.playerName} working at ${to} now, ${moveText}.`;
+      return `${entry.playerName} is now working at ${to} for ${teamLead}, and around the league that reads like ${moveText}.`;
     }
     if (['CB', 'FS', 'SS'].includes(to)) {
-      return `${teamLead} have ${entry.playerName} working in the secondary at ${to} now. Around the league, that usually reads like a coverage reshuffle.`;
+      return `${entry.playerName} is now working in the secondary at ${to} for ${teamLead}. Around the league, that usually gets read as a coverage reshuffle.`;
     }
     if (['LT', 'RT', 'LG', 'RG', 'C'].includes(to)) {
-      return `${teamLead} have ${entry.playerName} working at ${to} now. That kind of line shuffle usually means they are still searching for the right fit up front.`;
+      return `${entry.playerName} is now working at ${to} for ${teamLead}. That kind of line shuffle usually means they are still looking for the best fit up front.`;
     }
     if (['WR', 'TE', 'HB', 'RB', 'FB'].includes(to)) {
-      return `${teamLead} have ${entry.playerName} working at ${to} now. It looks like they are trying to find a cleaner offensive role for him.`;
+      return `${entry.playerName} is now working at ${to} for ${teamLead}. It looks like they are trying to carve out a cleaner offensive role for him.`;
     }
     if (['LE', 'RE', 'DE', 'EDGE', 'DT', 'LOLB', 'ROLB', 'MLB'].includes(to)) {
-      return `${teamLead} have ${entry.playerName} working at ${to} now. Around the league, that reads like a front-seven role adjustment.`;
+      return `${entry.playerName} is now working at ${to} for ${teamLead}. Around the league, that reads like a front-seven role adjustment.`;
     }
-    return `${teamLead} have ${entry.playerName} working at ${to} now. Around the league, that kind of position move usually gets noticed quickly.`;
+    return `${entry.playerName} is now working at ${to} for ${teamLead}. Around the league, that kind of position move usually gets noticed quickly.`;
   }
   if (top.label === 'Dev Trait') {
     const pos = String(entry.position || '').toUpperCase();
     if (pos === 'QB') {
-      return `${teamLead} are hearing a different level of buzz around ${entry.playerName}. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
+      return `${entry.playerName} is drawing a different level of buzz around the league for ${teamLead}. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
     }
     if (['WR', 'TE', 'HB', 'RB', 'FB'].includes(pos)) {
-      return `${teamLead} have more league buzz building around ${entry.playerName}. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
+      return `${entry.playerName} is getting more league buzz around ${teamLead}. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
     }
     if (['CB', 'FS', 'SS', 'LE', 'RE', 'DE', 'EDGE', 'DT', 'LOLB', 'ROLB', 'MLB'].includes(pos)) {
-      return `${teamLead} are hearing stronger evaluator buzz around ${entry.playerName}. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
+      return `${entry.playerName} is picking up stronger evaluator buzz around the league for ${teamLead}. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
     }
-    return `${teamLead} have a little more league buzz around ${entry.playerName} right now. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
+    return `${entry.playerName} has a little more league buzz around ${teamLead} right now. ${attributeStoryText(entry.position, top.label, 1, top.to)}`;
   }
   const from = Number(top.from);
   const to = Number(top.to);
   const delta = Number.isFinite(from) && Number.isFinite(to) ? to - from : 0;
   if (!delta) return null;
   const direction = delta > 0 ? '+' : '';
-  return `${teamLead} have ${entry.playerName} at ${top.label} ${direction}${delta} (${top.from}->${top.to}); ${attributeStoryText(entry.position, top.label, delta, top.to)}`;
+  return `${entry.playerName} is up ${direction}${delta} in ${top.label} (${top.from}->${top.to}) for ${teamLead}. ${attributeStoryText(entry.position, top.label, delta, top.to)}`;
 }
 
 function leagueKeyFromContext(ctx) {
@@ -600,9 +765,14 @@ function getRecentRecapStoryKeys(ctx, currentWeek) {
   const leagueHistory = Array.isArray(history?.[leagueKey]) ? history[leagueKey] : [];
   return new Set(
     leagueHistory
-      .filter((entry) => Number(entry?.week) !== Number(currentWeek))
-      .slice(-3)
-      .flatMap((entry) => entry?.storyKeys || [])
+      .slice(-4)
+      .flatMap((entry) => {
+        const direct = Array.isArray(entry?.storyKeys) ? entry.storyKeys : [];
+        const generations = Array.isArray(entry?.generations)
+          ? entry.generations.slice(-3).flatMap((generation) => generation?.storyKeys || [])
+          : [];
+        return [...direct, ...generations];
+      })
       .map((key) => String(key || '')),
   );
 }
@@ -631,12 +801,22 @@ function saveRecapStoryKeysForWeek(ctx, currentWeek, storyKeys = []) {
   const existing = leagueHistory.find((entry) => Number(entry?.week) === Number(currentWeek));
   if (existing) {
     existing.storyKeys = [...new Set((storyKeys || []).filter(Boolean).map((key) => String(key)))];
+    existing.generations = Array.isArray(existing.generations) ? existing.generations : [];
+    existing.generations.push({
+      ts: Date.now(),
+      storyKeys: [...new Set((storyKeys || []).filter(Boolean).map((key) => String(key)))],
+    });
+    existing.generations = existing.generations.slice(-6);
     existing.updatedAt = Date.now();
   } else {
     leagueHistory.push({
       week: Number(currentWeek),
       teams: [],
       storyKeys: [...new Set((storyKeys || []).filter(Boolean).map((key) => String(key)))],
+      generations: [{
+        ts: Date.now(),
+        storyKeys: [...new Set((storyKeys || []).filter(Boolean).map((key) => String(key)))],
+      }],
       updatedAt: Date.now(),
     });
   }
@@ -791,9 +971,11 @@ function listCompletedGames(league, weekIndex = null) {
   const scheduledGames = (league?.schedule?.schedules || []).filter((game) => {
     const stage = Number(game?.stageIndex ?? game?.stage ?? -1);
     const status = Number(game?.status ?? 0);
+    const awayScore = Number(game?.awayScore ?? 0);
+    const homeScore = Number(game?.homeScore ?? 0);
     const gameWeek = Number(game?.weekIndex ?? -1);
     const weekMatch = weekIndex == null ? true : gameWeek === weekIndex;
-    return [1, 2].includes(stage) && weekMatch && status >= 2;
+    return [1, 2].includes(stage) && weekMatch && status >= 2 && (awayScore > 0 || homeScore > 0);
   });
   if (scheduledGames.length) return scheduledGames;
 
@@ -1213,36 +1395,66 @@ function buildPhaseLanguage(seasonContext = {}) {
     return {
       recapIntro: `With the league still settling in through ${seasonContext.completedRegularWeeks || 0} games, the week felt more like an identity check than a final verdict.`,
       rumorFrame: 'It is still early enough that one result can shift the conversation fast.',
+      tradeHook: 'With the season still settling in, front offices can afford to think more about direction than desperation.',
+      trendHook: 'In the early part of the season, even small swings still change the conversation quickly.',
+      injuryHook: 'At this point in the year, even one absence can still reshape how a team wants to play.',
+      draftHook: 'It is still early, but league evaluators are already starting to connect roster flaws to next year’s class.',
     };
   }
   if (phase === 'mid_regular') {
     return {
       recapIntro: 'By the middle of the season, the league starts looking a lot less theoretical and a lot more honest.',
       rumorFrame: 'At this point in the season, trends stop feeling accidental.',
+      tradeHook: 'By the middle of the season, buy/sell posture gets a lot more real around the league.',
+      trendHook: 'At this point in the year, streaks start carrying more weight than excuses.',
+      injuryHook: 'In the middle of the season, injuries stop feeling temporary and start changing real plans.',
+      draftHook: 'Even with games still shaping the standings, the mock-draft lens is already influencing league conversations.',
     };
   }
   if (phase === 'late_regular') {
     return {
       recapIntro: 'With the stretch run underway, every result is starting to carry playoff weight or draft-position fallout.',
       rumorFrame: 'This late in the year, the league is reading everything through pressure, urgency, and leverage.',
+      tradeHook: 'This late in the season, every roster conversation gets filtered through playoff pressure or draft positioning.',
+      trendHook: 'At this point in the year, every run or skid carries playoff weight or draft fallout.',
+      injuryHook: 'This late in the calendar, one injury can swing seeding, urgency, or roster plans immediately.',
+      draftHook: 'With the stretch run here, mock-draft talk gets sharper because teams are already being sorted by pressure and draft position.',
     };
   }
   if (phase === 'postseason') {
     return {
       recapIntro: 'With the postseason lens on everything now, even league chatter starts sounding sharper.',
       rumorFrame: 'In the postseason window, the conversation naturally shifts toward pressure, roster direction, and what comes next.',
+      tradeHook: 'In the postseason window, even trade talk tends to sound more like an early look at what comes next.',
+      trendHook: 'Once the postseason arrives, every league conversation starts leaning into pressure, exit questions, and next steps.',
+      injuryHook: 'In the postseason window, availability questions get magnified immediately.',
+      draftHook: 'With the postseason underway, more of the league starts looking ahead to the draft and roster reset season.',
     };
   }
   return {
     recapIntro: 'With the calendar flipped to offseason mode, the league conversation moves from results to roster building.',
     rumorFrame: 'This part of the cycle is more about roster direction, draft posture, and who is positioning to move next.',
+    tradeHook: 'In the offseason, roster direction matters more than week-to-week urgency.',
+    trendHook: 'With games out of the way, the conversation shifts from streaks to roster outlook.',
+    injuryHook: 'In the offseason, injuries matter mostly for timeline, recovery, and next-year planning.',
+    draftHook: 'This is the part of the cycle when mock-draft noise really starts to harden into team expectations.',
   };
+}
+
+function phaseKey(seasonContext = {}) {
+  return seasonContext?.phase || 'offseason';
+}
+
+function phaseTemplates(seasonContext = {}, variants = {}) {
+  const key = phaseKey(seasonContext);
+  return variants[key] || variants.default || [];
 }
 
 function buildMockDraftSignals(ctx, limit = 3) {
   const draftPlayers = ctx?.draftClassInfo?.players || [];
   if (!draftPlayers.length) return [];
   const seasonYear = getUpcomingDraftYear(ctx.league);
+  const seasonContext = ctx?.seasonContext || {};
   const order = applyPickTrades(draftOrder(ctx.league), seasonYear).slice(0, Math.max(limit * 2, 8));
   const signals = [];
   for (const pick of order) {
@@ -1253,15 +1465,127 @@ function buildMockDraftSignals(ctx, limit = 3) {
     const prospect = chooseProspectForNeed(primaryNeed, draftPlayers);
     if (!prospect) continue;
     const pickLabel = pick.pickNum ? `No. ${pick.pickNum}` : `Round ${pick.round}`;
+    const needLabel = formatNeedLabel(primaryNeed).toLowerCase();
+    const needReason = buildNeedReason(primaryNeed);
+    const teamSeed = `${team}:${pickLabel}:${prospect.name}:${primaryNeed}`;
+    const templates = phaseTemplates(seasonContext, {
+      early_regular: [
+        `Early mock chatter has ${team} tied to ${prospect.name} (${prospect.position}) at ${pickLabel}. Even this early, the league read is that they may end up targeting ${needLabel} because ${needReason}.`,
+        `${team} are already getting connected to ${prospect.name} (${prospect.position}) at ${pickLabel} in early mock-draft talk. The reason is simple: ${needReason}.`,
+      ],
+      mid_regular: [
+        `The latest mock draft has ${team} taking ${prospect.name} (${prospect.position}) at ${pickLabel}. Around the league, the expectation is that they target ${needLabel} because ${needReason}.`,
+        `${team} keep getting paired with ${prospect.name} (${prospect.position}) at ${pickLabel} in mock chatter. Evaluators around the league still expect them to attack ${needLabel} because ${needReason}.`,
+      ],
+      late_regular: [
+        `Stretch-run mock chatter has ${team} tied to ${prospect.name} (${prospect.position}) at ${pickLabel}. With the board starting to tighten up, the expectation is that they address ${needLabel} because ${needReason}.`,
+        `As the draft order starts to come into view, ${team} keep getting linked to ${prospect.name} (${prospect.position}) at ${pickLabel}. The logic still comes back to this: ${needReason}.`,
+      ],
+      postseason: [
+        `With more of the league already looking ahead, ${team} are being tied to ${prospect.name} (${prospect.position}) at ${pickLabel}. The expectation is that they address ${needLabel} because ${needReason}.`,
+        `Postseason mock chatter has started connecting ${team} to ${prospect.name} (${prospect.position}) at ${pickLabel}. Around the league, the fit makes sense because ${needReason}.`,
+      ],
+      default: [
+        `There is growing mock-draft buzz around ${team} and ${prospect.name} (${prospect.position}) at ${pickLabel}. The expectation is that they address ${needLabel} because ${needReason}.`,
+        `League mock-draft talk keeps circling ${team} back to ${prospect.name} (${prospect.position}) at ${pickLabel}. The logic is straightforward: ${needReason}.`,
+      ],
+    });
     signals.push({
       team,
       prospect,
-      text: `The latest mock draft has ${team} taking ${prospect.name} (${prospect.position}) at ${pickLabel}.`,
+      text: seededText(`mock:${teamSeed}`, templates, {}),
       key: `mock:${team}:${pickLabel}`,
+      category: 'draft',
     });
     if (signals.length >= limit) break;
   }
   return signals;
+}
+
+function buildRookieDevelopmentSignals(ctx, limit = 4) {
+  const rosterTeams = ctx?.league?.rosters?.teams || {};
+  const seasonContext = ctx?.seasonContext || {};
+  const candidates = [];
+  const leagueTop = Array.isArray(ctx?.top100) ? ctx.top100 : [];
+
+  for (const [teamIdRaw, rosterTeam] of Object.entries(rosterTeams)) {
+    const teamId = Number(teamIdRaw);
+    const team = ctx?.teams?.get(teamId);
+    if (!team) continue;
+    const teamKey = normalizeName(team);
+    const teamNeeds = ctx?.needs?.[teamKey] || [];
+    const roster = rosterTeam?.rosterInfoList || rosterTeam?.rosterPlayerInfoList || [];
+    const rookies = roster
+      .filter((player) => player?.isRookie === true || Number(player?.yearsPro ?? -1) === 0)
+      .map((player) => {
+        const name = `${player?.firstName || ''} ${player?.lastName || ''}`.trim() || player?.displayName || 'Unknown';
+        const position = String(player?.position || '').toUpperCase();
+        const overall = Number(player?.playerBestOvr || player?.teamSchemeOvr || player?.overallRating || 0);
+        const devTrait = Number(player?.devTrait ?? player?.developmentTrait ?? 0);
+        const topMatch = leagueTop.find((entry) =>
+          normalizeName(entry?.team || '') === teamKey &&
+          normalizeName(entry?.name || '') === normalizeName(name),
+        );
+        let score = overall;
+        if (devTrait >= 3) score += 20;
+        else if (devTrait === 2) score += 14;
+        else if (devTrait === 1) score += 8;
+        if (topMatch) score += 18 + Number(topMatch?.grade || 0) * 0.08;
+        if (teamNeeds.includes(position)) score += 12;
+        if ((position === 'LT' || position === 'RT') && (teamNeeds.includes('OT') || teamNeeds.includes('IOL'))) score += 12;
+        if (['QB', 'WR', 'CB', 'LT', 'RT', 'EDGE', 'LE', 'RE', 'DT'].includes(position)) score += 5;
+        return { name, position, overall, devTrait, topMatch, score };
+      })
+      .filter((player) => player.overall >= 68 || player.topMatch || player.devTrait >= 1)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 2);
+
+    if (!rookies.length) continue;
+    const rookie = rookies[0];
+    const coachTag = coachMentionFor(team, ctx.teamCoachMentions);
+    const coachLead = coachTag ? `${coachTag} and ` : '';
+    const needLabel = formatNeedLabel(teamNeeds[0] || rookie.position).toLowerCase();
+    const boost = rookie.topMatch ? 8 : 0;
+    const templates = phaseTemplates(seasonContext, {
+      early_regular: [
+        `{coachLead}{team} already have people watching how fast rookie {name} ({position}) comes along. It matters because {needLabel} still sits close to the front of the roster conversation.`,
+        `There is already real developmental attention on {team} rookie {name} ({position}). Around the league, the question is how quickly he can turn into a believable answer at {needLabel}.`,
+      ],
+      mid_regular: [
+        `{coachLead}{team} are carrying more rookie-development talk around {name} ({position}) now. The league read is that his growth could change how urgent the {needLabel} conversation feels.`,
+        `The developmental buzz around {team} rookie {name} ({position}) is getting louder. If he comes fast, the whole read on their {needLabel} room changes.`,
+      ],
+      late_regular: [
+        `Late in the year, one quiet question around {team} is how much they trust rookie {name} ({position}) to be part of the answer at {needLabel}.`,
+        `As the season tightens up, league eyes keep drifting back to {team} rookie {name} ({position}) and whether that development curve is moving fast enough at {needLabel}.`,
+      ],
+      postseason: [
+        `With more teams already thinking ahead, {team} are getting extra rookie-development chatter around {name} ({position}). If he is a real answer at {needLabel}, it changes part of their offseason math.`,
+        `{coachLead}{team} have one young development thread people keep bringing up: rookie {name} ({position}) and whether he can become a cleaner answer at {needLabel}.`,
+      ],
+      default: [
+        `There is real rookie-development chatter around {team} and {name} ({position}). The question is whether he becomes a believable answer at {needLabel} fast enough to change the roster plan.`,
+        `{coachLead}{team} keep drawing quiet developmental buzz around rookie {name} ({position}). If that curve keeps moving, the {needLabel} discussion changes with it.`,
+      ],
+    });
+
+    candidates.push({
+      score: 80 + boost + Math.floor(rookie.score / 10),
+      text: seededText(`rookie-dev:${team}:${rookie.name}:${seasonContext.phase || 'offseason'}`, templates, {
+        coachLead,
+        team,
+        name: rookie.name,
+        position: rookie.position,
+        needLabel,
+      }),
+      key: `rookie_dev:${team}:${rookie.name}`,
+      category: 'rookie_development',
+    });
+  }
+
+  return candidates
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
 }
 
 async function collectThreadParticipation(client, guild, threadInfo) {
@@ -1338,12 +1662,15 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
   const variantSeed = Number(options.variantSeed ?? 0);
   const recentStoryKeys = new Set((options.recentStoryKeys || []).map((key) => String(key || '')));
   const recentCategories = new Set((options.recentCategories || []).map((category) => String(category || '')));
+  const deniedKeys = options.deniedKeys || {};
+  const deniedCategories = options.deniedCategories || {};
   const completedWeek = latestCompletedWeek(ctx.league);
   const recentForm = buildRecentForm(ctx.league);
   const draftYear = getUpcomingDraftYear(ctx.league);
   const seasonContext = ctx.seasonContext || {};
   const phaseLanguage = buildPhaseLanguage(seasonContext);
-  const mockSignals = buildMockDraftSignals(ctx, 3);
+  const mockSignals = buildMockDraftSignals(ctx, 5);
+  const rookieDevelopmentSignals = buildRookieDevelopmentSignals(ctx, 5);
   const profileFor = (team) => buildFranchiseProfile(ctx.franchiseProfileContext, team);
   const add = (score, text, key, category = 'misc') => items.push({ score, text, key, category });
 
@@ -1366,9 +1693,9 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
           (strongRise ? 78 : 72) + delta,
           strongRise
             ? seededText(`rise:${team}:strong:${variantSeed}`, [
-                `{coachLead}{team} are climbing. The move from {prevRecord} to {record} has people around the league treating them more seriously.`,
-                `{team} are building more real momentum now. Going from {prevRecord} to {record} is enough to sharpen the league conversation.`,
-                `{coachLead}{team} pushed themselves into a more serious light this week. The jump from {prevRecord} to {record} landed around the league.`,
+                `{coachLead}{team} are starting to get taken more seriously around the league. The move from {prevRecord} to {record} changed the conversation.`,
+                `{team} are building real momentum now. Going from {prevRecord} to {record} was enough to put them in a different light around the league.`,
+                `{coachLead}{team} changed the tone around themselves this week. The jump from {prevRecord} to {record} landed with people paying attention.`,
               ], {
                 coachLead: coachTag ? `${coachTag} and ` : '',
                 team,
@@ -1376,10 +1703,10 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
                 record: formatRecord(standing),
               })
             : seededText(`rise:${team}:mild:${variantSeed}`, [
-                `{coachLead}{team} picked up a useful step this week, moving from {prevRecord} to {record}.`,
-                `{team} nudged themselves in a better direction, moving from {prevRecord} to {record}.`,
-                `The week treated {team} a little better, with the record shifting from {prevRecord} to {record}.`,
-                `{team} came out of the week looking slightly healthier, shifting from {prevRecord} to {record}.`,
+                `{coachLead}{team} moved themselves the right way this week, going from {prevRecord} to {record}.`,
+                `{team} gave themselves a slightly better profile this week, moving from {prevRecord} to {record}.`,
+                `{team} came out of the week in a better spot, with the record shifting from {prevRecord} to {record}.`,
+                `{coachLead}{team} bought themselves a little more breathing room this week, moving from {prevRecord} to {record}.`,
               ], {
                 coachLead: coachTag ? `${coachTag} and ` : '',
                 team,
@@ -1396,9 +1723,9 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
           (hardSlide ? 84 : 74) + Math.abs(delta),
           hardSlide
             ? seededText(`slide:${team}:hard:${variantSeed}`, [
-                `{coachLead}{team} are slipping. The drop from {prevRecord} to {record} is creating more pressure than anyone there would want.`,
-                `{team} took another hit, moving from {prevRecord} to {record}, and the pressure is building now.`,
-                `{coachLead}{team} are taking on more heat now. The move from {prevRecord} to {record} made the week feel heavier around them.`,
+                `{coachLead}{team} are under more pressure now. The drop from {prevRecord} to {record} made the temperature rise around them.`,
+                `{team} took another hit, moving from {prevRecord} to {record}, and the pressure is starting to feel real.`,
+                `{coachLead}{team} are carrying more heat now. The move from {prevRecord} to {record} made the week feel heavier fast.`,
               ], {
                 coachLead: coachTag ? `${coachTag} and ` : '',
                 team,
@@ -1406,10 +1733,10 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
                 record: formatRecord(standing),
               })
             : seededText(`slide:${team}:mild:${variantSeed}`, [
-                `{coachLead}{team} took a step back this week, sliding from {prevRecord} to {record}.`,
-                `{team} gave back a little ground, moving from {prevRecord} to {record}.`,
-                `The week pushed {team} the wrong way, with the record moving from {prevRecord} to {record}.`,
-                `{team} left the week a little worse off, slipping from {prevRecord} to {record}.`,
+                `{coachLead}{team} took a small step back this week, slipping from {prevRecord} to {record}.`,
+                `{team} gave back some ground, moving from {prevRecord} to {record}.`,
+                `{team} left the week with a slightly worse profile, sliding from {prevRecord} to {record}.`,
+                `{coachLead}{team} came out of the week with a little less room than before, moving from {prevRecord} to {record}.`,
               ], {
                 coachLead: coachTag ? `${coachTag} and ` : '',
                 team,
@@ -1439,13 +1766,14 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       add(
         86 + openTradeCount,
         seededText(`buyer:${team}:${variantSeed}`, [
-          `{coachLead}{team} are getting buyer buzz. The record says push, and the rest of the league expects them to stay aggressive.`,
-          `{coachLead}{team} keep drawing buy-now chatter. Around the league, this is being read like a team that should add, not wait.`,
-          `{coachLead}{team} are being talked about like buyers. The combination of record and timing makes them look more aggressive than patient.`,
-          `{team} keep getting read through a buy-now lens. Around the league, the expectation is that this is a team more likely to add than sit still.`,
+          `{coachLead}{team} are getting buyer buzz. {phaseHook} The record says push, and people around the league expect them to stay aggressive.`,
+          `{coachLead}{team} keep drawing buy-now chatter. {phaseHook} This is being read like a team that should add, not wait.`,
+          `{coachLead}{team} are being talked about like buyers. {phaseHook} The combination of record and timing makes them look more aggressive than patient.`,
+          `{team} keep getting viewed through a buy-now lens. {phaseHook} The expectation around the league is that they are more likely to add than sit still.`,
         ], {
           coachLead: coachTag ? `${coachTag} and ` : '',
           team,
+          phaseHook: phaseLanguage.tradeHook,
         }),
         `buyer:${team}`,
         'trade',
@@ -1455,20 +1783,21 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       add(
         85 + openTradeCount,
         seededText(`seller:${team}:${variantSeed}`, [
-          `{coachLead}{team} are drawing seller chatter. The record is forcing the question, and rival teams are waiting to see if a veteran hits the market.`,
-          `{coachLead}{team} keep getting pulled into seller talk. At this point, the rest of the league is watching for a veteran to shake loose.`,
-          `Around the league, {team} are starting to sound like a team that may have to sell. The record is putting real pressure on that call.`,
-          `{team} have started to sound more like a sell-side team in league conversation. The record is making that discussion harder to avoid.`,
+          `{coachLead}{team} are drawing seller chatter. {phaseHook} The record is forcing that conversation, and rival teams are watching to see whether a veteran shakes loose.`,
+          `{coachLead}{team} keep getting pulled into sell-side talk. {phaseHook} The rest of the league is waiting to see if they move a veteran piece.`,
+          `{team} are starting to sound like a team that may have to sell. {phaseHook} The record is putting real pressure on that call.`,
+          `{team} are being discussed more like a seller now. {phaseHook} The record is making that conversation harder to avoid.`,
         ], {
           coachLead: coachTag ? `${coachTag} and ` : '',
           team,
+          phaseHook: phaseLanguage.tradeHook,
         }),
         `seller:${team}`,
         'trade',
       );
     }
     if (losses >= 3 && ['QB', 'OT', 'CB', 'EDGE'].includes(needs[0])) {
-      add(80, describeNeedPressureRumor(team, coachTag, needs[0], variantSeed), `pressure:${team}`, 'pressure');
+      add(80, describeNeedPressureRumor(team, coachTag, needs[0], variantSeed, ctx), `pressure:${team}`, 'pressure');
     }
   }
 
@@ -1484,8 +1813,8 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       add(
         79,
         seededText(`identity:win_now:${team}:${variantSeed}`, [
-          `{coachLead}{team} still look like a win-now roster. Around the league, the expectation is that they patch live holes instead of sitting on their hands.`,
-          `{team} continue to read like a win-now build. People around the league expect them to treat weak spots like urgent ones, not future problems.`,
+          `{coachLead}{team} still look like a win-now roster. The expectation around the league is that they patch live holes instead of sitting on their hands.`,
+          `{team} still read like a win-now build. Around the league, people expect them to treat weak spots like urgent ones, not future problems.`,
         ], { coachLead, team }),
         `identity:${team}:win_now`,
         'identity',
@@ -1496,7 +1825,7 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       add(
         76,
         seededText(`identity:capital:${team}:${variantSeed}`, [
-          `{coachLead}{team} have enough draft leverage to stay patient. The read around the league is that they do not need to force a move unless it clearly improves the roster.`,
+          `{coachLead}{team} have enough draft leverage to stay patient. The read around the league is that they do not need to force a move unless it clearly upgrades the roster.`,
           `{team} keep getting framed as a capital-rich roster. That gives them more patience than most teams around them.`,
         ], { coachLead, team }),
         `identity:${team}:capital`,
@@ -1520,9 +1849,9 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       add(
         74,
         seededText(`trade_posture:hold:${team}:${variantSeed}`, [
-          `{coachLead}{team} are getting read more as a selective hold than an all-in push. If they move, it will probably have to clearly improve {need}.`,
-          `Around the league, {team} are not being treated like a desperate market team. If they act, it likely has to be for a real {need} answer.`,
-        ], { coachLead, team, need: topNeed }),
+          `{coachLead}{team} are getting read more as a selective hold than an all-in push. {phaseHook} If they move, it will probably have to clearly improve {need}.`,
+          `Around the league, {team} are not being treated like a desperate market team. {phaseHook} If they act, it likely has to be for a real {need} answer.`,
+        ], { coachLead, team, need: topNeed, phaseHook: phaseLanguage.tradeHook }),
         `trade_posture:${team}:hold`,
         'trade_posture',
       );
@@ -1532,11 +1861,11 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       add(
         82,
         seededText(`trade_posture:sell:${team}:${variantSeed}`, [
-          `{coachLead}{team} are getting stronger sell-side noise. The cleanest read is that expiring veterans matter less than getting younger at {need} or {need2}.`,
-          `{team} continue to draw seller chatter. Around the league, the expectation is that they listen on expiring vets and look for younger answers at {need}.`,
-          `{coachLead}{team} are starting to feel more like a seller than a holder. The cleaner league read is that younger answers at {need} matter more than hanging onto expiring veterans.`,
-          `The market tone around {team} keeps bending sell-side. Around the league, the expectation is that they at least listen if a move helps them get younger at {need} or {need2}.`,
-        ], { coachLead, team, need: topNeed, need2: secondNeed }),
+          `{coachLead}{team} are getting stronger sell-side noise. {phaseHook} The cleanest read is that expiring veterans matter less than getting younger at {need} or {need2}.`,
+          `{team} continue to draw seller chatter. {phaseHook} The expectation around the league is that they listen on expiring vets and look for younger answers at {need}.`,
+          `{coachLead}{team} are starting to feel more like a seller than a holder. {phaseHook} The cleaner league read is that younger answers at {need} matter more than hanging onto expiring veterans.`,
+          `The market tone around {team} keeps bending sell-side. {phaseHook} The expectation is that they at least listen if a move helps them get younger at {need} or {need2}.`,
+        ], { coachLead, team, need: topNeed, need2: secondNeed, phaseHook: phaseLanguage.tradeHook }),
         `trade_posture:${team}:sell`,
         'trade_posture',
       );
@@ -1546,9 +1875,9 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       add(
         81,
         seededText(`trade_posture:buy:${team}:${variantSeed}`, [
-          `{coachLead}{team} are still getting buyer noise, but the cleaner expectation is one real move at {need}, not a scattershot push.`,
-          `The market read on {team} is still buyer-leaning. The better fit sounds like one meaningful {need} move, not volume for the sake of volume.`,
-        ], { coachLead, team, need: topNeed }),
+          `{coachLead}{team} are still getting buyer noise, but {phaseHook} the cleaner expectation is one real move at {need}, not a scattershot push.`,
+          `The market read on {team} is still buyer-leaning. {phaseHook} The better fit sounds like one meaningful {need} move, not volume for the sake of volume.`,
+        ], { coachLead, team, need: topNeed, phaseHook: phaseLanguage.tradeHook }),
         `trade_posture:${team}:buy`,
         'trade_posture',
       );
@@ -1571,7 +1900,7 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
         86 + Number(profile.accountability.consecutiveSilentWeeks || 0),
         seededText(`silent:${team}:${variantSeed}`, [
           `{coachLead}{team} are drawing more communication heat now. The thread silence is starting to matter as much as the standings.`,
-          `Communication around {team} is getting watched more closely now. Silence in game threads travels quickly around the league.`,
+          `Communication around {team} is getting watched more closely now. Silence in game threads travels fast around the league.`,
         ], { coachLead, team }),
         `silent:${team}`,
         'accountability',
@@ -1580,7 +1909,7 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
 
     if (profile.awardLine) {
       add(
-        77,
+        83,
         seededText(`award:${team}:${variantSeed}`, [
           `{awardLine}`,
           `One quieter league note: {awardLine}`,
@@ -1602,14 +1931,15 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       if (form.wins >= 2) add(
         82 + form.wins,
         seededText(`run:${team}:${variantSeed}`, [
-          `{coachLead}{team} rolling. {wins} straight wins and a {margin} scoring margin over that stretch is the kind of form people notice.`,
-          `{team} have put together a real run. {wins} straight and a {margin} point differential over that stretch will get the league talking.`,
-          `The noise around {team} is getting louder for a reason. {wins} straight wins with that kind of scoring margin reads like a team finding itself.`,
+          `{coachLead}{team} are getting hot at the right time. {trendHook} {wins} straight wins and a {margin} scoring margin over that stretch is the kind of run people notice.`,
+          `{team} have put together a real stretch. {trendHook} {wins} straight and a {margin} point differential over that run will get the league talking.`,
+          `The noise around {team} is getting louder for a reason. {trendHook} {wins} straight wins with that kind of scoring margin reads like a team finding something.`,
         ], {
           coachLead: coachTag ? `${coachTag} have ` : '',
           team,
           wins: form.wins,
           margin,
+          trendHook: phaseLanguage.trendHook,
         }),
         `run:${team}`,
         'trend_up',
@@ -1617,14 +1947,15 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       if (form.losses >= 2) add(
         88 + form.losses,
         seededText(`cold:${team}:${variantSeed}`, [
-          `{coachLead}{team} drop {losses} straight while getting outscored by {margin}. The urgency is real.`,
-          `{team} are sliding. {losses} straight losses and a {margin} point swing over that stretch is the kind of skid people feel quickly.`,
-          `The tone around {team} has changed. {losses} straight losses while getting outscored by {margin} will do that.`,
+          `{coachLead}{team} have dropped {losses} straight while getting outscored by {margin}. {trendHook} The urgency around them is real now.`,
+          `{team} are sliding. {trendHook} {losses} straight losses and a {margin} point swing over that stretch is the kind of skid people feel quickly.`,
+          `The tone around {team} has changed. {trendHook} {losses} straight losses while getting outscored by {margin} will do that.`,
         ], {
           coachLead: coachTag ? `${coachTag} just watched ` : '',
           team,
           losses: form.losses,
           margin: Math.abs(margin),
+          trendHook: phaseLanguage.trendHook,
         }),
         `cold:${team}`,
         'trend_down',
@@ -1640,7 +1971,7 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
   if (qbBuzz) add(90, `${coachMentionFor(qbBuzz.team, ctx.teamCoachMentions) ? `${coachMentionFor(qbBuzz.team, ctx.teamCoachMentions)} and ` : ''}${describePerformanceRumor(qbBuzz, 'heat')}`, `player:${qbBuzz.name}`, 'player_heat');
   if (wrBuzz) add(83, `${coachMentionFor(wrBuzz.team, ctx.teamCoachMentions) ? `${coachMentionFor(wrBuzz.team, ctx.teamCoachMentions)} and ` : ''}${describePerformanceRumor(wrBuzz, 'heat')}`, `player:${wrBuzz.name}`, 'player_heat');
   if (edgeBuzz) add(79, `${coachMentionFor(edgeBuzz.team, ctx.teamCoachMentions) ? `${coachMentionFor(edgeBuzz.team, ctx.teamCoachMentions)} and ` : ''}${describePerformanceRumor(edgeBuzz, 'heat')}`, `player:${edgeBuzz.name}`, 'player_heat');
-  if (rookieBuzz) add(84, `${coachMentionFor(rookieBuzz.team, ctx.teamCoachMentions) ? `${coachMentionFor(rookieBuzz.team, ctx.teamCoachMentions)} and ` : ''}${rookieBuzz.team} have a young name turning into real conversation with ${rookieBuzz.name}. When a rookie starts stacking ${formatGrade(rookieBuzz.grade)}-level weeks, people notice fast.`, `rookie:${rookieBuzz.name}`, 'player_heat');
+  if (rookieBuzz) add(92, `${coachMentionFor(rookieBuzz.team, ctx.teamCoachMentions) ? `${coachMentionFor(rookieBuzz.team, ctx.teamCoachMentions)} and ` : ''}${rookieBuzz.team} have a young name turning into real conversation with ${rookieBuzz.name}. When a rookie starts stacking ${formatGrade(rookieBuzz.grade)}-level weeks, people notice fast.`, `rookie:${rookieBuzz.name}`, 'player_heat');
 
   const roughLeaguePlayers = ctx.top100
     .slice()
@@ -1766,7 +2097,17 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
   }
 
   for (const signal of mockSignals) {
-    add(78, `${phaseLanguage.rumorFrame} ${signal.text}`, signal.key, 'draft');
+    const scoreBoost =
+      seasonContext.phase === 'late_regular' ? 10 :
+      seasonContext.phase === 'postseason' ? 12 :
+      seasonContext.phase === 'offseason' ? 14 :
+      seasonContext.phase === 'mid_regular' ? 8 :
+      6;
+    add(82 + scoreBoost, `${phaseLanguage.rumorFrame} ${signal.text}`, signal.key, 'draft');
+  }
+
+  for (const signal of rookieDevelopmentSignals) {
+    add(signal.score, `${phaseLanguage.rumorFrame} ${signal.text}`, signal.key, signal.category);
   }
 
   for (const [teamIdRaw, roster] of Object.entries(ctx.league?.rosters?.teams || {})) {
@@ -1782,9 +2123,9 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
     add(
       81,
       pickTemplate([
-        `${coachTag ? `${coachTag} and ` : ''}${team} have an availability variable to manage. ${name} is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning.`,
-        `${coachTag ? `${coachTag} and ` : ''}${team} now have an availability issue hanging over the week. Losing ${name} can change how snaps, touches, or short-term roster choices get handled.`,
-        `${team} also left the week with a personnel problem to sort through. ${name} is the kind of absence that can bend usage and short-term planning pretty quickly.`,
+        `${coachTag ? `${coachTag} and ` : ''}${team} have an availability variable to manage. ${phaseLanguage.injuryHook} ${name} is the kind of loss that can force a short-term pivot in touches, snaps, or roster planning.`,
+        `${coachTag ? `${coachTag} and ` : ''}${team} now have an availability issue hanging over the week. ${phaseLanguage.injuryHook} Losing ${name} can change how snaps, touches, or short-term roster choices get handled.`,
+        `${team} also left the week with a personnel problem to sort through. ${phaseLanguage.injuryHook} ${name} is the kind of absence that can bend usage and short-term planning pretty quickly.`,
       ], variantSeed + team.length),
       `injury:${team}:${name}`,
       'injury',
@@ -1800,6 +2141,7 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
         trade_posture: 2,
         accountability: 1,
         awards: 1,
+        rookie_development: 2,
         player_heat: 2,
         player_change: 1,
         player_struggle: 1,
@@ -1812,11 +2154,12 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       : {
         trade: 3,
         scouting: 2,
-        draft: seasonContext.phase === 'late_regular' || seasonContext.phase === 'postseason' ? 2 : 1,
+        draft: seasonContext.phase === 'late_regular' || seasonContext.phase === 'postseason' ? 3 : 2,
         identity: 2,
         trade_posture: 2,
         accountability: 1,
         awards: 1,
+        rookie_development: seasonContext.phase === 'early_regular' ? 1 : 2,
         player_heat: 3,
         player_change: 1,
         player_struggle: 2,
@@ -1828,8 +2171,20 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       };
   const dedupedItems = items
     .sort((a, b) => {
-      const aPenalty = (recentStoryKeys.has(String(a?.key || '')) ? 18 : 0) + (recentCategories.has(String(a?.category || '')) ? 6 : 0);
-      const bPenalty = (recentStoryKeys.has(String(b?.key || '')) ? 18 : 0) + (recentCategories.has(String(b?.category || '')) ? 6 : 0);
+      const aKey = String(a?.key || '');
+      const bKey = String(b?.key || '');
+      const aCategory = rumorCategoryFamily(a?.category);
+      const bCategory = rumorCategoryFamily(b?.category);
+      const aPenalty =
+        (recentStoryKeys.has(aKey) ? 100 : 0) +
+        (recentCategories.has(aCategory) ? 24 : 0) +
+        Math.min(60, Number(deniedKeys[aKey] || 0) * 18) +
+        Math.min(36, Number(deniedCategories[aCategory] || 0) * 10);
+      const bPenalty =
+        (recentStoryKeys.has(bKey) ? 100 : 0) +
+        (recentCategories.has(bCategory) ? 24 : 0) +
+        Math.min(60, Number(deniedKeys[bKey] || 0) * 18) +
+        Math.min(36, Number(deniedCategories[bCategory] || 0) * 10);
       return (b.score - bPenalty) - (a.score - aPenalty);
     })
     .filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index);
@@ -1841,12 +2196,21 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
 
   const categoryCounts = new Map();
   const selected = [];
+  const preferredCategories = ['draft', 'rookie_development', 'player_heat', 'trade', 'trade_posture', 'pressure', 'injury', 'player_change', 'trend_up', 'trend_down'];
+  for (const category of preferredCategories) {
+    if (selected.length >= limit) break;
+    const item = orderedPool.find((entry) => rumorCategoryFamily(entry.category) === category && !selected.some((picked) => picked.key === entry.key));
+    if (!item) continue;
+    selected.push(item);
+    categoryCounts.set(rumorCategoryFamily(item.category), 1);
+  }
   for (const item of orderedPool) {
-    const count = categoryCounts.get(item.category) || 0;
-    const cap = categoryCaps[item.category] ?? 1;
+    const family = rumorCategoryFamily(item.category);
+    const count = categoryCounts.get(family) || 0;
+    const cap = categoryCaps[family] ?? 1;
     if (count >= cap) continue;
     selected.push(item);
-    categoryCounts.set(item.category, count + 1);
+    categoryCounts.set(family, count + 1);
     if (selected.length >= limit) break;
   }
 
@@ -1858,7 +2222,10 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
     }
   }
 
-  return selected.map((item) => ({ ...item }));
+  return selected.map((item) => ({
+    ...item,
+    text: tagParagraphFirstMentions(item.text, ctx.teamCoachMentions, ctx.teams.values()),
+  }));
 }
 
 export function buildWeeklyRecapData(ctx, options = {}) {
@@ -2033,18 +2400,18 @@ export function buildWeeklyRecapData(ctx, options = {}) {
     : (gameStoryEntries.length ? gameStoryEntries.slice(0, 2).map((story) => story.text).join(' ') : null);
   const notebookParagraph = notebook.length
     ? pickTemplate([
-      `Around the league, ${notebook.join(' ')}`,
-      `${notebook.join(' ')} Those shifts gave the standings a little more shape coming out of the week.`,
-      `Not every story came from the headline game. ${notebook.join(' ')}`,
+      `Around the league, ${joinStoryTexts(notebook, `notebook:${currentWeek}:${variantSeed}`)}`,
+      `${joinStoryTexts(notebook, `notebook:${currentWeek}:${variantSeed}`)} Those shifts gave the standings a little more shape coming out of the week.`,
+      `Not every story came from the headline game. ${joinStoryTexts(notebook, `notebook:${currentWeek}:${variantSeed}`)}`,
     ], currentWeek + 3 + variantSeed)
     : null;
   const storylineParagraph = storylineEntries.length
     ? pickTemplate([
-      `The week also pushed a few league conversations forward. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
-      `Away from the scores, the week picked up a few more layers. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
-      `The scoreboard was only part of it. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
-      `Not all of the week’s movement showed up in the final scores. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
-      `Around the league, the week had a little more texture than the box scores alone would say. ${storylineEntries.map((entry) => entry.text).join(' ')}`,
+      `The week also pushed a few league conversations forward. ${joinStoryTexts(storylineEntries, `storylines:${currentWeek}:${variantSeed}`)}`,
+      `Away from the scores, the week picked up a few more layers. ${joinStoryTexts(storylineEntries, `storylines:${currentWeek}:${variantSeed}`)}`,
+      `The scoreboard was only part of it. ${joinStoryTexts(storylineEntries, `storylines:${currentWeek}:${variantSeed}`)}`,
+      `Not all of the week’s movement showed up in the final scores. ${joinStoryTexts(storylineEntries, `storylines:${currentWeek}:${variantSeed}`)}`,
+      `Around the league, the week had a little more texture than the box scores alone would say. ${joinStoryTexts(storylineEntries, `storylines:${currentWeek}:${variantSeed}`)}`,
     ], currentWeek + 5 + variantSeed)
     : null;
   const draftParagraph = mockSignals.length
@@ -2058,11 +2425,11 @@ export function buildWeeklyRecapData(ctx, options = {}) {
     : null;
   const buzzParagraph = watchList.length
     ? pickTemplate([
-      `${watchList.join(' ')}`,
-      `A couple side stories also stuck to the week. ${watchList.join(' ')}`,
-      `The week left some extra noise behind it too. ${watchList.join(' ')}`,
-      `A few smaller threads are still hanging in the air coming out of this one. ${watchList.join(' ')}`,
-      `There was still a little extra league buzz around the edges of the week. ${watchList.join(' ')}`,
+      `${joinStoryTexts(watchEntries, `watch:${currentWeek}:${variantSeed}`)}`,
+      `A couple side stories also stuck to the week. ${joinStoryTexts(watchEntries, `watch:${currentWeek}:${variantSeed}`)}`,
+      `The week left some extra noise behind it too. ${joinStoryTexts(watchEntries, `watch:${currentWeek}:${variantSeed}`)}`,
+      `A few smaller threads are still hanging in the air coming out of this one. ${joinStoryTexts(watchEntries, `watch:${currentWeek}:${variantSeed}`)}`,
+      `There was still a little extra league buzz around the edges of the week. ${joinStoryTexts(watchEntries, `watch:${currentWeek}:${variantSeed}`)}`,
     ], currentWeek + 7 + variantSeed)
     : null;
   const setbackParagraph = roughEntry?.text || null;

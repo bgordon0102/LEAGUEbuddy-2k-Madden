@@ -11,6 +11,7 @@ import {
 } from '../shared/madden_strikes.js';
 import { getFullTeamName } from '../shared/madden_team_names.js';
 import { loadRoleMap } from './staff/staffUtils.js';
+import { getScoutSummaryForSeason } from './coach/scout_store.js';
 
 const STRIKES_PATH = path.join(process.cwd(), 'data', 'madden', 'fairsims.json');
 const SCOUT_POINTS_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_points.json');
@@ -333,7 +334,7 @@ function formatActionPlayer(player, opts = {}) {
 }
 
 function scoutingSummaryForUser(scoutPoints, userId, classId, seasonYear, weekNumber) {
-  const user = scoutPoints?.[userId] || {};
+  const user = getScoutSummaryForSeason(scoutPoints || {}, userId, `year_${seasonYear}`);
   const scoped = user?.players?.[classId] || {};
   const entries = Object.entries(scoped);
   const fullCount = entries.filter(([, unlocked]) => Array.isArray(unlocked) && unlocked.length >= 3).length;
@@ -341,7 +342,7 @@ function scoutingSummaryForUser(scoutPoints, userId, classId, seasonYear, weekNu
   const weekKey = `year_${seasonYear}_week_${weekNumber}`;
   const seasonKey = `year_${seasonYear}`;
   const currentPoints = user?.weeklyPoints?.[weekKey];
-  const bonus = Number(user?.scoutingBonusBySeason?.[seasonKey] || 0);
+  const bonus = Number(user?.scoutingBonus || 0);
   return {
     fullCount,
     partialCount,

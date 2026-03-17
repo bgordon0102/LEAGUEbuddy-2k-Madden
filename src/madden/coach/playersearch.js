@@ -4,6 +4,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { computePlayerValue } from '../../../madden/madden_trade_modal_submit.js';
 import { getFullTeamName } from '../../shared/madden_team_names.js';
+import { coachCommandDescription, coachErrorBlurb } from '../../shared/madden_coach_voice.js';
 
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 
@@ -32,7 +33,7 @@ function heightToFeetInches(h) {
 
 export const data = new SlashCommandBuilder()
   .setName('madden-playersearch')
-  .setDescription('Search Madden players in the latest synced roster by team and position.')
+  .setDescription(coachCommandDescription('playersearch'))
   .addStringOption(o =>
     o.setName('team')
       .setDescription('Team (start typing to select)')
@@ -108,7 +109,7 @@ export async function autocomplete(interaction) {
 export async function execute(interaction) {
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
-    await interaction.reply({ content: 'No league set. Run /madden-setleague first.', ephemeral: true });
+    await interaction.reply({ content: coachErrorBlurb('noLeague', 'No league set. Run /madden-setleague first.'), ephemeral: true });
     return;
   }
   const teamInput = interaction.options.getString('team');

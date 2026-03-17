@@ -228,20 +228,29 @@ function safeFieldValue(lines = [], fallback = 'No data yet.') {
 async function resolveStatLeadersMessage(channel, pinId) {
   if (pinId) {
     const direct = await channel.messages.fetch(pinId).catch(() => null);
-    if (direct) return direct;
+    if (direct) {
+      setPinId('stat_leaders', direct.id);
+      return direct;
+    }
   }
 
   const pinned = await channel.messages.fetchPinned().catch(() => null);
   const pinnedMatch = pinned?.find((msg) =>
     (msg.embeds || []).some((embed) => (embed?.title || '').includes('Madden Stat Leaders'))
   );
-  if (pinnedMatch) return pinnedMatch;
+  if (pinnedMatch) {
+    setPinId('stat_leaders', pinnedMatch.id);
+    return pinnedMatch;
+  }
 
   const recent = await channel.messages.fetch({ limit: 50 }).catch(() => null);
   const recentMatch = recent?.find((msg) =>
     (msg.embeds || []).some((embed) => (embed?.title || '').includes('Madden Stat Leaders'))
   );
-  if (recentMatch) return recentMatch;
+  if (recentMatch) {
+    setPinId('stat_leaders', recentMatch.id);
+    return recentMatch;
+  }
 
   return null;
 }
@@ -249,8 +258,18 @@ async function resolveStatLeadersMessage(channel, pinId) {
 async function ensureStatLeadersMessage(channel, embed, pinId) {
   const existing = await resolveStatLeadersMessage(channel, pinId);
   if (existing) {
-    await existing.edit({ embeds: [embed], content: null });
-    return existing;
+    try {
+      await existing.edit({ embeds: [embed], content: null });
+      setPinId('stat_leaders', existing.id);
+      return existing;
+    } catch (error) {
+      console.warn('[stat_leaders] existing message edit failed, replacing', {
+        channelId: channel.id,
+        messageId: existing.id,
+        error: error?.message || error,
+      });
+      try { if (existing.pinned) await existing.unpin().catch(() => null); } catch {}
+    }
   }
 
   const created = await channel.send({ embeds: [embed] });

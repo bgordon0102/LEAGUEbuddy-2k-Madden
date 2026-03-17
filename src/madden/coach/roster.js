@@ -4,6 +4,7 @@ import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden_data.js';
 import { computePlayerValue } from '../madden_trade_modal_submit.js';
 import { getFullTeamName } from '../../shared/madden_team_names.js';
+import { coachCommandDescription, coachVoiceFooter, coachErrorBlurb } from '../../shared/madden_coach_voice.js';
 
 const DEV_LABEL = { 0: 'Normal', 1: 'Star', 2: 'SS', 3: 'X' };
 const DEV_EMOJI_FILE = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
@@ -77,7 +78,7 @@ function chunkLines(lines, maxCount = 12) {
 
 export const data = new SlashCommandBuilder()
   .setName('madden-roster')
-  .setDescription('View the full roster for a Madden team')
+  .setDescription(coachCommandDescription('roster'))
   .addStringOption(o =>
     o.setName('team')
       .setDescription('Team name (city, nickname, or abbreviation)')
@@ -112,7 +113,7 @@ export function buildRosterEmbeds(snapshot, teamName) {
     .setTitle(`${fullTeamName} — Roster`)
     .setDescription(chunk.join('\n'))
     .setColor(0x00a3ff)
-    .setFooter({ text: chunks.length > 1 ? `Page ${idx + 1}/${chunks.length}` : null })
+    .setFooter({ text: chunks.length > 1 ? `${coachVoiceFooter('roster', 'Live roster card')} • Page ${idx + 1}/${chunks.length}` : coachVoiceFooter('roster', 'Live roster card') })
   );
   return { embeds, teamInfo };
 }
@@ -121,13 +122,13 @@ export async function execute(interaction) {
   const teamInput = interaction.options.getString('team');
   const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
   if (!leagueId) {
-    await interaction.reply({ content: 'No Madden league set. Run /madden-set-league first.', ephemeral: true });
+    await interaction.reply({ content: coachErrorBlurb('noLeague', 'No Madden league set. Run /madden-set-league first.'), ephemeral: true });
     return;
   }
   try {
     const snapshot = loadLeagueSnapshot(leagueId);
     if (!snapshot) {
-      await interaction.reply({ content: 'Could not load the current Madden league snapshot.', ephemeral: true });
+      await interaction.reply({ content: coachErrorBlurb('noSnapshot', 'Could not load the current Madden league snapshot.'), ephemeral: true });
       return;
     }
     await interaction.deferReply({ ephemeral: true });

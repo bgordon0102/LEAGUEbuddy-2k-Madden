@@ -1,0 +1,208 @@
+{
+  "1255691165265821747": {
+    "deniedKeys": {
+      "rookie:Xzavier Fox": 3,
+      "trade_posture:Philadelphia Eagles:sell": 1,
+      "player_change:Houston Texans:Isiah Flowers": 2,
+      "injury:Buffalo Bills:Dion Dawkins": 1,
+      "player:Kyler Murray": 2,
+      "player:Marvin Harrison Jr": 1,
+      "injury:Kansas City Chiefs:Creed Humphrey": 1,
+      "trade_posture:Cleveland Browns:sell": 1,
+      "injury:Chicago Bears:Ozzy Trapilo": 1,
+      "pressure:New York Jets": 1,
+      "award:New England Patriots": 1,
+      "trade_posture:Tennessee Titans:sell": 1,
+      "pressure:Denver Broncos": 1,
+      "trade_posture:Baltimore Ravens:hold": 1,
+      "trade_posture:Chicago Bears:buy": 1
+    },
+    "deniedCategories": {
+      "player_heat": 6,
+      "trade_posture": 5,
+      "player_change": 2,
+      "injury": 3,
+      "pressure": 2,
+      "awards": 1
+    },
+    "approvedKeys": {
+      "pressure:New Orleans Saints": 1,
+      "award:Arizona Cardinals": 1
+    },
+    "approvedCategories": {
+      "pressure": 1,
+      "awards": 1
+    },
+    "history": [
+      {
+        "action": "approve",
+        "key": "",
+        "category": "",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773690418794
+      },
+      {
+        "action": "deny",
+        "key": "rookie:Xzavier Fox",
+        "category": "player_heat",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773691431079
+      },
+      {
+        "action": "deny",
+        "key": "trade_posture:Philadelphia Eagles:sell",
+        "category": "trade_posture",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773691434559
+      },
+      {
+        "action": "deny",
+        "key": "player_change:Houston Texans:Isiah Flowers",
+        "category": "player_change",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773691437072
+      },
+      {
+        "action": "deny",
+        "key": "injury:Buffalo Bills:Dion Dawkins",
+        "category": "injury",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773691438418
+      },
+      {
+        "action": "deny",
+        "key": "",
+        "category": "",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773691441953
+      },
+      {
+        "action": "deny",
+        "key": "",
+        "category": "",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773691443494
+      },
+      {
+        "action": "deny",
+        "key": "player:Kyler Murray",
+        "category": "player_heat",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773692811789
+      },
+      {
+        "action": "deny",
+        "key": "player:Marvin Harrison Jr",
+        "category": "player_heat",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773692819887
+      },
+      {
+        "action": "deny",
+        "key": "injury:Kansas City Chiefs:Creed Humphrey",
+        "category": "injury",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773692830675
+      },
+      {
+        "action": "approve",
+        "key": "pressure:New Orleans Saints",
+        "category": "pressure",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773692847160
+      },
+      {
+        "action": "deny",
+        "key": "trade_posture:Cleveland Browns:sell",
+        "category": "trade_posture",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773692870403
+      },
+      {
+        "action": "deny",
+        "key": "rookie:Xzavier Fox",
+        "category": "player_heat",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773692875263
+      },
+      {
+        "action": "deny",
+        "key": "rookie:Xzavier Fox",
+        "category": "player_heat",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773692880467
+      },
+      {
+        "action": "deny",
+        "key": "player_change:Houston Texans:Isiah Flowers",
+        "category": "player_change",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773698595489
+      },
+      {
+        "action": "deny",
+        "key": "injury:Chicago Bears:Ozzy Trapilo",
+        "category": "injury",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773698604746
+      },
+      {
+        "action": "deny",
+        "key": "pressure:New York Jets",
+        "category": "pressure",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773698609338
+      },
+      {
+        "action": "deny",
+        "key": "award:New England Patriots",
+        "category": "awards",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773699436894
+      },
+      {
+        "action": "deny",
+        "key": "trade_posture:Tennessee Titans:sell",
+        "category": "trade_posture",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773699447774
+      },
+      {
+        "action": "deny",
+        "key": "pressure:Denver Broncos",
+        "category": "pressure",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773699452261
+      },
+      {
+        "action": "approve",
+        "key": "award:Arizona Cardinals",
+        "category": "awards",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773699473058
+      },
+      {
+        "action": "deny",
+        "key": "trade_posture:Baltimore Ravens:hold",
+        "category": "trade_posture",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773705188059
+      },
+      {
+        "action": "deny",
+        "key": "trade_posture:Chicago Bears:buy",
+        "category": "trade_posture",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773705190143
+      },
+      {
+        "action": "deny",
+        "key": "player:Kyler Murray",
+        "category": "player_heat",
+        "reviewedBy": "1076243288056664234",
+        "at": 1773705192533
+      }
+    ],
+    "lastUpdatedAt": 1773705192533
+  }
+}

@@ -2,8 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
+import { deriveTeamNeeds } from './mockdraft.js';
+import { getFullTeamName } from '../../shared/madden_team_names.js';
+import { loadRoleMap } from '../staff/staffUtils.js';
+import { getRecognitionPerkState, inferRecognitionContext } from '../../shared/league_recognition.js';
+import { loadScoutStore, saveScoutStore, getScoutSeasonKey, getSeasonScoutUser } from './scout_store.js';
+import { coachCommandDescription } from '../../shared/madden_coach_voice.js';
 
-const SCOUT_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_points.json');
 const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.json');
 const DEV_EMOJI_PATH = path.join(process.cwd(), 'data', 'madden', 'dev_emojis.json');
 const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
@@ -13,6 +18,8 @@ const COST_PER_REVEAL = 10;
 const OFFSEASON_POINTS = 300; // full offseason pool
 const BONUS_INCREMENT = 10;
 const MAX_WEEKLY_POINTS = 120;
+const FOCUS_PACK_BASE_COST = 5;
+const FOCUS_PACK_FOCUS_COST = 4;
 // Preferred position order for autocomplete (canonical names)
 const POS_ORDER = [
   'QB', 'HB', 'FB',
@@ -26,6 +33,50 @@ const POS_ORDER = [
 
 function normalizePos(pos) {
   return (pos || '').trim().toUpperCase();
+}
+
+function normalizeName(name = '') {
+  return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function findCoachTeam(member, snapshot) {
+  const roleMap = loadRoleMap();
+  const teamInfos = snapshot?.teams?.leagueTeamInfoList || [];
+  const teamCandidates = teamInfos.map((team) => ({
+    fullName: getFullTeamName(team, `Team ${team.teamId}`),
+    mascot: String(team.displayName || team.nickName || '').trim(),
+    city: String(team.cityName || '').trim(),
+    abbr: String(team.abbrName || '').trim(),
+  }));
+  for (const role of member?.roles?.cache?.values?.() || []) {
+    for (const [name] of Object.entries(roleMap || {})) {
+      if (!/ coach$/i.test(name)) continue;
+      if (name !== role.name) continue;
+      const base = name.replace(/ coach$/i, '').trim();
+      const norm = normalizeName(base);
+      const match = teamCandidates.find((team) =>
+        [team.fullName, team.mascot, team.city, team.abbr].some((value) => normalizeName(value) === norm));
+      if (match) return match.fullName;
+    }
+  }
+  return null;
+}
+
+function focusPositionsForNeeds(needs = []) {
+  const map = {
+    QB: ['QB'],
+    OT: ['LT', 'RT'],
+    IOL: ['LG', 'C', 'RG'],
+    WR: ['WR'],
+    TE: ['TE'],
+    RB: ['HB', 'RB', 'FB'],
+    EDGE: ['LEDG', 'REDG', 'LE', 'RE', 'DE'],
+    DT: ['DT'],
+    LB: ['SAM', 'MIKE', 'WILL', 'LB', 'MLB', 'ROLB', 'LOLB'],
+    CB: ['CB'],
+    S: ['FS', 'SS'],
+  };
+  return [...new Set(needs.flatMap((need) => map[need] || []))];
 }
 
 function safeReadJSON(file, fallback) {
@@ -122,7 +173,7 @@ function getSchoolLogo(school) {
 
 export const data = new SlashCommandBuilder()
   .setName('madden-scout')
-  .setDescription('Scout a Madden draft prospect (60 pts/week in season, 300 offseason, 10 pts per reveal).')
+  .setDescription(coachCommandDescription('scout'))
   .addStringOption(o => o.setName('position').setDescription('Position to filter').setRequired(true).setAutocomplete(true))
   .addStringOption(o => o.setName('name').setDescription('Optional name filter').setRequired(false).setAutocomplete(true))
   .setDMPermission(false);
@@ -217,16 +268,27 @@ export async function execute(interaction) {
   }
   const player = players[0]; // first match
 
+  const recognitionContext = inferRecognitionContext('madden', interaction.guildId);
+  const perkState = recognitionContext?.seasonKey
+    ? getRecognitionPerkState({
+        guildId: interaction.guildId,
+        league: 'madden',
+        seasonKey: recognitionContext.seasonKey,
+        userId: interaction.user.id,
+        weekKey: recognitionContext.weekKey,
+      })
+    : null;
+  const coachTeam = findCoachTeam(interaction.member, snapshot);
+  const needsByTeam = deriveTeamNeeds(snapshot);
+  const focusNeeds = coachTeam ? (needsByTeam[coachTeam] || []).slice(0, 2) : [];
+  const focusPositions = focusPositionsForNeeds(focusNeeds).map(normalizePos);
+
   // Load scouting data
-  const scoutData = safeReadJSON(SCOUT_PATH, {});
+  const scoutData = loadScoutStore();
   const userId = interaction.user.id;
-  if (!scoutData[userId]) scoutData[userId] = { players: {}, weeklyPoints: {} };
-  const userData = scoutData[userId];
-  userData.weeklyPoints = userData.weeklyPoints || {};
-  userData.scoutingBonusBySeason = userData.scoutingBonusBySeason || {};
-  userData.scoutingBonusAwardedWeeks = userData.scoutingBonusAwardedWeeks || {};
-  const seasonBonusKey = `year_${calendarYear}`;
-  const seasonBonus = Math.max(0, Number(userData.scoutingBonusBySeason[seasonBonusKey] || 0));
+  const seasonBonusKey = getScoutSeasonKey(snapshot);
+  const userData = getSeasonScoutUser(scoutData, userId, seasonBonusKey);
+  const seasonBonus = Math.max(0, Number(userData.scoutingBonus || 0));
   const weekKey = isOffseason ? `year_${calendarYear}_offseason_total` : `year_${calendarYear}_week_${currentWeek}`;
   const defaultPoints = isOffseason
     ? OFFSEASON_POINTS
@@ -244,9 +306,13 @@ export async function execute(interaction) {
     else await interaction.reply({ ...payload, flags: 64 });
     return;
   }
-  const cost = COST_PER_REVEAL;
+  const focusPackActive = Boolean(perkState?.perks?.scoutingFocusPack);
+  const isFocusPosition = focusPackActive && focusPositions.includes(normPos);
+  const cost = focusPackActive
+    ? (isFocusPosition ? FOCUS_PACK_FOCUS_COST : FOCUS_PACK_BASE_COST)
+    : COST_PER_REVEAL;
   if (pointsLeft < cost) {
-    const payload = { content: `Not enough points. You have ${pointsLeft} left this week.` };
+    const payload = { content: `Not enough points. You have ${pointsLeft} left this week and this scout costs ${cost}.` };
     if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
     else await interaction.reply({ ...payload, flags: 64 });
     return;
@@ -255,9 +321,15 @@ export async function execute(interaction) {
   pointsLeft -= cost;
   if (!userData.players[classKey]) userData.players[classKey] = {};
   userData.players[classKey][player.name] = newUnlocked;
-  const suggestedScoutHit = userData.suggestedScout?.[classKey]?.[weekKey] === player.name;
+  const suggestedStore = userData.suggestedScout?.[classKey]?.[weekKey];
+  const suggestedNames = Array.isArray(suggestedStore)
+    ? suggestedStore
+    : (typeof suggestedStore === 'string' && suggestedStore ? [suggestedStore] : []);
+  const suggestedScoutHit = suggestedNames.includes(player.name);
   if (suggestedScoutHit && newUnlocked.length >= 3) {
-    delete userData.suggestedScout[classKey][weekKey];
+    const remainingSuggestions = suggestedNames.filter((name) => name !== player.name);
+    if (remainingSuggestions.length) userData.suggestedScout[classKey][weekKey] = remainingSuggestions;
+    else delete userData.suggestedScout[classKey][weekKey];
   }
   // Ensure new scouted players are appended to the end of the user's board order
   userData.order = userData.order || {};
@@ -270,13 +342,13 @@ export async function execute(interaction) {
     const nextBonus = Math.min(MAX_WEEKLY_POINTS - POINTS_PER_WEEK, seasonBonus + BONUS_INCREMENT);
     awardedBonus = Math.max(0, nextBonus - seasonBonus);
     if (awardedBonus > 0) {
-      userData.scoutingBonusBySeason[seasonBonusKey] = nextBonus;
+      userData.scoutingBonus = nextBonus;
       userData.scoutingBonusAwardedWeeks[weekKey] = true;
       pointsLeft += awardedBonus;
     }
   }
   userData.weeklyPoints[weekKey] = pointsLeft;
-  saveJSON(SCOUT_PATH, scoutData);
+  saveScoutStore(scoutData);
   // backend log only
   appendScoutLog({
     ts: Date.now(),
@@ -322,7 +394,7 @@ export async function execute(interaction) {
   const embed = new EmbedBuilder()
     .setTitle(`${player.position} ${player.name}${yearLabel}`)
     .setDescription(fields.join('\n') || 'No info unlocked yet.')
-    .setFooter({ text: `Used 10 pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason (300 total)' : `this week (${Math.min(MAX_WEEKLY_POINTS, POINTS_PER_WEEK + Number(userData.scoutingBonusBySeason[seasonBonusKey] || 0))})`}. Class ${classKey.toUpperCase()}` })
+    .setFooter({ text: `Used ${cost} pts. ${pointsLeft} pts left ${isOffseason ? 'this offseason (300 total)' : `this week (${Math.min(MAX_WEEKLY_POINTS, POINTS_PER_WEEK + Number(userData.scoutingBonus || 0))})`}. Class ${classKey.toUpperCase()}` })
     .setColor(0x1e90ff);
   const metaFields = [];
   const boardPos = player.RNK ?? player.rank ?? player.order ?? player['#'];
@@ -357,8 +429,15 @@ export async function execute(interaction) {
   if (awardedBonus > 0) {
     embed.addFields({
       name: 'Scouting Bonus Earned',
-      value: `You used your full weekly scouting pool and unlocked +${awardedBonus} weekly points going forward. New weekly cap: ${Math.min(MAX_WEEKLY_POINTS, POINTS_PER_WEEK + Number(userData.scoutingBonusBySeason[seasonBonusKey] || 0))}.`,
+      value: `You used your full weekly scouting pool and unlocked +${awardedBonus} weekly points going forward. New weekly cap: ${Math.min(MAX_WEEKLY_POINTS, POINTS_PER_WEEK + Number(userData.scoutingBonus || 0))}.`,
       inline: false
+    });
+  }
+  if (focusPackActive && focusNeeds.length) {
+    embed.addFields({
+      name: 'Scouting Focus Pack',
+      value: `Your focus pack is live this week. Every reveal costs ${FOCUS_PACK_BASE_COST} instead of ${COST_PER_REVEAL}, and ${focusNeeds.map((need) => need === 'IOL' ? 'interior OL' : need).join(' and ')} cost ${FOCUS_PACK_FOCUS_COST}. ${isFocusPosition ? `This scout hit the focus discount.` : `This scout used the standard discounted rate.`}`,
+      inline: false,
     });
   }
 

@@ -1,7 +1,7 @@
 {
   "16594549": {
     "leagueId": "16594549",
-    "updatedAt": 1773638681265,
+    "updatedAt": 1773687615392,
     "latestCompletedWeek": 6,
     "latestCompletedWeekByStage": {
       "1": 6,
@@ -1674,8 +1674,8 @@
         "awayTeam": "Arizona Cardinals",
         "homeTeam": "New England Patriots",
         "scheduleStatus": 1,
-        "awayScore": 0,
-        "homeScore": 0,
+        "awayScore": 42,
+        "homeScore": 14,
         "scoreSource": "weekly_stats",
         "played": true,
         "statsAvailable": true,

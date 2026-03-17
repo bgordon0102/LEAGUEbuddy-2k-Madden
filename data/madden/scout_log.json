@@ -10157,5 +10157,32 @@
     "weeklyAllowance": 70,
     "awardedBonus": 0,
     "suggestedScoutHit": false
+  },
+  {
+    "ts": 1773704838582,
+    "userId": "1076243288056664234",
+    "username": "rnb.randon",
+    "guildId": "1255691165265821747",
+    "classId": "cus_02",
+    "resolvedClassId": "cus_02",
+    "player": "Nicky Epps",
+    "position": "TE",
+    "school": "Ohio State",
+    "boardPosition": 76,
+    "archetype": "Vertical Threat",
+    "overall": 71,
+    "devTrait": 0,
+    "unlockedCategory": "arch",
+    "unlockCount": 1,
+    "fullyScouted": false,
+    "weekKey": "year_2026_week_6",
+    "seasonYear": 2026,
+    "currentWeek": 6,
+    "stage": 1,
+    "pointsLeft": 50,
+    "pointsSpent": 10,
+    "weeklyAllowance": 60,
+    "awardedBonus": 0,
+    "suggestedScoutHit": false
   }
 ]

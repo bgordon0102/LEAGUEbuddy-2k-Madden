@@ -4,6 +4,7 @@ import path from 'path';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { draftOrder, applyPickTrades } from '../coach/mockdraft.js';
 import { getFullTeamName } from '../../shared/madden_team_names.js';
+import { getCoachAssignmentMap } from '../../shared/madden_coach_assignments.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
@@ -145,17 +146,8 @@ export async function execute(interaction) {
 
     const includeLink = interaction.options.getBoolean('link') ?? false;
 
-    // Count role assignments (best effort)
-    let roleCounts = null;
-    try {
-      const members = await interaction.guild.members.fetch();
-      roleCounts = {};
-      members.forEach(m => m.roles.cache.forEach(r => {
-        roleCounts[r.id] = (roleCounts[r.id] || 0) + 1;
-      }));
-    } catch {
-      roleCounts = null;
-    }
+    const assignmentMap = getCoachAssignmentMap({ guildId: interaction.guildId });
+    const assignedTeams = assignmentMap?.teamToUserIds || new Map();
 
     const snapshot = loadLeagueSnapshot(leagueId);
     const seasonInfo = snapshot?.info?.careerHubInfo?.seasonInfo || {};
@@ -181,17 +173,18 @@ export async function execute(interaction) {
     for (const t of teams) {
       const roleId = resolveRoleId(t, roleMap);
       let assigned = false;
+      const teamName = formatTeamName(t);
+      if ((assignedTeams.get(normalizeKey(teamName)) || new Set()).size > 0) {
+        assigned = true;
+      }
       if (roleId) {
-        let count = (roleCounts && typeof roleCounts[roleId] === 'number') ? roleCounts[roleId] : undefined;
-        if (count === undefined) {
-          const role = interaction.guild.roles.cache.get(roleId) || await interaction.guild.roles.fetch(roleId).catch(() => null);
-          count = role?.members ? role.members.size : 0;
-        }
-        assigned = count > 0;
+        const role = interaction.guild.roles.cache.get(roleId) || null;
+        const count = role?.members?.size ?? 0;
+        assigned = assigned || count > 0;
       }
       if (assigned) continue;
       if (isOffseason) {
-        const nameFormatted = formatTeamName(t);
+        const nameFormatted = teamName;
         const keys = [
           normalizeKey(nameFormatted),
           normalizeKey((nameFormatted.split(/\s+/).pop()) || ''),
@@ -218,7 +211,7 @@ export async function execute(interaction) {
         const losses = rec?.totalLosses ?? rec?.losses ?? 0;
         const ties = rec?.totalTies ?? rec?.ties ?? 0;
         const record = ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
-        openLines.push(`${formatTeamName(t)} (${record})`);
+        openLines.push(`${teamName} (${record})`);
       }
     }
 
@@ -231,10 +224,10 @@ export async function execute(interaction) {
       'Discord economy for player upgrades',
       '',
       '**What the league offers:**',
-      '📡 Live league updates, standings, power rankings, awards, and stat boards',
-      '🎮 Automated game threads, reminders, and clean trade flow',
-      '🕵️ Private scouting, trade workflow, draft primer, mock draft, and weekly strategy tools',
-      '📰 Rumor mill, weekly recap, and league storytelling built from your real season data',
+      '📡 Live league updates, standings, stat leaders, Top 100s, awards, and story-driven weekly content',
+      '🎮 Automated game threads, featured Game of the Week, reminders, staff logs, and clean trade flow',
+      '🕵️ Private Franchise Hub, scouting, draft primer, mock draft, and matchup strategy tools built around your team',
+      '🎟️ LB Sportsbook, recognition progression, perks, and seasonal league systems tied into real league activity',
       '',
       '**Open Teams**',
       openLines.length ? openLines.join('\n') : 'No open teams right now.',

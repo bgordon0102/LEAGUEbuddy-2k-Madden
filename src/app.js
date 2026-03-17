@@ -9,9 +9,12 @@ import { startAuthServer } from './madden/auth_server.js';
 import { startExportWebhook } from './madden/export_webhook.js';
 import { startAutoSync } from './madden/auto_sync.js';
 import { startLocalSidecar } from './madden/local_sidecar.js';
-import { initNotifier } from './shared/madden_thread_notifier.js';
+import { initNotifier, backfillAndRunPendingThreadReminders } from './shared/madden_thread_notifier.js';
 import { appendMaddenStaffLog, postMaddenStaffLog, initMaddenStoryScheduler } from './shared/madden_staff_ops.js';
 import { updateFairSimBoard } from './shared/fairsim_board.js';
+import { inferRecognitionContext, recordRecognitionCommandUse, recordRecognitionThreadReply } from './shared/league_recognition.js';
+import { ensureSportsbookWeekPosted, refreshSportsbookHeaders } from './shared/madden_sportsbook.js';
+import { collectParticipation, getThreadState, hydrateThreadStateFromLiveThread, listThreadStates } from './shared/madden_thread_notifier.js';
 
 dotenv.config();
 
@@ -93,6 +96,18 @@ client.on('interactionCreate', async interaction => {
     }
     // Lightweight command audit log
     console.log(`[CMD] ${interaction.user.tag} used /${interaction.commandName}`);
+    try {
+      if (interaction.commandName?.startsWith('madden-')) {
+        recordRecognitionCommandUse({
+          guildId: interaction.guildId,
+          league: 'madden',
+          userId: interaction.user.id,
+          commandName: interaction.commandName,
+        });
+      }
+    } catch (e) {
+      console.warn('[recognition] command usage track failed', e?.message || e);
+    }
     if (interaction.commandName?.startsWith('madden-')) {
       appendMaddenStaffLog({
         type: 'command',
@@ -242,6 +257,71 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
+client.on('messageCreate', async (message) => {
+  if (!message.guild || message.author?.bot || !message.channel?.isThread?.()) return;
+  let info = getThreadState(message.channel.id);
+  if (!info || info.status !== 'pending') return;
+  info = hydrateThreadStateFromLiveThread(message.channel, info) || info;
+  const member = message.member || await message.guild.members.fetch(message.author.id).catch(() => null);
+  if (!member) return;
+  const roleIds = new Set(member.roles?.cache?.keys?.() || []);
+  const trackedRoleIds = [...new Set([...(info.awayRoleIds || []), ...(info.homeRoleIds || [])].filter(Boolean))];
+  const isTrackedCoach = trackedRoleIds.some((roleId) => roleIds.has(roleId));
+  if (!isTrackedCoach) return;
+  const context = inferRecognitionContext('madden', message.guild.id);
+  const seasonKey = info.seasonKey || context?.seasonKey || null;
+  const weekKey = Number.isFinite(Number(info?.weekIndex)) ? `week_${Number(info.weekIndex) + 1}` : (context?.weekKey || null);
+  if (!seasonKey || !weekKey) return;
+  try {
+    recordRecognitionThreadReply({
+      guildId: message.guild.id,
+      league: 'madden',
+      seasonKey,
+      weekKey,
+      userId: message.author.id,
+    });
+  } catch (e) {
+    console.warn('[recognition] thread reply track failed', e?.message || e);
+  }
+});
+
+async function backfillRecognitionThreadReplies(client, guild) {
+  const context = inferRecognitionContext('madden', guild?.id);
+  const threadStates = listThreadStates().filter((info) => {
+    const createdAt = Number(info?.created || 0);
+    return createdAt > 0 && (Date.now() - createdAt) <= (7 * 24 * 60 * 60 * 1000);
+  });
+  if (!threadStates.length) return;
+  let scanned = 0;
+  let respondersProcessed = 0;
+  for (const info of threadStates) {
+    const thread = await client.channels.fetch(info.threadId).catch(() => null);
+    if (!thread?.isThread?.() || thread.guildId !== guild.id) continue;
+    const hydratedInfo = hydrateThreadStateFromLiveThread(thread, info) || info;
+    const seasonKey = hydratedInfo.seasonKey || context?.seasonKey || null;
+    const weekKey = Number.isFinite(Number(hydratedInfo?.weekIndex))
+      ? `week_${Number(hydratedInfo.weekIndex) + 1}`
+      : (context?.weekKey || null);
+    if (!seasonKey || !weekKey) continue;
+    const participation = await collectParticipation(thread, hydratedInfo).catch(() => null);
+    if (!participation) continue;
+    scanned += 1;
+    for (const userId of [...new Set([...(participation.awayResponderIds || []), ...(participation.homeResponderIds || [])])]) {
+      recordRecognitionThreadReply({
+        guildId: guild.id,
+        league: 'madden',
+        seasonKey,
+        weekKey,
+        userId,
+      });
+      respondersProcessed += 1;
+    }
+  }
+  if (scanned > 0) {
+    console.log('[recognition] thread reply backfill scanned', { guildId: guild.id, scanned, respondersProcessed });
+  }
+}
+
 // Bot clientReady event (Discord.js v15+)
 client.once('clientReady', (readyClient) => {
   console.log(`ENVIRONMENT: ${process.env.NODE_ENV || 'undefined'}`);
@@ -250,12 +330,22 @@ client.once('clientReady', (readyClient) => {
   console.log(`🏟️  Serving ${readyClient.guilds.cache.size} server(s)`);
   console.log(`⚡ Loaded ${client.commands.size} commands`);
   try { initNotifier(client); } catch (e) { console.warn('[notifier] init failed', e?.message || e); }
+  try { backfillAndRunPendingThreadReminders(client).catch(() => null); } catch (e) { console.warn('[notifier] startup backfill failed', e?.message || e); }
   try { initMaddenStoryScheduler(client); } catch (e) { console.warn('[story scheduler] init failed', e?.message || e); }
   for (const guild of readyClient.guilds.cache.values()) {
     appendMaddenStaffLog({ type: 'lifecycle', guildId: guild.id, state: 'online' });
     postMaddenStaffLog(client, guild.id, 'Bot Online', 'LEAGUEbuddy Madden services are online.').catch(() => null);
     updateFairSimBoard(client, guild.id).catch((e) => {
       console.warn('[fairsim_board] startup refresh failed', guild.id, e?.message || e);
+    });
+    ensureSportsbookWeekPosted({ client, guild }).catch((e) => {
+      console.warn('[sportsbook] startup ensure failed', guild.id, e?.message || e);
+    });
+    refreshSportsbookHeaders({ client, guild }).catch((e) => {
+      console.warn('[sportsbook] header refresh failed', guild.id, e?.message || e);
+    });
+    backfillRecognitionThreadReplies(client, guild).catch((e) => {
+      console.warn('[recognition] thread reply backfill failed', guild.id, e?.message || e);
     });
   }
 });

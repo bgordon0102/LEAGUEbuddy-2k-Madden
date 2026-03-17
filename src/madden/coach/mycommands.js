@@ -1,12 +1,13 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
+import { coachCommandDescription, coachPanelIntro, coachVoiceFooter, coachVoiceTitle } from '../../shared/madden_coach_voice.js';
 
 const ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 
 const data = new SlashCommandBuilder()
   .setName('madden-mycommands')
-  .setDescription('Shows a list of Madden commands available to you.');
+  .setDescription(coachCommandDescription('mycommands'));
 
 function isStaff(member) {
   try {
@@ -30,8 +31,8 @@ async function execute(interaction) {
 
   const staffEmbed = new EmbedBuilder()
     .setColor(0xffd700)
-    .setTitle('🏈 Madden Staff Commands')
-    .setDescription('Live staff workflow commands.')
+    .setTitle(coachVoiceTitle('staffCommands', 'Madden Staff Commands'))
+    .setDescription(coachPanelIntro('staffCommands'))
     .addFields(
       { name: '/madden-mycommands', value: 'Show this menu' },
       { name: '/madden-set-league', value: 'Set or reset the active Madden league' },
@@ -48,12 +49,12 @@ async function execute(interaction) {
       { name: '/madden-awards', value: 'Run or post weekly awards' },
       { name: '/madden-draftexport', value: 'Export the draft results file' }
     )
-    .setFooter({ text: 'Testing and maintenance-only commands are hidden from this menu.' });
+    .setFooter({ text: coachVoiceFooter('staffOnly', 'Testing and maintenance-only commands are hidden from this menu.') });
 
   const coachEmbed = new EmbedBuilder()
     .setColor(0x1e90ff)
-    .setTitle('🏈 Madden Coach Commands')
-    .setDescription('Live coach tools.')
+    .setTitle(coachVoiceTitle('coachCommands', 'Madden Coach Commands'))
+    .setDescription(coachPanelIntro('coachCommands'))
     .addFields(
       { name: '/madden-mycommands', value: 'Show this menu' },
       { name: '/madden-schedule', value: 'View your schedule' },
@@ -72,7 +73,7 @@ async function execute(interaction) {
       { name: '/madden-myscouts', value: 'View and move your scouting board' },
       { name: '/madden-recruiting', value: 'View recruiting data' }
     )
-    .setFooter({ text: 'Coach access only' });
+    .setFooter({ text: coachVoiceFooter('coachOnly', 'Coach access only') });
 
   await interaction.editReply({ embeds: [staffView ? staffEmbed : coachEmbed] });
 }

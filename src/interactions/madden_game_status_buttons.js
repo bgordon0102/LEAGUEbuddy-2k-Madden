@@ -5,9 +5,10 @@ import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../madden/madden_
 import { markThreadDone, getThreadState, collectParticipation } from '../shared/madden_thread_notifier.js';
 import { updateFairSimBoard } from '../shared/fairsim_board.js';
 import { registerThread } from '../shared/madden_thread_notifier.js';
-import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
+import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffDecision } from '../shared/madden_staff_ops.js';
 import { queueRemovalReview, queueImmediateRemedyReview } from '../shared/madden_removal_review.js';
 import { sendCoachReceipt } from '../shared/madden_coach_receipts.js';
+import { consumeRecognitionPerk, hasRecognitionPerk, recordRecognitionGameOutcome } from '../shared/league_recognition.js';
 import {
   STRIKE_LIMIT,
   loadStrikeStore,
@@ -168,6 +169,36 @@ function disableButtons(interaction) {
   return interaction.message.edit({ components: updatedRows });
 }
 
+function splitUsersByPerk({ guildId, seasonKey, weekKey, userIds = [], perkKey }) {
+  const protectedUsers = [];
+  const standardUsers = [];
+  for (const userId of userIds) {
+    if (weekKey && hasRecognitionPerk({ guildId, league: 'madden', seasonKey, weekKey, userId, perkKey })) {
+      protectedUsers.push(userId);
+    } else {
+      standardUsers.push(userId);
+    }
+  }
+  return { protectedUsers, standardUsers };
+}
+
+function consumeUsersPerk({ guildId, seasonKey, weekKey, userIds = [], perkKey, reason }) {
+  const consumed = [];
+  for (const userId of userIds) {
+    const ok = consumeRecognitionPerk({
+      guildId,
+      league: 'madden',
+      seasonKey,
+      weekKey,
+      userId,
+      perkKey,
+      reason,
+    });
+    if (ok) consumed.push(userId);
+  }
+  return consumed;
+}
+
 function clearPendingFair(threadId) {
   pendingFair.delete(threadId);
   savePendingFile();
@@ -287,11 +318,29 @@ export async function execute(interaction) {
     homeRoleIds: homeCoachRoles,
     lastReminder: getThreadState(threadId)?.lastReminder,
   });
+  const recognitionWeekKey = threadState && Number.isFinite(Number(threadState.weekIndex))
+    ? `week_${Number(threadState.weekIndex) + 1}`
+    : null;
   const onTimeOutcome = (() => {
     const state = getThreadState(threadId);
     const deadlineAt = Number(state?.deadlineAt || 0);
     return !deadlineAt || Date.now() <= deadlineAt;
   })();
+  const trackRecognitionOutcome = (played = false) => {
+    if (!recognitionWeekKey) return;
+    recordRecognitionGameOutcome({
+      guildId: interaction.guildId,
+      league: 'madden',
+      seasonKey,
+      weekKey: recognitionWeekKey,
+      awayUserIds,
+      homeUserIds,
+      awayResponded: participation.awayCount > 0,
+      homeResponded: participation.homeCount > 0,
+      onTime: onTimeOutcome,
+      played,
+    });
+  };
 
   // Staff-awarded strike (targeted to home/away coaches)
   if (action === 'staffstrikeaway' || action === 'staffstrikehome') {
@@ -314,7 +363,33 @@ export async function execute(interaction) {
       await interaction.reply({ content: 'No coach user is currently resolved for that team. Fix the coach role before applying a strike.', ephemeral: true });
       return;
     }
-    addStrikeOutcome(fairData, seasonKey, targetUsers, 'determined_strike', 'DS');
+    const { protectedUsers: cushionedUsers, standardUsers } = splitUsersByPerk({
+      guildId: interaction.guildId,
+      seasonKey,
+      weekKey: recognitionWeekKey,
+      userIds: targetUsers,
+      perkKey: 'strikeCushion',
+    });
+    if (standardUsers.length) addStrikeOutcome(fairData, seasonKey, standardUsers, 'determined_strike', 'DS');
+    if (cushionedUsers.length) {
+      addStrikeOutcome(fairData, seasonKey, cushionedUsers, 'force_win', 'FW');
+      consumeUsersPerk({
+        guildId: interaction.guildId,
+        seasonKey,
+        weekKey: recognitionWeekKey,
+        userIds: cushionedUsers,
+        perkKey: 'strikeCushion',
+        reason: 'Consumed Strike Cushion on determined strike',
+      });
+      appendMaddenStaffLog({
+        type: 'recognition_perk_consumed',
+        guildId: interaction.guildId,
+        threadId,
+        perkKey: 'strikeCushion',
+        users: cushionedUsers,
+        action,
+      });
+    }
     recordCommunicationWeek(fairData, seasonKey, awayUserIds, { responded: participation.awayCount > 0, onTime: onTimeOutcome });
     recordCommunicationWeek(fairData, seasonKey, homeUserIds, { responded: participation.homeCount > 0, onTime: onTimeOutcome });
     saveStrikeStore(fairData);
@@ -329,7 +404,10 @@ export async function execute(interaction) {
       .setTitle(label)
       .setColor(0xED4245)
       .setDescription(`Issued by ${interaction.user}\nTeam: ${targetTeam || 'Unknown'}`)
-      .addFields({ name: 'Remaining', value: remLine || 'N/A', inline: false });
+      .addFields(
+        { name: 'Remaining', value: remLine || 'N/A', inline: false },
+        ...(cushionedUsers?.length ? [{ name: 'Activity Protection', value: `${cushionedUsers.map((id) => `<@${id}>`).join(', ')} used Strike Cushion and took the lighter fault outcome.`, inline: false }] : []),
+      );
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
     if (targetUsers.length) {
       await sendWarnings(thread, targetUsers, seasonDataAfter, commishMention);
@@ -345,11 +423,14 @@ export async function execute(interaction) {
       awardedBy: interaction.user.id,
       action,
     });
-    await postMaddenStaffLog(
+    await postMaddenStaffDecision(
       interaction.client,
       interaction.guildId,
       'Determined Strike Applied',
       `${targetTeam || 'Unknown team'} received a determined strike in <#${threadId}>.`,
+      [
+        ...(cushionedUsers?.length ? [{ name: 'Activity Protection', value: `${cushionedUsers.map((id) => `<@${id}>`).join(', ')} used Strike Cushion.`, inline: false }] : []),
+      ],
     ).catch(() => null);
     await sendCoachReceipt(interaction.guild, action === 'staffstrikeaway' ? awayCoachRoles : homeCoachRoles, {
       title: 'Determined Strike Applied',
@@ -393,6 +474,7 @@ export async function execute(interaction) {
     recordCommunicationWeek(fairData, seasonKey, homeUserIds, { responded: participation.homeCount > 0, onTime: onTimeOutcome });
     saveStrikeStore(fairData);
     markThreadDone(threadId, 'complete');
+    trackRecognitionOutcome(true);
     baseEmbed.setTitle('Game Completed').setColor(0x57F287).setDescription(`Marked by ${interaction.user}`);
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
     try { await disableButtons(interaction); } catch {}
@@ -458,14 +540,43 @@ export async function execute(interaction) {
       await interaction.reply({ content: 'Both coach roles must resolve to users before a Fair Sim can be logged.', ephemeral: true });
       return;
     }
-    addStrikeOutcome(fairData, seasonKey, userIds, 'fair_sim', 'FS');
+    const { protectedUsers: fairSimProtected, standardUsers: fairSimCharged } = splitUsersByPerk({
+      guildId: interaction.guildId,
+      seasonKey,
+      weekKey: recognitionWeekKey,
+      userIds,
+      perkKey: 'fairSimCredit',
+    });
+    if (fairSimCharged.length) addStrikeOutcome(fairData, seasonKey, fairSimCharged, 'fair_sim', 'FS');
+    if (fairSimProtected.length) {
+      consumeUsersPerk({
+        guildId: interaction.guildId,
+        seasonKey,
+        weekKey: recognitionWeekKey,
+        userIds: fairSimProtected,
+        perkKey: 'fairSimCredit',
+        reason: 'Consumed Fair Sim Credit',
+      });
+      appendMaddenStaffLog({
+        type: 'recognition_perk_consumed',
+        guildId: interaction.guildId,
+        threadId,
+        perkKey: 'fairSimCredit',
+        users: fairSimProtected,
+        action: 'fairsim',
+      });
+    }
     recordCommunicationWeek(fairData, seasonKey, awayUserIds, { responded: participation.awayCount > 0, onTime: onTimeOutcome });
     recordCommunicationWeek(fairData, seasonKey, homeUserIds, { responded: participation.homeCount > 0, onTime: onTimeOutcome });
     saveStrikeStore(fairData);
     markThreadDone(threadId, 'fairsim');
+    trackRecognitionOutcome(false);
     const remaining = remainingFair(userIds, ensureSeason(fairData, seasonKey));
     const remLine = Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem,0)}/5 weighted strike room left`).join('\n');
-    baseEmbed.setTitle('Fair Sim Logged').setColor(0xFEE75C).setDescription(`Confirmed by both coaches\nTeams: ${away || 'Away'} vs ${home || 'Home'}`).addFields({ name: 'Weighted strike room', value: remLine || 'N/A', inline: false });
+    baseEmbed.setTitle('Fair Sim Logged').setColor(0xFEE75C).setDescription(`Confirmed by both coaches\nTeams: ${away || 'Away'} vs ${home || 'Home'}`).addFields(
+      { name: 'Weighted strike room', value: remLine || 'N/A', inline: false },
+      ...(fairSimProtected.length ? [{ name: 'Activity Protection', value: `${fairSimProtected.map((id) => `<@${id}>`).join(', ')} used Fair Sim Credit and avoided the fair-sim strike.`, inline: false }] : []),
+    );
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
     await sendWarnings(thread, userIds, ensureSeason(fairData, seasonKey), commishMention);
     // Refresh fair-sim board (best effort)
@@ -479,18 +590,21 @@ export async function execute(interaction) {
       home,
       byUser: interaction.user.id,
     });
-    await postMaddenStaffLog(
+    await postMaddenStaffDecision(
       interaction.client,
       interaction.guildId,
       'Fair Sim Logged',
       `${away || 'Away'} vs ${home || 'Home'} was logged as a fair sim in <#${threadId}>.`,
+      [
+        ...(fairSimProtected.length ? [{ name: 'Activity Protection', value: `${fairSimProtected.map((id) => `<@${id}>`).join(', ')} used Fair Sim Credit.`, inline: false }] : []),
+      ],
     ).catch(() => null);
     await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'fair sim logged').catch(() => null);
     await sendCoachReceipt(interaction.guild, [...awayCoachRoles, ...homeCoachRoles], {
       title: 'Fair Sim Receipt',
       description: `${away || 'Away'} vs ${home || 'Home'} was recorded as a Fair Sim.`,
       fields: [
-        { name: 'Weight', value: 'Each coach received 0.5 strike points.' },
+        { name: 'Weight', value: fairSimProtected.length ? 'Fair Sim Credit was used where available; other coaches received 0.5 strike points.' : 'Each coach received 0.5 strike points.' },
         { name: 'Thread', value: `<#${threadId}>` },
       ],
     }).catch(() => null);
@@ -520,6 +634,7 @@ export async function execute(interaction) {
     recordCommunicationWeek(fairData, seasonKey, homeUserIds, { responded: participation.homeCount > 0, onTime: onTimeOutcome });
     saveStrikeStore(fairData);
     markThreadDone(threadId, action);
+    trackRecognitionOutcome(false);
     const label = action === 'homewin' ? 'Home Win Requested' : 'Away Win Requested';
     baseEmbed.setTitle(label).setColor(0x5865F2).setDescription(`Requested by ${interaction.user}\nTeams: ${away || 'Away'} vs ${home || 'Home'}`);
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
@@ -535,7 +650,7 @@ export async function execute(interaction) {
       chargedTeam: action === 'homewin' ? away : home,
       byUser: interaction.user.id,
     });
-    await postMaddenStaffLog(
+    await postMaddenStaffDecision(
       interaction.client,
       interaction.guildId,
       'Force Win Logged',

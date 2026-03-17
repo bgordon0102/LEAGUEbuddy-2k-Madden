@@ -2,10 +2,11 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
 import { buildStoryContext, buildCommitteeReviewData, buildRumorMillItems } from '../madden/storytelling.js';
-import { queueMaddenContentReview, loadContentQueue } from './madden_content_review_queue.js';
+import { cleanupPendingRumorReviews, getRumorPendingPolicy, queueMaddenContentReview, loadContentQueue } from './madden_content_review_queue.js';
 import { brandText, brandTitle } from './madden_branding.js';
+import { getRumorFeedbackForGuild } from './madden_rumor_feedback.js';
+import { loadMaddenChannelMap } from './madden_metadata.js';
 
-const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const LOG_FILE = path.join(process.cwd(), 'data', 'madden', 'staff_activity_log.json');
 const SCHEDULER_FILE = path.join(process.cwd(), 'data', 'madden', 'story_scheduler.json');
@@ -24,7 +25,11 @@ function saveJSON(file, data) {
 }
 
 function loadChannelMap() {
-  return safeReadJSON(CHANNEL_MAP_FILE, {});
+  return loadMaddenChannelMap();
+}
+
+function getStaffChannelId(channelMap = {}) {
+  return channelMap['League Staff'] || channelMap['LG Logs'] || null;
 }
 
 function getOpsChannelId(channelMap = {}) {
@@ -55,6 +60,21 @@ export async function postMaddenStaffLog(client, guildId, title, description, fi
   if (!channel?.isTextBased()) return;
   const embed = new EmbedBuilder()
     .setColor(0x95a5a6)
+    .setTitle(brandTitle(title))
+    .setDescription(description)
+    .setTimestamp();
+  if (fields.length) embed.addFields(fields);
+  await channel.send({ embeds: [embed] }).catch(() => null);
+}
+
+export async function postMaddenStaffDecision(client, guildId, title, description, fields = []) {
+  const channelMap = loadChannelMap();
+  const staffChannelId = getStaffChannelId(channelMap);
+  if (!staffChannelId) return;
+  const channel = await client.channels.fetch(staffChannelId).catch(() => null);
+  if (!channel?.isTextBased()) return;
+  const embed = new EmbedBuilder()
+    .setColor(0xf1c40f)
     .setTitle(brandTitle(title))
     .setDescription(description)
     .setTimestamp();
@@ -112,6 +132,12 @@ function rumorItemFingerprint(item = '') {
   return String(item || '').trim().toLowerCase();
 }
 
+function rumorCategoryFamily(category = '') {
+  const value = String(category || '').toLowerCase();
+  if (value.startsWith('draft')) return 'draft';
+  return value;
+}
+
 function pendingContentFingerprints(queue = {}, guildId, kind) {
   const fingerprints = new Set();
   for (const item of Object.values(queue || {})) {
@@ -132,6 +158,35 @@ function rotateRumorItems(items = [], startIndex = 0, maxItems = 2) {
     rotated.push(items[(normalizedStart + i) % items.length]);
   }
   return rotated;
+}
+
+function rotateRumorItemsWithCategoryTargets(items = [], startIndex = 0, maxItems = 2, targetCategories = []) {
+  if (!items.length) return [];
+  const ordered = rotateRumorItems(items, startIndex, items.length);
+  const selected = [];
+  const usedKeys = new Set();
+
+  for (const category of targetCategories || []) {
+    if (selected.length >= maxItems) break;
+    const match = ordered.find((item) =>
+      item &&
+      rumorCategoryFamily(item.category) === String(category || '').toLowerCase() &&
+      !usedKeys.has(String(item.key || '')),
+    );
+    if (!match) continue;
+    selected.push(match);
+    usedKeys.add(String(match.key || ''));
+  }
+
+  for (const item of ordered) {
+    if (selected.length >= maxItems) break;
+    const key = String(item?.key || '');
+    if (!item || usedKeys.has(key)) continue;
+    selected.push(item);
+    usedKeys.add(key);
+  }
+
+  return selected;
 }
 
 function loadRecentRumorHistory(scheduler = {}, guildId) {
@@ -155,26 +210,43 @@ function saveRecentRumorHistory(scheduler = {}, guildId, items = []) {
 
 export async function queueScheduledRumorMill(client, guildId, force = false) {
   const scheduler = safeReadJSON(SCHEDULER_FILE, {});
-  const queue = loadContentQueue();
+  const postRumorStatus = async (description) => {
+    await postMaddenStaffLog(client, guildId, 'Rumor Queue', description).catch(() => null);
+  };
 
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
   if (!guild) {
     appendMaddenStaffLog({ type: 'rumor_queue_skip', guildId, detail: 'Skipped rumor queue: guild not available.' });
+    await postRumorStatus('Skipped rumor queue: guild not available.');
     return false;
   }
   appendMaddenStaffLog({ type: 'rumor_queue_start', guildId, detail: 'Starting scheduled rumor queue build.' });
-  const ctx = await buildStoryContext(guild, client);
+  await postRumorStatus('Starting scheduled rumor queue build.');
+  const cleanup = await cleanupPendingRumorReviews(client, guildId).catch(() => ({ expired: 0, pendingCount: 0 }));
+  const pendingPolicy = getRumorPendingPolicy();
+  if (cleanup.expired) {
+    appendMaddenStaffLog({ type: 'rumor_queue_cleanup', guildId, detail: `Expired ${cleanup.expired} stale rumor review item(s).` });
+    await postRumorStatus(`Expired ${cleanup.expired} stale rumor review item(s).`);
+  }
+  const ctx = await buildStoryContext(guild, client, { skipCoachUserTeamMap: true });
   if (!ctx) {
     appendMaddenStaffLog({ type: 'rumor_queue_skip', guildId, detail: 'Skipped rumor queue: story context unavailable.' });
+    await postRumorStatus('Skipped rumor queue: story context unavailable.');
     return false;
   }
+  appendMaddenStaffLog({ type: 'rumor_queue_context_ready', guildId, detail: 'Rumor story context built successfully.' });
+  await postRumorStatus('Rumor story context built successfully.');
   const recentRumorHistory = loadRecentRumorHistory(scheduler, guildId);
+  const rumorFeedback = getRumorFeedbackForGuild(guildId);
   const rumorItems = buildRumorMillItems(ctx, 12, {
     recentStoryKeys: recentRumorHistory.map((entry) => entry.key).filter(Boolean),
     recentCategories: recentRumorHistory.map((entry) => entry.category).filter(Boolean),
+    deniedKeys: rumorFeedback.deniedKeys || {},
+    deniedCategories: rumorFeedback.deniedCategories || {},
   });
   if (!rumorItems.length) {
     appendMaddenStaffLog({ type: 'rumor_queue_skip', guildId, detail: 'Skipped rumor queue: no rumor items generated.' });
+    await postRumorStatus('Skipped rumor queue: no rumor items generated.');
     return false;
   }
 
@@ -183,16 +255,45 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
   const ghostRoleId = roleMap['Ghost Legacy'];
   if (!channelMap['Rumor Mill']) {
     appendMaddenStaffLog({ type: 'rumor_queue_skip', guildId, detail: 'Skipped rumor queue: Rumor Mill channel not configured.' });
+    await postRumorStatus('Skipped rumor queue: Rumor Mill channel not configured.');
+    return false;
+  }
+
+  const queue = loadContentQueue();
+  const currentPending = Object.values(queue).filter((item) =>
+    item &&
+    item.guildId === guildId &&
+    item.kind === 'rumor_mill' &&
+    item.status === 'pending'
+  ).length;
+  const openSlots = force
+    ? Math.max(0, pendingPolicy.hardCap - currentPending)
+    : Math.max(0, pendingPolicy.target - currentPending);
+  if (openSlots <= 0) {
+    const detail = `Skipped rumor queue: ${currentPending} rumor item(s) already pending (target ${pendingPolicy.target}, hard cap ${pendingPolicy.hardCap}).`;
+    appendMaddenStaffLog({
+      type: 'rumor_queue_skip',
+      guildId,
+      detail,
+    });
+    await postRumorStatus(detail);
     return false;
   }
 
   const rumorCursorByGuild = scheduler.rumorCursorByGuild || {};
   const startIndex = Number(rumorCursorByGuild[guildId] || 0);
-  const rumorWireItems = rotateRumorItems(rumorItems, startIndex, 3);
+  const rumorWireItems = rotateRumorItemsWithCategoryTargets(
+    rumorItems,
+    startIndex,
+    Math.min(openSlots, 3),
+    ['draft', 'rookie_development', 'player_heat'],
+  );
   const queuedThisRun = new Set();
   const alreadyPending = pendingContentFingerprints(queue, guildId, 'rumor_mill');
   let queuedCount = 0;
-  for (const rumorText of rumorWireItems) {
+  for (const rumorItem of rumorWireItems) {
+    const rumorText = String(rumorItem?.text || '').trim();
+    if (!rumorText) continue;
     const fingerprint = rumorItemFingerprint(rumorText);
     if (fingerprint && queuedThisRun.has(fingerprint)) continue;
     if (fingerprint && alreadyPending.has(fingerprint)) continue;
@@ -201,6 +302,8 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
         kind: 'rumor_mill',
         createdBy: 'system',
         targetChannelId: channelMap['Rumor Mill'],
+        rumorKey: rumorItem.key,
+        rumorCategory: rumorItem.category,
         content: ghostRoleId ? `<@&${ghostRoleId}>` : null,
         embeds: [
           {
@@ -214,7 +317,9 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
         postAllowedMentions: { parse: ['roles'] },
       });
     } catch (error) {
-      appendMaddenStaffLog({ type: 'rumor_queue_skip', guildId, detail: `Rumor queue send failed: ${error?.message || error}` });
+      const detail = `Rumor queue send failed: ${error?.message || error}`;
+      appendMaddenStaffLog({ type: 'rumor_queue_skip', guildId, detail });
+      await postRumorStatus(detail);
       continue;
     }
     if (fingerprint) {
@@ -225,6 +330,7 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
 
   if (!queuedCount) {
     appendMaddenStaffLog({ type: 'rumor_queue_skip', guildId, detail: 'Skipped rumor queue: all rumor items failed or are already pending.' });
+    await postRumorStatus('Skipped rumor queue: all rumor items failed or are already pending.');
     return false;
   }
   scheduler.lastRumorQueuedAt = Date.now();
@@ -235,7 +341,7 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
   saveRecentRumorHistory(scheduler, guildId, rumorWireItems);
   saveJSON(SCHEDULER_FILE, scheduler);
   appendMaddenStaffLog({ type: 'rumor_queue', guildId, detail: `Scheduled rumor wire queued ${queuedCount} item(s) for approval.` });
-  await postMaddenStaffLog(client, guildId, 'Rumor Queue', `Scheduled Madden rumor wire queued ${queuedCount} item(s) for approval.`);
+  await postRumorStatus(`Scheduled Madden rumor wire queued ${queuedCount} item(s) for approval.`);
   return true;
 }
 
@@ -245,15 +351,15 @@ export function initMaddenStoryScheduler(client) {
       await queueScheduledRumorMill(client, guild.id).catch(() => null);
     }
   };
-  const firstDelayMs = 5 * 60 * 1000;
-  const intervalMs = 15 * 60 * 1000;
-  setTimeout(run, firstDelayMs);
+  const intervalMs = 10 * 60 * 1000;
+  run().catch(() => null);
   setInterval(run, intervalMs);
 }
 
 export default {
   appendMaddenStaffLog,
   postMaddenStaffLog,
+  postMaddenStaffDecision,
   postLeagueStaffOpsSnapshot,
   queueScheduledRumorMill,
   initMaddenStoryScheduler,

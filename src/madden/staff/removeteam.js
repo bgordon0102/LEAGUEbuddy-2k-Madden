@@ -3,6 +3,12 @@ import fs from 'fs';
 import path from 'path';
 import { updateAvailableTeamsPin } from '../../../madden/available_teams.js';
 import { updateFairSimBoard } from '../../shared/fairsim_board.js';
+import { loadLeagueSnapshot, resolveLeagueIdWithConfig } from '../../../madden/madden_data.js';
+import { resetRecognitionUserSeason } from '../../shared/league_recognition.js';
+import { resetSportsbookUserSeason } from '../../shared/madden_sportsbook.js';
+import { appendMaddenStaffLog, postMaddenStaffLog } from '../../shared/madden_staff_ops.js';
+import { removeCoachAssignment } from '../../shared/madden_coach_assignments.js';
+import { getMaddenSeasonKey } from '../../shared/madden_metadata.js';
 
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
@@ -21,6 +27,18 @@ function hasStaffRole(member, roleMap) {
     const id = roleMap[r];
     return id && member.roles.cache.has(id);
   });
+}
+
+function coachRoleIds(roleMap) {
+  return Object.entries(roleMap)
+    .filter(([name]) => / coach$/i.test(name))
+    .map(([, id]) => id)
+    .filter(Boolean);
+}
+
+function hasAnyCoachRole(member, roleMap) {
+  const ids = coachRoleIds(roleMap);
+  return ids.some((id) => member.roles.cache.has(id));
 }
 
 const roleChoices = (roleMap) => Object.keys(roleMap)
@@ -93,7 +111,59 @@ export async function execute(interaction) {
   try {
     await guildMember.roles.remove(r1);
     if (r2) await guildMember.roles.remove(r2);
-    await interaction.editReply({ content: `Removed ${r2 ? `"${r1.name}" and "${r2.name}"` : `"${r1.name}"`} from ${target.tag}.` });
+    for (const role of [r1, r2].filter(Boolean)) {
+      if (!/ coach$/i.test(role.name)) continue;
+      const teamName = role.name.replace(/ coach$/i, '').trim();
+      removeCoachAssignment({
+        guildId: interaction.guildId,
+        userId: target.id,
+        teamName,
+        roleId: role.id,
+      });
+    }
+    const refreshedMember = await interaction.guild.members.fetch(target.id).catch(() => guildMember);
+    const removedCoachRole = [/ coach$/i.test(r1.name), / coach$/i.test(r2?.name || '')].some(Boolean);
+    let systemsResetMessage = null;
+    if (removedCoachRole && refreshedMember && !hasAnyCoachRole(refreshedMember, roleMap)) {
+      const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
+      const snapshot = leagueId ? loadLeagueSnapshot(leagueId) : null;
+      const seasonKey = getMaddenSeasonKey(snapshot);
+      const resetReason = `Coach role removed via /madden-removerole (${[r1?.name, r2?.name].filter(Boolean).join(', ')})`;
+      const recognitionReset = resetRecognitionUserSeason({
+        guildId: interaction.guildId,
+        league: 'madden',
+        seasonKey,
+        userId: target.id,
+        reason: resetReason,
+      });
+      const sportsbookReset = resetSportsbookUserSeason({
+        seasonKey,
+        userId: target.id,
+        reason: resetReason,
+      });
+      systemsResetMessage = ' Current-season recognition and sportsbook state were refreshed because the user no longer has a coach role.';
+      appendMaddenStaffLog({
+        type: 'coach_role_removed_systems_reset',
+        guildId: interaction.guildId,
+        targetUserId: target.id,
+        targetTag: target.tag,
+        seasonKey,
+        recognitionReset: recognitionReset?.ok === true,
+        sportsbookReset: sportsbookReset?.ok === true,
+      });
+      await postMaddenStaffLog(
+        interaction.client,
+        interaction.guildId,
+        'Coach Systems Refreshed',
+        `${target.tag} no longer has a coach role, so current-season coach systems were refreshed.`,
+        [
+          { name: 'Recognition', value: recognitionReset?.ok ? 'reset' : 'no active state', inline: true },
+          { name: 'Sportsbook', value: sportsbookReset?.ok ? 'reset' : 'no active state', inline: true },
+          { name: 'Season', value: seasonKey, inline: true },
+        ],
+      ).catch(() => null);
+    }
+    await interaction.editReply({ content: `Removed ${r2 ? `"${r1.name}" and "${r2.name}"` : `"${r1.name}"`} from ${target.tag}.${systemsResetMessage || ''}` });
     try {
       await updateAvailableTeamsPin(interaction.client, interaction.guildId, {
         allowCreate: true,

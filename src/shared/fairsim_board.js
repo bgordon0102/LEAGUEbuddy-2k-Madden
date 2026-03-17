@@ -10,6 +10,7 @@ import {
   completionRate,
   communicationSummary,
 } from './madden_strikes.js';
+import { getMaddenSeasonKey } from './madden_metadata.js';
 
 const BOARD_FILE = path.join(process.cwd(), 'data', 'madden', 'fairsim_board.json');
 const CHANNEL_ID = '1481327206457413712';
@@ -24,13 +25,6 @@ function loadJson(file, fallback = {}) {
 function saveJson(file, data) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
-
-function seasonKey(snapshot) {
-  const yr = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear
-    || snapshot?.info?.calendarYear
-    || new Date().getFullYear();
-  return `year_${yr}`;
 }
 
 async function buildLines(snapshot, fairData, season, guild) {
@@ -128,7 +122,7 @@ export async function updateFairSimBoard(client, guildId) {
     snapshot = null;
   }
   const fairData = loadStrikeStore();
-  const season = seasonKey(snapshot);
+  const season = getMaddenSeasonKey(snapshot);
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
   const usage = await buildLines(snapshot, fairData, season, guild);
   const seasonLabel = season.replace('year_', '');

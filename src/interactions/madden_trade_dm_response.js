@@ -9,7 +9,7 @@ import {
   incrementTradeCounts,
   updateTradeCountsEmbed,
 } from '../shared/madden_trade_utils.js';
-import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
+import { appendMaddenStaffLog, postLeagueStaffOpsSnapshot, postMaddenStaffDecision } from '../shared/madden_staff_ops.js';
 
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
 const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
@@ -263,7 +263,7 @@ export async function execute(interaction) {
     otherTeam: trade.otherTeam,
     byUser: interaction.user.id,
   });
-  await postMaddenStaffLog(
+  await postMaddenStaffDecision(
     interaction.client,
     interaction.guildId,
     'Trade Sent To Committee',

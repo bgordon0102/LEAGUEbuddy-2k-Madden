@@ -5,9 +5,15 @@ import { deriveTeamNeeds, loadTeamEmojis, formatTeamEmoji, draftOrder, applyPick
 import { computeSeasonTop100FromHistory } from '../top_players.js';
 import { buildLiveDraftContext, loadLatestLeagueSnapshot, getSeasonPhaseContext } from './draft_live_data.js';
 import { getFullTeamName } from '../../shared/madden_team_names.js';
+import { getRecognitionPerkState, inferRecognitionContext } from '../../shared/league_recognition.js';
+import { loadScoutStore, getScoutSeasonKey, getSeasonScoutUser } from './scout_store.js';
+import { coachCommandDescription } from '../../shared/madden_coach_voice.js';
+import { getCoachAssignmentMap } from '../../shared/madden_coach_assignments.js';
 
 const ROLE_MAP_PATH = path.join(process.cwd(), 'data', 'madden', 'madden_role_ids.json');
 const SCOUT_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_points.json');
+const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.json');
+const DRAFT_PRIMER_HISTORY_PATH = path.join(process.cwd(), 'data', 'madden', 'draft_primer_history.json');
 const CURRENT_CLASS_ID = 'CUS02';
 const POS_ALIAS = { EDGE: 'REDG', REDGE: 'REDG', LEDGE: 'LEDG' };
 const POSITION_NEEDS = {
@@ -169,6 +175,18 @@ function formatDevTraitShort(prospect) {
     return ({ 0: 'Normal', 1: 'Star', 2: 'SS', 3: 'X' })[tier] || null;
 }
 
+function formatProspectOvrShort(prospect) {
+    const ovr = Number(
+        prospect?.overall ??
+        prospect?.ovr ??
+        prospect?.OVR ??
+        prospect?.playerBestOvr ??
+        prospect?.overallRating
+    );
+    if (!Number.isFinite(ovr) || ovr <= 0) return null;
+    return `${Math.round(ovr)} OVR`;
+}
+
 function seededText(seedKey, templates = [], replacements = {}) {
     const seed = [...String(seedKey || '')].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
     let template = templates.length ? templates[Math.abs(seed) % templates.length] : '';
@@ -216,6 +234,330 @@ function safeReadJSON(file, fallback = {}) {
     }
 }
 
+function writeJSON(file, value) {
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(value, null, 2));
+}
+
+function loadScoutLog() {
+    return safeReadJSON(SCOUT_LOG_PATH, []);
+}
+
+function buildWarRoomIntel({
+    perkState,
+    scoutLog = [],
+    classKey,
+    scoutWeekKey,
+    seasonKey,
+    currentWeek = 0,
+    draftClass = [],
+    topBoardEntries = [],
+    guildId = null,
+    teamName = '',
+    league = null,
+    needsByTeam = {},
+    tradedOrder = [],
+    roundOneOwnedSlots = [],
+    firstRoundSlot = null,
+    seasonContext = null,
+}) {
+    if (!perkState?.perks?.draftWarRoomIntel && !perkState?.perks?.classTrendIntel) return null;
+
+    const seasonYear = Number(String(seasonKey || '').replace(/^year_/, '')) || 0;
+    const allClassLogs = (Array.isArray(scoutLog) ? scoutLog : []).filter((entry) =>
+        String(entry?.resolvedClassId || entry?.classId || '').toLowerCase() === String(classKey || '').toLowerCase() &&
+        (!seasonYear || Number(entry?.seasonYear || 0) === seasonYear)
+    );
+    const recentClassLogs = allClassLogs.filter((entry) => {
+        const entryWeek = Number(entry?.currentWeek || 0);
+        if (entry?.weekKey === scoutWeekKey) return true;
+        if (!currentWeek || !entryWeek) return false;
+        return entryWeek >= Math.max(1, currentWeek - 2) && entryWeek <= currentWeek;
+    });
+
+    const positionCounts = new Map();
+    const seasonPositionCounts = new Map();
+    const playerCounts = new Map();
+    const seasonPlayerCounts = new Map();
+    for (const entry of allClassLogs) {
+        const pos = normalizePositionCode(entry?.position || '');
+        if (pos) seasonPositionCounts.set(pos, (seasonPositionCounts.get(pos) || 0) + 1);
+        if (entry?.player) seasonPlayerCounts.set(entry.player, (seasonPlayerCounts.get(entry.player) || 0) + 1);
+    }
+    for (const entry of recentClassLogs) {
+        const pos = normalizePositionCode(entry?.position || '');
+        if (pos) positionCounts.set(pos, (positionCounts.get(pos) || 0) + 1);
+        if (entry?.player) playerCounts.set(entry.player, (playerCounts.get(entry.player) || 0) + 1);
+    }
+
+    const topTraffic = [...seasonPositionCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([pos, count]) => `${formatNeedLabel(mapPositionToNeed({ position: pos }))} ${count}`);
+
+    const recentHeat = [...positionCounts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(([pos, count]) => `${formatNeedLabel(mapPositionToNeed({ position: pos }))} ${count}`);
+
+    const boardTraffic = topBoardEntries
+        .map((entry) => {
+            const target = entry?.target || {};
+            const rawPos = normalizePositionCode(target?.position || '');
+            return {
+                name: target?.name,
+                pos: rawPos,
+                count: seasonPlayerCounts.get(target?.name) || 0,
+                recentCount: playerCounts.get(target?.name) || 0,
+                positionCount: seasonPositionCounts.get(rawPos) || 0,
+                projectedRound: projectedRoundForProspect(target),
+            };
+        })
+        .filter((entry) => entry.name)
+        .sort((a, b) => {
+            return (b.count - a.count) ||
+                (b.recentCount - a.recentCount) ||
+                (b.positionCount - a.positionCount) ||
+                (a.projectedRound - b.projectedRound);
+        });
+
+    const contestedNames = topBoardEntries
+        .map((entry) => entry?.target?.name)
+        .filter(Boolean)
+        .map((name) => ({ name, count: seasonPlayerCounts.get(name) || 0, recent: playerCounts.get(name) || 0 }))
+        .filter((entry) => entry.count > 0)
+        .sort((a, b) => (b.count - a.count) || (b.recent - a.recent))
+        .slice(0, 2);
+
+    const assignmentMap = guildId ? getCoachAssignmentMap({ guildId }) : { userToTeams: new Map() };
+    const teamScoutCounts = new Map();
+    const teamNeedScoutCounts = new Map();
+    for (const entry of allClassLogs) {
+        const scoutTeams = assignmentMap?.userToTeams?.get?.(String(entry?.userId || '')) || [];
+        for (const scoutTeam of scoutTeams) {
+            const normTeam = normalizeName(scoutTeam);
+            if (!normTeam) continue;
+            teamScoutCounts.set(normTeam, (teamScoutCounts.get(normTeam) || 0) + 1);
+            const need = mapPositionToNeed({ position: entry?.position || '' });
+            const key = `${normTeam}:${need}`;
+            teamNeedScoutCounts.set(key, (teamNeedScoutCounts.get(key) || 0) + 1);
+        }
+    }
+
+    const ownTeamInfo = getLeagueTeamInfoByName(league, teamName);
+    const ownDivisionKey = getTeamDivisionKey(ownTeamInfo);
+    const divisionPeers = (league?.teams?.leagueTeamInfoList || [])
+        .filter((team) => getTeamDivisionKey(team) && getTeamDivisionKey(team) === ownDivisionKey)
+        .map((team) => getFullTeamName(team, `${team.cityName || ''} ${team.nickName || ''}`.trim()))
+        .filter((name) => normalizeName(name) !== normalizeName(teamName));
+
+    const ownPickWindow = roundOneOwnedSlots.length
+        ? roundOneOwnedSlots.map((pick) => Number(pick?.slot)).filter((slot) => Number.isFinite(slot))
+        : (Number.isFinite(Number(firstRoundSlot)) ? [Number(firstRoundSlot)] : []);
+
+    const nearbyPickTeams = ownPickWindow.length
+        ? tradedOrder
+            .map((pick, idx) => {
+                const slot = idx + 1;
+                const pickTeam = getFullTeamName(pick, pick.name || pick.nick || 'Team');
+                const needs = resolveTeamNeeds(pickTeam, league, needsByTeam).slice(0, 2);
+                const normTeam = normalizeName(pickTeam);
+                return {
+                    slot,
+                    pickTeam,
+                    needs,
+                    scoutCount: teamScoutCounts.get(normTeam) || 0,
+                    needHeat: needs.map((need) => teamNeedScoutCounts.get(`${normTeam}:${need}`) || 0).reduce((sum, value) => sum + value, 0),
+                };
+            })
+            .filter((entry) =>
+                normalizeName(entry.pickTeam) !== normalizeName(teamName) &&
+                ownPickWindow.some((slot) => Math.abs(entry.slot - slot) <= 8)
+            )
+            .sort((a, b) => {
+                const aDist = Math.min(...ownPickWindow.map((slot) => Math.abs(a.slot - slot)));
+                const bDist = Math.min(...ownPickWindow.map((slot) => Math.abs(b.slot - slot)));
+                return aDist - bDist;
+            })
+            .slice(0, 4)
+        : [];
+
+    const lines = [];
+    if (perkState?.perks?.draftWarRoomIntel) {
+        if (topTraffic.length) {
+            lines.push(`Season scout traffic around this class: ${topTraffic.join(' • ')}.`);
+            if (recentHeat.length) {
+                lines.push(`Recent heat: ${recentHeat.join(' • ')} over the last few weeks.`);
+            }
+        } else {
+            const boardLanes = boardTraffic
+                .slice(0, 3)
+                .filter((entry) => entry.positionCount > 0)
+                .map((entry) => `${formatNeedLabel(mapPositionToNeed({ position: entry.pos }))} lane ${entry.positionCount}`);
+            const boardNames = boardTraffic
+                .filter((entry) => entry.count > 0)
+                .slice(0, 2)
+                .map((entry) => `${entry.name} (${entry.count})`);
+            if (boardLanes.length || boardNames.length) {
+                lines.push(`Season-long scout pressure still points at ${[...boardLanes, ...boardNames].join(' • ')}.`);
+            } else if (topBoardEntries.length) {
+                const roundPressure = topBoardEntries
+                    .slice(0, 3)
+                    .map((entry) => entry?.target)
+                    .filter(Boolean)
+                    .map((target) => `${target.name} R${projectedRoundForProspect(target)}`);
+                lines.push(`Season-long scout traffic is not crowded yet, but your board pressure is still live around ${roundPressure.join(' • ')}.`);
+            } else {
+                lines.push('Season-long league traffic is still light, but no paid lane is blank: early board pressure is already forming around your current top targets.');
+            }
+        }
+        if (contestedNames.length) {
+            lines.push(`Most contested names around your board this season: ${contestedNames.map((entry) => `${entry.name} (${entry.count})`).join(' • ')}.`);
+        } else if (boardTraffic.length) {
+            const projectedCrowd = boardTraffic
+                .slice(0, 2)
+                .filter((entry) => entry.positionCount > 0 || entry.count > 0)
+                .map((entry) => `${entry.name} (${formatNeedLabel(mapPositionToNeed({ position: entry.pos }))}${entry.count > 0 ? ` ${entry.count}` : ` lane ${entry.positionCount}`})`);
+            if (projectedCrowd.length) {
+                lines.push(`Board pressure indicators: ${projectedCrowd.join(' • ')}.`);
+            }
+        }
+        if (nearbyPickTeams.length) {
+            lines.push(`Pick-window teams: ${nearbyPickTeams.map((entry) => `#${entry.slot} ${entry.pickTeam} (${entry.needs.map((need) => formatNeedLabel(need)).join('/') || 'BPA'}${entry.scoutCount > 0 ? ` • ${entry.scoutCount} season looks` : ''})`).join(' • ')}.`);
+        }
+        if (divisionPeers.length) {
+            const hotDivision = divisionPeers
+                .map((peer) => ({ peer, count: teamScoutCounts.get(normalizeName(peer)) || 0 }))
+                .filter((entry) => entry.count > 0)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 2);
+            if (hotDivision.length) {
+                lines.push(`Division read: ${hotDivision.map((entry) => `${entry.peer} has ${entry.count} season looks in this class`).join(' • ')}.`);
+            }
+        }
+        const topTarget = topBoardEntries[0]?.target || null;
+        if (topTarget && nearbyPickTeams.length && ownPickWindow.length) {
+            const targetNeed = topBoardEntries[0]?.need || mapNeed(topTarget);
+            const targetRank = prospectRank(topTarget);
+            const earliestSlot = Math.min(...ownPickWindow);
+            const latestSlot = Math.max(...ownPickWindow);
+            const directWindowThreats = nearbyPickTeams.filter((entry) => entry.needs.includes(targetNeed));
+            if (targetRank < earliestSlot && directWindowThreats.length >= 2) {
+                lines.push(`Trade-up window: ${formatNeedLabel(targetNeed)} traffic is live ahead of your slot. If ${topTarget.name} is the priority, start shopping a move before the board gets inside #${Math.max(1, earliestSlot - 4)}.`);
+            } else if (targetRank > latestSlot + 8 && directWindowThreats.length <= 1) {
+                lines.push(`Trade-down window: your top lane is tracking later than your current slot. If the tier holds, sliding back should stay clean without losing the board.`);
+            } else {
+                lines.push(`Hold window: ${topTarget.name} still tracks close enough to your range that you can stay patient unless this lane heats up on draft day.`);
+            }
+        }
+    }
+
+    if (perkState?.perks?.classTrendIntel) {
+        const rounds = [1, 2, 3];
+        const roundSummaries = rounds.map((round) => {
+            const prospects = draftClass.filter((prospect) => projectedRoundForProspect(prospect) === round);
+            const devCount = prospects.filter((prospect) => Number(prospect?.dev_trait) >= 1).length;
+            const premiumCount = prospects.filter((prospect) => ['QB', 'OT', 'WR', 'EDGE', 'CB'].includes(mapNeed(prospect))).length;
+            return { round, total: prospects.length, devCount, premiumCount };
+        });
+        const strongestRound = roundSummaries.slice().sort((a, b) => (b.premiumCount - a.premiumCount) || (b.devCount - a.devCount))[0];
+        const bestDevRound = roundSummaries.slice().sort((a, b) => b.devCount - a.devCount)[0];
+        if (strongestRound) {
+            lines.push(`Class shape: Round ${strongestRound.round} is carrying the best premium-position weight right now.`);
+        }
+        if (bestDevRound && bestDevRound.devCount > 0) {
+            lines.push(`Dev concentration: Round ${bestDevRound.round} currently shows ${bestDevRound.devCount} non-normal dev fits in the class file.`);
+        }
+        if (['late_regular', 'postseason', 'offseason'].includes(String(seasonContext?.phase || '')) && topBoardEntries.length) {
+            const pressureNeed = topBoardEntries[0]?.need || mapNeed(topBoardEntries[0]?.target || {});
+            lines.push(`Late-board note: do not count on ${formatNeedLabel(pressureNeed).toLowerCase()} depth surviving cleanly through your full range once the board tightens. Keep a same-tier pivot ready.`);
+        }
+    }
+
+    return lines.length ? lines.slice(0, perkState?.perks?.classTrendIntel ? 6 : 5).join('\n') : null;
+}
+
+function buildDraftPrimerAccessNote({ perkState, seasonContext }) {
+    const hasPremiumIntel = Boolean(
+        perkState?.perks?.draftWarRoomIntel ||
+        perkState?.perks?.classTrendIntel ||
+        perkState?.perks?.scoutRecommendation
+    );
+    if (hasPremiumIntel) return null;
+    return 'Premium board intel is locked. Buy Draft War Room Intel, Class Trend Intel, or Scout Recommendation in Franchise Hub to unlock deeper board reads.';
+}
+
+function draftPrimerSeasonKey(league, seasonContext) {
+    const seasonYear = Number(
+        seasonContext?.calendarYear
+        ?? league?.info?.careerHubInfo?.seasonInfo?.calendarYear
+        ?? league?.info?.calendarYear
+        ?? league?.calendarYear
+        ?? 0,
+    );
+    return seasonYear > 0 ? `year_${seasonYear}` : 'year_unknown';
+}
+
+function draftPrimerWeekKey(seasonContext) {
+    const week = Number(seasonContext?.currentWeek || 0);
+    if (seasonContext?.isInSeason && week > 0) return `week_${week}`;
+    const phase = seasonContext?.phase || 'offseason';
+    return `offseason_${phase}`;
+}
+
+function getDraftPrimerRefreshData(history, { leagueId, userId, seasonKey, currentWeekKey }) {
+    const weeks = history?.[leagueId]?.[userId]?.[seasonKey]?.weeks || {};
+    const currentWeekNumber = Number(String(currentWeekKey || '').replace(/^week_/, ''));
+    const recentPenalty = new Map();
+    const seasonCount = new Map();
+    const entries = Object.entries(weeks)
+        .filter(([weekKey]) => weekKey !== currentWeekKey)
+        .sort((a, b) => {
+            const aNum = Number(String(a[0]).replace(/^week_/, ''));
+            const bNum = Number(String(b[0]).replace(/^week_/, ''));
+            if (Number.isFinite(aNum) && Number.isFinite(bNum)) return bNum - aNum;
+            return Number(b[1]?.generatedAt || 0) - Number(a[1]?.generatedAt || 0);
+        });
+
+    for (const [weekKey, entry] of entries) {
+        const names = Array.isArray(entry?.names) ? entry.names : [];
+        const weekNumber = Number(String(weekKey).replace(/^week_/, ''));
+        const age = Number.isFinite(currentWeekNumber) && Number.isFinite(weekNumber)
+            ? Math.max(0, currentWeekNumber - weekNumber)
+            : null;
+        const weight = age == null
+            ? 1
+            : age <= 1
+                ? 5
+                : age <= 3
+                    ? 3
+                    : age <= 6
+                        ? 2
+                        : 1;
+        for (const rawName of names) {
+            const name = normalizeName(rawName);
+            if (!name) continue;
+            seasonCount.set(name, (seasonCount.get(name) || 0) + 1);
+            recentPenalty.set(name, (recentPenalty.get(name) || 0) + weight);
+        }
+    }
+
+    return { recentPenalty, seasonCount };
+}
+
+function saveDraftPrimerWeek(history, { leagueId, userId, seasonKey, weekKey, teamName, names }) {
+    if (!history[leagueId]) history[leagueId] = {};
+    if (!history[leagueId][userId]) history[leagueId][userId] = {};
+    if (!history[leagueId][userId][seasonKey]) history[leagueId][userId][seasonKey] = { weeks: {} };
+    if (!history[leagueId][userId][seasonKey].weeks) history[leagueId][userId][seasonKey].weeks = {};
+    history[leagueId][userId][seasonKey].teamName = teamName;
+    history[leagueId][userId][seasonKey].weeks[weekKey] = {
+        names: Array.from(new Set((names || []).filter(Boolean))),
+        generatedAt: Date.now(),
+    };
+    writeJSON(DRAFT_PRIMER_HISTORY_PATH, history);
+}
+
 function classIdForLeague(league) {
     const seasonInfo = league?.info?.careerHubInfo?.seasonInfo || {};
     const seasonOrdinal = Number(
@@ -233,7 +575,8 @@ function classIdForLeague(league) {
 function scoutStatusForProspect(userScout = {}, classKey, weekKey, playerName) {
     const unlocked = userScout?.players?.[classKey]?.[playerName] || [];
     const order = Array.isArray(userScout?.order?.[classKey]) ? userScout.order[classKey] : [];
-    const suggestedName = userScout?.suggestedScout?.[classKey]?.[weekKey] || null;
+    const suggestedRaw = userScout?.suggestedScout?.[classKey]?.[weekKey] || null;
+    const suggestedNames = Array.isArray(suggestedRaw) ? suggestedRaw : (suggestedRaw ? [suggestedRaw] : []);
     const unlockCount = Array.isArray(unlocked) ? unlocked.length : 0;
     const boardIndex = order.indexOf(playerName);
     return {
@@ -241,7 +584,7 @@ function scoutStatusForProspect(userScout = {}, classKey, weekKey, playerName) {
         isFullyScouted: unlockCount >= 3,
         isPartiallyScouted: unlockCount > 0 && unlockCount < 3,
         isUnscouted: unlockCount === 0,
-        isSuggestedScout: suggestedName === playerName,
+        isSuggestedScout: suggestedNames.includes(playerName),
         boardIndex,
         hasBoardHistory: boardIndex >= 0,
     };
@@ -372,6 +715,34 @@ function resolveTeamNeeds(teamName, league, needsByTeam) {
     return ['BPA'];
 }
 
+function getLeagueTeamInfoByName(league, teamName) {
+    const target = normalizeName(teamName);
+    const teams = league?.teams?.leagueTeamInfoList || [];
+    for (const team of teams) {
+        const candidates = [
+            getFullTeamName(team, ''),
+            `${team.cityName || ''} ${team.nickName || ''}`.trim(),
+            team.displayName,
+            team.nickName,
+            team.abbrName,
+        ].filter(Boolean).map(normalizeName);
+        if (candidates.some((candidate) => candidate === target || candidate.includes(target) || target.includes(candidate))) {
+            return team;
+        }
+    }
+    return null;
+}
+
+function getTeamDivisionKey(team) {
+    return normalizeName(
+        team?.divisionName ||
+        team?.division ||
+        team?.teamDivision ||
+        team?.teamDivName ||
+        ''
+    );
+}
+
 function qbDepthStatus(teamName, league) {
     // Return whether the team should look for a depth QB based on roster.
     const norm = normalizeName(teamName);
@@ -427,7 +798,7 @@ function seededRand(teamName, round, max) {
 
 export const data = new SlashCommandBuilder()
     .setName('madden-draftprimer')
-    .setDescription('Get a draft primer: 7 players to target (1 per round) and a draft strategy blurb.')
+    .setDescription(coachCommandDescription('draftprimer'))
     .setDMPermission(false);
 
 export async function execute(interaction) {
@@ -482,12 +853,32 @@ export async function execute(interaction) {
     const live = buildLiveDraftContext(league);
     const seasonContext = live.seasonContext || getSeasonPhaseContext(league, 0);
     const classKey = classIdForLeague(league);
-    const scoutData = safeReadJSON(SCOUT_PATH, {});
+    const scoutData = loadScoutStore();
+    const scoutLog = loadScoutLog();
+    const recognitionContext = inferRecognitionContext('madden', interaction.guildId);
+    const perkState = recognitionContext?.seasonKey
+        ? getRecognitionPerkState({
+            guildId: interaction.guildId,
+            league: 'madden',
+            seasonKey: recognitionContext.seasonKey,
+            userId: interaction.user.id,
+            weekKey: recognitionContext.weekKey,
+        })
+        : null;
     const currentWeekValue = Number(seasonContext.currentWeek || 0);
     const scoutWeekKey = seasonContext.isInSeason && currentWeekValue > 0
         ? `year_${seasonContext.calendarYear}_week_${currentWeekValue}`
         : `year_${seasonContext.calendarYear}_offseason_total`;
-    const userScout = scoutData?.[interaction.user.id] || {};
+    const userScout = getSeasonScoutUser(scoutData, interaction.user.id, getScoutSeasonKey(league), { create: false }) || {};
+    const primerHistory = safeReadJSON(DRAFT_PRIMER_HISTORY_PATH, {});
+    const primerSeasonKey = draftPrimerSeasonKey(league, seasonContext);
+    const primerWeekKey = draftPrimerWeekKey(seasonContext);
+    const primerRefresh = getDraftPrimerRefreshData(primerHistory, {
+        leagueId,
+        userId: interaction.user.id,
+        seasonKey: primerSeasonKey,
+        currentWeekKey: primerWeekKey,
+    });
     const seasonAgg = live.teamStatsByTeamId || {};
     const seasonCounts = live.seasonCountsByTeamId || {};
     const playerAgg = live.playerStatsByRosterId || {};
@@ -640,6 +1031,24 @@ export async function execute(interaction) {
         .filter(p => p.norm === teamNorm);
     const naturalRoundOneSlot = Math.max(1, rawOrder.findIndex((p) => normalizeName(p.name || p.nick || '') === teamNorm) + 1 || 16);
     const firstRoundSlot = roundOneOwnedSlots.length ? Math.min(...roundOneOwnedSlots.map(p => p.slot)) : null;
+    const lastRoundOneSlot = roundOneOwnedSlots.length ? Math.max(...roundOneOwnedSlots.map((p) => p.slot)) : firstRoundSlot;
+    const premiumRoundOneWindow = roundOneOwnedSlots.length >= 2 && firstRoundSlot != null && firstRoundSlot <= 5
+        ? {
+            low: 1,
+            high: Math.max(10, Math.min(12, Number(lastRoundOneSlot || firstRoundSlot) + 6)),
+        }
+        : null;
+    const buildPickWindow = (slot, round, options = {}) => {
+        const numericSlot = Math.max(1, Number(slot || 1));
+        if (round === 1 && options.premiumWindow) {
+            return options.premiumWindow;
+        }
+        const earlyRound = round <= 2;
+        const lateRound = round >= 5;
+        const low = Math.max(1, numericSlot - (earlyRound ? 5 : lateRound ? 7 : 6));
+        const high = numericSlot + (earlyRound ? 8 : lateRound ? 10 : 9);
+        return { low, high };
+    };
 
     const maxWR = 2;
     const maxQBPrimary = 1;
@@ -686,16 +1095,16 @@ export async function execute(interaction) {
                 ? (otherRoundOneSlots.length ? Math.min(...otherRoundOneSlots.map((pick) => pick.slot)) : null)
                 : (otherNaturalSlot + 32 * (round - 1));
             if (round === 1 && otherBasePick == null) continue;
-            const low = Math.max(1, otherBasePick - 5);
-            const high = otherBasePick + 15;
+            const { low, high } = buildPickWindow(otherBasePick, round);
             let otherWindow = draftClass.filter((player, idx) => {
                 const rank = (player.__idx ?? idx) + 1;
                 return rank >= low && rank <= high;
             }).filter((player) => withinRound(player, round));
             if (!otherWindow.length) {
+                const fallbackWindow = buildPickWindow(otherBasePick, round === 1 ? 3 : round + 1);
                 otherWindow = draftClass.filter((player, idx) => {
                     const rank = (player.__idx ?? idx) + 1;
-                    return rank >= otherBasePick - 15 && rank <= otherBasePick + 25;
+                    return rank >= fallbackWindow.low && rank <= (fallbackWindow.high + 6);
                 }).filter((player) => withinRound(player, round));
             }
             for (const need of otherNeeds) {
@@ -729,15 +1138,15 @@ export async function execute(interaction) {
             pickEntries.push({ round, target: null, need: firstNeed, line: `1. No Round 1 pick — stay patient and attack ${formatNeedLabel(firstNeed)} on day two.` });
             continue;
         }
-        const low = Math.max(1, basePick - 5);
-        const high = basePick + 15;
+        const { low, high } = buildPickWindow(basePick, round, { premiumWindow: premiumRoundOneWindow });
         let window = draftClass.filter((p, idx) => {
             const rank = (p.__idx ?? idx) + 1;
             return rank >= low && rank <= high;
         }).filter(p => withinRound(p, round));
         if (!window.length) window = draftClass.filter((p, idx) => {
+            const fallbackWindow = buildPickWindow(basePick, round === 1 ? 3 : round + 1, { premiumWindow: premiumRoundOneWindow });
             const rank = (p.__idx ?? idx) + 1;
-            return rank >= basePick - 15 && rank <= basePick + 25;
+            return rank >= fallbackWindow.low && rank <= (fallbackWindow.high + 6);
         }).filter(p => withinRound(p, round));
 
         const teamNormLower = normalizeName(teamName);
@@ -763,9 +1172,30 @@ export async function execute(interaction) {
         if (target && !canTake(target)) target = null;
 
         const unmetNeeds = top3Needs.filter(n => (needPickCount[n] || 0) === 0);
-        const needPriority = unmetNeeds.length ? unmetNeeds : top3Needs;
+        const rotatedNeeds = top3Needs.length > 1
+            ? top3Needs.map((_, idx) => top3Needs[(idx + Math.max(0, round - 1)) % top3Needs.length])
+            : top3Needs;
+        const balancedLateNeeds = round >= 4
+            ? rotatedNeeds.slice().sort((a, b) => {
+                const aCount = needPickCount[a] || 0;
+                const bCount = needPickCount[b] || 0;
+                if (aCount !== bCount) return aCount - bCount;
+                return rotatedNeeds.indexOf(a) - rotatedNeeds.indexOf(b);
+            })
+            : rotatedNeeds;
+        const needPriority = unmetNeeds.length
+            ? [...unmetNeeds, ...balancedLateNeeds.filter((need) => !unmetNeeds.includes(need))]
+            : balancedLateNeeds;
 
         const rankFor = (player) => prospectRank(player);
+        const refreshPenaltyFor = (player) => {
+            const normalized = normalizeName(player?.name || '');
+            if (!normalized) return 0;
+            const recentPenalty = primerRefresh.recentPenalty.get(normalized) || 0;
+            const seasonCount = primerRefresh.seasonCount.get(normalized) || 0;
+            const seasonPenalty = Math.max(0, seasonCount - 1) * 2;
+            return recentPenalty + seasonPenalty;
+        };
         const rankedCandidatesForNeed = (pool, need) => {
             const filtered = pool.filter((player) => {
                 if (!canTake(player)) return false;
@@ -778,10 +1208,16 @@ export async function execute(interaction) {
                 const bExposure = exposureWeightFor(b, need, round);
                 const aScout = scoutStatusForProspect(userScout, classKey, scoutWeekKey, a.name);
                 const bScout = scoutStatusForProspect(userScout, classKey, scoutWeekKey, b.name);
+                const aRefresh = refreshPenaltyFor(a);
+                const bRefresh = refreshPenaltyFor(b);
                 const aRank = rankFor(a);
                 const bRank = rankFor(b);
-                const aDistance = Math.abs(aRank - basePick);
-                const bDistance = Math.abs(bRank - basePick);
+                const portfolioSlots = round === 1 && roundOneOwnedSlots.length
+                    ? roundOneOwnedSlots.map((pick) => Number(pick.slot)).filter((slot) => Number.isFinite(slot))
+                    : [basePick];
+                const distanceToPortfolio = (rank) => Math.min(...portfolioSlots.map((slot) => Math.abs(rank - slot)));
+                const aDistance = distanceToPortfolio(aRank);
+                const bDistance = distanceToPortfolio(bRank);
                 const aScoutScore =
                     (aScout.isSuggestedScout ? -4 : 0) +
                     (aScout.isFullyScouted ? -3 : 0) +
@@ -793,6 +1229,7 @@ export async function execute(interaction) {
                     (bScout.isPartiallyScouted ? -2 : 0) +
                     (bScout.hasBoardHistory ? -1 : 0);
                 if (aScoutScore !== bScoutScore) return aScoutScore - bScoutScore;
+                if (aRefresh !== bRefresh) return aRefresh - bRefresh;
                 if (aExposure !== bExposure) return aExposure - bExposure;
                 if (aDistance !== bDistance) return aDistance - bDistance;
                 return aRank - bRank;
@@ -807,7 +1244,11 @@ export async function execute(interaction) {
                 ranked.length,
             );
             const topBand = ranked.slice(0, bandSize);
-            const seededIndex = seededRand(`${teamName}:${need}:${basePick}`, round + bandSize, topBand.length);
+            const seededIndex = seededRand(
+                `${teamName}:${primerSeasonKey}:${primerWeekKey}:${need}:${basePick}`,
+                round + bandSize,
+                topBand.length,
+            );
             return topBand[seededIndex] || topBand[0] || null;
         };
 
@@ -1623,8 +2064,24 @@ export async function execute(interaction) {
         if (!primaryNeed || !prospect) return '';
         return `Prototype first: ${formatArchetype(primaryNeed, prospect).replace(/\.$/, '')}.`;
     })();
+    const ownedOverallSlots = pickEntries
+        .map((entry) => {
+            if (!entry?.round) return null;
+            if (entry.round === 1) {
+                const explicit = roundOneOwnedSlots[0]?.slot;
+                return explicit != null ? Number(explicit) : (firstRoundSlot != null ? Number(firstRoundSlot) : null);
+            }
+            return Math.max(1, naturalRoundOneSlot + (32 * (entry.round - 1)));
+        })
+        .filter((slot) => Number.isFinite(Number(slot)))
+        .map((slot) => Number(slot));
+    const allOwnedSlots = [
+        ...roundOneOwnedSlots.map((pick) => Number(pick?.slot)).filter((slot) => Number.isFinite(slot)),
+        ...ownedOverallSlots,
+    ].filter((slot, idx, arr) => Number.isFinite(slot) && arr.indexOf(slot) === idx)
+        .sort((a, b) => a - b);
     const estimateOverallSlotForRound = (round) => {
-        if (round === 1 && firstRoundSlot != null) return firstRoundSlot;
+        if (round === 1) return allOwnedSlots[0] ?? firstRoundSlot ?? null;
         return Math.max(1, naturalRoundOneSlot + (32 * (round - 1)));
     };
     const competitionForTarget = (entry) => {
@@ -1633,7 +2090,12 @@ export async function execute(interaction) {
         const targetNeed = entry.need || mapNeed(target);
         const targetRank = prospectRank(target);
         const targetRound = projectedRoundForProspect(target);
-        const yourSlot = estimateOverallSlotForRound(entry.round || targetRound);
+        const yourRound = entry.round || targetRound;
+        const roundOwnedSlots = yourRound === 1
+            ? allOwnedSlots.filter((slot) => slot <= 32)
+            : [estimateOverallSlotForRound(yourRound)].filter((slot) => Number.isFinite(Number(slot)));
+        const earliestSlot = roundOwnedSlots.length ? Math.min(...roundOwnedSlots) : estimateOverallSlotForRound(yourRound);
+        const latestSlot = roundOwnedSlots.length ? Math.max(...roundOwnedSlots) : earliestSlot;
         const teamsAhead = tradedOrder
             .slice(0, Math.max(0, Math.min(targetRank - 1, tradedOrder.length)))
             .map((pick) => {
@@ -1648,17 +2110,26 @@ export async function execute(interaction) {
             : directCompetition.length >= 3
                 ? 'warm'
                 : 'cool';
-        const reachVsSlot = targetRank < yourSlot - 8;
-        const slideToYou = targetRank > yourSlot + 10;
+        const premiumRange = roundOwnedSlots.length >= 2 && earliestSlot <= 5;
+        const reachVsSlot = targetRank < earliestSlot - 8;
+        const slideToYou = latestSlot != null ? targetRank > latestSlot + 10 : false;
+        const fitsEarliestSlot = earliestSlot != null && targetRank <= earliestSlot + 4;
+        const fitsOwnedWindow = earliestSlot != null && latestSlot != null && targetRank >= earliestSlot - 3 && targetRank <= latestSlot + 6;
         return {
             targetNeed,
             targetRank,
             targetRound,
-            yourSlot,
+            yourRound,
+            earliestSlot,
+            latestSlot,
+            roundOwnedSlots,
             directCompetition,
             pressure,
             reachVsSlot,
             slideToYou,
+            premiumRange,
+            fitsEarliestSlot,
+            fitsOwnedWindow,
         };
     };
     const targetBoardContext = [weakSpotLine, boardShapeLine, archetypeLine]
@@ -1698,6 +2169,16 @@ export async function execute(interaction) {
             return { round: idx + 1, target: null, need: null, line: `${idx + 1}. No suggestion` };
         });
     }
+    saveDraftPrimerWeek(primerHistory, {
+        leagueId,
+        userId: interaction.user.id,
+        seasonKey: primerSeasonKey,
+        weekKey: primerWeekKey,
+        teamName,
+        names: pickEntries
+            .map((entry) => entry?.target?.name)
+            .filter(Boolean),
+    });
     const topBoardEntries = pickEntries.filter((entry) => entry?.target).slice(0, 3);
     const marketIntel = topBoardEntries.map((entry, idx) => {
         const intel = competitionForTarget(entry);
@@ -1705,9 +2186,11 @@ export async function execute(interaction) {
         const target = entry.target;
         const scout = scoutStatusForProspect(userScout, classKey, scoutWeekKey, target.name);
         const school = target?.college || target?.College || target?.school || target?.schoolName || 'N/A';
-        const dev = formatDevTraitShort(target);
-        const archetype = formatShortArchetype(intel.targetNeed, target);
-        const projectedPick = projectedPickForProspect(target);
+        const canShowScoutDetail = scout.isFullyScouted || scout.isPartiallyScouted;
+        const ovr = canShowScoutDetail ? formatProspectOvrShort(target) : null;
+        const dev = canShowScoutDetail ? formatDevTraitShort(target) : '';
+        const archetype = canShowScoutDetail ? formatShortArchetype(intel.targetNeed, target) : '';
+        const projectedPick = canShowScoutDetail ? projectedPickForProspect(target) : null;
         const headerBits = [
             `${idx + 1}. ${target.name}`,
             school,
@@ -1715,6 +2198,7 @@ export async function execute(interaction) {
             `#${intel.targetRank}`,
         ];
         if (projectedPick && projectedPick !== intel.targetRank) headerBits.push(`proj ${projectedPick}`);
+        if (ovr) headerBits.push(ovr);
         if (dev) headerBits.push(dev);
         if (archetype) headerBits.push(archetype);
         const header = `${headerBits.join(' | ')}:`;
@@ -1728,19 +2212,42 @@ export async function execute(interaction) {
             .map((other) => other.target.name)
             .slice(0, 2);
         const fallbackLine = fallbackNames.length >= 2
-            ? `Have ${fallbackNames[0]} or ${fallbackNames[1]} ready as your next ${needLabel} call.`
+            ? seededText(`fallback:${teamName}:${target.name}:2`, [
+                `Keep ${fallbackNames[0]} or ${fallbackNames[1]} ready as your next ${needLabel} call.`,
+                `If this lane gets picked clean, pivot to ${fallbackNames[0]} or ${fallbackNames[1]}.`,
+                `Do not let this tier leave you empty-handed; ${fallbackNames[0]} or ${fallbackNames[1]} should stay on deck.`,
+            ])
             : fallbackNames.length === 1
-                ? `Have ${fallbackNames[0]} ready as your next ${needLabel} call.`
-                : `Have another ${needLabel} from the same tier ready as your fallback.`;
+                ? seededText(`fallback:${teamName}:${target.name}:1`, [
+                    `Keep ${fallbackNames[0]} ready as your next ${needLabel} call.`,
+                    `If this name goes early, pivot straight to ${fallbackNames[0]}.`,
+                    `${fallbackNames[0]} should stay on deck as the clean fallback.`,
+                ])
+                : seededText(`fallback:${teamName}:${target.name}:0`, [
+                    `Have another ${needLabel} from the same tier ready as your fallback.`,
+                    `Keep a same-tier ${needLabel} behind him so this lane does not stall out.`,
+                    `Do not leave this tier with only one answer; keep another ${needLabel} ready.`,
+                ]);
         const scoutLead = scout.isFullyScouted
-            ? 'You already have the full report here.'
+            ? 'Scouting: full report already unlocked.'
             : scout.isPartiallyScouted
-                ? `You have ${scout.unlockCount}/3 layers unlocked already.`
+                ? `Scouting: ${scout.unlockCount}/3 layers unlocked on your board.`
                 : scout.isSuggestedScout
-                    ? 'This lines up with your current scout queue.'
+                    ? 'Scouting: this still needs a real pass, but it matches your current scout queue.'
                     : scout.hasBoardHistory
-                        ? 'He is already on your board, but not finished yet.'
-                        : 'He still needs a real scout pass.';
+                        ? 'Scouting: he is on your board, but you do not have a real report yet.'
+                        : 'Scouting: no unlocked report yet.';
+        const capitalLine = intel.roundOwnedSlots?.length >= 2
+            ? `You control picks #${intel.roundOwnedSlots.join(' and #')} in this range.`
+            : intel.earliestSlot != null
+                ? `Your next realistic slot is #${intel.earliestSlot}.`
+                : '';
+        if (intel.fitsEarliestSlot && intel.premiumRange) {
+            return `${header} ${scoutLead} ${capitalLine} This is premium-board value for you, so there is no reason to wait for the teens if he is your preferred ${needLabel}.`;
+        }
+        if (intel.fitsOwnedWindow && intel.roundOwnedSlots?.length >= 2) {
+            return `${header} ${scoutLead} ${capitalLine} He sits comfortably inside your current board window, so this is more about which of your picks you want to spend than whether he can reach you. ${fallbackLine}`;
+        }
         if (intel.reachVsSlot && intel.pressure === 'hot') {
             return `${header} ${scoutLead} This is a contested ${needLabel} lane, and ${competitionTeams || 'teams ahead of you'} could clear it out early. Treat him as a trade-up conversation, not a safe faller.`;
         }
@@ -1748,15 +2255,15 @@ export async function execute(interaction) {
             return `${header} ${scoutLead} The talent probably lands ahead of your natural slot, so keep him in the swing tier without building the whole plan around him falling.`;
         }
         if (intel.pressure === 'hot') {
-            return `${header} ${scoutLead} League interest looks heavy, and ${competitionTeams || 'multiple teams'} could take him before your pick. ${fallbackLine}`;
+            return `${header} ${scoutLead} League interest looks heavy, and ${competitionTeams || 'multiple teams'} could take him before your next slot. ${fallbackLine}`;
         }
         if (intel.pressure === 'warm') {
-            return `${header} ${scoutLead} The market should stay active, but not frantic. He fits your range if the tier holds. ${fallbackLine}`;
+            return `${header} ${scoutLead} The market should stay active, but not frantic. ${capitalLine} He fits your board window if the tier holds. ${fallbackLine}`;
         }
         if (intel.slideToYou) {
             return `${header} ${scoutLead} This profile should live in your range, so there is no reason to force the board unless the tier starts disappearing faster than expected.`;
         }
-        return `${header} ${scoutLead} He is a clean fit for your slot and board shape. ${fallbackLine}`;
+        return `${header} ${scoutLead} ${capitalLine} He is a clean fit for your board shape. ${fallbackLine}`;
     }).join('\n');
     const planNames = topBoardEntries
         .map((entry) => entry?.target?.name)
@@ -1788,7 +2295,8 @@ export async function execute(interaction) {
         ? `Use the next few weeks to confirm your ${formatNeedLabel(primaryNeed).toLowerCase()} tier before locking the board.`
         : 'Use this board to finalize tiers and late pivots.';
     const picks = pickEntries.map((entry) => entry.line);
-    const quickTargets = picks.slice(0, 7);
+    const hasDraftIntelPerk = Boolean(perkState?.perks?.draftWarRoomIntel || perkState?.perks?.classTrendIntel || perkState?.perks?.scoutRecommendation);
+    const quickTargets = hasDraftIntelPerk ? picks.slice(0, 7) : picks.slice(0, 3);
     const quickSnapshot = `${recordStr} record`;
     const quickCapital = roundOneOwnedSlots.length
         ? extraRoundOneSlots.length
@@ -1801,6 +2309,42 @@ export async function execute(interaction) {
         .join(' ')
         .replace(/\s+/g, ' ')
         .trim();
+    const warRoomIntel = buildWarRoomIntel({
+        perkState,
+        scoutLog,
+        classKey,
+        scoutWeekKey,
+        seasonKey: primerSeasonKey,
+        currentWeek: seasonContext?.currentWeek || 0,
+        draftClass,
+        topBoardEntries,
+        guildId: interaction.guildId,
+        teamName,
+        league,
+        needsByTeam,
+        tradedOrder,
+        roundOneOwnedSlots,
+        firstRoundSlot,
+        seasonContext,
+    });
+    const primerAccessNote = buildDraftPrimerAccessNote({ perkState, seasonContext });
+    const scoutRecommendationBoard = perkState?.perks?.scoutRecommendation
+        ? (() => {
+            const suggestedRaw = userScout?.suggestedScout?.[classKey]?.[scoutWeekKey] || [];
+            const suggestedNames = Array.isArray(suggestedRaw) ? suggestedRaw : [suggestedRaw].filter(Boolean);
+            const suggestedProspects = suggestedNames
+                .map((name) => draftClass.find((prospect) => prospect?.name === name) || null)
+                .filter(Boolean)
+                .slice(0, 7);
+            if (!suggestedProspects.length) {
+                return 'Scout Recommendation is active, but no current spots are available from your board right now.';
+            }
+            return suggestedProspects.map((prospect, idx) => {
+                const roundLabel = ['Round 1', 'Round 2', 'Round 3', 'Round 4', 'Round 5', 'Round 6', 'Round 7+'][idx] || `Spot ${idx + 1}`;
+                return `• ${roundLabel}: ${prospect.name} (${prospect.position || 'N/A'} • Board #${prospectRank(prospect) || '?'}${prospect.school ? ` • ${prospect.school}` : ''})`;
+            }).join('\n');
+        })()
+        : null;
 
     const embed = new EmbedBuilder()
         .setTitle(`${teamEmoji ? teamEmoji + ' ' : ''}${teamName} — Draft Primer`)
@@ -1812,8 +2356,11 @@ export async function execute(interaction) {
             { name: 'Draft Capital', value: quickCapital, inline: false },
             { name: 'Priority Stack', value: quickPriority, inline: false },
             { name: 'Target Board', value: quickTargets.join('\n'), inline: false },
-            { name: 'Market Intel', value: marketIntel || 'No market read available from the current board.', inline: false },
-            { name: 'Draft Plan', value: draftPlan || 'No additional draft plan was available from the current export.', inline: false }
+            ...(scoutRecommendationBoard ? [{ name: 'Scout Recommendation Board', value: scoutRecommendationBoard, inline: false }] : []),
+            ...(hasDraftIntelPerk ? [{ name: 'Market Intel', value: marketIntel || 'No market read available from the current board.', inline: false }] : []),
+            ...(warRoomIntel ? [{ name: 'War Room Intel', value: warRoomIntel, inline: false }] : []),
+            { name: 'Draft Plan', value: hasDraftIntelPerk ? (draftPlan || 'No additional draft plan was available from the current export.') : fallbackShort, inline: false },
+            ...(primerAccessNote ? [{ name: 'Locked Intel', value: primerAccessNote, inline: false }] : []),
         )
         .setColor(0x00b0f4)
         .setFooter({ text: formatPhaseFooter(seasonContext, draftYear) });
