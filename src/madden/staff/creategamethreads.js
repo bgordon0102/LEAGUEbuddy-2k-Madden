@@ -888,6 +888,7 @@ async function execute(interaction) {
         });
         try {
           registerThread(thread.id, {
+            createdAt: thread.createdTimestamp,
             mention: mentionText || '',
             leagueId,
             seasonKey: `year_${snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear || snapshot?.info?.calendarYear || new Date().getFullYear()}`,

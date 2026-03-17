@@ -16,14 +16,14 @@ import { Stage } from '../../../madden/ea_client.js';
 import { saveTradeCounts, updateTradeCountsEmbed } from '../../../shared/madden_trade_utils.js';
 import { updateAwards, gatherWeeklyStats } from '../../../madden/awards.js';
 import { maybePostDraftGrades } from '../../../madden/draft_grades_auto.js';
-import { updateTopPlayers } from '../../../madden/top_players.js';
+import { updateTopPlayers, getLatestReliableRegularSeasonWeekIndex } from '../../../madden/top_players.js';
 import { updateWeeklyGameLog } from '../weekly_game_log.js';
 import { hasStaffRole, loadRoleMap } from './staffUtils.js';
 import { buildStoryContext, buildWeeklyRecapData } from '../storytelling.js';
 import { queueMaddenContentReview } from '../../shared/madden_content_review_queue.js';
 import { brandText, brandTitle } from '../../shared/madden_branding.js';
-import { appendMaddenStaffLog, postMaddenStaffLog } from '../../shared/madden_staff_ops.js';
-import { applyRecognitionBackfill, finalizeRecognitionWeek, getRecognitionLeaderboard, RECOGNITION_ECONOMY, resolveRecognitionDoubleOrNothing, resolveRecognitionGameOfWeek, resolveRecognitionWeeklyLegacy } from '../../shared/league_recognition.js';
+import { appendMaddenStaffLog } from '../../shared/madden_staff_ops.js';
+import { finalizeRecognitionWeek, RECOGNITION_ECONOMY, resolveRecognitionDoubleOrNothing, resolveRecognitionGameOfWeek, resolveRecognitionWeeklyLegacy } from '../../shared/league_recognition.js';
 import { settleSportsbookWeek } from '../../shared/madden_sportsbook.js';
 import { getFullTeamName } from '../../shared/madden_team_names.js';
 import { getCoachAssignmentMap, setCoachAssignment } from '../../shared/madden_coach_assignments.js';
@@ -38,8 +38,6 @@ const STAFF_ACTIVITY_LOG_FILE = path.join(process.cwd(), 'data', 'madden', 'staf
 const FAIRSIMS_FILE = path.join(process.cwd(), 'data', 'madden', 'fairsims.json');
 const WEEKLY_GAME_LOG_FILE = path.join(process.cwd(), 'data', 'madden', 'weekly_game_log.json');
 const AWARDS_FILE = path.join(process.cwd(), 'data', 'madden', 'awards.json');
-const RECOGNITION_BACKFILL_VERSION = 'metadata_v12_recent_legacy_profile';
-
 function median(values = []) {
   const nums = values
     .map((value) => Number(value || 0))
@@ -747,12 +745,27 @@ async function buildRecognitionBackfillPayload({
 
 const data = new SlashCommandBuilder()
   .setName('madden-weeklyupdate')
-  .setDescription('Run after each advance. Use week only for backfills or fixes.')
-  .addIntegerOption(o => o.setName('week').setDescription('Backfill/fix a specific week. Leave empty for normal use.').setRequired(false))
-  .addBooleanOption(o => o.setName('force_awards').setDescription('Backfill only: force awards for the chosen week').setRequired(false))
-  .addBooleanOption(o => o.setName('recap').setDescription('Queue the weekly recap review. Default: true').setRequired(false))
-  .addBooleanOption(o => o.setName('queue_recap_review').setDescription('Backfill only: queue a recap draft for the chosen week').setRequired(false))
-  .addBooleanOption(o => o.setName('backfill_recognition').setDescription('One-time current-season recognition backfill').setRequired(false))
+  .setDescription('Run after each advance. Use rebuild mode only when fixing a specific week.')
+  .addStringOption(o => o
+    .setName('mode')
+    .setDescription('Leave empty for the normal post-advance run.')
+    .addChoices(
+      { name: 'Normal weekly run', value: 'normal' },
+      { name: 'Rebuild a specific week', value: 'rebuild_week' },
+    )
+    .setRequired(false))
+  .addIntegerOption(o => o
+    .setName('target_week')
+    .setDescription('Only use with rebuild mode. Example: 5 for Week 5.')
+    .setRequired(false))
+  .addBooleanOption(o => o
+    .setName('queue_recap')
+    .setDescription('Queue the weekly recap review. Default: true for normal runs.')
+    .setRequired(false))
+  .addBooleanOption(o => o
+    .setName('force_weekly_awards')
+    .setDescription('Rebuild mode only: force weekly awards for the chosen week.')
+    .setRequired(false))
   .setDefaultMemberPermissions(null);
 
 async function execute(interaction) {
@@ -766,11 +779,30 @@ async function execute(interaction) {
       await interaction.editReply({ content: 'Only Ghost Legacy Commish/Co-Commish can use this command.' });
       return;
     }
-    weekOverride = interaction.options.getInteger('week');
-    const forceAwardsOption = interaction.options.getBoolean('force_awards') === true;
-    const recapEnabled = interaction.options.getBoolean('recap') !== false;
-    const queueRecapReviewOption = interaction.options.getBoolean('queue_recap_review') === true;
-    const backfillRecognitionOption = interaction.options.getBoolean('backfill_recognition') === true;
+    const requestedMode = interaction.options.getString('mode') || 'normal';
+    weekOverride = interaction.options.getInteger('target_week');
+    const forceAwardsOption = interaction.options.getBoolean('force_weekly_awards') === true;
+    const queueRecapOption = interaction.options.getBoolean('queue_recap');
+    const recapEnabled = queueRecapOption !== false;
+    const rebuildMode = requestedMode === 'rebuild_week';
+    if (rebuildMode && (!weekOverride || weekOverride < 1)) {
+      await interaction.editReply({
+        content: 'Rebuild mode needs `target_week`. Example: set mode to `Rebuild a specific week` and `target_week` to `5` for Week 5.',
+      });
+      return;
+    }
+    if (!rebuildMode && weekOverride) {
+      await interaction.editReply({
+        content: 'Leave `target_week` empty for the normal weekly run. Only set `target_week` when mode is `Rebuild a specific week`.',
+      });
+      return;
+    }
+    if (!rebuildMode && forceAwardsOption) {
+      await interaction.editReply({
+        content: '`force_weekly_awards` only applies in `Rebuild a specific week` mode.',
+      });
+      return;
+    }
     const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
     if (!leagueId) {
       await interaction.editReply({ content: 'No league set. Run /madden-set-league first.' });
@@ -879,7 +911,7 @@ async function execute(interaction) {
       ? !!gatherWeeklyStats(snap, effectiveTargetWeekIdx)
       : false;
     const isWildcard = Number(effectiveCurrentWeekUsed ?? currentWeekValue ?? 0) === 19;
-    const backfillOnlyAwards = !!weekOverride;
+    const backfillOnlyAwards = rebuildMode;
     const missingWeeks = (summary.missingWeeks || []).filter(w => ((w.playerCount !== undefined ? w.playerCount : 0)) > 0);
     const deduped = [];
     const seen = new Map();
@@ -912,6 +944,7 @@ async function execute(interaction) {
     const statsPartial = !backfillOnlyAwards && (usedFallbackWeek || targetWeekMissing || !hasWeeklyPlayersEffective || lowPlayerCountWeek);
 
     console.log('[madden-weeklyupdate] week targeting', {
+      requestedMode,
       weekOverride,
       effectiveCurrentWeek: currentWeekValue,
       effectiveCurrentWeekUsed,
@@ -991,15 +1024,13 @@ async function execute(interaction) {
       } catch (e) {
         console.warn('[madden-weeklyupdate] power rankings reset skipped:', e?.message || e);
       }
-    } else if (!backfillOnlyAwards && !statsPartial) {
+    } else if (!backfillOnlyAwards) {
       try {
         await updateStatLeaders(interaction.client, leagueId);
       } catch (e) {
         criticalFailures.push('Stat leaders');
         console.warn('[madden-weeklyupdate] stat leaders update skipped:', e?.message || e);
       }
-    } else if (statsPartial) {
-      console.warn('[madden-weeklyupdate] stat leaders skipped: target week still partial');
     } else if (backfillOnlyAwards) {
       console.warn('[madden-weeklyupdate] stat leaders skipped: backfill mode only updates requested week outputs');
     } else {
@@ -1031,71 +1062,12 @@ async function execute(interaction) {
         : '[madden-weeklyupdate] standings/playoff picture/power rankings skipped (offseason/preseason or after Wild Card)');
     }
     let weeklyGameLog = null;
-    let recognitionBackfillResult = null;
     const recognitionSeasonKey = getMaddenSeasonKey(snap);
     try {
       weeklyGameLog = updateWeeklyGameLog(leagueId, snap);
     } catch (e) {
       criticalFailures.push('Weekly game log');
       console.warn('[madden-weeklyupdate] weekly game log update skipped:', e?.message || e);
-    }
-    if (backfillRecognitionOption) {
-      try {
-        const backfillKey = `${recognitionSeasonKey}_${RECOGNITION_BACKFILL_VERSION}`;
-        const payload = await buildRecognitionBackfillPayload({
-          guildId: interaction.guildId,
-          leagueId,
-          seasonKey: recognitionSeasonKey,
-          currentWeekValue,
-          snap,
-          guild: interaction.guild,
-          roleMap,
-        });
-        recognitionBackfillResult = applyRecognitionBackfill({
-          guildId: interaction.guildId,
-          league: 'madden',
-          seasonKey: recognitionSeasonKey,
-          backfillKey,
-          awards: payload.awards,
-          interactionCounts: payload.interactionCounts,
-          metadata: payload.summary,
-        });
-        console.log('[madden-weeklyupdate] recognition backfill', {
-          seasonKey: recognitionSeasonKey,
-          backfillKey,
-          ok: recognitionBackfillResult?.ok === true,
-          alreadyApplied: recognitionBackfillResult?.alreadyApplied === true,
-          summary: recognitionBackfillResult?.summary || null,
-        });
-        appendMaddenStaffLog({
-          type: recognitionBackfillResult?.alreadyApplied ? 'recognition_backfill_skipped' : 'recognition_backfill',
-          guildId: interaction.guildId,
-          userId: interaction.user.id,
-          username: interaction.user.tag,
-          seasonKey: recognitionSeasonKey,
-          backfillKey,
-          summary: recognitionBackfillResult?.summary || payload.summary,
-        });
-        if (recognitionBackfillResult?.ok || recognitionBackfillResult?.alreadyApplied) {
-          const s = recognitionBackfillResult.summary || payload.summary;
-          await postMaddenStaffLog(
-            interaction.client,
-            interaction.guildId,
-            recognitionBackfillResult?.alreadyApplied ? 'Recognition Backfill Skipped' : 'Recognition Backfill Applied',
-            recognitionBackfillResult?.alreadyApplied
-              ? `Recognition metadata backfill already exists for ${recognitionSeasonKey}.`
-              : `Applied current-season recognition backfill for ${recognitionSeasonKey}.`,
-            [
-              { name: 'Activity', value: `+${Number(s?.totals?.activity || 0)} across ${Number(s?.metadata?.activity?.coaches ?? s?.activity?.coaches ?? 0)} coaches`, inline: true },
-              { name: 'Impact', value: `+${Number(s?.totals?.impact || 0)} across ${Number(s?.metadata?.impact?.coaches ?? s?.impact?.coaches ?? 0)} coaches`, inline: true },
-              { name: 'Legacy', value: `+${Number(s?.totals?.legacy || 0)} across ${Number(s?.metadata?.legacy?.coaches ?? s?.legacy?.coaches ?? 0)} coaches`, inline: true },
-            ],
-          );
-        }
-      } catch (e) {
-        criticalFailures.push('Recognition backfill');
-        console.warn('[madden-weeklyupdate] recognition backfill skipped:', e?.message || e);
-      }
     }
     if (weeklyGameLog && !statsPartial && Number(stageForWeek) === Stage.SEASON && Number(effectiveCurrentWeekUsed || 0) > 0) {
       try {
@@ -1252,9 +1224,9 @@ async function execute(interaction) {
     // Draft grades auto-post (after draft recap)
     // Skip automatic draft grades; post only manually if needed
     // Weekly Top 30 log + running Top 100 (use current formula even during backfill)
-    const canFallbackTopPlayers = latestStage1WithStats != null;
-    const topPlayersWeekValue = (statsPartial && canFallbackTopPlayers)
-      ? Number(latestStage1WithStats) + 1
+    const reliableTopPlayersWeekIndex = getLatestReliableRegularSeasonWeekIndex(snap, Number(targetWeekIdx));
+    const topPlayersWeekValue = reliableTopPlayersWeekIndex != null
+      ? reliableTopPlayersWeekIndex + 1
       : Number(effectiveCurrentWeekUsed || currentWeekValue || 0);
     const allowTopPlayers = !inOffseason && !inPreseason && topPlayersWeekValue > 0;
     if (allowTopPlayers) {
@@ -1371,6 +1343,12 @@ async function execute(interaction) {
     const weekFieldValue = weekLabelPretty;
 
     const partialUpdate = statsPartial;
+    const runModeLabel = backfillOnlyAwards
+      ? `Rebuild Week ${Number(weekOverride)}`
+      : 'Normal weekly run';
+    const runScopeLabel = backfillOnlyAwards
+      ? 'Week-specific rebuild. League-wide standing pins and some live-season outputs stay untouched.'
+      : 'Full post-advance refresh using the latest reliable week.';
 
     const embed = new EmbedBuilder()
       .setTitle(brandTitle(partialUpdate ? 'Madden Weekly Update Partial' : 'Madden Weekly Update Complete'))
@@ -1381,6 +1359,8 @@ async function execute(interaction) {
       )
       .setColor(partialUpdate ? 0xf1c40f : 0x00cc66)
       .addFields(
+        { name: 'Run mode', value: runModeLabel, inline: false },
+        { name: 'Scope', value: runScopeLabel, inline: false },
         { name: 'League', value: String(summary.leagueId), inline: true },
         { name: 'Week', value: weekFieldValue, inline: true },
         { name: 'Teams', value: String(summary.teamsCount), inline: true },
@@ -1402,60 +1382,20 @@ async function execute(interaction) {
         value: `Some outputs need a follow-up check: ${[...new Set(criticalFailures)].join(', ')}`.slice(0, 1024),
       });
     }
-    if (backfillRecognitionOption) {
-      if (recognitionBackfillResult?.ok) {
-        embed.addFields({
-          name: 'Recognition backfill',
-          value: [
-            `Applied current-season coach backfill.`,
-            `Activity +${Number(recognitionBackfillResult.summary?.totals?.activity || 0)}`,
-            `Impact +${Number(recognitionBackfillResult.summary?.totals?.impact || 0)}`,
-            `Legacy +${Number(recognitionBackfillResult.summary?.totals?.legacy || 0)}`,
-          ].join('\n').slice(0, 1024),
-        });
-        const recognitionLeaders = getRecognitionLeaderboard({
-          guildId: interaction.guildId,
-          league: 'madden',
-          seasonKey: recognitionSeasonKey,
-          tier: 'total',
-          limit: 8,
-        });
-        if (recognitionLeaders.length) {
-          const leaderLines = recognitionLeaders.map((row, index) => (
-            `${index + 1}. <@${row.userId}> - ${row.total} total (A ${row.activity} / I ${row.impact} / L ${row.legacy})`
-          ));
-          embed.addFields({
-            name: 'League recognition',
-            value: leaderLines.join('\n').slice(0, 1024),
-          });
-        }
-      } else if (recognitionBackfillResult?.alreadyApplied) {
-        embed.addFields({
-          name: 'Recognition backfill',
-          value: 'Current-season metadata backfill was already applied earlier.',
-        });
-        const recognitionLeaders = getRecognitionLeaderboard({
-          guildId: interaction.guildId,
-          league: 'madden',
-          seasonKey: recognitionSeasonKey,
-          tier: 'total',
-          limit: 8,
-        });
-        if (recognitionLeaders.length) {
-          const leaderLines = recognitionLeaders.map((row, index) => (
-            `${index + 1}. <@${row.userId}> - ${row.total} total (A ${row.activity} / I ${row.impact} / L ${row.legacy})`
-          ));
-          embed.addFields({
-            name: 'League recognition',
-            value: leaderLines.join('\n').slice(0, 1024),
-          });
-        }
-      }
+    if (!backfillOnlyAwards) {
+      embed.addFields({
+        name: 'When to use this',
+        value: 'Normal weekly run: use right after each advance. Leave every option empty unless you are rebuilding a specific older week.',
+      });
+    } else {
+      embed.addFields({
+        name: 'When to use this',
+        value: `Rebuild mode is for fixing Week ${Number(weekOverride)} only. Use it when an older week card, grades, awards, or recap needs to be rebuilt.`,
+      });
     }
-
     await interaction.editReply({ embeds: [embed] });
 
-    if (recapEnabled || queueRecapReviewOption) {
+    if (recapEnabled) {
       try {
         const channelMap = JSON.parse(fs.readFileSync(CHANNEL_MAP_FILE, 'utf8'));
         appendMaddenStaffLog({
@@ -1465,7 +1405,7 @@ async function execute(interaction) {
           username: interaction.user.tag,
           hasWeeklyRecapChannel: Boolean(channelMap['Weekly Recap']),
         });
-        const recapTargetWeek = queueRecapReviewOption && effectiveCurrentWeekUsed ? Number(effectiveCurrentWeekUsed) : null;
+        const recapTargetWeek = backfillOnlyAwards && effectiveCurrentWeekUsed ? Number(effectiveCurrentWeekUsed) : null;
         const ctx = await buildStoryContext(interaction.guild, interaction.client, {
           skipCoachUserTeamMap: true,
           targetWeek: recapTargetWeek,
@@ -1504,7 +1444,7 @@ async function execute(interaction) {
             .setTimestamp();
 
           appendMaddenStaffLog({
-            type: queueRecapReviewOption ? 'weekly_recap_built_forced' : 'weekly_recap_built',
+            type: backfillOnlyAwards ? 'weekly_recap_built_forced' : 'weekly_recap_built',
             guildId: interaction.guildId,
             userId: interaction.user.id,
             username: interaction.user.tag,
@@ -1524,7 +1464,7 @@ async function execute(interaction) {
             postAllowedMentions: { parse: ['roles'] },
           });
           appendMaddenStaffLog({
-            type: queueRecapReviewOption ? 'weekly_recap_queued_forced' : 'weekly_recap_queued',
+            type: backfillOnlyAwards ? 'weekly_recap_queued_forced' : 'weekly_recap_queued',
             guildId: interaction.guildId,
             userId: interaction.user.id,
             username: interaction.user.tag,

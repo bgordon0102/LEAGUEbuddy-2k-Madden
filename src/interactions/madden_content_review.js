@@ -1,7 +1,7 @@
 import { ButtonInteraction, ActionRowBuilder, ButtonBuilder } from 'discord.js';
-import { loadContentQueue, saveContentQueue } from '../shared/madden_content_review_queue.js';
+import { loadContentQueue, saveContentQueue, countPendingRumorReviews, getRumorPendingPolicy } from '../shared/madden_content_review_queue.js';
 import { hasStaffRole, loadRoleMap } from '../madden/staff/staffUtils.js';
-import { appendMaddenStaffLog, postMaddenStaffDecision, postMaddenStaffLog } from '../shared/madden_staff_ops.js';
+import { appendMaddenStaffLog, postMaddenStaffDecision } from '../shared/madden_staff_ops.js';
 import { queueScheduledRumorMill } from '../shared/madden_staff_ops.js';
 import { recordRumorReviewFeedback } from '../shared/madden_rumor_feedback.js';
 
@@ -75,20 +75,29 @@ export async function execute(interaction) {
     reviewedBy: interaction.user.id,
     targetChannelId: item.targetChannelId,
   });
-  const postReviewUpdate = item.kind === 'rumor_mill' ? postMaddenStaffLog : postMaddenStaffDecision;
-  await postReviewUpdate(
-    interaction.client,
-    interaction.guildId,
-    'Content Review',
-    `<@${interaction.user.id}> ${action}d ${item.kind || 'content'} review ${reviewId}.`,
-  ).catch(() => null);
-
-  await interaction.message.edit({
-    components: disableRows(interaction.message.components),
-  }).catch(() => null);
+  if (item.kind !== 'rumor_mill') {
+    await postMaddenStaffDecision(
+      interaction.client,
+      interaction.guildId,
+      'Content Review',
+      `<@${interaction.user.id}> ${action}d ${item.kind || 'content'} review ${reviewId}.`,
+    ).catch(() => null);
+  }
 
   if (item.kind === 'rumor_mill') {
-    await queueScheduledRumorMill(interaction.client, interaction.guildId).catch(() => null);
+    await interaction.message.delete().catch(() => null);
+  } else {
+    await interaction.message.edit({
+      components: disableRows(interaction.message.components),
+    }).catch(() => null);
+  }
+
+  if (item.kind === 'rumor_mill') {
+    const pendingPolicy = getRumorPendingPolicy();
+    const nextPendingCount = countPendingRumorReviews(queue, interaction.guildId);
+    if (nextPendingCount < Math.max(2, pendingPolicy.target - 2)) {
+      await queueScheduledRumorMill(interaction.client, interaction.guildId).catch(() => null);
+    }
   }
 
   await interaction.editReply({ content: action === 'approve' ? 'Content approved and posted.' : 'Content denied.' });

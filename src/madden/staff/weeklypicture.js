@@ -63,12 +63,44 @@ function buildRiskLabel(entry) {
 
 function conciseCurrentPicture(entries = []) {
   return entries.slice(0, 6).map((entry) =>
-    `${entry.info.awayTeam || 'Away'} vs ${entry.info.homeTeam || 'Home'} • ${buildRiskLabel(entry)} • ${entry.participation.awayCount}-${entry.participation.homeCount}`
+    `${entry.info.awayTeam || 'Away'} vs ${entry.info.homeTeam || 'Home'} • ${buildRiskLabel(entry)}${entryCoachState(entry) === 'cpu_one' ? ' • CPU side' : entryCoachState(entry) === 'cpu_both' ? ' • CPU game' : ''} • ${entry.participation.awayCount}-${entry.participation.homeCount}`
   ).join('\n');
 }
 
 function matchupLabel(entry) {
   return `${entry.info.awayTeam || 'Away'} vs ${entry.info.homeTeam || 'Home'}`;
+}
+
+function normalizeName(name = '') {
+  return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function buildCoachStatusByTeam(snapshot) {
+  const map = new Map();
+  for (const team of snapshot?.teams?.leagueTeamInfoList || []) {
+    const city = String(team?.cityName || '').trim();
+    const display = String(team?.displayName || '').trim();
+    const nick = String(team?.nickName || '').trim();
+    const full = [city, display].filter(Boolean).join(' ').trim() || nick || display;
+    const hasCoach = Boolean(String(team?.userName || '').trim());
+    const status = hasCoach ? 'coach' : 'cpu';
+    for (const key of [full, display, nick, team?.abbrName].map(normalizeName).filter(Boolean)) {
+      map.set(key, status);
+    }
+  }
+  return map;
+}
+
+function coachStatusForTeam(teamName, coachStatusByTeam) {
+  return coachStatusByTeam.get(normalizeName(teamName)) || 'unknown';
+}
+
+function entryCoachState(entry) {
+  const away = entry.awayCoachStatus || 'unknown';
+  const home = entry.homeCoachStatus || 'unknown';
+  if (away !== 'coach' && home !== 'coach') return 'cpu_both';
+  if (away !== 'coach' || home !== 'coach') return 'cpu_one';
+  return 'coach_both';
 }
 
 function buildActionItems({ highRiskEntries = [], watchEntries = [], stableEntries = [] }) {
@@ -93,7 +125,13 @@ function buildPriorityBoard(entries = []) {
     const afterReminderNeeded = entry.participation.awayAfterReminder > 0 || entry.participation.homeAfterReminder > 0
       ? ` • after reminder ${entry.participation.awayAfterReminder}-${entry.participation.homeAfterReminder}`
       : '';
-    return `${matchupLabel(entry)} • ${buildRiskLabel(entry)} • comm ${entry.participation.awayCount}-${entry.participation.homeCount}${afterReminderNeeded}`;
+    const coachState = entryCoachState(entry);
+    const coachTag = coachState === 'cpu_one'
+      ? ' • CPU side'
+      : coachState === 'cpu_both'
+        ? ' • CPU game'
+        : '';
+    return `${matchupLabel(entry)} • ${buildRiskLabel(entry)} • comm ${entry.participation.awayCount}-${entry.participation.homeCount}${afterReminderNeeded}${coachTag}`;
   }).join('\n');
 }
 
@@ -218,6 +256,7 @@ export async function execute(interaction) {
     const currentWeek = Number(context.weekNumber || 0);
     const currentWeekIndex = context.weekIndex;
     const seasonKey = context.seasonKey;
+    const coachStatusByTeam = buildCoachStatusByTeam(context.snapshot);
     const gameThreadsChannelId = channelMap['Game threads'] || null;
     const storedThreadMap = new Map(listThreadStates().map((info) => [String(info?.threadId || ''), info]));
     logStep('context_ready', { currentWeek, currentWeekIndex, seasonKey, gameThreadsChannelId, storedThreads: storedThreadMap.size });
@@ -356,6 +395,8 @@ export async function execute(interaction) {
         ...baseEntry,
         participation,
         projected,
+        awayCoachStatus: coachStatusForTeam(baseEntry.info.awayTeam, coachStatusByTeam),
+        homeCoachStatus: coachStatusForTeam(baseEntry.info.homeTeam, coachStatusByTeam),
       };
       seasonEntries.push(entry);
       entries.push(entry);
@@ -403,17 +444,22 @@ export async function execute(interaction) {
     });
 
     const pendingEntries = entries.filter((entry) => entry.status === 'pending');
-    const determinedEntries = pendingEntries.filter((entry) => entry.projected?.strikeAway || entry.projected?.strikeHome);
-    const silentEntries = pendingEntries.filter((entry) => entry.participation.awayCount === 0 || entry.participation.homeCount === 0);
+    const coachPendingEntries = pendingEntries.filter((entry) => entryCoachState(entry) === 'coach_both');
+    const cpuMixedEntries = pendingEntries.filter((entry) => entryCoachState(entry) === 'cpu_one');
+    const cpuGameEntries = pendingEntries.filter((entry) => entryCoachState(entry) === 'cpu_both');
+    const determinedEntries = coachPendingEntries.filter((entry) => entry.projected?.strikeAway || entry.projected?.strikeHome);
+    const silentEntries = coachPendingEntries.filter((entry) => entry.participation.awayCount === 0 || entry.participation.homeCount === 0);
     const resolvedEntries = entries.filter((entry) => entry.status !== 'pending');
-    const highRiskEntries = pendingEntries.filter((entry) => entry.projected?.strikeAway && entry.projected?.strikeHome);
-    const watchEntries = pendingEntries.filter((entry) => (entry.projected?.strikeAway || entry.projected?.strikeHome) && !(entry.projected?.strikeAway && entry.projected?.strikeHome));
-    const stableEntries = pendingEntries.filter((entry) => !entry.projected?.strikeAway && !entry.projected?.strikeHome);
+    const highRiskEntries = coachPendingEntries.filter((entry) => entry.projected?.strikeAway && entry.projected?.strikeHome);
+    const watchEntries = coachPendingEntries.filter((entry) => (entry.projected?.strikeAway || entry.projected?.strikeHome) && !(entry.projected?.strikeAway && entry.projected?.strikeHome));
+    const stableEntries = coachPendingEntries.filter((entry) => !entry.projected?.strikeAway && !entry.projected?.strikeHome);
 
     const leagueRead = [
       highRiskEntries.length ? `High risk: ${highRiskEntries.slice(0, 4).map((entry) => `${entry.info.awayTeam || 'Away'} vs ${entry.info.homeTeam || 'Home'}`).join(' • ')}` : null,
       watchEntries.length ? `Watch list: ${watchEntries.slice(0, 4).map((entry) => `${entry.info.awayTeam || 'Away'} vs ${entry.info.homeTeam || 'Home'}`).join(' • ')}` : null,
       stableEntries.length ? `Healthier threads: ${stableEntries.slice(0, 4).map((entry) => `${entry.info.awayTeam || 'Away'} vs ${entry.info.homeTeam || 'Home'}`).join(' • ')}` : null,
+      cpuMixedEntries.length ? `CPU / user games: ${cpuMixedEntries.slice(0, 4).map((entry) => matchupLabel(entry)).join(' • ')}` : null,
+      cpuGameEntries.length ? `CPU games: ${cpuGameEntries.slice(0, 4).map((entry) => matchupLabel(entry)).join(' • ')}` : null,
     ].filter(Boolean).join('\n') || 'No matchup buckets available.';
 
     const briefingEmbed = new EmbedBuilder()
@@ -425,10 +471,12 @@ export async function execute(interaction) {
           name: 'League Snapshot',
           value: [
             `Tracked: ${entries.length}`,
-            `Pending: ${pendingEntries.length}`,
+            `Pending coach games: ${coachPendingEntries.length}`,
             `Resolved: ${resolvedEntries.length}`,
             `Determined risk: ${determinedEntries.length}`,
             `Silent-side risk: ${silentEntries.length}`,
+            `CPU / user: ${cpuMixedEntries.length}`,
+            `CPU only: ${cpuGameEntries.length}`,
           ].join('\n'),
           inline: true,
         },

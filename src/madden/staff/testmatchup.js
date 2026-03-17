@@ -127,6 +127,7 @@ export async function execute(interaction) {
 
   try {
     registerThread(thread.id, {
+      createdAt: thread.createdTimestamp,
       mention: mentionText || '',
       deadlineAt: deadline * 1000,
       awayTeam: awayFullName,

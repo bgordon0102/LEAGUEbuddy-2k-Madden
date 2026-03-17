@@ -236,18 +236,31 @@ async function maybeQueueRemovalReview(client, guild, seasonKey, teamName, roleI
 
 export const customId = /^madden_game_status_(complete|fairsim|homewin|awaywin|cpu|staffstrikeaway|staffstrikehome)\|([^|]+)(?:\|([^|]+)\|([^|]+))?$/;
 
+async function respond(interaction, payload = {}) {
+  const normalized = { ...payload, flags: payload.flags ?? 64 };
+  if (interaction.deferred || interaction.replied) {
+    return interaction.editReply(normalized).catch(() => null);
+  }
+  return interaction.reply(normalized).catch(() => null);
+}
+
 export async function execute(interaction) {
   if (!(interaction instanceof ButtonInteraction)) return;
   const [, action, threadId, awayEnc, homeEnc] = interaction.customId.match(customId) || [];
   const roleMap = loadRoleMap();
+  try {
+    await interaction.deferReply({ flags: 64 });
+  } catch (err) {
+    if (err?.code === 10062) return;
+  }
   const thread = interaction.channel;
   if (!thread || String(thread.id) !== threadId) {
-    await interaction.reply({ content: 'Thread not found for this button.', ephemeral: true });
+    await respond(interaction, { content: 'Thread not found for this button.' });
     return;
   }
   const threadState = getThreadState(threadId);
   if (threadState && threadState.status && threadState.status !== 'pending' && !isNaN(Date.now())) {
-    await interaction.reply({ content: 'This matchup has already been resolved by the system or staff. Ask staff if it needs to be reopened.', ephemeral: true });
+    await respond(interaction, { content: 'This matchup has already been resolved by the system or staff. Ask staff if it needs to be reopened.' });
     return;
   }
 
@@ -287,7 +300,7 @@ export async function execute(interaction) {
   })();
 
   if (!allowed) {
-    await interaction.reply({ content: 'Only the appropriate opposing coach (or commish staff) can use this button.', ephemeral: true });
+    await respond(interaction, { content: 'Only the appropriate opposing coach (or commish staff) can use this button.' });
     return;
   }
 
@@ -345,7 +358,7 @@ export async function execute(interaction) {
   // Staff-awarded strike (targeted to home/away coaches)
   if (action === 'staffstrikeaway' || action === 'staffstrikehome') {
     if (!isStaff) {
-      await interaction.reply({ content: 'Only staff can award a strike.', ephemeral: true });
+      await respond(interaction, { content: 'Only staff can award a strike.' });
       return;
     }
     const targetTeam = action === 'staffstrikeaway' ? away : home;
@@ -355,12 +368,12 @@ export async function execute(interaction) {
     if (over.length) {
       const names = over.map(id => `<@${id}>`).join(', ');
       const msg = `Strike denied: ${names} already at ${STRIKE_LIMIT}/5 weighted strike points. All remaining games must be played.`;
-      await interaction.reply({ content: msg, ephemeral: true });
+      await respond(interaction, { content: msg });
       try { await thread.send({ content: `${commishMention} ${msg}`.trim(), allowedMentions: { parse: ['roles'] } }); } catch {}
       return;
     }
     if (!targetUsers.length) {
-      await interaction.reply({ content: 'No coach user is currently resolved for that team. Fix the coach role before applying a strike.', ephemeral: true });
+      await respond(interaction, { content: 'No coach user is currently resolved for that team. Fix the coach role before applying a strike.' });
       return;
     }
     const { protectedUsers: cushionedUsers, standardUsers } = splitUsersByPerk({
@@ -442,7 +455,7 @@ export async function execute(interaction) {
       color: 0xED4245,
     }).catch(() => null);
     await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'determined strike applied').catch(() => null);
-    await interaction.reply({ content: teamOnly ? 'Strike recorded for the team (no coach users found in the role).' : 'Strike issued and recorded.', ephemeral: true });
+    await respond(interaction, { content: teamOnly ? 'Strike recorded for the team (no coach users found in the role).' : 'Strike issued and recorded.' });
     clearPendingFair(threadId);
     return;
   }
@@ -453,13 +466,13 @@ export async function execute(interaction) {
     const key = threadId + ':complete';
     const existing = pendingFair.get(key) || { away: false, home: false };
     if ((side === 'away' && existing.away) || (side === 'home' && existing.home)) {
-      await interaction.reply({ content: 'Still waiting for the other side to press Game Completed.', ephemeral: true });
+      await respond(interaction, { content: 'Still waiting for the other side to press Game Completed.' });
       return;
     }
     const pending = setPendingFair(key, side);
     if (!(pending.away && pending.home)) {
       const waitMsg = 'Game completed pending. Your opponent still needs to press Game Completed to confirm and stop reminders.';
-      await interaction.reply({ content: waitMsg, ephemeral: true });
+      await respond(interaction, { content: waitMsg });
       const otherTeam = side === 'away' ? home : away;
       const otherMentions = await buildCoachMentions(interaction.guild, otherTeam, roleMap);
       const mentionText = [...otherMentions].join(' ');
@@ -486,7 +499,7 @@ export async function execute(interaction) {
       home,
       byUser: interaction.user.id,
     });
-    await interaction.reply({ content: 'Marked complete. Reminders stopped.', ephemeral: true });
+    await respond(interaction, { content: 'Marked complete. Reminders stopped.' });
     return;
   }
 
@@ -504,7 +517,7 @@ export async function execute(interaction) {
       home,
       byUser: interaction.user.id,
     });
-    await interaction.reply({ content: 'Logged as CPU matchup. No sim strikes applied.', ephemeral: true });
+    await respond(interaction, { content: 'Logged as CPU matchup. No sim strikes applied.' });
     clearPendingFair(threadId);
     return;
   }
@@ -514,13 +527,13 @@ export async function execute(interaction) {
     const side = isAwayCoach ? 'away' : isHomeCoach ? 'home' : 'staff';
     const existing = pendingFair.get(threadId) || { away: false, home: false };
     if ((side === 'away' && existing.away) || (side === 'home' && existing.home)) {
-      await interaction.reply({ content: 'Still waiting for the other side to press Fair Sim.', ephemeral: true });
+      await respond(interaction, { content: 'Still waiting for the other side to press Fair Sim.' });
       return;
     }
     const pending = setPendingFair(threadId, side);
     if (!(pending.away && pending.home)) {
       const waitMsg = 'Fair sim pending. Your opponent still needs to press Fair Sim to confirm the non-play result.';
-      await interaction.reply({ content: waitMsg, ephemeral: true });
+      await respond(interaction, { content: waitMsg });
       const otherTeam = side === 'away' ? home : away;
       const otherMentions = await buildCoachMentions(interaction.guild, otherTeam, roleMap);
       const mentionText = [...otherMentions].join(' ');
@@ -532,12 +545,12 @@ export async function execute(interaction) {
     const over = fairCountExceeded(userIds, seasonData);
     if (over.length) {
       const names = over.map(id => `<@${id}>`).join(', ');
-      await interaction.reply({ content: `Fair sim denied: ${names} are already at ${STRIKE_LIMIT}/5 weighted strike points this season. They must play the game.`, ephemeral: true });
+      await respond(interaction, { content: `Fair sim denied: ${names} are already at ${STRIKE_LIMIT}/5 weighted strike points this season. They must play the game.` });
       try { await thread.send({ content: `${commishMention || ''} Fair sim denied: ${names} are already at the weighted limit. Game must be played.`.trim() }); } catch {}
       return;
     }
     if (!awayUserIds.length || !homeUserIds.length) {
-      await interaction.reply({ content: 'Both coach roles must resolve to users before a Fair Sim can be logged.', ephemeral: true });
+      await respond(interaction, { content: 'Both coach roles must resolve to users before a Fair Sim can be logged.' });
       return;
     }
     const { protectedUsers: fairSimProtected, standardUsers: fairSimCharged } = splitUsersByPerk({
@@ -608,7 +621,7 @@ export async function execute(interaction) {
         { name: 'Thread', value: `<#${threadId}>` },
       ],
     }).catch(() => null);
-    await interaction.reply({ content: 'Fair sim logged and commish notified. Reminders stopped.', ephemeral: true });
+    await respond(interaction, { content: 'Fair sim logged and commish notified. Reminders stopped.' });
     await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, away, awayCoachRoles, awayUserIds);
     await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, home, homeCoachRoles, homeUserIds);
     return;
@@ -621,12 +634,12 @@ export async function execute(interaction) {
     const over = fairCountExceeded(chargeUsers, seasonData);
     if (over.length) {
       const names = over.map(id => `<@${id}>`).join(', ');
-      await interaction.reply({ content: `Force win denied: ${names} are already at ${STRIKE_LIMIT}/5 weighted strike points this season. They must play the game.`, ephemeral: true });
+      await respond(interaction, { content: `Force win denied: ${names} are already at ${STRIKE_LIMIT}/5 weighted strike points this season. They must play the game.` });
       try { await thread.send({ content: `${commishMention || ''} Force win denied: ${names} are already at the weighted limit. Game must be played.`.trim() }); } catch {}
       return;
     }
     if (!chargeUsers.length) {
-      await interaction.reply({ content: 'No coach user is resolved for the charged team. Fix the coach role before logging this outcome.', ephemeral: true });
+      await respond(interaction, { content: 'No coach user is resolved for the charged team. Fix the coach role before logging this outcome.' });
       return;
     }
     addStrikeOutcome(fairData, seasonKey, chargeUsers, 'force_win', 'FW');
@@ -666,7 +679,7 @@ export async function execute(interaction) {
       color: 0xED4245,
     }).catch(() => null);
     await postLeagueStaffOpsSnapshot(interaction.client, interaction.guildId, 'force win logged').catch(() => null);
-    await interaction.reply({ content: 'Force-win request sent and reminders stopped.', ephemeral: true });
+    await respond(interaction, { content: 'Force-win request sent and reminders stopped.' });
     if (action === 'homewin') await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, away, awayCoachRoles, chargeUsers);
     if (action === 'awaywin') await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, home, homeCoachRoles, chargeUsers);
     clearPendingFair(threadId);

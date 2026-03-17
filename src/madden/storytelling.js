@@ -15,7 +15,10 @@ const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.jso
 const PLAYER_CHANGES_PATH = path.join(process.cwd(), 'data', 'madden', 'player_changes.json');
 const TOP_PLAYERS_PATH = path.join(process.cwd(), 'data', 'madden', 'top_players.json');
 const WEEKLY_RECAP_HISTORY_PATH = path.join(process.cwd(), 'data', 'madden', 'weekly_recap_history.json');
-const DRAFT_DIR = path.join(process.cwd(), 'data', 'draft_classes', 'madden');
+const DRAFT_DIR_CANDIDATES = [
+  path.join(process.cwd(), 'data', 'draft_classes', 'Madden'),
+  path.join(process.cwd(), 'data', 'draft_classes', 'madden'),
+];
 const WEEKLY_GAME_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'weekly_game_log.json');
 
 function safeReadJSON(file, fallback) {
@@ -30,14 +33,28 @@ function normalizeName(name = '') {
   return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+function normalizeClassToken(value = '') {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
 function titleCase(text = '') {
   return String(text).replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function rumorCategoryFamily(category = '') {
   const value = String(category || '').toLowerCase();
-  if (value.startsWith('draft')) return 'draft';
+  if (value === 'mock_draft') return 'mock_draft';
+  if (value === 'recruiting') return 'recruiting';
+  if (value === 'college') return 'college';
+  if (value === 'draft_prospect') return 'draft_prospect';
+  if (value.startsWith('draft')) return 'draft_prospect';
   return value;
+}
+
+function rumorSuperFamily(category = '') {
+  const family = rumorCategoryFamily(category);
+  if (['mock_draft', 'recruiting', 'college', 'draft_prospect'].includes(family)) return 'draft_side';
+  return family;
 }
 
 function saveJSON(file, data) {
@@ -126,6 +143,12 @@ function coachMentionFor(teamName, mentionMap) {
   return mentionMap.get(norm) || mentionMap.get(normalizeName(team.split(/\s+/).pop())) || '';
 }
 
+function coachLedTeamLabel(teamName, mentionMap) {
+  const team = toDisplayTeam(teamName);
+  const mention = coachMentionFor(team, mentionMap);
+  return mention ? `${mention} and ${team}` : team;
+}
+
 function escapeRegex(text = '') {
   return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -171,6 +194,40 @@ function formatNeedLabel(need) {
     BPA: 'Best Player Available',
   };
   return labels[need] || need || 'Need';
+}
+
+function needFromPosition(position = '') {
+  const pos = String(position || '').toUpperCase();
+  if (pos === 'QB') return 'QB';
+  if (['LT', 'RT'].includes(pos)) return 'OT';
+  if (['LG', 'C', 'RG'].includes(pos)) return 'IOL';
+  if (pos === 'WR') return 'WR';
+  if (pos === 'TE') return 'TE';
+  if (['HB', 'RB', 'FB'].includes(pos)) return 'RB';
+  if (['LE', 'RE', 'DE', 'EDGE', 'ROLB', 'LOLB'].includes(pos)) return 'EDGE';
+  if (pos === 'DT') return 'DT';
+  if (['MLB', 'LB', 'WILL', 'MIKE', 'SAM'].includes(pos)) return 'LB';
+  if (pos === 'CB') return 'CB';
+  if (['FS', 'SS', 'S'].includes(pos)) return 'S';
+  return pos || 'BPA';
+}
+
+function roomLabelForPosition(position = '') {
+  return formatNeedLabel(needFromPosition(position)).toLowerCase();
+}
+
+function contractCapHit(player = {}) {
+  return Number(player?.contractSalary || 0) + Number(player?.contractBonus || 0);
+}
+
+function contractCapMillions(player = {}) {
+  const raw = contractCapHit(player);
+  const asMillions = raw >= 100000 ? raw / 1000000 : raw;
+  return Math.round(asMillions * 10) / 10;
+}
+
+function formatMillions(value = 0) {
+  return `$${Number(value || 0).toFixed(Number.isInteger(Number(value || 0)) ? 0 : 1)}M`;
 }
 
 function formatStatLine(player) {
@@ -357,7 +414,161 @@ function pickDistinctCategoryItems(items = [], getTeams, blockedTeams = new Set(
 
 function pickTemplate(templates = [], seed = 0) {
   if (!templates.length) return '';
-  return templates[Math.abs(Number(seed) || 0) % templates.length];
+  const normalized = Math.abs(Number(seed) || 0) >>> 0;
+  const mixed = (normalized * 1664525 + 1013904223) >>> 0;
+  return templates[mixed % templates.length];
+}
+
+function phraseVariant(seedKey = '', options = [], fallback = '') {
+  if (!Array.isArray(options) || !options.length) return fallback;
+  return pickTemplate(options, [...String(seedKey || '')].reduce((sum, ch) => ((sum * 33) + ch.charCodeAt(0)) >>> 0, 5381));
+}
+
+function freshenStorySentence(text = '', seedKey = '') {
+  let value = String(text || '');
+  if (!value) return value;
+  const replacements = [
+    {
+      pattern: /\bAround the league, the expectation is that\b/g,
+      variants: [
+        'Around the league, the expectation is that',
+        'Leaguewide, the expectation is that',
+        'The broader league read is that',
+        'The outside expectation is that',
+        'The chatter around the league says',
+        'The way people around the league frame it,',
+        'The working expectation leaguewide is that',
+        'The market expectation is that',
+      ],
+    },
+    {
+      pattern: /\bAround the league, the feeling is that\b/g,
+      variants: [
+        'Around the league, the feeling is that',
+        'The broader feeling leaguewide is that',
+        'The outside feeling is that',
+        'The current league feel is that',
+        'The leaguewide sense is that',
+        'The feeling around the league is that',
+        'The read leaguewide is that',
+        'The talk around the league is that',
+      ],
+    },
+    {
+      pattern: /\bThe league read is that\b/g,
+      variants: [
+        'The league read is that',
+        'The broad read is that',
+        'The outside read is that',
+        'The current read is that',
+        'The market read is that',
+        'The way the league sees it,',
+        'The working read is that',
+        'The stronger read right now is that',
+      ],
+    },
+    {
+      pattern: /\bThe read is that\b/g,
+      variants: [
+        'The read is that',
+        'The sense is that',
+        'The feel right now is that',
+        'The expectation is that',
+        'The broader takeaway is that',
+        'The current belief is that',
+        'The working theory is that',
+        'The lean right now is that',
+      ],
+    },
+    {
+      pattern: /\bThe sense around it is that\b/g,
+      variants: [
+        'The sense around it is that',
+        'The feeling around it is that',
+        'The broader takeaway is that',
+        'The current lean is that',
+        'The outside view is that',
+        'The tone around it says',
+        'The market feel is that',
+        'The bigger takeaway is that',
+      ],
+    },
+    {
+      pattern: /\bkeep getting\b/g,
+      variants: [
+        'keep getting',
+        'continue to get',
+        'keep drawing',
+        'are still getting',
+        'keep attracting',
+        'continue drawing',
+        'are still pulling',
+        'keep bringing in',
+      ],
+    },
+    {
+      pattern: /\bstarting to\b/g,
+      variants: [
+        'starting to',
+        'beginning to',
+        'already starting to',
+        'clearly starting to',
+        'more openly starting to',
+        'quietly starting to',
+        'steadily starting to',
+        'now starting to',
+      ],
+    },
+    {
+      pattern: /\bstill carries some real pedigree into the draft cycle\b/g,
+      variants: [
+        'still carries some real pedigree into the draft cycle',
+        'still brings real pedigree into this draft cycle',
+        'still walks into this draft cycle with real pedigree',
+        'still has real blue-chip pedigree attached to his name',
+        'still comes into this draft cycle with real recruiting weight',
+        'still has a name evaluators remember from the recruiting trail',
+        'still brings a real pedigree story into the draft process',
+        'still enters the draft cycle with a real background people remember',
+      ],
+    },
+    {
+      pattern: /\bhas turned into one of the louder shared scout names on the class\b/g,
+      variants: [
+        'has turned into one of the louder shared scout names on the class',
+        'has become one of the louder shared scout names on the board',
+        'is turning into one of the more talked-about shared scout names in the class',
+        'has become a real shared-scout name across the league',
+        'is now one of the louder cross-team scout names in the class',
+        'has moved into the shared-attendance tier on the board',
+        'has become one of the clearer leaguewide scout-interest names',
+        'is reading more and more like a true shared-scout target',
+      ],
+    },
+    {
+      pattern: /\bThe real question now is how quickly\b/g,
+      variants: [
+        'The real question now is how quickly',
+        'The real question at this point is how quickly',
+        'What people want to know now is how quickly',
+        'The next real question is how quickly',
+        'What matters now is how quickly',
+        'The bigger question now is how quickly',
+        'The key question right now is how quickly',
+        'The remaining question is how quickly',
+      ],
+    },
+  ];
+
+  for (const entry of replacements) {
+    let hitIndex = 0;
+    value = value.replace(entry.pattern, () => {
+      const variant = phraseVariant(`${seedKey}:${entry.pattern}:${hitIndex}`, entry.variants, '');
+      hitIndex += 1;
+      return variant || '';
+    });
+  }
+  return value;
 }
 
 function seededText(seedKey, templates = [], replacements = {}) {
@@ -366,7 +577,7 @@ function seededText(seedKey, templates = [], replacements = {}) {
   for (const [key, value] of Object.entries(replacements)) {
     template = template.replaceAll(`{${key}}`, String(value ?? ''));
   }
-  return template;
+  return freshenStorySentence(template, seedKey);
 }
 
 function seededOrder(seedKey, values = []) {
@@ -393,6 +604,11 @@ function joinStoryTexts(entries = [], seedKey = 'story-join') {
     'At the same time,',
     'On a different front,',
     'Leaguewide,',
+    'On another note,',
+    'In a separate lane,',
+    'At the same moment,',
+    'At another level,',
+    'From another angle,',
   ]);
 
   let out = texts[0];
@@ -400,6 +616,58 @@ function joinStoryTexts(entries = [], seedKey = 'story-join') {
     out += ` ${bridges[(i - 1) % bridges.length]} ${texts[i]}`;
   }
   return out;
+}
+
+function rumorLeadText(category = '', phaseLanguage = {}, seedKey = '') {
+  const family = rumorCategoryFamily(category);
+  const generic = [
+    phaseLanguage.rumorFrame,
+    'The week also pushed a few new conversations forward around the league.',
+    'League chatter picked up a little more shape here.',
+    'This is one of the conversations that kept floating through league circles.',
+  ].filter(Boolean);
+  const categoryMap = {
+    mock_draft: [
+      phaseLanguage.draftHook,
+      'Mock-draft chatter is already starting to leave fingerprints on league talk.',
+      'A little early board noise is already starting to sound more real.',
+      'The mock-draft side of the conversation is getting harder to ignore.',
+    ],
+    recruiting: [
+      'The recruiting backstory still matters for some of these names.',
+      'Some prospect conversations still start on the recruiting trail before they ever reach the board.',
+      'A few of these draft names still carry real recruiting history with them.',
+      'The recruiting side of the story is still shaping how some names get talked about.',
+    ],
+    college: [
+      'Some of the strongest draft chatter is still being built off the college side first.',
+      'College tape, school pipelines, and weekly matchups are still shaping this part of the board.',
+      'The college side of the board is still driving a lot of this conversation.',
+      'School context and college matchups are still carrying a lot of weight here.',
+    ],
+    draft_prospect: [
+      phaseLanguage.draftHook,
+      'A few prospect names are starting to carry a little more weight around the league.',
+      'The board-level conversation is getting more specific around a few names.',
+      'There are a few prospect lanes around the league starting to feel more real.',
+    ],
+    rookie_development: [
+      'A couple younger roster stories are starting to get louder.',
+      'Some of the younger-player development talk is starting to stick.',
+      'There is still some real developmental buzz building around the league.',
+      phaseLanguage.rumorFrame,
+    ],
+    contract: [
+      'Contract chatter is starting to sharpen around a few teams.',
+      'A few cap and contract conversations are starting to get louder.',
+      'League chatter is also drifting toward contract leverage and timing.',
+      phaseLanguage.rumorFrame,
+    ],
+  };
+  return pickTemplate(
+    categoryMap[family] || generic,
+    [...String(seedKey || family)].reduce((sum, ch) => sum + ch.charCodeAt(0), 0),
+  );
 }
 
 function buildNeedReason(need) {
@@ -443,7 +711,7 @@ function buildRookieNeedOutlook(ctx, team, need) {
     return false;
   };
   const rookies = roster
-    .filter((player) => Number(player?.yearsPro ?? 99) <= 1)
+    .filter((player) => player?.isRookie === true || Number(player?.yearsPro ?? -1) === 0)
     .filter(matchesNeed)
     .sort((a, b) => Number(b?.playerBestOvr || b?.teamSchemeOvr || 0) - Number(a?.playerBestOvr || a?.teamSchemeOvr || 0))
     .slice(0, 3);
@@ -453,7 +721,7 @@ function buildRookieNeedOutlook(ctx, team, need) {
     .filter(Boolean);
   if (!names.length) return '';
   if (rookies.length >= 2) {
-    return ` They already invested there with rookies like ${names.slice(0, 2).join(' and ')}, so the real question now is how quickly that young tackle group develops into a dependable answer.`;
+    return ` They already invested there with rookies like ${names.slice(0, 2).join(' and ')}, so the real question now is how quickly that young position group develops into a dependable answer.`;
   }
   return ` There is also real curiosity around rookie ${names[0]} and whether that development curve is going to move fast enough to change the outlook there.`;
 }
@@ -917,29 +1185,53 @@ function classIdForLeague(league) {
   const seasonInfo = league?.info?.careerHubInfo?.seasonInfo || {};
   const seasonOrdinal = Number(seasonInfo?.seasonYear ?? league?.info?.seasonYear ?? league?.seasonYear);
   if (Number.isFinite(seasonOrdinal) && seasonOrdinal >= 0 && seasonOrdinal < 50) {
-    return `cus_${String(seasonOrdinal + 1).padStart(2, '0')}`;
+    return `CUS${String(seasonOrdinal + 1).padStart(2, '0')}`;
   }
   const calendarYear = Number(seasonInfo?.calendarYear || league?.info?.calendarYear || league?.calendarYear || 2025);
   const idx = Math.max(1, calendarYear - 2024);
-  return `cus_${String(idx).padStart(2, '0')}`;
+  return `CUS${String(idx).padStart(2, '0')}`;
+}
+
+function resolveDraftDir() {
+  return DRAFT_DIR_CANDIDATES.find((dir) => fs.existsSync(dir)) || DRAFT_DIR_CANDIDATES[0];
 }
 
 function findDraftClassFile(classId) {
-  if (!fs.existsSync(DRAFT_DIR)) return null;
-  const files = fs.readdirSync(DRAFT_DIR).filter((file) => {
+  const draftDir = resolveDraftDir();
+  if (!fs.existsSync(draftDir)) return null;
+  const target = normalizeClassToken(classId);
+  const files = fs.readdirSync(draftDir).filter((file) => {
     const lower = file.toLowerCase();
-    return lower.endsWith('.json') && lower.includes(classId.toLowerCase()) && lower.includes('big board');
+    return lower.endsWith('.json') &&
+      normalizeClassToken(file).includes(target) &&
+      lower.includes('big board');
   });
   if (!files.length) return null;
-  return path.join(DRAFT_DIR, files.sort()[0]);
+  return path.join(draftDir, files.sort()[0]);
+}
+
+function findRecruitingFile(classId) {
+  const draftDir = resolveDraftDir();
+  if (!fs.existsSync(draftDir)) return null;
+  const target = normalizeClassToken(classId);
+  const files = fs.readdirSync(draftDir).filter((file) => {
+    const lower = file.toLowerCase();
+    return lower.endsWith('.json') &&
+      normalizeClassToken(file).includes(target) &&
+      lower.includes('recruit');
+  });
+  if (!files.length) return null;
+  return path.join(draftDir, files.sort()[0]);
 }
 
 function loadDraftClassForLeague(league) {
   const classId = classIdForLeague(league);
   const file = findDraftClassFile(classId);
+  const recruitingFile = findRecruitingFile(classId);
   return {
     classId,
     players: file ? Object.values(safeReadJSON(file, {})).filter((p) => p?.name) : [],
+    recruits: recruitingFile ? Object.values(safeReadJSON(recruitingFile, {})).filter((p) => p?.name) : [],
   };
 }
 
@@ -1389,6 +1681,449 @@ function chooseProspectForNeed(need, draftClass) {
     .find((player) => mapNeed(player) === need) || null;
 }
 
+function normalizeProspectName(name = '') {
+  return normalizeName(String(name || '').replace(/\b(jr|sr|ii|iii|iv)\b/ig, '').trim());
+}
+
+function buildRecruitMap(recruits = []) {
+  const map = new Map();
+  for (const recruit of recruits || []) {
+    const key = normalizeProspectName(recruit?.name || '');
+    if (!key || map.has(key)) continue;
+    map.set(key, recruit);
+  }
+  return map;
+}
+
+function boardRank(player = {}) {
+  return Number(player?.RNK ?? player?.rank ?? 9999);
+}
+
+function positionBoardRank(player = {}, players = []) {
+  const position = String(player?.position || '').toUpperCase();
+  if (!position) return 999;
+  const samePosition = (players || [])
+    .filter((entry) => String(entry?.position || '').toUpperCase() === position)
+    .sort((a, b) => boardRank(a) - boardRank(b));
+  const idx = samePosition.findIndex((entry) => normalizeProspectName(entry?.name || '') === normalizeProspectName(player?.name || ''));
+  return idx === -1 ? 999 : idx + 1;
+}
+
+function projectedRoundLabel(player = {}) {
+  const round = Number(player?.round || 0);
+  if (!round) return 'later-day board range';
+  if (round === 1) return 'top-of-board range';
+  if (round === 2) return 'day-two range';
+  return `day-${round >= 4 ? 'three' : 'two'} range`;
+}
+
+function teamPressureLabel(standing = {}) {
+  const wins = Number(standing?.totalWins || 0);
+  const losses = Number(standing?.totalLosses || 0);
+  const diff = wins - losses;
+  if (wins >= 5 || diff >= 2) return 'contender';
+  if (losses >= 5 || diff <= -2) return 'draft_focus';
+  return 'middle';
+}
+
+function draftRumorPhaseWeights(seasonContext = {}) {
+  const phase = seasonContext?.phase || 'offseason';
+  if (phase === 'early_regular') {
+    return { headline: 8, pedigree: 10, pipeline: 8, projection: 2, scoutHeat: 1, sleeper: 2, fit: 1, pressureFit: 0, contestedPocket: 0 };
+  }
+  if (phase === 'mid_regular') {
+    return { headline: 5, pedigree: 6, pipeline: 5, projection: 6, scoutHeat: 8, sleeper: 5, fit: 5, pressureFit: 3, contestedPocket: 3 };
+  }
+  if (phase === 'late_regular') {
+    return { headline: 3, pedigree: 4, pipeline: 3, projection: 5, scoutHeat: 8, sleeper: 5, fit: 8, pressureFit: 10, contestedPocket: 7 };
+  }
+  if (phase === 'postseason') {
+    return { headline: 3, pedigree: 3, pipeline: 3, projection: 5, scoutHeat: 6, sleeper: 5, fit: 8, pressureFit: 10, contestedPocket: 8 };
+  }
+  return { headline: 4, pedigree: 5, pipeline: 5, projection: 6, scoutHeat: 6, sleeper: 6, fit: 9, pressureFit: 10, contestedPocket: 8 };
+}
+
+function hometownShortLabel(hometown = '') {
+  const text = String(hometown || '').trim();
+  if (!text) return '';
+  const [city, state] = text.split(',').map((part) => String(part || '').trim()).filter(Boolean);
+  if (city && state) return `${city}, ${state}`;
+  return text;
+}
+
+function recruitClassLabel(recruit = {}) {
+  const classValue = Number(recruit?.class || 0);
+  if (classValue === 1) return 'senior';
+  if (classValue === 2) return 'freshman';
+  if (classValue === 3) return 'sophomore';
+  if (classValue === 4) return 'junior';
+  return 'young recruit';
+}
+
+function schoolValueScore(school = '') {
+  const value = normalizeName(school);
+  if (['georgia', 'alabama', 'ohiostate', 'texas', 'michigan', 'oregon', 'lsu', 'pennstate', 'clemson', 'notredame', 'usc', 'florida', 'floridastate', 'oklahoma'].includes(value)) return 3;
+  if (['miami', 'auburn', 'tennessee', 'washington', 'wisconsin', 'iowa', 'olemiss', 'texasam', 'northcarolina', 'virginiatech'].includes(value)) return 2;
+  return 1;
+}
+
+function chooseLateBoardSleeper(players = []) {
+  return players
+    .filter((player) => boardRank(player) >= 40)
+    .filter((player) => Number(player?.overall || 0) >= 73 || Number(player?.dev_trait || 0) >= 2)
+    .sort((a, b) => {
+      const aScore = Number(a?.dev_trait || 0) * 20 + Number(a?.overall || 0) - boardRank(a) * 0.2;
+      const bScore = Number(b?.dev_trait || 0) * 20 + Number(b?.overall || 0) - boardRank(b) * 0.2;
+      return bScore - aScore;
+    })[0] || null;
+}
+
+function prospectStoryTag(player = {}) {
+  const position = String(player?.position || '').toUpperCase();
+  if (['LT', 'RT', 'LG', 'RG', 'C'].includes(position)) return 'a cleaner body type and steadier trench projection';
+  if (['WR', 'TE'].includes(position)) return 'real pass-game polish and the kind of profile that can live in different offenses';
+  if (['HB', 'RB', 'FB'].includes(position)) return 'a style that sounds translatable to real touches, not just college production';
+  if (position === 'QB') return 'the kind of quarterback profile that keeps rooms talking longer than expected';
+  if (['CB', 'FS', 'SS'].includes(position)) return 'cover traits teams tend to keep circling on the board';
+  if (['LE', 'RE', 'DE', 'EDGE', 'EDG', 'REDG', 'LEDG', 'DT', 'NT'].includes(position)) return 'front-seven traits that travel well from school to school';
+  if (['LB', 'MLB', 'ROLB', 'LOLB', 'OLB', 'ILB', 'SAM', 'MIKE', 'WILL'].includes(position)) return 'a defensive profile teams trust to fit more than one style';
+  return 'a profile that keeps sounding better the more teams work through the class';
+}
+
+function normalizedDraftPosition(position = '') {
+  const pos = String(position || '').toUpperCase();
+  if (['LT', 'RT'].includes(pos)) return 'OT';
+  if (['LG', 'RG', 'C'].includes(pos)) return 'IOL';
+  if (['LE', 'RE', 'DE', 'EDGE', 'EDG', 'REDG', 'LEDG'].includes(pos)) return 'EDGE';
+  if (['DT', 'NT'].includes(pos)) return 'DT';
+  if (['FS', 'SS'].includes(pos)) return 'S';
+  if (['SAM', 'MIKE', 'WILL', 'MLB', 'ROLB', 'LOLB', 'OLB', 'ILB', 'LB'].includes(pos)) return 'LB';
+  if (pos === 'HB') return 'RB';
+  return pos;
+}
+
+function matchupPairLabel(a = '', b = '') {
+  const left = normalizedDraftPosition(a);
+  const right = normalizedDraftPosition(b);
+  const key = `${left}:${right}`;
+  if (key === 'WR:CB' || key === 'CB:WR') return 'outside skill-on-cover battles';
+  if (key === 'WR:S' || key === 'S:WR') return 'slot and over-the-top coverage battles';
+  if (key === 'OT:EDGE' || key === 'EDGE:OT') return 'edge protection battles';
+  if (key === 'IOL:DT' || key === 'DT:IOL') return 'interior trench battles';
+  if (key === 'TE:LB' || key === 'LB:TE') return 'matchup stress in the underneath window';
+  if (key === 'RB:LB' || key === 'LB:RB') return 'space and fit battles';
+  return '';
+}
+
+function areMatchupRelevantPositions(a = '', b = '') {
+  return Boolean(matchupPairLabel(a, b));
+}
+
+function buildKeyPositionBattleSignals(prospects = [], phaseWeights = {}) {
+  const schoolBuckets = new Map();
+  for (const prospect of prospects || []) {
+    const school = String(prospect?.school || '').trim();
+    if (!school || boardRank(prospect) > 60) continue;
+    const bucket = schoolBuckets.get(school) || [];
+    bucket.push(prospect);
+    schoolBuckets.set(school, bucket);
+  }
+
+  const items = [];
+  for (const [school, bucket] of schoolBuckets.entries()) {
+    const sorted = bucket.slice().sort((a, b) => boardRank(a) - boardRank(b));
+    for (let i = 0; i < sorted.length; i += 1) {
+      for (let j = i + 1; j < sorted.length; j += 1) {
+        const a = sorted[i];
+        const b = sorted[j];
+        const pairLabel = matchupPairLabel(a?.position, b?.position);
+        if (!pairLabel) continue;
+        items.push({
+          score: 82 + (phaseWeights.pipeline || 0) + Math.max(0, 20 - Math.min(boardRank(a), boardRank(b))) * 0.1,
+          text: `${school} is also giving evaluators one of the more interesting cross-checks on the board. ${a.name} (${a.position}) and ${b.name} (${b.position}) both keep coming up when teams talk through ${pairLabel}, and the read sounds less like random school hype and more like real big-game tape carrying over.`,
+          key: `draft:key_battle:${school}:${a.name}:${b.name}`,
+          category: 'college',
+        });
+      }
+    }
+  }
+
+  return items.slice(0, 4);
+}
+
+function buildDraftProspectSignals(ctx, limit = 8, variantSeed = 0) {
+  const players = ctx?.draftClassInfo?.players || [];
+  const recruits = ctx?.draftClassInfo?.recruits || [];
+  if (!players.length && !recruits.length) return [];
+  const recruitMap = buildRecruitMap(recruits);
+  const seasonContext = ctx?.seasonContext || {};
+  const phaseWeights = draftRumorPhaseWeights(seasonContext);
+  const items = [];
+  const scoutByProspect = new Map();
+  const classId = String(ctx?.draftClassInfo?.classId || '').toLowerCase();
+  const seasonYear = Number(ctx?.seasonContext?.calendarYear || getUpcomingDraftYear(ctx.league));
+
+  for (const entry of ctx.scoutLog || []) {
+    if (!entry) continue;
+    if (classId && String(entry.classId || '').toLowerCase() !== classId) continue;
+    if (Number(entry.seasonYear || seasonYear) !== seasonYear) continue;
+    const key = normalizeProspectName(entry.player || '');
+    if (!key) continue;
+    const current = scoutByProspect.get(key) || { count: 0, teams: new Set() };
+    current.count += 1;
+    const team = ctx.coachUserTeamMap.get(entry.userId);
+    if (team) current.teams.add(team);
+    scoutByProspect.set(key, current);
+  }
+
+  const prospects = players
+    .slice()
+    .sort((a, b) => boardRank(a) - boardRank(b))
+    .slice(0, 80)
+    .map((player) => {
+      const recruit = recruitMap.get(normalizeProspectName(player?.name || '')) || null;
+      const scout = scoutByProspect.get(normalizeProspectName(player?.name || '')) || null;
+      return { ...player, recruit, scout, posBoard: positionBoardRank(player, players) };
+    });
+  const prospectNameSet = new Set(prospects.map((prospect) => normalizeProspectName(prospect?.name || '')));
+  const keyPositionBattleSignals = buildKeyPositionBattleSignals(prospects, phaseWeights);
+
+  for (const recruit of recruits.slice(0, 12)) {
+    const name = String(recruit?.name || '').trim();
+    const school = String(recruit?.school || '').trim();
+    if (!name || !school) continue;
+    const hometown = hometownShortLabel(recruit?.hometown);
+    const stars = Number(recruit?.stars || 0);
+    const natRank = Number(recruit?.national_rank || recruit?.['#'] || 0);
+    const posRank = Number(recruit?.pos_rank || 0);
+    const position = String(recruit?.position || '').toUpperCase() || 'ATH';
+    const grade = Number(recruit?.grade || 0);
+    const recruitKey = normalizeProspectName(name);
+    const isCurrentDraftProspect = prospectNameSet.has(recruitKey);
+    const classLabel = recruitClassLabel(recruit);
+    items.push({
+      score: 84 + Math.min(8, stars) + Math.max(0, 10 - Math.min(10, natRank || 10)),
+      text: isCurrentDraftProspect
+        ? seededText(`recruit:standalone:${name}:${variantSeed}`, [
+            `${name} (${position}) is still one of the recruiting stories people remember. ${school} winning that one${hometown ? ` out of ${hometown}` : ''} carried real weight, and the name still has the kind of shine that sticks in football conversations.`,
+            `Some names still carry recruiting gravity on their own, and ${name} (${position}) is one of them. ${school}${hometown ? ` pulling him out of ${hometown}` : ' landing that commitment'} was the kind of win people around the country remember.`,
+            `${school} landing ${name} (${position})${hometown ? ` from ${hometown}` : ''} still sounds like one of the cleaner recruiting wins attached to this board. That kind of commitment trail is the sort of thing people keep bringing up later.`,
+            `The recruiting side still gives some names extra life, and ${name} is one of them. ${school}${stars ? ` got a ${stars}-star level win` : ' won a real battle'}${hometown ? ` out of ${hometown}` : ''}, and that backstory still gives the name some traction now.`,
+          ])
+        : seededText(`recruit:future:${name}:${variantSeed}`, [
+            `${name} (${position}) is more of a future-class recruiting story than a current draft name. ${school}${hometown ? ` landing that ${classLabel} out of ${hometown}` : ` landing that ${classLabel}` } gave the program real juice for the next few years.`,
+            `The recruiting buzz around ${name} (${position}) belongs more to the pipeline than this draft board. ${school}${hometown ? ` getting that ${classLabel} from ${hometown}` : ` winning that ${classLabel} battle`} was the kind of move people remember on the college side.`,
+            `${name} (${position}) is not really a current draft conversation so much as a future talent story. ${school}${hometown ? ` pulling that ${classLabel} out of ${hometown}` : ` closing on that ${classLabel}`} still feels like one of the louder recruiting wins in the class.`,
+            `That ${name} recruitment still comes up, but more as a next-wave college story than a draft one. ${school}${hometown ? ` landing the ${classLabel} from ${hometown}` : ` landing that ${classLabel}`} gave the room a lot more long-term excitement.`,
+          ]),
+      key: `recruit:standalone:${name}`,
+      entityKey: `prospect:${recruitKey}`,
+      category: 'recruiting',
+    });
+    if (stars >= 5 || natRank <= 10 || grade >= 93) {
+      items.push({
+        score: 88 + Math.min(6, stars) + Math.max(0, 12 - Math.min(12, natRank || 12)),
+        text: seededText(`recruit:commitment:${name}:${variantSeed}`, [
+          `People still talk about ${name}'s commitment the way they talk about real recruiting wins. ${school}${hometown ? ` beating the field for him out of ${hometown}` : ' getting that one to the finish line'} felt like a statement at the time, and it still does now.`,
+          `${name} (${position}) still gets framed like one of those headline commitments that changed how a program looked for a minute. ${school}${hometown ? ` landing him out of ${hometown}` : ' closing that one out'} gave the class real weight.`,
+          `That ${name} commitment still has some life to it. ${school}${hometown ? ` pulling him out of ${hometown}` : ' winning that battle'} was the kind of recruiting win people around the game remember.`,
+        ]),
+        key: `recruit:commitment:${name}`,
+        entityKey: `prospect:${recruitKey}`,
+        category: 'recruiting',
+      });
+    }
+    if (posRank > 0 || natRank > 0) {
+      items.push({
+        score: 82 + Math.max(0, 10 - Math.min(10, posRank || 10)),
+        text: isCurrentDraftProspect
+          ? `${name} (${position}, ${school}) still carries the kind of recruiting profile that gets remembered. ${natRank ? `He once sat No. ${natRank} nationally` : ''}${natRank && posRank ? ' and ' : ''}${posRank ? `inside the very top of the ${position} board` : ''}${hometown ? ` while coming out of ${hometown}` : ''}, so the name already comes with context before any pro projection talk even starts.`
+          : `${name} (${position}, ${school}) still carries the kind of recruiting profile people remember on the college side. ${natRank ? `He once sat No. ${natRank} nationally` : ''}${natRank && posRank ? ' and ' : ''}${posRank ? `inside the very top of the ${position} recruiting board` : ''}${hometown ? ` coming out of ${hometown}` : ''}, which is why the future-college buzz still sounds real.`,
+        key: `recruit:pedigree:${name}`,
+        entityKey: `prospect:${recruitKey}`,
+        category: 'recruiting',
+      });
+    }
+  }
+
+  const topProspect = prospects[0] || null;
+  if (topProspect) {
+    items.push({
+      score: 92 + phaseWeights.headline,
+      text: seededText(`draft:headline:${topProspect.name}:${variantSeed}`, phaseTemplates(seasonContext, {
+        early_regular: [
+          `Even this early, evaluators already sound settled on one headline name in the ${getUpcomingDraftYear(ctx.league)} class: ${topProspect.name} (${topProspect.position}, ${topProspect.school}) is carrying true top-of-the-board buzz at No. ${boardRank(topProspect)} overall.`,
+          `${topProspect.name} (${topProspect.position}, ${topProspect.school}) is already sounding like the early tone-setter for the ${getUpcomingDraftYear(ctx.league)} board, sitting at No. ${boardRank(topProspect)} overall.`,
+        ],
+        default: [
+          `${topProspect.name} (${topProspect.position}, ${topProspect.school}) keeps coming up as one of the cleanest headline names in the ${getUpcomingDraftYear(ctx.league)} class, still holding No. ${boardRank(topProspect)} overall.`,
+          `The top of the ${getUpcomingDraftYear(ctx.league)} board still starts with names like ${topProspect.name} (${topProspect.position}, ${topProspect.school}), who is sitting at No. ${boardRank(topProspect)} overall.`,
+        ],
+      })),
+      key: `draft:headline:${topProspect.name}`,
+      entityKey: `prospect:${normalizeProspectName(topProspect.name)}`,
+      category: 'draft_prospect',
+    });
+  }
+
+  for (const prospect of prospects.slice(0, 20)) {
+    const recruit = prospect.recruit;
+    if (!recruit || Number(recruit?.stars || 0) < 4) continue;
+    const natRank = Number(recruit?.national_rank || 0);
+    const posRank = Number(recruit?.pos_rank || 0);
+    const hometown = hometownShortLabel(recruit?.hometown);
+    items.push({
+      score: 84 + Number(recruit?.stars || 0) + phaseWeights.pedigree,
+      text: `${prospect.name} (${prospect.position}, ${prospect.school}) still carries some real pedigree into the draft cycle. He was a ${recruit.stars}-star pull out of ${hometown || 'that recruiting trail'}${natRank ? ` and once sat No. ${natRank} nationally` : ''}${posRank ? ` with a top-${posRank} rank at ${prospect.position}` : ''}, so the name already has history in rooms before the board work even starts.`,
+      key: `draft:pedigree:${prospect.name}`,
+      entityKey: `prospect:${normalizeProspectName(prospect.name)}`,
+      category: 'recruiting',
+    });
+    if (Number(recruit?.stars || 0) >= 5 || natRank <= 15) {
+      items.push({
+        score: 83 + phaseWeights.pedigree,
+        text: seededText(`draft:commitment:${prospect.name}:${variantSeed}`, [
+          `${prospect.name} (${prospect.position}, ${prospect.school}) still gets talked about like an old recruiting win that aged well. When ${prospect.school} landed him out of ${hometown || 'his home area'}, it felt like a real statement pull, and that backstory still gives the prospect some extra weight.`,
+          `${prospect.school} winning the battle for ${prospect.name} (${prospect.position}) out of ${hometown || 'his region'} still comes up in draft rooms. He was one of those commitment stories people remembered, and now the pro board is catching up to it.`,
+          `${prospect.name} (${prospect.position}, ${prospect.school}) has one of those recruiting trails teams still remember. The commitment from ${hometown || 'his home area'} to ${prospect.school} carried real buzz, and the prospect has stayed relevant long enough for that story to matter again now.`,
+        ]),
+        key: `draft:commitment:${prospect.name}`,
+        entityKey: `prospect:${normalizeProspectName(prospect.name)}`,
+        category: 'recruiting',
+      });
+    }
+  }
+
+  for (const prospect of prospects.slice(0, 30)) {
+    const dev = Number(prospect?.dev_trait || 0);
+    if (dev < 2) continue;
+    items.push({
+      score: 82 + dev * 3 + Math.floor(Number(prospect?.overall || 0) / 10) + phaseWeights.projection,
+      text: seededText(`draft:projection:${prospect.name}:${variantSeed}`, [
+        `${prospect.name} (${prospect.position}, ${prospect.school}) keeps getting described as a better pro projection than a lot of peers in his range. He is sitting at No. ${boardRank(prospect)} overall${prospect.posBoard < 999 ? ` and No. ${prospect.posBoard} in the ${prospect.position} lane` : ''}, and the ${projectedRoundLabel(prospect)} tag plus ${prospectStoryTag(prospect)} keep him live in more rooms than people think.`,
+        `${prospect.name} (${prospect.position}, ${prospect.school}) is starting to sound like one of the steadier pro bets in his part of the board. At No. ${boardRank(prospect)} overall${prospect.posBoard < 999 ? ` and No. ${prospect.posBoard} among ${prospect.position}s` : ''}, teams keep coming back to the ${projectedRoundLabel(prospect)} value and ${prospectStoryTag(prospect)}.`,
+        `The board is starting to settle around ${prospect.name} (${prospect.position}, ${prospect.school}) as more than just a name in range. He is parked at No. ${boardRank(prospect)} overall${prospect.posBoard < 999 ? ` with a No. ${prospect.posBoard} spot in the ${prospect.position} lane` : ''}, and that mix of ${projectedRoundLabel(prospect)} value and ${prospectStoryTag(prospect)} is keeping him relevant.`,
+        `${prospect.name} (${prospect.position}, ${prospect.school}) is getting a cleaner projection than a lot of names around him. The No. ${boardRank(prospect)} overall slot${prospect.posBoard < 999 ? ` and No. ${prospect.posBoard} rank at ${prospect.position}` : ''} match up with ${prospectStoryTag(prospect)}, which is why the ${projectedRoundLabel(prospect)} chatter keeps holding.`,
+        `There is still real board belief in ${prospect.name} (${prospect.position}, ${prospect.school}). He sits at No. ${boardRank(prospect)} overall${prospect.posBoard < 999 ? ` and No. ${prospect.posBoard} in the ${prospect.position} group` : ''}, and evaluators keep tying that to ${prospectStoryTag(prospect)} rather than just raw board placement.`,
+      ]),
+      key: `draft:projection:${prospect.name}`,
+      entityKey: `prospect:${normalizeProspectName(prospect.name)}`,
+      category: 'draft_prospect',
+    });
+  }
+
+  const sleeper = chooseLateBoardSleeper(prospects);
+  if (sleeper) {
+    items.push({
+      score: 81 + phaseWeights.sleeper,
+      text: `${sleeper.name} (${sleeper.position}, ${sleeper.school}) is one of the quieter names sticking in league draft rooms. He is sitting around board No. ${boardRank(sleeper)}${sleeper.posBoard < 999 ? ` and still inside the top ${sleeper.posBoard} at ${sleeper.position}` : ''}, which keeps him sounding like a real sleeper target if that lane starts to thin out.`,
+      key: `draft:sleeper:${sleeper.name}`,
+      entityKey: `prospect:${normalizeProspectName(sleeper.name)}`,
+      category: 'draft_prospect',
+    });
+  }
+
+  const heavyScout = prospects
+    .filter((prospect) => prospect.scout && prospect.scout.count >= 2)
+    .sort((a, b) => (b.scout.count - a.scout.count) || (boardRank(a) - boardRank(b)))[0];
+  if (heavyScout) {
+    const teams = [...(heavyScout.scout?.teams || [])].slice(0, 3);
+    const taggedTeams = teams.map((team) => coachLedTeamLabel(team, ctx.teamCoachMentions));
+    const attendanceLine = teams.length
+      ? seededText(`draft:attendance:${heavyScout.name}:${variantSeed}`, [
+          `teams like ${taggedTeams.join(', ')}${teams.length === 3 ? ' and others' : ''} were all in attendance around ${heavyScout.name}'s work, which is starting to look like real league interest`,
+          `${taggedTeams.join(', ')}${teams.length === 3 ? ' and others' : ''} have all had eyes on ${heavyScout.name} lately, so the read is starting to sound more like a real attendance trail than random board noise`,
+          `${taggedTeams.join(', ')}${teams.length === 3 ? ' and others' : ''} keep showing up around ${heavyScout.name}, and that kind of attendance usually means the league sees a draftable player, not just a name to file away`,
+        ])
+      : `${heavyScout.scout.count} different looks have landed on him, which is starting to sound like real league interest`;
+    items.push({
+      score: 88 + Math.min(4, heavyScout.scout.count) + phaseWeights.scoutHeat,
+      text: `${heavyScout.name} (${heavyScout.position}, ${heavyScout.school}) has turned into one of the louder shared scout names on the class. He is sitting at No. ${boardRank(heavyScout)} overall, and ${attendanceLine}.`,
+      key: `draft:scout_heat:${heavyScout.name}`,
+      entityKey: `prospect:${normalizeProspectName(heavyScout.name)}`,
+      category: 'draft_prospect',
+    });
+  }
+
+  const schoolBuckets = new Map();
+  for (const prospect of prospects.slice(0, 40)) {
+    const school = String(prospect?.school || '').trim();
+    if (!school) continue;
+    const bucket = schoolBuckets.get(school) || [];
+    bucket.push(prospect);
+    schoolBuckets.set(school, bucket);
+  }
+  const hotSchool = [...schoolBuckets.entries()]
+    .filter(([, bucket]) => bucket.length >= 2)
+    .sort((a, b) => {
+      const aScore = a[1].length * 10 + schoolValueScore(a[0]) * 5;
+      const bScore = b[1].length * 10 + schoolValueScore(b[0]) * 5;
+      return bScore - aScore;
+    })[0];
+  if (hotSchool) {
+    const [school, bucket] = hotSchool;
+    const names = bucket.slice(0, 3).map((prospect) => `${prospect.name} (${prospect.position})`);
+    const hometowns = bucket
+      .map((prospect) => hometownShortLabel(prospect?.recruit?.hometown))
+      .filter(Boolean)
+      .slice(0, 3);
+    items.push({
+      score: 83 + phaseWeights.pipeline,
+      text: `${school} has turned into one of the louder pipelines on this board. They have ${bucket.length} prospects inside the early class pocket, and names like ${names.join(', ')}${hometowns.length ? ` from places like ${hometowns.join(', ')}` : ''} keep showing up soon enough that teams are treating that school like a real talent pocket in the ${getUpcomingDraftYear(ctx.league)} class.`,
+      key: `draft:school_pipeline:${school}`,
+      entityKey: `school:${normalizeName(school)}`,
+      category: 'college',
+    });
+  }
+
+  for (const signal of keyPositionBattleSignals) {
+    items.push(signal);
+  }
+
+  for (const [teamId, standing] of ctx.standings.entries()) {
+    const team = ctx.teams.get(teamId);
+    if (!team) continue;
+    const teamKey = normalizeName(team);
+    const primaryNeed = (ctx.needs[teamKey] || ['BPA'])[0];
+    const prospect = chooseProspectForNeed(primaryNeed, players);
+    if (!prospect) continue;
+    const recruit = recruitMap.get(normalizeProspectName(prospect?.name || ''));
+    const schoolLine = recruit?.hometown ? `${prospect.school} product out of ${recruit.hometown}` : `${prospect.school} product`;
+    const coachLead = coachMentionFor(team, ctx.teamCoachMentions) ? `${coachMentionFor(team, ctx.teamCoachMentions)} and ` : '';
+    const needReason = buildNeedReason(primaryNeed);
+    const pressure = teamPressureLabel(standing);
+    if (Number(standing.totalWins || 0) >= 3 || Number(standing.totalLosses || 0) >= 3) {
+      items.push({
+        score: 79 + phaseWeights.fit + (pressure === 'draft_focus' ? phaseWeights.pressureFit : 0),
+        text: `${coachLead}${team} keep getting connected to ${prospect.name} (${prospect.position}) as a ${schoolLine}. He is sitting around No. ${boardRank(prospect)} overall${prospect.posBoard < 999 ? ` and No. ${prospect.posBoard} at ${prospect.position}` : ''}, and the fit talk is not just positional either: his style keeps matching what evaluators think they need because ${needReason}.`,
+        key: `draft:fit:${team}:${prospect.name}`,
+        entityKey: `prospect:${normalizeProspectName(prospect.name)}`,
+        category: 'draft_prospect',
+      });
+    }
+  }
+
+  const contestedPockets = prospects
+    .filter((prospect) => prospect.scout && prospect.scout.count >= 3 && boardRank(prospect) <= 75)
+    .slice(0, 3);
+  for (const prospect of contestedPockets) {
+    const teamList = [...(prospect.scout?.teams || [])].slice(0, 4);
+    if (!teamList.length) continue;
+    const taggedTeams = teamList.map((team) => coachLedTeamLabel(team, ctx.teamCoachMentions));
+    items.push({
+      score: 80 + phaseWeights.contestedPocket + Math.min(3, teamList.length),
+      text: `${prospect.name} (${prospect.position}, ${prospect.school}) is starting to feel like a contested part of the board. He is sitting at No. ${boardRank(prospect)} overall, and teams like ${taggedTeams.join(', ')} keep showing up around the same prospect lane, which is the kind of setup that can make a trade-up or trade-down conversation feel real later in the cycle.`,
+      key: `draft:contested_pocket:${prospect.name}`,
+      entityKey: `prospect:${normalizeProspectName(prospect.name)}`,
+      category: 'draft_prospect',
+    });
+  }
+
+  return items
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+
 function buildPhaseLanguage(seasonContext = {}) {
   const phase = seasonContext?.phase || 'offseason';
   if (phase === 'early_regular') {
@@ -1495,7 +2230,8 @@ function buildMockDraftSignals(ctx, limit = 3) {
       prospect,
       text: seededText(`mock:${teamSeed}`, templates, {}),
       key: `mock:${team}:${pickLabel}`,
-      category: 'draft',
+      entityKey: `prospect:${normalizeProspectName(prospect.name)}`,
+      category: 'mock_draft',
     });
     if (signals.length >= limit) break;
   }
@@ -1531,7 +2267,7 @@ function buildRookieDevelopmentSignals(ctx, limit = 4) {
         else if (devTrait === 2) score += 14;
         else if (devTrait === 1) score += 8;
         if (topMatch) score += 18 + Number(topMatch?.grade || 0) * 0.08;
-        if (teamNeeds.includes(position)) score += 12;
+        if (teamNeeds.includes(position) || teamNeeds.includes(needFromPosition(position))) score += 12;
         if ((position === 'LT' || position === 'RT') && (teamNeeds.includes('OT') || teamNeeds.includes('IOL'))) score += 12;
         if (['QB', 'WR', 'CB', 'LT', 'RT', 'EDGE', 'LE', 'RE', 'DT'].includes(position)) score += 5;
         return { name, position, overall, devTrait, topMatch, score };
@@ -1544,28 +2280,41 @@ function buildRookieDevelopmentSignals(ctx, limit = 4) {
     const rookie = rookies[0];
     const coachTag = coachMentionFor(team, ctx.teamCoachMentions);
     const coachLead = coachTag ? `${coachTag} and ` : '';
-    const needLabel = formatNeedLabel(teamNeeds[0] || rookie.position).toLowerCase();
+    const roomLabel = roomLabelForPosition(rookie.position);
+    const needLabel = roomLabel;
     const boost = rookie.topMatch ? 8 : 0;
     const templates = phaseTemplates(seasonContext, {
       early_regular: [
         `{coachLead}{team} already have people watching how fast rookie {name} ({position}) comes along. It matters because {needLabel} still sits close to the front of the roster conversation.`,
         `There is already real developmental attention on {team} rookie {name} ({position}). Around the league, the question is how quickly he can turn into a believable answer at {needLabel}.`,
+        `{coachLead}{team} already have one young development thread getting some attention: rookie {name} ({position}) and whether he can settle the {needLabel} conversation sooner than expected.`,
+        `Even this early, there is some quiet league curiosity around {team} rookie {name} ({position}). If the curve moves quickly, the whole {needLabel} discussion starts sounding different.`,
       ],
       mid_regular: [
         `{coachLead}{team} are carrying more rookie-development talk around {name} ({position}) now. The league read is that his growth could change how urgent the {needLabel} conversation feels.`,
-        `The developmental buzz around {team} rookie {name} ({position}) is getting louder. If he comes fast, the whole read on their {needLabel} room changes.`,
+        `The developmental buzz around {team} rookie {name} ({position}) is getting louder. If he comes fast, the whole read on their {roomLabel} changes.`,
+        `{coachLead}{team} have one younger storyline that keeps coming up in league circles: rookie {name} ({position}) and whether his progress can calm the heat around {needLabel}.`,
+        `More of the talk around {team} keeps drifting back to rookie {name} ({position}). If he develops fast enough, the urgency at {needLabel} stops feeling quite so sharp.`,
+        `There is a little more rookie-development noise building around {team} now. {name} ({position}) is the young name people keep attaching to the {needLabel} conversation.`,
+        `{coachLead}{team} are drawing more curiosity around rookie {name} ({position}). The bigger question is whether his growth can change the shape of the {roomLabel} room fast enough to matter this cycle.`,
       ],
       late_regular: [
         `Late in the year, one quiet question around {team} is how much they trust rookie {name} ({position}) to be part of the answer at {needLabel}.`,
         `As the season tightens up, league eyes keep drifting back to {team} rookie {name} ({position}) and whether that development curve is moving fast enough at {needLabel}.`,
+        `With the calendar tightening up, one quieter question around {team} is whether rookie {name} ({position}) has moved enough to soften the need at {needLabel}.`,
+        `League eyes keep circling back to {team} rookie {name} ({position}) this late in the year. If that development is real, the offseason read at {needLabel} changes with it.`,
       ],
       postseason: [
         `With more teams already thinking ahead, {team} are getting extra rookie-development chatter around {name} ({position}). If he is a real answer at {needLabel}, it changes part of their offseason math.`,
         `{coachLead}{team} have one young development thread people keep bringing up: rookie {name} ({position}) and whether he can become a cleaner answer at {needLabel}.`,
+        `As the league starts thinking ahead, {team} keep drawing questions about rookie {name} ({position}) and whether he is already shifting the long-term picture at {needLabel}.`,
+        `{coachLead}{team} have one offseason-shaping development question sitting under the surface: rookie {name} ({position}) and whether his growth can take pressure off {needLabel}.`,
       ],
       default: [
         `There is real rookie-development chatter around {team} and {name} ({position}). The question is whether he becomes a believable answer at {needLabel} fast enough to change the roster plan.`,
         `{coachLead}{team} keep drawing quiet developmental buzz around rookie {name} ({position}). If that curve keeps moving, the {needLabel} discussion changes with it.`,
+        `The younger-player conversation around {team} keeps drifting back to rookie {name} ({position}). If he keeps moving the right way, it changes how people talk about {needLabel}.`,
+        `{coachLead}{team} also have one quiet development lane people keep revisiting: rookie {name} ({position}) and whether he can become a real answer at {needLabel} sooner than expected.`,
       ],
     });
 
@@ -1577,6 +2326,7 @@ function buildRookieDevelopmentSignals(ctx, limit = 4) {
         name: rookie.name,
         position: rookie.position,
         needLabel,
+        roomLabel,
       }),
       key: `rookie_dev:${team}:${rookie.name}`,
       category: 'rookie_development',
@@ -1584,6 +2334,140 @@ function buildRookieDevelopmentSignals(ctx, limit = 4) {
   }
 
   return candidates
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+
+function buildContractSignals(ctx, limit = 4, variantSeed = 0) {
+  const rosterTeams = ctx?.league?.rosters?.teams || {};
+  const seasonContext = ctx?.seasonContext || {};
+  const leagueTop = Array.isArray(ctx?.top100) ? ctx.top100 : [];
+  const items = [];
+
+  for (const [teamIdRaw, rosterTeam] of Object.entries(rosterTeams)) {
+    const teamId = Number(teamIdRaw);
+    const team = ctx?.teams?.get(teamId);
+    if (!team) continue;
+    const coachTag = coachMentionFor(team, ctx.teamCoachMentions);
+    const coachLead = coachTag ? `${coachTag} and ` : '';
+    const roster = rosterTeam?.rosterInfoList || rosterTeam?.rosterPlayerInfoList || [];
+    if (!roster.length) continue;
+
+    const expiring = roster
+      .filter((player) => Number(player?.contractYearsLeft ?? 99) <= 1 && Number(player?.playerBestOvr ?? player?.teamSchemeOvr ?? player?.overallRating ?? 0) >= 80)
+      .sort((a, b) => Number(b?.playerBestOvr ?? b?.teamSchemeOvr ?? b?.overallRating ?? 0) - Number(a?.playerBestOvr ?? a?.teamSchemeOvr ?? a?.overallRating ?? 0));
+    const cutCandidates = roster
+      .filter((player) => Number(player?.capReleaseNetSavings || 0) > 2)
+      .sort((a, b) => Number(b?.capReleaseNetSavings || 0) - Number(a?.capReleaseNetSavings || 0));
+    const badDeals = roster
+      .filter((player) => {
+        const ovr = Number(player?.playerBestOvr ?? player?.teamSchemeOvr ?? player?.overallRating ?? 0);
+        const age = Number(player?.age || 0);
+        return contractCapMillions(player) >= 12 && ovr <= 76 && age >= 28;
+      })
+      .sort((a, b) => contractCapMillions(b) - contractCapMillions(a));
+    const goodDeals = roster
+      .filter((player) => {
+        const ovr = Number(player?.playerBestOvr ?? player?.teamSchemeOvr ?? player?.overallRating ?? 0);
+        const age = Number(player?.age || 0);
+        return contractCapMillions(player) <= 6 && ovr >= 82 && age <= 26;
+      })
+      .sort((a, b) => Number(b?.playerBestOvr ?? b?.teamSchemeOvr ?? b?.overallRating ?? 0) - Number(a?.playerBestOvr ?? a?.teamSchemeOvr ?? a?.overallRating ?? 0));
+
+    const expiringPlayer = expiring[0];
+    const cutPlayer = cutCandidates[0];
+    const badDeal = badDeals[0];
+    const goodDeal = goodDeals[0];
+
+    if (expiringPlayer) {
+      const name = `${expiringPlayer?.firstName || ''} ${expiringPlayer?.lastName || ''}`.trim() || expiringPlayer?.displayName || 'Unknown';
+      const position = String(expiringPlayer?.position || '').toUpperCase();
+      const roomLabel = roomLabelForPosition(expiringPlayer?.position);
+      const overall = Number(expiringPlayer?.playerBestOvr ?? expiringPlayer?.teamSchemeOvr ?? expiringPlayer?.overallRating ?? 0);
+      const age = Number(expiringPlayer?.age || 0);
+      const topMatch = leagueTop.find((entry) =>
+        normalizeName(entry?.team || '') === normalizeName(team) &&
+        normalizeName(entry?.name || '') === normalizeName(name),
+      ) || null;
+      const eliteProducer = Boolean(topMatch && (Number(topMatch?.grade || 0) >= 88 || ['QB', 'WR', 'CB', 'EDGE', 'LE', 'RE', 'DT', 'LT', 'RT'].includes(position)));
+      const cornerstoneAsset = overall >= 90 || (overall >= 88 && age <= 27) || eliteProducer;
+      const templates = phaseTemplates(seasonContext, {
+        early_regular: [
+          cornerstoneAsset
+            ? `{coachLead}{team} already have one contract thread people are watching: {name} ({position}) is far too important to let drift. The early read is that they would be foolish to let that kind of player get anywhere near the market.`
+            : `{coachLead}{team} already have one contract thread people are watching: {name} ({position}) is heading toward decision time, and the {roomLabel} math matters more than it did a month ago.`,
+        ],
+        mid_regular: [
+          cornerstoneAsset
+            ? `{coachLead}{team} are drawing contract chatter around {name} ({position}), but the stronger league read is simple: a player that good would be the hottest name on the market if they ever let it get that far.`
+            : `{coachLead}{team} are drawing more contract chatter around {name} ({position}). The league read is that the {roomLabel} room gets expensive fast if that extension is not settled cleanly.`,
+          cornerstoneAsset
+            ? `{team} have a real extension question sitting on {name} ({position}), but it does not read like an optional one. Around the league, the assumption is that teams do not just let that caliber of player walk into open bidding.`
+            : `{team} have a real extension question sitting on {name} ({position}). Once the year gets moving, teams stop pretending those {roomLabel} decisions can wait forever.`,
+        ],
+        late_regular: [
+          cornerstoneAsset
+            ? `The contract pressure around {team} and {name} ({position}) is getting louder, but the market read is that he would be one of the hottest names available if they ever let that door open.`
+            : `The contract pressure around {team} and {name} ({position}) is getting louder. That is the kind of {roomLabel} decision that can push a team toward re-sign or replace mode fast.`,
+        ],
+        postseason: [
+          cornerstoneAsset
+            ? `With the offseason picture getting closer, {team} keep getting tied to one major contract call: {name} ({position}). The outside read is that a player with that profile would set the market off if they ever let him reach it.`
+            : `With the offseason picture getting closer, {team} keep getting tied to one contract decision: {name} ({position}) and whether that {roomLabel} spot gets extended or reset.`,
+        ],
+        default: [
+          cornerstoneAsset
+            ? `{coachLead}{team} have one clear contract call sitting in front of them: {name} ({position}), and the broad read is that they would be crazy to let that kind of player get loose.`
+            : `{coachLead}{team} have one clear contract call sitting in front of them: {name} ({position}) and what to do with that {roomLabel} spot next.`,
+        ],
+      });
+      items.push({
+        score: 84 + overall * 0.1 + (cornerstoneAsset ? 8 : 0) + (topMatch ? Number(topMatch?.grade || 0) * 0.04 : 0),
+        text: seededText(`contract:expiring:${team}:${name}:${variantSeed || 0}`, templates, {
+          coachLead,
+          team,
+          name,
+          position,
+          roomLabel,
+        }),
+        key: `contract:expiring:${team}:${name}`,
+        category: 'contract',
+      });
+    }
+
+    if (cutPlayer) {
+      const name = `${cutPlayer?.firstName || ''} ${cutPlayer?.lastName || ''}`.trim() || cutPlayer?.displayName || 'Unknown';
+      const savings = contractCapMillions({ contractSalary: cutPlayer?.capReleaseNetSavings || 0, contractBonus: 0 });
+      items.push({
+        score: 78 + Math.min(10, savings),
+        text: `${coachLead}${team} have one release-watch name that keeps coming up: ${name} (${String(cutPlayer?.position || '').toUpperCase()}) could clear ${formatMillions(savings)} if they decide that roster spot is not worth carrying much longer.`,
+        key: `contract:cut:${team}:${name}`,
+        category: 'contract',
+      });
+    }
+
+    if (badDeal) {
+      const name = `${badDeal?.firstName || ''} ${badDeal?.lastName || ''}`.trim() || badDeal?.displayName || 'Unknown';
+      items.push({
+        score: 74 + contractCapMillions(badDeal) * 0.2,
+        text: `${team} are carrying a contract people around the league keep circling: ${name} (${String(badDeal?.position || '').toUpperCase()}) is sitting on about ${formatMillions(contractCapMillions(badDeal))} of cap while the return has not matched the number yet.`,
+        key: `contract:bad:${team}:${name}`,
+        category: 'contract',
+      });
+    }
+
+    if (goodDeal) {
+      const name = `${goodDeal?.firstName || ''} ${goodDeal?.lastName || ''}`.trim() || goodDeal?.displayName || 'Unknown';
+      items.push({
+        score: 70 + Number(goodDeal?.playerBestOvr ?? goodDeal?.teamSchemeOvr ?? goodDeal?.overallRating ?? 0) * 0.12,
+        text: `${team} also have one of the cleaner value contracts on the board right now: ${name} (${String(goodDeal?.position || '').toUpperCase()}) is giving them real starter-level return for about ${formatMillions(contractCapMillions(goodDeal))}.`,
+        key: `contract:good:${team}:${name}`,
+        category: 'contract',
+      });
+    }
+  }
+
+  return items
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 }
@@ -1670,7 +2554,9 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
   const seasonContext = ctx.seasonContext || {};
   const phaseLanguage = buildPhaseLanguage(seasonContext);
   const mockSignals = buildMockDraftSignals(ctx, 5);
+  const draftProspectSignals = buildDraftProspectSignals(ctx, 10, variantSeed);
   const rookieDevelopmentSignals = buildRookieDevelopmentSignals(ctx, 5);
+  const contractSignals = buildContractSignals(ctx, 6, variantSeed);
   const profileFor = (team) => buildFranchiseProfile(ctx.franchiseProfileContext, team);
   const add = (score, text, key, category = 'misc') => items.push({ score, text, key, category });
 
@@ -1967,7 +2853,7 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
   const qbBuzz = leagueTop.find((player) => player.position === 'QB');
   const wrBuzz = leagueTop.find((player) => player.position === 'WR');
   const edgeBuzz = leagueTop.find((player) => ['LE', 'RE', 'EDGE', 'REDGE', 'LEDGE', 'DE'].includes(String(player.position || '').toUpperCase()));
-  const rookieBuzz = leagueTop.find((player) => Number(player?.yearsPro ?? 99) <= 1);
+  const rookieBuzz = leagueTop.find((player) => player?.isRookie === true || Number(player?.yearsPro ?? -1) === 0);
   if (qbBuzz) add(90, `${coachMentionFor(qbBuzz.team, ctx.teamCoachMentions) ? `${coachMentionFor(qbBuzz.team, ctx.teamCoachMentions)} and ` : ''}${describePerformanceRumor(qbBuzz, 'heat')}`, `player:${qbBuzz.name}`, 'player_heat');
   if (wrBuzz) add(83, `${coachMentionFor(wrBuzz.team, ctx.teamCoachMentions) ? `${coachMentionFor(wrBuzz.team, ctx.teamCoachMentions)} and ` : ''}${describePerformanceRumor(wrBuzz, 'heat')}`, `player:${wrBuzz.name}`, 'player_heat');
   if (edgeBuzz) add(79, `${coachMentionFor(edgeBuzz.team, ctx.teamCoachMentions) ? `${coachMentionFor(edgeBuzz.team, ctx.teamCoachMentions)} and ` : ''}${describePerformanceRumor(edgeBuzz, 'heat')}`, `player:${edgeBuzz.name}`, 'player_heat');
@@ -2058,7 +2944,7 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
     const standing = ctx.standings.get(Number(teamInfo.teamId));
     if (!prospect || !standing) continue;
     if (Number(standing.totalWins || 0) >= 3 || Number(standing.totalLosses || 0) >= 3) {
-      add(76, `League evaluators keep tying ${coachMentionFor(team, ctx.teamCoachMentions) ? `${coachMentionFor(team, ctx.teamCoachMentions)} and ` : ''}${team} to ${titleCase(primaryNeed)} help in the ${draftYear} class. ${prospect.name} from ${prospect.school || 'that board'} is one name that keeps surfacing.`, `need:${team}`, 'draft');
+      add(76, `League evaluators keep tying ${coachMentionFor(team, ctx.teamCoachMentions) ? `${coachMentionFor(team, ctx.teamCoachMentions)} and ` : ''}${team} to ${titleCase(primaryNeed)} help in the ${draftYear} class. ${prospect.name} from ${prospect.school || 'that board'} is one name that keeps surfacing.`, `need:${team}`, 'mock_draft');
     }
   }
 
@@ -2103,11 +2989,18 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
       seasonContext.phase === 'offseason' ? 14 :
       seasonContext.phase === 'mid_regular' ? 8 :
       6;
-    add(82 + scoreBoost, `${phaseLanguage.rumorFrame} ${signal.text}`, signal.key, 'draft');
+    add(82 + scoreBoost, `${rumorLeadText(signal.category, phaseLanguage, `lead:${signal.key}`)} ${signal.text}`, signal.key, signal.category);
+  }
+
+  for (const signal of draftProspectSignals) {
+    add(signal.score, `${rumorLeadText(signal.category, phaseLanguage, `lead:${signal.key}`)} ${signal.text}`, signal.key, signal.category);
   }
 
   for (const signal of rookieDevelopmentSignals) {
-    add(signal.score, `${phaseLanguage.rumorFrame} ${signal.text}`, signal.key, signal.category);
+    add(signal.score, `${rumorLeadText(signal.category, phaseLanguage, `lead:${signal.key}`)} ${signal.text}`, signal.key, signal.category);
+  }
+  for (const signal of contractSignals) {
+    add(signal.score, `${rumorLeadText(signal.category, phaseLanguage, `lead:${signal.key}`)} ${signal.text}`, signal.key, signal.category);
   }
 
   for (const [teamIdRaw, roster] of Object.entries(ctx.league?.rosters?.teams || {})) {
@@ -2132,43 +3025,18 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
     );
   }
 
-  const categoryCaps = seasonContext.phase === 'offseason'
-      ? {
-        trade: 3,
-        scouting: 2,
-        draft: 3,
-        identity: 2,
-        trade_posture: 2,
-        accountability: 1,
-        awards: 1,
-        rookie_development: 2,
-        player_heat: 2,
-        player_change: 1,
-        player_struggle: 1,
-        trend_up: 0,
-        trend_down: 1,
-        pressure: 2,
-        injury: 2,
-        misc: 2,
-      }
-      : {
-        trade: 3,
-        scouting: 2,
-        draft: seasonContext.phase === 'late_regular' || seasonContext.phase === 'postseason' ? 3 : 2,
-        identity: 2,
-        trade_posture: 2,
-        accountability: 1,
-        awards: 1,
-        rookie_development: seasonContext.phase === 'early_regular' ? 1 : 2,
-        player_heat: 3,
-        player_change: 1,
-        player_struggle: 2,
-        trend_up: 2,
-        trend_down: 2,
-        pressure: 2,
-        injury: 2,
-        misc: 2,
-      };
+  const hardBlockedKeys = new Set(
+    Object.entries(deniedKeys || {})
+      .filter(([, count]) => Number(count || 0) >= 1)
+      .map(([key]) => String(key || ''))
+      .filter(Boolean),
+  );
+  const hardBlockedFamilies = new Set(
+    Object.entries(deniedCategories || {})
+      .filter(([, count]) => Number(count || 0) >= 3)
+      .map(([category]) => rumorCategoryFamily(category))
+      .filter(Boolean),
+  );
   const dedupedItems = items
     .sort((a, b) => {
       const aKey = String(a?.key || '');
@@ -2187,37 +3055,83 @@ export function buildRumorMillItems(ctx, limit = 10, options = {}) {
         Math.min(36, Number(deniedCategories[bCategory] || 0) * 10);
       return (b.score - bPenalty) - (a.score - aPenalty);
     })
-    .filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index);
+    .filter((item, index, arr) => arr.findIndex((other) => other.key === item.key) === index)
+    .filter((item) => !hardBlockedKeys.has(String(item?.key || '')))
+    .filter((item) => !hardBlockedFamilies.has(rumorCategoryFamily(item?.category)));
   const primaryPool = dedupedItems.slice(0, Math.max(limit * 3, 12));
   const orderedPool = [
     ...seededOrder(`rumor-pool:${completedWeek}:${variantSeed}`, primaryPool),
     ...dedupedItems.filter((item) => !primaryPool.includes(item)),
   ];
 
-  const categoryCounts = new Map();
   const selected = [];
-  const preferredCategories = ['draft', 'rookie_development', 'player_heat', 'trade', 'trade_posture', 'pressure', 'injury', 'player_change', 'trend_up', 'trend_down'];
-  for (const category of preferredCategories) {
-    if (selected.length >= limit) break;
-    const item = orderedPool.find((entry) => rumorCategoryFamily(entry.category) === category && !selected.some((picked) => picked.key === entry.key));
-    if (!item) continue;
-    selected.push(item);
-    categoryCounts.set(rumorCategoryFamily(item.category), 1);
-  }
+  const selectedEntityKeys = new Set();
+  const selectedSuperFamilyCounts = new Map();
+  const maxPerSuperFamily = new Map([
+    ['draft_side', 2],
+  ]);
+  const familyBuckets = new Map();
   for (const item of orderedPool) {
-    const family = rumorCategoryFamily(item.category);
-    const count = categoryCounts.get(family) || 0;
-    const cap = categoryCaps[family] ?? 1;
-    if (count >= cap) continue;
-    selected.push(item);
-    categoryCounts.set(family, count + 1);
+    const family = rumorCategoryFamily(item?.category);
+    const bucket = familyBuckets.get(family) || [];
+    bucket.push(item);
+    familyBuckets.set(family, bucket);
+  }
+  const familyOrder = seededOrder(
+    `rumor-families:${completedWeek}:${variantSeed}`,
+    [...familyBuckets.keys()].sort((a, b) => {
+      const aScore = familyBuckets.get(a)?.[0]?.score || 0;
+      const bScore = familyBuckets.get(b)?.[0]?.score || 0;
+      return bScore - aScore;
+    }),
+  );
+  const maxPerFamily = 2;
+  const spotlightFamilies = seededOrder(
+    `rumor-spotlight:${completedWeek}:${variantSeed}`,
+    ['mock_draft', 'recruiting', 'college', 'draft_prospect'],
+  );
+  for (const family of spotlightFamilies) {
     if (selected.length >= limit) break;
+    const item = familyBuckets.get(family)?.[0];
+    if (!item) continue;
+    if (selected.some((entry) => entry.key === item.key)) continue;
+    if (item.entityKey && selectedEntityKeys.has(String(item.entityKey))) continue;
+    const superFamily = rumorSuperFamily(item?.category);
+    const nextCount = Number(selectedSuperFamilyCounts.get(superFamily) || 0);
+    const cap = maxPerSuperFamily.get(superFamily);
+    if (cap && nextCount >= cap) continue;
+    selected.push(item);
+    if (item.entityKey) selectedEntityKeys.add(String(item.entityKey));
+    selectedSuperFamilyCounts.set(superFamily, nextCount + 1);
+  }
+  for (let round = 0; round < maxPerFamily && selected.length < limit; round += 1) {
+    for (const family of familyOrder) {
+      if (selected.length >= limit) break;
+      const item = familyBuckets.get(family)?.[round];
+      if (!item) continue;
+      if (selected.some((entry) => entry.key === item.key)) continue;
+      if (item.entityKey && selectedEntityKeys.has(String(item.entityKey))) continue;
+      const superFamily = rumorSuperFamily(item?.category);
+      const nextCount = Number(selectedSuperFamilyCounts.get(superFamily) || 0);
+      const cap = maxPerSuperFamily.get(superFamily);
+      if (cap && nextCount >= cap) continue;
+      selected.push(item);
+      if (item.entityKey) selectedEntityKeys.add(String(item.entityKey));
+      selectedSuperFamilyCounts.set(superFamily, nextCount + 1);
+    }
   }
 
   if (selected.length < limit) {
     for (const item of orderedPool) {
       if (selected.some((entry) => entry.key === item.key)) continue;
+      if (item.entityKey && selectedEntityKeys.has(String(item.entityKey))) continue;
+      const superFamily = rumorSuperFamily(item?.category);
+      const nextCount = Number(selectedSuperFamilyCounts.get(superFamily) || 0);
+      const cap = maxPerSuperFamily.get(superFamily);
+      if (cap && nextCount >= cap) continue;
       selected.push(item);
+      if (item.entityKey) selectedEntityKeys.add(String(item.entityKey));
+      selectedSuperFamilyCounts.set(superFamily, nextCount + 1);
       if (selected.length >= limit) break;
     }
   }

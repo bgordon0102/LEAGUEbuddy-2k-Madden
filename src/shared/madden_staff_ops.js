@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { EmbedBuilder } from 'discord.js';
 import { buildStoryContext, buildCommitteeReviewData, buildRumorMillItems } from '../madden/storytelling.js';
-import { cleanupPendingRumorReviews, getRumorPendingPolicy, queueMaddenContentReview, loadContentQueue } from './madden_content_review_queue.js';
+import { cleanupPendingRumorReviews, getRumorPendingPolicy, queueMaddenContentReview, loadContentQueue, countPendingRumorReviews } from './madden_content_review_queue.js';
 import { brandText, brandTitle } from './madden_branding.js';
 import { getRumorFeedbackForGuild } from './madden_rumor_feedback.js';
 import { loadMaddenChannelMap } from './madden_metadata.js';
@@ -29,11 +29,11 @@ function loadChannelMap() {
 }
 
 function getStaffChannelId(channelMap = {}) {
-  return channelMap['League Staff'] || channelMap['LG Logs'] || null;
+  return channelMap['League Staff'] || null;
 }
 
 function getOpsChannelId(channelMap = {}) {
-  return channelMap['LG Logs'] || channelMap['League Staff'] || null;
+  return channelMap['LG Logs'] || null;
 }
 
 function loadRoleMap() {
@@ -134,7 +134,11 @@ function rumorItemFingerprint(item = '') {
 
 function rumorCategoryFamily(category = '') {
   const value = String(category || '').toLowerCase();
-  if (value.startsWith('draft')) return 'draft';
+  if (value === 'mock_draft') return 'mock_draft';
+  if (value === 'recruiting') return 'recruiting';
+  if (value === 'college') return 'college';
+  if (value === 'draft_prospect') return 'draft_prospect';
+  if (value.startsWith('draft')) return 'draft_prospect';
   return value;
 }
 
@@ -210,9 +214,7 @@ function saveRecentRumorHistory(scheduler = {}, guildId, items = []) {
 
 export async function queueScheduledRumorMill(client, guildId, force = false) {
   const scheduler = safeReadJSON(SCHEDULER_FILE, {});
-  const postRumorStatus = async (description) => {
-    await postMaddenStaffLog(client, guildId, 'Rumor Queue', description).catch(() => null);
-  };
+  const postRumorStatus = async () => {};
 
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
   if (!guild) {
@@ -227,6 +229,21 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
   if (cleanup.expired) {
     appendMaddenStaffLog({ type: 'rumor_queue_cleanup', guildId, detail: `Expired ${cleanup.expired} stale rumor review item(s).` });
     await postRumorStatus(`Expired ${cleanup.expired} stale rumor review item(s).`);
+  }
+  const queue = loadContentQueue();
+  const currentPending = countPendingRumorReviews(queue, guildId);
+  const openSlots = force
+    ? Math.max(0, pendingPolicy.hardCap - currentPending)
+    : Math.max(0, pendingPolicy.target - currentPending);
+  if (openSlots <= 0) {
+    const detail = `Skipped rumor queue: ${currentPending} rumor item(s) already pending (target ${pendingPolicy.target}, hard cap ${pendingPolicy.hardCap}).`;
+    appendMaddenStaffLog({
+      type: 'rumor_queue_skip',
+      guildId,
+      detail,
+    });
+    await postRumorStatus(detail);
+    return false;
   }
   const ctx = await buildStoryContext(guild, client, { skipCoachUserTeamMap: true });
   if (!ctx) {
@@ -258,35 +275,13 @@ export async function queueScheduledRumorMill(client, guildId, force = false) {
     await postRumorStatus('Skipped rumor queue: Rumor Mill channel not configured.');
     return false;
   }
-
-  const queue = loadContentQueue();
-  const currentPending = Object.values(queue).filter((item) =>
-    item &&
-    item.guildId === guildId &&
-    item.kind === 'rumor_mill' &&
-    item.status === 'pending'
-  ).length;
-  const openSlots = force
-    ? Math.max(0, pendingPolicy.hardCap - currentPending)
-    : Math.max(0, pendingPolicy.target - currentPending);
-  if (openSlots <= 0) {
-    const detail = `Skipped rumor queue: ${currentPending} rumor item(s) already pending (target ${pendingPolicy.target}, hard cap ${pendingPolicy.hardCap}).`;
-    appendMaddenStaffLog({
-      type: 'rumor_queue_skip',
-      guildId,
-      detail,
-    });
-    await postRumorStatus(detail);
-    return false;
-  }
-
   const rumorCursorByGuild = scheduler.rumorCursorByGuild || {};
   const startIndex = Number(rumorCursorByGuild[guildId] || 0);
   const rumorWireItems = rotateRumorItemsWithCategoryTargets(
     rumorItems,
     startIndex,
     Math.min(openSlots, 3),
-    ['draft', 'rookie_development', 'player_heat'],
+    ['mock_draft', 'recruiting', 'college', 'draft_prospect', 'contract', 'rookie_development', 'player_heat'],
   );
   const queuedThisRun = new Set();
   const alreadyPending = pendingContentFingerprints(queue, guildId, 'rumor_mill');

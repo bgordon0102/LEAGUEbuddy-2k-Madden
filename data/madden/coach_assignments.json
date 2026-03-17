@@ -273,7 +273,7 @@
             "teamName": "Broncos",
             "roleId": "1460399420691451999",
             "active": true,
-            "assignedAt": 1773683186375,
+            "assignedAt": 1773720025991,
             "assignedByUserId": "1076243288056664234",
             "assignedByTag": "rnb.randon"
           }
@@ -308,6 +308,14 @@
             "teamName": "Broncos",
             "roleId": "1460399420691451999",
             "at": 1773683186375,
+            "assignedByUserId": "1076243288056664234",
+            "assignedByTag": "rnb.randon"
+          },
+          {
+            "action": "assigned",
+            "teamName": "Broncos",
+            "roleId": "1460399420691451999",
+            "at": 1773720025991,
             "assignedByUserId": "1076243288056664234",
             "assignedByTag": "rnb.randon"
           }
@@ -1017,6 +1025,6 @@
         ]
       }
     },
-    "updatedAt": 1773683186375
+    "updatedAt": 1773720025991
   }
 }

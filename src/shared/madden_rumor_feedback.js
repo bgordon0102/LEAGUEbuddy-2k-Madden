@@ -55,16 +55,18 @@ export function recordRumorReviewFeedback({ guildId, action, item, reviewedBy })
 
   if (key) guildStore[keyField][key] = Number(guildStore[keyField][key] || 0) + 1;
   if (category) guildStore[categoryField][category] = Number(guildStore[categoryField][category] || 0) + 1;
-  guildStore.history = [
-    ...(Array.isArray(guildStore.history) ? guildStore.history : []),
-    {
-      action: normalizedAction,
-      key,
-      category,
-      reviewedBy: reviewedBy ? String(reviewedBy) : '',
-      at: Date.now(),
-    },
-  ].slice(-500);
+  if (key || category) {
+    guildStore.history = [
+      ...(Array.isArray(guildStore.history) ? guildStore.history : []),
+      {
+        action: normalizedAction,
+        key,
+        category,
+        reviewedBy: reviewedBy ? String(reviewedBy) : '',
+        at: Date.now(),
+      },
+    ].slice(-200);
+  }
   guildStore.lastUpdatedAt = Date.now();
   store[guildId] = guildStore;
   saveRumorFeedback(store);

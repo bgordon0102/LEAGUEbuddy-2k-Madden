@@ -233,6 +233,27 @@ function buildDoubleOrNothingPicker({ weekKey }) {
   return { embeds: [embed], components: [row] };
 }
 
+function buildPurchaseReceipt({ interaction, tier, perkKey, perk, weekKey, balanceBefore, balanceAfter }) {
+  return {
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0x2ecc71)
+        .setTitle('Recognition Purchase')
+        .setDescription(`<@${interaction.user.id}> bought **${perk.label}** from Franchise Hub.`)
+        .addFields(
+          { name: 'Tier', value: tier, inline: true },
+          { name: 'Week', value: weekKey, inline: true },
+          { name: 'Cost', value: String(perk.cost), inline: true },
+          { name: 'Before', value: String(balanceBefore), inline: true },
+          { name: 'After', value: String(balanceAfter), inline: true },
+          { name: 'Use It Here', value: perkUsageLocation(perkKey), inline: false },
+          { name: 'How To Use It', value: perkUsageHint(perkKey), inline: false },
+        ),
+    ],
+    components: [],
+  };
+}
+
 export async function execute(interaction) {
   if (!(interaction instanceof ButtonInteraction)) return;
   const raw = String(interaction.customId || '');
@@ -366,25 +387,23 @@ export async function execute(interaction) {
       { name: 'Cost', value: String(result.perk.cost), inline: true },
       { name: 'Before', value: String(result.balanceBefore), inline: true },
       { name: 'After', value: String(result.balanceAfter), inline: true },
-      { name: 'Use It Here', value: perkUsageLocation(perkKey), inline: false },
-      { name: 'How To Use It', value: perkUsageHint(perkKey), inline: false },
     ],
   ).catch(() => null);
-  const payload = buildSpendPanel({ tier, perkState: refreshedState, weekKey: context.weekKey });
   if (perkKey === 'doubleOrNothing') {
     await interaction.update(buildDoubleOrNothingPicker({ weekKey: context.weekKey }));
     return;
   }
-  payload.embeds[0].setDescription([
-    `${result.perk.label} is now active for ${context.weekKey}.`,
-    `Remaining this week: ${refreshedState.balances[tier]} ${TIER_EMOJIS[tier]}`,
-    '',
-    `Use it here: ${perkUsageLocation(perkKey)}`,
-    perkUsageHint(perkKey),
-    '',
-    ...payload.embeds[0].data.description.split('\n').slice(2),
-  ].join('\n'));
-  await interaction.update(payload);
+  await interaction.update(
+    buildPurchaseReceipt({
+      interaction,
+      tier,
+      perkKey,
+      perk: result.perk,
+      weekKey: context.weekKey,
+      balanceBefore: result.balanceBefore,
+      balanceAfter: refreshedState.balances[tier],
+    }),
+  );
 }
 
 export default { customId, execute };

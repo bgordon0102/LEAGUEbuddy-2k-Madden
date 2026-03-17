@@ -25,9 +25,9 @@ function loadChannelMap() {
 
 function getReviewChannelId(channelMap = {}, kind = '') {
   if (kind === 'rumor_mill') {
-    return channelMap['LG Logs'] || channelMap['League Staff'] || null;
+    return channelMap['Rumor Review'] || channelMap['League Staff'] || null;
   }
-  return channelMap['League Staff'] || channelMap['LG Logs'] || null;
+  return channelMap['League Staff'] || null;
 }
 
 const RUMOR_PENDING_TTL_MS = 10 * 60 * 60 * 1000;
@@ -40,6 +40,17 @@ export function loadContentQueue() {
 
 export function saveContentQueue(data) {
   saveJSON(QUEUE_FILE, data || {});
+}
+
+export function countPendingRumorReviews(queueOrGuildId, maybeGuildId = null) {
+  const queue = typeof queueOrGuildId === 'object' && queueOrGuildId !== null
+    ? queueOrGuildId
+    : loadContentQueue();
+  const guildId = typeof queueOrGuildId === 'string' ? queueOrGuildId : maybeGuildId;
+  if (!guildId) return 0;
+  return Object.values(queue)
+    .filter((item) => item && item.guildId === guildId && item.kind === 'rumor_mill' && item.status === 'pending')
+    .length;
 }
 
 export async function cleanupPendingRumorReviews(client, guildId) {
@@ -119,6 +130,7 @@ function buildReviewMetaEmbed(item, guild) {
     .setDescription(`Target: <#${item.targetChannelId}>`)
     .addFields(
       { name: 'Type', value: item.kind || 'content', inline: true },
+      ...(item.kind === 'rumor_mill' && item.rumorCategory ? [{ name: 'Rumor Type', value: String(item.rumorCategory), inline: true }] : []),
       { name: 'Queued By', value: item.createdBy ? `<@${item.createdBy}>` : 'System', inline: true },
       { name: 'Server', value: guild?.name || 'Unknown', inline: true },
     )
@@ -129,10 +141,10 @@ function buildReviewMetaEmbed(item, guild) {
 export async function queueMaddenContentReview(client, guildId, item) {
   const channelMap = loadChannelMap();
   const staffChannelId = getReviewChannelId(channelMap, item?.kind);
-  if (!staffChannelId) throw new Error('LG Logs / League Staff channel is not configured.');
+  if (!staffChannelId) throw new Error('Rumor review requires League Staff (or Rumor Review) to be configured.');
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
   const staffChannel = await client.channels.fetch(staffChannelId).catch(() => null);
-  if (!staffChannel?.isTextBased()) throw new Error('LG Logs / League Staff channel is not accessible.');
+  if (!staffChannel?.isTextBased()) throw new Error('Rumor review channel is not accessible.');
 
   const queue = loadContentQueue();
   const id = item.id || `content_${Date.now()}`;

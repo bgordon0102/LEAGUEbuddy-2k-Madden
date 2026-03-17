@@ -634,6 +634,7 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
       await replySkip('[awards] skipping: no current-week player data or graded list');
       return;
     }
+    const gradedAwardsAvailable = normalizedGraded.length > 0;
     if (normalizedGraded.length) {
       const byConf = (conf, filterFn) => normalizedGraded.filter(p => p.conference === conf && filterFn(p));
       const isOff = (p) => offensePositions.has((p.position || '').toUpperCase());
@@ -647,18 +648,8 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
         rookie_offense: isPlayoffs ? null : pickTop(normalizedGraded.filter(p => p.isRookie && isOff(p))),
         rookie_defense: isPlayoffs ? null : pickTop(normalizedGraded.filter(p => p.isRookie && isDef(p))),
       };
-      // backfill any missing categories from raw stats if graded list was incomplete
-      const all = Array.from(byPlayer.values());
-      const fallbackOff = (arr) => arr.sort((a, b) => (b.totals?.passYds || b.totals?.rushYds || b.totals?.recYds || 0) - (a.totals?.passYds || a.totals?.rushYds || a.totals?.recYds || 0))[0];
-      const fallbackDef = (arr) => arr.sort((a, b) => (b.totals?.defTotalTackles || 0) - (a.totals?.defTotalTackles || 0))[0];
-      if (!winners.afc_offense) winners.afc_offense = fallbackOff(all.filter(p => p.conference === 'AFC' && isOff(p)));
-      if (!winners.nfc_offense) winners.nfc_offense = fallbackOff(all.filter(p => p.conference === 'NFC' && isOff(p)));
-      if (!winners.afc_defense) winners.afc_defense = fallbackDef(all.filter(p => p.conference === 'AFC' && isDef(p)));
-      if (!winners.nfc_defense) winners.nfc_defense = fallbackDef(all.filter(p => p.conference === 'NFC' && isDef(p)));
-      if (!winners.rookie_offense && !isPlayoffs) winners.rookie_offense = fallbackOff(all.filter(p => isRookie(p) && isOff(p)));
-      if (!winners.rookie_defense && !isPlayoffs) winners.rookie_defense = fallbackDef(all.filter(p => isRookie(p) && isDef(p)));
     }
-    if (!winners || (!winners.afc_offense && !winners.nfc_offense && !winners.afc_defense && !winners.nfc_defense)) {
+    if (!gradedAwardsAvailable && (!winners || (!winners.afc_offense && !winners.nfc_offense && !winners.afc_defense && !winners.nfc_defense))) {
       winners = {
         afc_offense: pickWinner(byPlayer, 'AFC'),
         nfc_offense: pickWinner(byPlayer, 'NFC'),
@@ -791,7 +782,7 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
   })();
 
   // Use the graded weekly list only as a fallback when raw weekly stats failed to produce a winner.
-  if (weeklyTopList.length) {
+  if (!gradedAwardsAvailable && weeklyTopList.length) {
     if (!winners.afc_offense) winners.afc_offense = pickTopFromGrades('AFC', offensePositionsSet, false) || winners.afc_offense;
     if (!winners.nfc_offense) winners.nfc_offense = pickTopFromGrades('NFC', offensePositionsSet, false) || winners.nfc_offense;
     if (!winners.afc_defense) winners.afc_defense = pickTopFromGrades('AFC', defensePositionsSet, false) || winners.afc_defense;

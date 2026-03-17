@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { resolveLeagueIdWithConfig, loadLeagueSnapshot } from '../../../madden/madden_data.js';
 import { getEffectiveFirstRoundOverrides } from '../pick_overrides_store.js';
 import { buildLiveDraftContext } from './draft_live_data.js';
@@ -665,6 +665,24 @@ function seededRand(seedStr, salt, max) {
   return h % max;
 }
 
+function chooseVariantCandidate(scoredCandidates, seedStr, salt) {
+  if (!Array.isArray(scoredCandidates) || !scoredCandidates.length) return null;
+  const sorted = [...scoredCandidates].sort((a, b) => a.score - b.score || a.index - b.index);
+  const bestScore = sorted[0].score;
+  const pool = sorted
+    .filter((entry, idx) => idx < 5 && entry.score <= bestScore + 16)
+    .slice(0, 5);
+  if (pool.length <= 1) return pool[0];
+  const weights = [8, 5, 3, 2, 1].slice(0, pool.length);
+  const total = weights.reduce((sum, value) => sum + value, 0);
+  let roll = seededRand(seedStr, salt, total);
+  for (let idx = 0; idx < pool.length; idx += 1) {
+    roll -= weights[idx];
+    if (roll < 0) return pool[idx];
+  }
+  return pool[0];
+}
+
 function teamKey(name, nick) {
   if (nick) return normalizeName(nick);
   const parts = (name || '').trim().split(/\s+/);
@@ -1240,17 +1258,16 @@ export const data = new SlashCommandBuilder()
   .setName('madden-mockdraft')
   .setDescription(coachCommandDescription('mockdraft'));
 
+export const deferOnDispatch = { flags: 64 };
+
 export async function execute(interaction) {
-  // Defer immediately to avoid interaction timeout; use flags for ephemeral-like behavior
   if (!interaction.deferred && !interaction.replied) {
     await interaction.deferReply({ flags: 64 });
   }
-
   const leagueFile = getLatestLeagueFile();
   if (!leagueFile) {
     const payload = { content: coachErrorBlurb('noSnapshot', 'No league snapshot found in data/madden/leagues.') };
-    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
-    else await interaction.reply({ ...payload, flags: 64 });
+    await interaction.editReply(payload);
     return;
   }
   const league = JSON.parse(fs.readFileSync(leagueFile, 'utf8'));
@@ -1274,11 +1291,11 @@ export async function execute(interaction) {
   const prospects = loadDraftClass();
   if (!prospects.length) {
     const payload = { content: 'The draft board is not loaded yet.' };
-    if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
-    else await interaction.reply({ ...payload, flags: 64 });
+    await interaction.editReply(payload);
     return;
   }
   const emojis = loadTeamEmojis();
+  const runSeed = `official|${league?.leagueId || 'league'}|${draftYear}`;
 
   // Assign players based on team needs with light reach logic
   const available = [...prospects];
@@ -1313,6 +1330,7 @@ export async function execute(interaction) {
 
     let bestIdx = -1;
     let bestScore = Infinity;
+    const scoredCandidates = [];
 
     // If QB is the top need, heavily bias to take the best available QB very early.
     const qbTopNeed = hasQBNeed && teamNeeds[0] === 'QB';
@@ -1396,6 +1414,7 @@ export async function execute(interaction) {
       if (overallVal >= 84) score -= 10;
       if (overallVal < 74 && !effectiveNeeds?.has(g)) score += 18;
       if (g === 'DT' && effectiveNeeds?.has('DT') && overallVal < 74) score += 10;
+      scoredCandidates.push({ index: i, score, player: p });
 
       if (score < bestScore) {
         bestScore = score;
@@ -1421,6 +1440,13 @@ export async function execute(interaction) {
     if (qbTopNeed && hasQBNeed && pickNumber <= 8 && qbEliteCandidate.ovr >= qbOverrideOvrReq && qbEliteCandidate.idx !== undefined) {
       bestIdx = qbEliteCandidate.idx;
       bestScore = -999;
+    }
+    if (!(qbTopNeed && hasQBNeed && pickNumber <= 8 && qbEliteCandidate.ovr >= qbOverrideOvrReq && qbEliteCandidate.idx !== undefined)) {
+      const chosenCandidate = [...scoredCandidates].sort((a, b) => a.score - b.score || a.index - b.index)[0] || null;
+      if (chosenCandidate) {
+        bestIdx = chosenCandidate.index;
+        bestScore = chosenCandidate.score;
+      }
     }
 
     // If no candidate (e.g., thin needs), allow BPA or best QB if still needed
@@ -1479,10 +1505,16 @@ export async function execute(interaction) {
     .setColor(0x1e90ff)
     .setFooter({ text: `${coachVoiceFooter('mockdraft', 'Live board, live order, live class')} • ${path.basename(leagueFile)}` });
 
-  const payload = { embeds: [embed] };
-  if (interaction.deferred || interaction.replied) await interaction.editReply(payload);
-  else await interaction.reply({ ...payload, flags: 64 });
+  const controls = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('madden_mockdraft_live|create')
+      .setLabel('Start Live Mock Draft')
+      .setStyle(ButtonStyle.Primary),
+  );
+
+  const payload = { embeds: [embed], components: [controls] };
+  await interaction.editReply(payload);
 }
 
-export { deriveTeamNeeds, loadTeamEmojis, formatTeamEmoji, applyPickTrades };
+export { deriveTeamNeeds, loadTeamEmojis, formatTeamEmoji, applyPickTrades, loadDraftClass, loadOfficialDraftOrderOverride, prospectGroup };
 export default { data, execute };

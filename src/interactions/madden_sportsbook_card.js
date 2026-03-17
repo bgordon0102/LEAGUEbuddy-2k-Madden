@@ -28,11 +28,12 @@ export async function execute(interaction) {
     await interaction.reply({ content: 'Sportsbook season context is not ready yet.', flags: 64 });
     return;
   }
-  const payload = buildSportsbookPrivateView({
+  const payload = await buildSportsbookPrivateView({
     seasonKey,
     weekNumber,
     userId: interaction.user.id,
     guildId: interaction.guildId,
+    guild: interaction.guild,
     mode,
     index,
   });

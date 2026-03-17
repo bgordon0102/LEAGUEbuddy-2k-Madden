@@ -26,6 +26,8 @@ const SPREAD_PRICE = -110;
 const TOTAL_PRICE = -110;
 const IMPACT_EMOJI = '<:impact:1482989570185363466>';
 const GAME_OF_WEEK_BET_BONUS = 2;
+const FIRST_BET_BOOST_MULTIPLIER = 2;
+const FIRST_BET_BOOST_MAX_EXTRA = 10;
 
 function safeReadJSON(file, fallback = {}) {
   try {
@@ -120,6 +122,7 @@ function buildSportsbookIntel(lines = [], gotw = null) {
       return bGap - aGap;
     })[0];
   const stayAwayLine = [...lines]
+    .filter((line) => String(line?.gameId || '') !== String(trapCandidate?.gameId || ''))
     .sort((a, b) => {
       const aSpread = Math.abs(Number(a.spread || 0) - 1.5);
       const bSpread = Math.abs(Number(b.spread || 0) - 1.5);
@@ -215,8 +218,25 @@ function ensureBankroll(seasonStore, userId, startingBalance = STARTING_BANKROLL
     losses: 0,
     pushes: 0,
     profit: 0,
+    firstBetBoostUsed: false,
+    firstBetBoostBetPlacedAt: null,
+    firstBetBoostBonus: 0,
   };
   return seasonStore.bankrolls[userId];
+}
+
+function firstBetBoostState(card = {}) {
+  const bankroll = card?.bankroll || {};
+  const liveBoostBet = (card?.bets || []).find((bet) => bet?.status === 'open' && bet?.firstBetBoost);
+  if (liveBoostBet) {
+    return `Live now on your first bet: ${liveBoostBet.betLabel || 'open slip'} • win gets ${FIRST_BET_BOOST_MULTIPLIER}x profit`;
+  }
+  if (bankroll.firstBetBoostUsed) {
+    return bankroll.firstBetBoostBonus > 0
+      ? `Used • cashed an extra ${formatImpactValue(bankroll.firstBetBoostBonus)}`
+      : 'Used • your boosted first bet did not cash';
+  }
+  return `Available • your first bet of the season pays ${FIRST_BET_BOOST_MULTIPLIER}x profit if it wins`;
 }
 
 function isCoachOrGhostLegacy(member, roleMap) {
@@ -719,6 +739,7 @@ function sportsbookHeaderEmbed(weekNumber, seasonKey, intel = null) {
       ``,
       `Markets: spread, moneyline, over/under`,
       `Rules: current week only • max ${MAX_GAME_MARKETS} markets per game`,
+      `Season offer: First Bet Boost • your first bet pays ${FIRST_BET_BOOST_MULTIPLIER}x profit if it wins`,
       `Your Impact available to bet, limits, and payouts are shown inside the private board.`,
       `Winning bets return your Impact and add bonus Impact.`,
     ].join('\n'))
@@ -943,23 +964,31 @@ export function placeSportsbookBet({ guildId, member, userId, seasonKey, weekNum
   bankroll.balance -= amount;
   bankroll.totalWagered += amount;
   const price = linePrice(line, market, selection);
+  const placedAt = Date.now();
+  const firstBetBoost = !bankroll.firstBetBoostUsed && !bankroll.firstBetBoostBetPlacedAt;
+  const betLabel =
+    market === 'moneyline'
+      ? `${selection === 'away' ? line.awayTeam : line.homeTeam} moneyline ${formatSigned(price)}`
+      : market === 'total'
+        ? `${selection === 'over' ? 'Over' : 'Under'} ${line.total} ${formatSigned(price)}`
+        : `${selection === 'away' ? line.awaySpreadDisplay : line.homeSpreadDisplay} ${formatSigned(price)}`;
   const record = {
     userId: String(userId),
     gameId,
     market,
     selection,
     matchupLabel: `${line.awayTeam} at ${line.homeTeam}`,
-    betLabel:
-      market === 'moneyline'
-        ? `${selection === 'away' ? line.awayTeam : line.homeTeam} moneyline`
-        : market === 'total'
-          ? `${selection === 'over' ? 'Over' : 'Under'} ${line.total}`
-          : `${selection === 'away' ? line.awaySpreadDisplay : line.homeSpreadDisplay}`,
+    betLabel,
     wager: amount,
     price,
     status: 'open',
-    placedAt: Date.now(),
+    placedAt,
+    firstBetBoost,
   };
+  if (firstBetBoost) {
+    bankroll.firstBetBoostUsed = true;
+    bankroll.firstBetBoostBetPlacedAt = placedAt;
+  }
   weekStore.bets.push(record);
   saveStore(store);
   const payout = payoutBreakdown(amount, price);
@@ -986,6 +1015,47 @@ export function getSportsbookUserCard({ seasonKey, weekNumber, userId, guildId =
   const weekStore = seasonStore?.weeks?.[`week_${weekNumber}`] || { bets: [] };
   const bets = (weekStore.bets || []).filter((bet) => String(bet.userId) === String(userId));
   return { bankroll, bets, lines: weekStore.lines || [] };
+}
+
+function parseMatchupFromGameId(gameId = '') {
+  const parts = String(gameId || '').split(':');
+  if (parts.length !== 3) return null;
+  const awayTeamId = Number(parts[1]);
+  const homeTeamId = Number(parts[2]);
+  if (!Number.isFinite(awayTeamId) || !Number.isFinite(homeTeamId)) return null;
+  return { awayTeamId, homeTeamId };
+}
+
+function buildTeamsByIdFromStoreOrSnapshot(lines = [], guildId = null) {
+  const map = new Map();
+  for (const line of lines || []) {
+    if (line?.awayTeamId != null && line?.awayTeam) map.set(Number(line.awayTeamId), String(line.awayTeam));
+    if (line?.homeTeamId != null && line?.homeTeam) map.set(Number(line.homeTeamId), String(line.homeTeam));
+  }
+  if (guildId == null) return map;
+  try {
+    const leagueId = resolveLeagueIdWithConfig(guildId);
+    if (!leagueId) return map;
+    const snapshot = loadLeagueSnapshot(leagueId);
+    for (const team of snapshot?.teams?.leagueTeamInfoList || []) {
+      const teamId = Number(team?.teamId);
+      const label = String(team?.displayName || team?.nickName || team?.longName || '').trim();
+      if (Number.isFinite(teamId) && label) map.set(teamId, label);
+    }
+  } catch {}
+  return map;
+}
+
+function resolveBetMatchupLabel(bet = {}, lines = [], guildId = null) {
+  if (bet?.matchupLabel) return String(bet.matchupLabel);
+  const line = (lines || []).find((entry) => String(entry?.gameId || '') === String(bet?.gameId || ''));
+  if (line?.awayTeam && line?.homeTeam) return `${line.awayTeam} at ${line.homeTeam}`;
+  const parsed = parseMatchupFromGameId(bet?.gameId || '');
+  if (!parsed) return 'Unknown game';
+  const teamsById = buildTeamsByIdFromStoreOrSnapshot(lines, guildId);
+  const away = teamsById.get(parsed.awayTeamId);
+  const home = teamsById.get(parsed.homeTeamId);
+  return away && home ? `${away} at ${home}` : 'Unknown game';
 }
 
 export function getSportsbookOpenBetOpportunity({ seasonKey, userId, weekNumber = null, guildId = null }) {
@@ -1038,17 +1108,22 @@ function openBetsForGame(bets = [], gameId) {
   return bets.filter((bet) => bet.gameId === gameId && bet.status === 'open');
 }
 
-function cardLinesForUser(bets = []) {
+function cardLinesForUser(bets = [], lines = [], guildId = null) {
   return bets.length
     ? bets
         .slice()
         .sort((a, b) => Number(b.placedAt || 0) - Number(a.placedAt || 0))
         .slice(0, 8)
         .map((bet) => {
+          const matchupLabel = resolveBetMatchupLabel(bet, lines, guildId);
+          const baseLabel = bet.betLabel || `${bet.market} ${bet.selection}`;
+          const oddsLabel = Number.isFinite(Number(bet?.price || 0)) && Number(bet?.price || 0) !== 0 && !String(baseLabel).includes(formatSigned(Number(bet.price || 0)))
+            ? ` @ ${formatSigned(Number(bet.price || 0))}`
+            : '';
           if (bet.status === 'buyout') {
-            return `${bet.matchupLabel || 'Unknown game'} • ${bet.betLabel || `${bet.market} ${bet.selection}`} • ${formatImpactValue(bet.wager)} • buyout for ${formatImpactValue(bet.refund || 0)}`;
+            return `${matchupLabel} • ${baseLabel}${oddsLabel} • ${formatImpactValue(bet.wager)} • buyout for ${formatImpactValue(bet.refund || 0)}`;
           }
-          return `${bet.matchupLabel || 'Unknown game'} • ${bet.betLabel || `${bet.market} ${bet.selection}`} • ${formatImpactValue(bet.wager)} • ${bet.status}`;
+          return `${matchupLabel} • ${baseLabel}${oddsLabel} • ${formatImpactValue(bet.wager)} • ${bet.status}`;
         })
     : ['No bets placed for this week.'];
 }
@@ -1121,7 +1196,19 @@ function buyoutRows(openBets = [], weekNumber = 0) {
   return rows;
 }
 
-export function buildSportsbookPrivateView({ seasonKey, weekNumber, userId, guildId = null, mode = 'board', index = 0 }) {
+async function resolveSportsbookUserLabel(guild, userId) {
+  const compact = String(userId || '').trim();
+  if (!compact) return 'Unknown Coach';
+  const member = guild?.members?.cache?.get?.(compact)
+    || await guild?.members?.fetch?.(compact).catch(() => null);
+  const user = member?.user || await guild?.client?.users?.fetch?.(compact).catch(() => null);
+  return member?.displayName
+    || user?.globalName
+    || user?.username
+    || `Coach ${compact.slice(-4)}`;
+}
+
+export async function buildSportsbookPrivateView({ seasonKey, weekNumber, userId, guildId = null, guild = null, mode = 'board', index = 0 }) {
   const card = getSportsbookUserCard({ seasonKey, weekNumber, userId, guildId });
   const lines = card.lines || [];
   const safeIndex = lines.length ? Math.max(0, Math.min(lines.length - 1, Number(index || 0))) : 0;
@@ -1140,11 +1227,12 @@ export function buildSportsbookPrivateView({ seasonKey, weekNumber, userId, guil
     const embed = new EmbedBuilder()
       .setColor(0x5865f2)
       .setTitle(`LB Sportsbook • My Card • Week ${weekNumber}`)
-      .setDescription(cardLinesForUser(card.bets).join('\n'))
+      .setDescription(cardLinesForUser(card.bets, card.lines, guildId).join('\n'))
       .addFields(
         { name: 'Impact To Bet', value: formatImpactValue(card.bankroll.balance || 0), inline: true },
         { name: 'Impact Won', value: formatImpactValue(card.bankroll.profit || 0), inline: true },
         { name: 'Record', value: `${card.bankroll.wins || 0}-${card.bankroll.losses || 0}-${card.bankroll.pushes || 0}`, inline: true },
+        { name: 'First Bet Boost', value: firstBetBoostState(card), inline: false },
       )
       .setFooter({ text: 'Private view • open bets and settled results' })
       .setTimestamp();
@@ -1163,12 +1251,15 @@ export function buildSportsbookPrivateView({ seasonKey, weekNumber, userId, guil
 
   if (mode === 'leaderboard') {
     const board = sportsbookLeaderboard(seasonKey, 10);
+    const lines = await Promise.all(
+      board.map(async (row, idx) => `${idx + 1}. ${await resolveSportsbookUserLabel(guild, row.userId)} — ${formatImpactValue(row.balance)} bankroll (${row.wins}-${row.losses}-${row.pushes})`)
+    );
     const embed = new EmbedBuilder()
       .setColor(0x2ecc71)
       .setTitle(`LB Sportsbook • Leaderboard • Week ${weekNumber}`)
       .setDescription(
         board.length
-          ? board.map((row, idx) => `${idx + 1}. <@${row.userId}> — ${formatImpactValue(row.balance)} to bet (${row.wins}-${row.losses}-${row.pushes})`).join('\n')
+          ? lines.join('\n')
           : 'No sportsbook action yet.',
       )
       .setFooter({ text: 'Private view • sportsbook standings' })
@@ -1366,10 +1457,20 @@ export async function settleSportsbookWeek({ client, guildId, seasonKey, weekNum
     if (!line || !game || !hasRealPlayedSignal(game)) continue;
     const bankroll = ensureBankroll(seasonStore, String(bet.userId));
     const outcome = settleBet(line, bet, game);
+    let firstBetBoostBonus = 0;
+    if (outcome.result === 'win' && bet.firstBetBoost) {
+      firstBetBoostBonus = Math.min(
+        Number(outcome.profit || 0) * (FIRST_BET_BOOST_MULTIPLIER - 1),
+        FIRST_BET_BOOST_MAX_EXTRA,
+      );
+      outcome.profit = Math.round((Number(outcome.profit || 0) + firstBetBoostBonus) * 10) / 10;
+    }
     bet.status = outcome.result;
     bet.profit = outcome.profit;
     bet.settledAt = Date.now();
     bet.impactAward = 0;
+    bet.firstBetBoostBonus = firstBetBoostBonus;
+    if (firstBetBoostBonus > 0) bankroll.firstBetBoostBonus = Number(firstBetBoostBonus || 0);
     settled += 1;
     if (outcome.result === 'push') {
       bankroll.pushes += 1;
@@ -1435,14 +1536,14 @@ export async function settleSportsbookWeek({ client, guildId, seasonKey, weekNum
             value: impactWinners.length
               ? impactWinners.map((bet) => {
                   const totalReturn = Number(bet.wager || 0) + Number(bet.profit || 0);
-                  return `<@${bet.userId}> ${bet.market} ${bet.selection} • stake ${formatImpactValue(bet.wager || 0)} • won ${formatImpactValue(bet.profit || 0)} • return ${formatImpactValue(totalReturn)} • ${formatImpactDelta(bet.impactAward || 0)}`;
+                  return `${String(bet.userId)} ${bet.market} ${bet.selection} • stake ${formatImpactValue(bet.wager || 0)} • won ${formatImpactValue(bet.profit || 0)} • return ${formatImpactValue(totalReturn)} • ${formatImpactDelta(bet.impactAward || 0)}`;
                 }).join('\n')
               : 'No winning slips paid out this week.',
           },
           {
             name: 'Top Impact To Bet',
             value: board.length
-              ? board.map((row, idx) => `${idx + 1}. <@${row.userId}> — ${formatImpactValue(row.balance)}`).join('\n')
+              ? board.map((row, idx) => `${idx + 1}. ${String(row.userId)} — ${formatImpactValue(row.balance)}`).join('\n')
               : 'No sportsbook action yet.',
           },
         )

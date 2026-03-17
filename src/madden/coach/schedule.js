@@ -199,6 +199,23 @@ function formatGameSide(emoji, record, score, isWinner) {
   return isWinner ? `**${side}**` : side;
 }
 
+function formatMatchupContext(awayEmoji, awayRecord, homeEmoji, homeRecord) {
+  return `${awayEmoji} (${awayRecord}) @ ${homeEmoji} (${homeRecord})`;
+}
+
+function formatResultContext({ status, scoreView, ledgerEntry }) {
+  if (status === 'played' || status === 'played_inferred') {
+    if (scoreView) {
+      return `Final: ${Number(scoreView.awayScore || 0)}-${Number(scoreView.homeScore || 0)}`;
+    }
+    return 'Final logged';
+  }
+  if (status === 'played_special') {
+    return `Outcome: ${ledgerEntry?.outcomeLabel || 'Result Logged'}`;
+  }
+  return 'Upcoming';
+}
+
 function compactGameLine(snapshot, game, names, standings, emojiMap, ledger = null) {
   const awayId = Number(game.awayTeamId);
   const homeId = Number(game.homeTeamId);
@@ -209,35 +226,12 @@ function compactGameLine(snapshot, game, names, standings, emojiMap, ledger = nu
   const awayRecord = formatRecord(standings.get(awayId));
   const homeRecord = formatRecord(standings.get(homeId));
   const ledgerEntry = ledgerEntryForGame(ledger, game);
-  const status = ledgerEntry?.played ? (ledgerEntry?.outcomeLabel ? 'played_special' : 'played_inferred') : inferredGameStatus(snapshot, game);
+  const status = ledgerEntry?.played ? (ledgerEntry?.outcomeLabel ? 'played_special' : 'played') : inferredGameStatus(snapshot, game);
   const scoreView = gameDisplayScores(snapshot, game);
 
-  if (status === 'played') {
-    const awayScore = scoreView?.awayScore ?? Number(game.awayScore || 0);
-    const homeScore = scoreView?.homeScore ?? Number(game.homeScore || 0);
-    const awayWon = awayScore > homeScore;
-    const homeWon = homeScore > awayScore;
-    const awayPart = formatGameSide(awayEmoji, awayRecord, awayScore, awayWon);
-    const homePart = formatGameSide(homeEmoji, homeRecord, homeScore, homeWon);
-    return `${awayPart} vs ${homePart}`;
-  }
-
-  if (status === 'played_inferred') {
-    if (scoreView) {
-      const awayWon = scoreView.awayScore > scoreView.homeScore;
-      const homeWon = scoreView.homeScore > scoreView.awayScore;
-      const awayPart = formatGameSide(awayEmoji, awayRecord, scoreView.awayScore, awayWon);
-      const homePart = formatGameSide(homeEmoji, homeRecord, scoreView.homeScore, homeWon);
-      return `${awayPart} vs ${homePart}`;
-    }
-    return `${awayEmoji} ${awayRecord} @ ${homeEmoji} ${homeRecord} • Result Logged`;
-  }
-
-  if (status === 'played_special') {
-    return `${awayEmoji} ${awayRecord} @ ${homeEmoji} ${homeRecord} • ${ledgerEntry?.outcomeLabel || 'Result Logged'}`;
-  }
-
-  return `${awayEmoji} ${awayRecord} @ ${homeEmoji} ${homeRecord} • Upcoming`;
+  const matchup = formatMatchupContext(awayEmoji, awayRecord, homeEmoji, homeRecord);
+  const result = formatResultContext({ status, scoreView, ledgerEntry });
+  return `${matchup} • ${result}`;
 }
 
 function weekMenuOptions(totalWeeks, selectedWeek) {
@@ -362,15 +356,16 @@ export function buildGameDetailView(snapshot, weekIndex, scheduleId) {
   const awayScore = scoreView?.awayScore ?? Number(game.awayScore || 0);
   const homeScore = scoreView?.homeScore ?? Number(game.homeScore || 0);
   const ledgerEntry = ledgerEntryForGame(ledger, game);
-  const awayWon = awayScore > homeScore;
-  const homeWon = homeScore > awayScore;
+  const status = ledgerEntry?.played ? (ledgerEntry?.outcomeLabel ? 'played_special' : 'played') : inferredGameStatus(snapshot, game);
+  const matchupLine = formatMatchupContext(awayEmoji, awayRecord, homeEmoji, homeRecord);
+  const resultLine = formatResultContext({ status, scoreView, ledgerEntry });
 
   const embed = new EmbedBuilder()
     .setColor(0x00b0f4)
     .setTitle(`Week ${weekIndex + 1} — Game Stats`)
     .setDescription([
-      `${formatGameSide(awayEmoji, awayRecord, awayScore, awayWon)} vs ${formatGameSide(homeEmoji, homeRecord, homeScore, homeWon)}`,
-      ledgerEntry?.outcomeLabel ? `Outcome: ${ledgerEntry.outcomeLabel}` : null,
+      matchupLine,
+      resultLine,
     ].filter(Boolean).join('\n'))
     .addFields(
       {

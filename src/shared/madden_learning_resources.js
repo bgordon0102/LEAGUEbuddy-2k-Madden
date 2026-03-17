@@ -1,3 +1,6 @@
+import fs from 'fs';
+import path from 'path';
+
 function hashSeed(...values) {
   const text = values.map((value) => String(value || '')).join('|');
   let hash = 0;
@@ -5,7 +8,7 @@ function hashSeed(...values) {
   return Math.abs(hash);
 }
 
-const RESOURCES = [
+const RAW_RESOURCES = [
   { lane: 'offense', tags: ['slot', 'inside', 'separator'], label: 'Film Room: slot cross / inside separator', url: 'https://youtu.be/RcdTJQyplw8', source: 'Huddle.gg / YouTube' },
   { lane: 'offense', tags: ['outside', 'flood', 'cover3'], label: 'Film Room: Flood concept vs Cover 3', url: 'https://youtu.be/x3YgSXUCq-w', source: 'MUT.GG / YouTube' },
   { lane: 'offense', tags: ['box', 'rb', 'angle', 'texas'], label: 'Film Room: RB angle / cross-flat concept', url: 'https://youtu.be/A6V0zSVINb4', source: 'Madden School / YouTube' },
@@ -121,6 +124,210 @@ const RESOURCES = [
   { lane: 'tendency', tags: ['howto', 'beginner', 'counter'], label: 'How-To: Madden 26 counter playcalling', url: 'https://www.youtube.com/results?search_query=madden+26+counter+playcalling', source: 'YouTube search' },
 ];
 
+const EXTRA_DIRECT_RESOURCES = [
+  { lane: 'offense', tags: ['general', 'offense', 'howto', 'beginner'], label: 'Resource: Madden 26 tips and tricks hub', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub', source: 'EA' },
+  { lane: 'offense', tags: ['howto', 'intermediate', 'coverage', 'read'], label: 'Resource: reading the defense before the snap', url: 'https://www.madden-school.com/reading-the-defense/', source: 'Madden School' },
+  { lane: 'offense', tags: ['balanced', 'formation', 'scheme', 'howto'], label: 'Resource: Balanced offense playbook hub', url: 'https://www.madden-school.com/playbooks/balanced/offense/', source: 'Madden School' },
+  { lane: 'offense', tags: ['trips', 'bunch', 'formation', 'scheme'], label: 'Resource: Shotgun Mix offense playbook hub', url: 'https://www.madden-school.com/playbooks/shotgun-mix/offense/', source: 'Madden School' },
+  { lane: 'offense', tags: ['pressure', 'blitz', 'howto', 'counter'], label: 'Resource: beat Mid Blitz in Madden 26', url: 'https://www.mut.gg/news/how-to-beat-mid-blitz-in-madden-26/', source: 'MUT.GG' },
+  { lane: 'offense', tags: ['zone', 'cover3', 'howto', 'outside'], label: 'Resource: beat Cover 3 in Madden', url: 'https://www.mut.gg/news/how-to-beat-cover-3-in-madden-25/', source: 'MUT.GG' },
+  { lane: 'offense', tags: ['howto', 'beginner', 'scheme', 'general'], label: 'Resource: Madden 26 offensive tips collection', url: 'https://www.madden-school.com/category/madden-26-offensive-tips/', source: 'Madden School' },
+
+  { lane: 'defense', tags: ['general', 'defense', 'howto', 'beginner'], label: 'Resource: Madden 26 tips and tricks hub', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub', source: 'EA' },
+  { lane: 'defense', tags: ['coverage', 'shell', 'rotation', 'howto'], label: 'Resource: coverage shells and late rotation', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-use-coverage-shells', source: 'EA' },
+  { lane: 'defense', tags: ['pressure', 'showblitz', 'disguise', 'howto'], label: 'Resource: Show Blitz and pre-snap picture', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-show-blitz', source: 'EA' },
+  { lane: 'defense', tags: ['contain', 'scramble', 'mobileqb', 'howto'], label: 'Resource: stop quarterback scrambles', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-stop-quarterback', source: 'EA' },
+  { lane: 'defense', tags: ['pressure', 'front', 'stunt', 'howto'], label: 'Resource: use stunts to change the rush picture', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-use-stunt', source: 'EA' },
+  { lane: 'defense', tags: ['howto', 'beginner', 'scheme', 'general'], label: 'Resource: Madden 26 defensive tips collection', url: 'https://www.madden-school.com/category/madden-26-defensive-tips/', source: 'Madden School' },
+  { lane: 'defense', tags: ['playbook', 'scheme', 'general', 'intermediate'], label: 'Resource: top 5 defensive playbooks', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-defensive-playbooks', source: 'EA' },
+
+  { lane: 'tendency', tags: ['balanced', 'read', 'howto', 'intermediate'], label: 'Resource: reading the defense', url: 'https://www.madden-school.com/reading-the-defense/', source: 'Madden School' },
+  { lane: 'tendency', tags: ['shells', 'rotation', 'pass-heavy', 'howto'], label: 'Resource: coverage shells and late rotation', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-use-coverage-shells', source: 'EA' },
+  { lane: 'tendency', tags: ['pressure', 'showblitz', 'counter', 'howto'], label: 'Resource: Show Blitz and changing the picture', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-show-blitz', source: 'EA' },
+  { lane: 'tendency', tags: ['scramble', 'qb', 'contain', 'counter'], label: 'Resource: stop quarterback scrambles', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-stop-quarterback', source: 'EA' },
+  { lane: 'tendency', tags: ['pressure', 'midblitz', 'counter', 'howto'], label: 'Resource: beat Mid Blitz in Madden 26', url: 'https://www.mut.gg/news/how-to-beat-mid-blitz-in-madden-26/', source: 'MUT.GG' },
+  { lane: 'tendency', tags: ['cover3', 'read', 'counter', 'howto'], label: 'Resource: beat Cover 3 in Madden', url: 'https://www.mut.gg/news/how-to-beat-cover-3-in-madden-25/', source: 'MUT.GG' },
+];
+
+const MATCHUP_DIRECT_RESOURCES = [
+  { lane: 'offense', tags: ['pressure', 'protection', 'hotroute', 'audible', 'customstem', 'counter'], label: 'Resource: audibles, hot routes, and custom stems', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-hot-route-and-audible', source: 'EA' },
+  { lane: 'offense', tags: ['coverage', 'read', 'throw', 'timing', 'howto'], label: 'Resource: passing the ball and leading throws', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-pass-the-ball', source: 'EA' },
+  { lane: 'offense', tags: ['scramble', 'mobileqb', 'playmaker', 'brokenplay', 'counter'], label: 'Resource: Playmaker mechanic for off-schedule throws', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-use-playmaker', source: 'EA' },
+  { lane: 'offense', tags: ['scramble', 'mobileqb', 'option', 'speedoption', 'qb'], label: 'Resource: QB slide and speed option rules', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-qb-slide', source: 'EA' },
+  { lane: 'offense', tags: ['box', 'run', 'space', 'yac', 'ballcarrier'], label: 'Resource: ball carrier moves for space and finish', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-ball-carrier-moves', source: 'EA' },
+  { lane: 'offense', tags: ['slot', 'outside', 'catchpoint', 'aggressive', 'possession'], label: 'Resource: catch types and catch-point control', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-catch-the-ball', source: 'EA' },
+  { lane: 'offense', tags: ['cover2', 'zone', 'sideline', 'fade', 'counter'], label: 'Resource: how to beat Cover 2 defenses in Madden 26', url: 'https://www.madden-school.com/cover-2/', source: 'Madden School' },
+  { lane: 'offense', tags: ['cover3', 'zone', 'flood', 'curlflat', 'counter'], label: 'Resource: how to beat Cover 3 defenses in Madden 26', url: 'https://www.madden-school.com/cover-3/', source: 'Madden School' },
+  { lane: 'offense', tags: ['cover4', 'quarters', 'palms', 'match', 'counter'], label: 'Resource: how to beat Cover 4 defenses in Madden 26', url: 'https://www.madden-school.com/cover-4/', source: 'Madden School' },
+  { lane: 'offense', tags: ['man', 'press', 'release', 'separator', 'counter'], label: 'Resource: how to beat man coverage in Madden 26', url: 'https://www.madden-school.com/man-to-man/', source: 'Madden School' },
+  { lane: 'offense', tags: ['match', 'quarters', 'palms', 'zone', 'counter'], label: 'Resource: how to beat match coverage in Madden 26', url: 'https://www.madden-school.com/match-coverage/', source: 'Madden School' },
+  { lane: 'offense', tags: ['cover2', 'fade', 'hotroute', 'outside', 'release'], label: 'Resource: fade hot route vs Cover 2', url: 'https://www.madden-school.com/use-the-fade-hot-route-to-destroy-cover-2-defenses-in-madden-26/', source: 'Madden School' },
+  { lane: 'offense', tags: ['bunch', 'cover4', 'cover2', 'deepshot', 'counter'], label: 'Resource: Gun Bunch Bunch Trail vs Cover 2 and Cover 4', url: 'https://www.madden-school.com/madden-18-gun-bunch-bunch-trail/', source: 'Madden School' },
+  { lane: 'offense', tags: ['bunch', 'cover3', 'deepshot', 'counter', 'post'], label: 'Resource: Gun Bunch Deep Corner vs Cover 3', url: 'https://www.madden-school.com/madden-18-gun-bunch-deep-corner-cover-3-beater/', source: 'Madden School' },
+  { lane: 'offense', tags: ['bunch', 'cover3', 'deepshot', 'counter', 'checkdown'], label: 'Resource: Gun Bunch Str Offset Mtn Deep Post vs Cover 3', url: 'https://www.madden-school.com/an-easy-1-play-touchdown-against-any-cover-3-defense-in-madden-25/', source: 'Madden School' },
+  { lane: 'offense', tags: ['bunch', 'man', 'blitz', 'pivot', 'counter'], label: 'Resource: Gun Bunch X Nasty Y Option Pivot vs man blitz', url: 'https://www.madden-school.com/an-easy-way-to-beat-every-man-blitz-in-madden-25-1-play-td/', source: 'Madden School' },
+  { lane: 'offense', tags: ['bunch', 'man', 'wheel', 'counter', 'yflex'], label: 'Resource: Gun Bunch Y-Flex Verticals vs man coverage', url: 'https://www.madden-school.com/this-routes-destroys-any-man-coverage-free-ebook-preview/', source: 'Madden School' },
+  { lane: 'offense', tags: ['empty', 'bunch', 'cover3', 'sideline', 'counter'], label: 'Resource: Gun Bunch Empty Z Spot vs Cover 3', url: 'https://www.madden-school.com/madden-18-gun-bunch-empty-z-spot-cover-3-beater/', source: 'Madden School' },
+  { lane: 'offense', tags: ['empty', 'bunch', 'playaction', 'reads', 'counter'], label: 'Resource: Gun Empty Bunch PA MTN Read', url: 'https://www.madden-school.com/gun-empty-bunch-pa-mtn-read/', source: 'Madden School' },
+  { lane: 'offense', tags: ['trips', 'te', 'cover3', 'deepshot', 'counter'], label: 'Resource: Gun Trips TE Flex PA Shot Crossers vs Cover 3', url: 'https://www.madden-school.com/madden-25-cover-3-beating-money-play-gun-trips-te-flex-ebook-preview/', source: 'Madden School' },
+  { lane: 'offense', tags: ['trips', 'redzone', 'goalline', 'zone', 'counter'], label: 'Resource: Gun Y Trips Wk GL Fork Zig for red-zone zone coverage', url: 'https://www.madden-school.com/madden-25-red-zone-money-play-that-destroys-zone-defense/', source: 'Madden School' },
+  { lane: 'offense', tags: ['tight', 'run-heavy', 'inside', 'blast', 'counter'], label: 'Resource: IForm Tight HB Blast with motion for better run blocking', url: 'https://www.madden-school.com/iform-tight-hb-blast/', source: 'Madden School' },
+  { lane: 'offense', tags: ['trio', 'te', 'middle', 'reads', 'counter'], label: 'Resource: Gun Trio TE In quick-read passing concept', url: 'https://www.madden-school.com/free-madden-25-tips-gun-trio-te/', source: 'Madden School' },
+  { lane: 'offense', tags: ['trips', 'smash', 'man', 'zone', 'counter'], label: 'Resource: Pistol Trips Smash route stress concept', url: 'https://www.madden-school.com/one-hardest-routes-stop-madden-25/', source: 'Madden School' },
+  { lane: 'offense', tags: ['xfactor', 'superstar', 'deepball', 'scramble', 'ballcarrier'], label: 'Resource: top 3 offensive X-Factors', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-3-offensive-x-factors', source: 'EA' },
+  { lane: 'offense', tags: ['abilities', 'xfactor', 'deepball', 'singlecoverage', 'aggressive'], label: 'Ability guide: Double Me X-Factor', url: 'https://www.mut.gg/abilities/double-me-xf/', source: 'MUT.GG' },
+  { lane: 'offense', tags: ['abilities', 'xfactor', 'scramble', 'mobileqb', 'brokenplay'], label: 'Ability guide: Run & Gun X-Factor', url: 'https://www.mut.gg/abilities/run-gun-xf/', source: 'MUT.GG' },
+  { lane: 'offense', tags: ['abilities', 'xfactor', 'ballcarrier', 'space', 'yac'], label: 'Ability guide: Phenom X-Factor', url: 'https://www.mut.gg/abilities/phenom-xf/', source: 'MUT.GG' },
+  { lane: 'offense', tags: ['trips', 'bunch', 'tight', 'formations', 'matchup'], label: 'Resource: best offensive playbooks in Madden 26', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-best-offensive-playbooks', source: 'EA' },
+  { lane: 'offense', tags: ['pressure', 'cover2', 'cover3', 'cover4', 'slotfade'], label: 'Resource: top 5 offensive tips', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-offensive-tips', source: 'EA' },
+  { lane: 'offense', tags: ['general', 'offense', 'scheme', 'formations', 'matchup'], label: 'Resource: Madden 26 offense tips hub', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/beginner-tips-hub/offense-tips-hub', source: 'EA' },
+  { lane: 'offense', tags: ['pressure', 'blitz', 'counter', 'quickgame', 'read'], label: 'Resource: top 5 offense tips', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-offensive-tips', source: 'EA' },
+
+  { lane: 'defense', tags: ['coverage', 'hands', 'intercept', 'swat', 'ballskills'], label: 'Resource: intercept and swat timing', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-intercept-the-ball', source: 'EA' },
+  { lane: 'defense', tags: ['coverage', 'user', 'switchstick', 'fieldcoverage'], label: 'Resource: Switch Stick for full-field coverage', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-switch-stick', source: 'EA' },
+  { lane: 'defense', tags: ['coverage', 'shell', 'customzones', 'routecommit', 'disguise'], label: 'Resource: coverage shells, custom zones, and route commit', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-use-coverage-shells', source: 'EA' },
+  { lane: 'defense', tags: ['pressure', 'showblitz', 'disguise', 'mug'], label: 'Resource: how to show blitz', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-show-blitz', source: 'EA' },
+  { lane: 'defense', tags: ['pressure', 'stunt', 'front', 'fourman'], label: 'Resource: how to use stunts', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-use-stunt', source: 'EA' },
+  { lane: 'defense', tags: ['pressure', 'passrush', 'blocksteer', 'shed'], label: 'Resource: block steer for pass rush wins', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-block-steer', source: 'EA' },
+  { lane: 'defense', tags: ['runfit', 'tackle', 'space', 'openfield', 'finish'], label: 'Resource: tackling and open-field finish', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-tackle', source: 'EA' },
+  { lane: 'defense', tags: ['xfactor', 'superstar', 'passrush', 'coverage', 'hybrid'], label: 'Resource: top 3 defensive X-Factors', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-3-defensive-x-factors', source: 'EA' },
+  { lane: 'defense', tags: ['abilities', 'xfactor', 'coverage', 'man', 'zone'], label: 'Ability guide: Universal Coverage X-Factor', url: 'https://www.mut.gg/abilities/universal-coverage-xf/', source: 'MUT.GG' },
+  { lane: 'defense', tags: ['abilities', 'zone', 'middle', 'ko', 'slot'], label: 'Ability guide: Mid Zone KO', url: 'https://www.mut.gg/abilities/s6-mid-zone-ko/', source: 'MUT.GG' },
+  { lane: 'defense', tags: ['abilities', 'zone', 'deep', 'inside', 'ko'], label: 'Ability guide: Deep In Zone KO', url: 'https://www.mut.gg/abilities/deep-in-zone-ko/', source: 'MUT.GG' },
+  { lane: 'defense', tags: ['abilities', 'press', 'chuck', 'fatigue', 'slot'], label: 'Ability guide: Chuck Out', url: 'https://www.mut.gg/abilities/chuck-out/', source: 'MUT.GG' },
+  { lane: 'defense', tags: ['playbook', 'mug', 'quarters', 'palms', 'pressure'], label: 'Resource: top 5 defensive playbooks', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-defensive-playbooks', source: 'EA' },
+  { lane: 'defense', tags: ['runfit', 'pressure', 'coverage', 'matchup', 'counter'], label: 'Resource: top 5 defensive tips', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-defensive-tips', source: 'EA' },
+  { lane: 'defense', tags: ['general', 'defense', 'scheme', 'matchup', 'formations'], label: 'Resource: Madden 26 defense tips hub', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/beginner-tips-hub/defense-tips-hub', source: 'EA' },
+  { lane: 'defense', tags: ['runfit', 'pressure', 'coverage', 'general'], label: 'Resource: top 5 defense tips', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-defensive-tips', source: 'EA' },
+  { lane: 'defense', tags: ['coverage', 'balancing', 'gameplay', 'deepdive'], label: 'Resource: gameplay deep dive and coverage tuning', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/news/madden-26-gridiron-notes-gameplay-deep-dive', source: 'EA' },
+  { lane: 'defense', tags: ['runfit', 'counter', 'shotgun', 'box', 'front'], label: 'Resource: stopping Shotgun HB Counter from a 5-2 front', url: 'https://www.madden-school.com/stopping-shotgun-hb-counter-plays-madden-25/', source: 'Madden School' },
+
+  { lane: 'tendency', tags: ['pressure', 'audible', 'counter', 'adjustment', 'customstem'], label: 'Resource: audibles and hot routes vs pressure looks', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-hot-route-and-audible', source: 'EA' },
+  { lane: 'tendency', tags: ['pass-heavy', 'timing', 'throw', 'read', 'coverage'], label: 'Resource: passing mechanics vs tight windows', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-pass-the-ball', source: 'EA' },
+  { lane: 'tendency', tags: ['scramble', 'mobileqb', 'brokenplay', 'counter'], label: 'Resource: Playmaker for broken-play responses', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-use-playmaker', source: 'EA' },
+  { lane: 'tendency', tags: ['run-heavy', 'option', 'qb', 'contain', 'counter'], label: 'Resource: QB slide and speed option rules', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-qb-slide', source: 'EA' },
+  { lane: 'tendency', tags: ['run-heavy', 'space', 'fit', 'tackle'], label: 'Resource: ball carrier moves and open-field finish', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-ball-carrier-moves', source: 'EA' },
+  { lane: 'tendency', tags: ['pass-heavy', 'catchpoint', 'outside', 'slot'], label: 'Resource: catch-point control and catch type usage', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-catch-the-ball', source: 'EA' },
+  { lane: 'tendency', tags: ['pass-heavy', 'user', 'switchstick', 'counter'], label: 'Resource: Switch Stick for late-field adjustments', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-switch-stick', source: 'EA' },
+  { lane: 'tendency', tags: ['bunch', 'trips', 'slot', 'separator', 'counter'], label: 'Film Room: slot separator for bunch and trips spacing', url: 'https://youtu.be/RcdTJQyplw8', source: 'Huddle.gg / YouTube' },
+  { lane: 'tendency', tags: ['redzone', 'goalline', 'rb', 'angle', 'texas'], label: 'Film Room: RB angle / Texas route in compressed space', url: 'https://youtu.be/A6V0zSVINb4', source: 'Madden School / YouTube' },
+  { lane: 'tendency', tags: ['tight', 'empty', 'middle', 'dagger', 'counter'], label: 'Film Room: Dagger from tight or empty spacing', url: 'https://youtu.be/ovaUis1SyII', source: 'Madden School / YouTube' },
+  { lane: 'tendency', tags: ['tight', 'compressed', 'ypost', 'redzone', 'counter'], label: 'Film Room: Y-Post for tight-window and red-zone throws', url: 'https://youtu.be/VnSYjafXeEk', source: 'Madden School / YouTube' },
+  { lane: 'tendency', tags: ['redzone', 'goalline', 'bunch', 'tight', 'empty'], label: 'Resource: top 5 offensive tips for compressed red-zone offense', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-offensive-tips', source: 'EA' },
+  { lane: 'tendency', tags: ['run-heavy', 'goalline', 'runfit', 'box', 'counter'], label: 'Resource: top 5 defensive tips for run-fit counters', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-defensive-tips', source: 'EA' },
+  { lane: 'tendency', tags: ['redzone', 'goalline', 'coverage', 'hands', 'counter'], label: 'Resource: intercept and swat timing in condensed windows', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-intercept-the-ball', source: 'EA' },
+  { lane: 'tendency', tags: ['goalline', 'redzone', 'runfit', 'coverage', 'counter'], label: 'Resource: gameplay deep dive for red-zone and fit tuning', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/news/madden-26-gridiron-notes-gameplay-deep-dive', source: 'EA' },
+  { lane: 'tendency', tags: ['pass-heavy', 'cover2', 'zone', 'sideline', 'counter'], label: 'Resource: attacking Cover 2 rules in Madden 26', url: 'https://www.madden-school.com/cover-2/', source: 'Madden School' },
+  { lane: 'tendency', tags: ['pass-heavy', 'cover3', 'zone', 'flood', 'counter'], label: 'Resource: attacking Cover 3 rules in Madden 26', url: 'https://www.madden-school.com/cover-3/', source: 'Madden School' },
+  { lane: 'tendency', tags: ['pass-heavy', 'cover4', 'quarters', 'match', 'counter'], label: 'Resource: attacking Cover 4 rules in Madden 26', url: 'https://www.madden-school.com/cover-4/', source: 'Madden School' },
+  { lane: 'tendency', tags: ['pass-heavy', 'man', 'press', 'release', 'counter'], label: 'Resource: attacking man coverage in Madden 26', url: 'https://www.madden-school.com/man-to-man/', source: 'Madden School' },
+  { lane: 'tendency', tags: ['pass-heavy', 'match', 'quarters', 'palms', 'counter'], label: 'Resource: attacking match coverage in Madden 26', url: 'https://www.madden-school.com/match-coverage/', source: 'Madden School' },
+  { lane: 'tendency', tags: ['pass-heavy', 'deepball', 'singlecoverage', 'xfactor'], label: 'Resource: top 3 offensive X-Factors', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-3-offensive-x-factors', source: 'EA' },
+  { lane: 'tendency', tags: ['pressure', 'coverage', 'hybrid', 'xfactor'], label: 'Resource: top 3 defensive X-Factors', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-3-defensive-x-factors', source: 'EA' },
+  { lane: 'tendency', tags: ['pass-heavy', 'press', 'ko', 'man', 'zone'], label: 'Ability guide: Universal Coverage X-Factor', url: 'https://www.mut.gg/abilities/universal-coverage-xf/', source: 'MUT.GG' },
+  { lane: 'tendency', tags: ['pass-heavy', 'middle', 'slot', 'ko', 'counter'], label: 'Ability guide: Mid Zone KO', url: 'https://www.mut.gg/abilities/s6-mid-zone-ko/', source: 'MUT.GG' },
+  { lane: 'tendency', tags: ['pass-heavy', 'deep', 'inside', 'ko', 'counter'], label: 'Ability guide: Deep In Zone KO', url: 'https://www.mut.gg/abilities/deep-in-zone-ko/', source: 'MUT.GG' },
+  { lane: 'tendency', tags: ['balanced', 'formations', 'bunch', 'trips', 'overview'], label: 'Resource: best offensive playbooks in Madden 26', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-best-offensive-playbooks', source: 'EA' },
+  { lane: 'tendency', tags: ['pressure', 'shell', 'routecommit', 'disguise', 'counter'], label: 'Resource: coverage shells, custom zones, and route commit', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-use-coverage-shells', source: 'EA' },
+  { lane: 'tendency', tags: ['pressure', 'mug', 'showblitz', 'counter', 'disguise'], label: 'Resource: how to show blitz', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-show-blitz', source: 'EA' },
+  { lane: 'tendency', tags: ['pressure', 'stunt', 'fourman', 'front', 'counter'], label: 'Resource: how to use stunts', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-use-stunt', source: 'EA' },
+  { lane: 'tendency', tags: ['pressure', 'passrush', 'shed', 'counter'], label: 'Resource: block steer to finish pressure', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-block-steer', source: 'EA' },
+  { lane: 'tendency', tags: ['run-heavy', 'tackle', 'space', 'counter'], label: 'Resource: tackling in space and finishing drives', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-tackle', source: 'EA' },
+  { lane: 'tendency', tags: ['balanced', 'scheme', 'formation', 'overview'], label: 'Resource: Madden 26 tips and tricks hub', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub', source: 'EA' },
+];
+
+const RESOURCE_HISTORY_FILE = path.join(process.cwd(), 'data', 'madden', 'learning_resource_history.json');
+
+function normalizeResourceUrl(url = '') {
+  return String(url || '').trim().toLowerCase().replace(/\/+$/, '');
+}
+
+function isResourceLandingPage(resource = {}) {
+  const label = String(resource?.label || '').toLowerCase();
+  const url = normalizeResourceUrl(resource?.url || '');
+  return (
+    label.includes('hub')
+    || label.includes('collection')
+    || label.includes('playbook hub')
+    || url.endsWith('/tips-and-tricks-hub')
+    || url.includes('/beginner-tips-hub/')
+    || url.includes('/category/')
+    || url.includes('/playbooks/')
+  );
+}
+
+function ensureResourceHistoryDir() {
+  fs.mkdirSync(path.dirname(RESOURCE_HISTORY_FILE), { recursive: true });
+}
+
+function baseResourceHistory() {
+  return {
+    assignments: {},
+    recentByScope: {},
+  };
+}
+
+function loadResourceHistory() {
+  ensureResourceHistoryDir();
+  if (!fs.existsSync(RESOURCE_HISTORY_FILE)) return baseResourceHistory();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(RESOURCE_HISTORY_FILE, 'utf8'));
+    return parsed && typeof parsed === 'object' ? { ...baseResourceHistory(), ...parsed } : baseResourceHistory();
+  } catch {
+    return baseResourceHistory();
+  }
+}
+
+function saveResourceHistory(history) {
+  ensureResourceHistoryDir();
+  fs.writeFileSync(RESOURCE_HISTORY_FILE, JSON.stringify(history, null, 2));
+}
+
+function scopeFromSeedKey(lane, seedKey = '') {
+  const parts = String(seedKey || '').split(':');
+  const team = parts[0] || 'unknown_team';
+  const week = parts[2] || 'unknown_week';
+  return {
+    assignmentKey: `${lane}|${seedKey}`,
+    scopeKey: `${lane}|${team}`,
+    week,
+  };
+}
+
+const RESOURCES = [...RAW_RESOURCES, ...EXTRA_DIRECT_RESOURCES, ...MATCHUP_DIRECT_RESOURCES].filter((resource) => {
+  const url = String(resource?.url || '').toLowerCase();
+  const source = String(resource?.source || '').toLowerCase();
+  return !url.includes('youtube.com/results')
+    && !url.includes('reddit.com/search')
+    && !source.includes('search')
+    && !source.includes('mut.gg')
+    && !isResourceLandingPage(resource);
+}).filter((resource, index, list) => {
+  const key = `${resource?.lane || 'unknown'}|${normalizeResourceUrl(resource?.url)}`;
+  return index === list.findIndex((entry) => `${entry?.lane || 'unknown'}|${normalizeResourceUrl(entry?.url)}` === key);
+});
+
+function inferResourceKind(resource = {}) {
+  const url = String(resource?.url || '').toLowerCase();
+  const source = String(resource?.source || '').toLowerCase();
+  if (url.includes('youtube.com/results') || url.includes('reddit.com/search') || source.includes('search')) return 'search';
+  if (url.includes('youtu.be/') || url.includes('youtube.com/watch')) return 'video';
+  if (url.includes('reddit.com/')) return 'community';
+  return 'article';
+}
+
+function isDirectLearningResource(resource = {}) {
+  return inferResourceKind(resource) !== 'search';
+}
+
+function resourceSpecificityScore(resource = {}) {
+  const kind = inferResourceKind(resource);
+  if (kind === 'video') return 3;
+  if (kind === 'article') return 2;
+  if (kind === 'community') return 1;
+  return 0;
+}
+
 function offensiveStruggleTags(ownStats = {}, oppStats = {}) {
   const tags = [];
   const passAtt = Number(ownStats?.pass?.att || 0);
@@ -180,57 +387,115 @@ function advancedPerformanceTags(ownStats = {}, side = 'offense') {
 function selectResource(lane, preferredTags = [], seedKey = '', options = {}) {
   const tagSet = new Set(preferredTags.filter(Boolean).map((tag) => String(tag).toLowerCase()));
   const avoidBeginner = Boolean(options?.avoidBeginner);
+  const persistChoice = options?.persistChoice !== false;
+  const history = persistChoice ? loadResourceHistory() : null;
+  const { assignmentKey, scopeKey, week } = scopeFromSeedKey(lane, seedKey);
+  const recentUrls = persistChoice
+    ? (history.recentByScope?.[scopeKey] || []).slice(-3).map((entry) => normalizeResourceUrl(entry?.url))
+    : [];
+  const avoidUrls = new Set([...(options?.avoidUrls || []), ...recentUrls].map((url) => normalizeResourceUrl(url)));
   const lanePool = RESOURCES
     .filter((resource) => resource.lane === lane)
-    .filter((resource) => !(avoidBeginner && (resource.tags || []).includes('beginner')));
+    .filter((resource) => isDirectLearningResource(resource))
+    .filter((resource) => !(avoidBeginner && (resource.tags || []).includes('beginner')))
+    .filter((resource) => !avoidUrls.has(normalizeResourceUrl(resource.url)));
+  if (persistChoice) {
+    const existingUrl = normalizeResourceUrl(history.assignments?.[assignmentKey]?.url);
+    const existing = RESOURCES.find((resource) => resource.lane === lane && normalizeResourceUrl(resource.url) === existingUrl);
+    if (existing) return existing;
+  }
   const scored = lanePool
     .map((resource) => {
       const tags = resource.tags || [];
       const score = tags.reduce((sum, tag) => sum + (tagSet.has(String(tag).toLowerCase()) ? 1 : 0), 0);
-      return { resource, score };
+      return {
+        resource,
+        score,
+        exactMatches: tags.reduce((sum, tag) => sum + (tagSet.has(String(tag).toLowerCase()) ? 1 : 0), 0),
+        specificity: resourceSpecificityScore(resource),
+      };
     })
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.exactMatches !== a.exactMatches) return b.exactMatches - a.exactMatches;
+      return b.specificity - a.specificity;
+    });
   const topScore = scored[0]?.score ?? 0;
+  const threshold = Math.max(0, topScore - (topScore >= 3 ? 1 : 0));
   const pool = scored
-    .filter((entry) => entry.score === topScore)
+    .filter((entry) => entry.score >= threshold)
+    .slice(0, Math.min(6, scored.length))
+    .sort((a, b) => {
+      const aRank = hashSeed(seedKey, lane, a.resource.url, ...preferredTags);
+      const bRank = hashSeed(seedKey, lane, b.resource.url, ...preferredTags);
+      return aRank - bRank;
+    })
     .map((entry) => entry.resource);
   const fallbackPool = pool.length ? pool : lanePool;
   if (!fallbackPool.length) return null;
   const index = hashSeed(lane, seedKey, ...preferredTags) % fallbackPool.length;
-  return fallbackPool[index];
+  const chosen = fallbackPool[index];
+  if (persistChoice && chosen) {
+    history.assignments[assignmentKey] = { week, url: chosen.url };
+    const recent = Array.isArray(history.recentByScope[scopeKey]) ? history.recentByScope[scopeKey] : [];
+    const withoutCurrentWeek = recent.filter((entry) => entry?.week !== week);
+    history.recentByScope[scopeKey] = [...withoutCurrentWeek, { week, url: chosen.url }].slice(-6);
+    saveResourceHistory(history);
+  }
+  return chosen;
 }
 
-export function pickOffenseLearningResource(profileTag = 'balanced', fieldProfile = null, ownStats = {}, oppStats = {}, seedKey = '') {
+export function pickOffenseLearningResource(profileTag = 'balanced', fieldProfile = null, ownStats = {}, oppStats = {}, seedKey = '', options = {}) {
   const advancedTags = advancedPerformanceTags(ownStats, 'offense');
   const tags = [profileTag, ...advancedTags, ...offensiveStruggleTags(ownStats, oppStats)];
   if (fieldProfile?.area) tags.push(fieldProfile.area);
+  if (fieldProfile?.label) tags.push(String(fieldProfile.label).toLowerCase());
   const oppSacks = Number(oppStats?.def?.sacks || 0);
   const ownSacksTaken = Number(ownStats?.pass?.sacksTaken || 0);
   if (oppSacks >= 10 || ownSacksTaken >= 10) tags.push('pressure');
   if (fieldProfile?.area === 'slot') tags.push('inside', 'separator');
   if (fieldProfile?.area === 'outside') tags.push('outside', 'boundary');
   if (fieldProfile?.area === 'box') tags.push('box', 'rb');
-  return selectResource('offense', tags, seedKey, { avoidBeginner: advancedTags.includes('advanced') });
+  if (profileTag === 'vertical') tags.push('deep', 'coverage', 'timing');
+  if (profileTag === 'spread') tags.push('quickgame', 'audible', 'hotroute');
+  if (profileTag === 'ground') tags.push('run', 'space', 'ballcarrier');
+  return selectResource('offense', tags, seedKey, {
+    avoidBeginner: advancedTags.includes('advanced'),
+    avoidUrls: options?.avoidUrls || [],
+  });
 }
 
-export function pickDefenseLearningResource(profileTag = 'balanced', defensiveMismatch = null, fieldVulnerability = null, seedKey = '', ownStats = {}, oppStats = {}) {
+export function pickDefenseLearningResource(profileTag = 'balanced', defensiveMismatch = null, fieldVulnerability = null, seedKey = '', ownStats = {}, oppStats = {}, options = {}) {
   const advancedTags = advancedPerformanceTags(ownStats, 'defense');
   const tags = [profileTag, ...advancedTags, ...defensiveStruggleTags(ownStats, oppStats)];
   if (defensiveMismatch?.type === 'protection') tags.push('pressure', 'sim', 'showblitz');
+  if (defensiveMismatch?.type === 'scramble') tags.push('contain', 'mobileqb', 'scramble');
+  if (defensiveMismatch?.type === 'coverage') tags.push('switchstick', 'coverage', 'user');
   if (fieldVulnerability?.area) tags.push(fieldVulnerability.area);
   if (fieldVulnerability?.area === 'slot') tags.push('inside', 'nickel');
   if (fieldVulnerability?.area === 'outside') tags.push('boundary', 'coverage');
   if (fieldVulnerability?.area === 'box') tags.push('runfit', 'alley', 'box');
-  return selectResource('defense', tags, seedKey, { avoidBeginner: advancedTags.includes('advanced') });
+  if (profileTag === 'zone') tags.push('shell', 'coverage');
+  if (profileTag === 'pressure') tags.push('passrush', 'showblitz');
+  return selectResource('defense', tags, seedKey, {
+    avoidBeginner: advancedTags.includes('advanced'),
+    avoidUrls: options?.avoidUrls || [],
+  });
 }
 
-export function pickTendencyLearningResource(tendency = 'balanced', fieldVulnerability = null, seedKey = '', ownStats = {}, oppStats = {}) {
+export function pickTendencyLearningResource(tendency = 'balanced', fieldVulnerability = null, seedKey = '', ownStats = {}, oppStats = {}, options = {}) {
   const advancedTags = advancedPerformanceTags(ownStats, 'defense');
   const tags = [tendency, ...advancedTags, ...tendencyStruggleTags(ownStats, oppStats)];
   if (fieldVulnerability?.area) tags.push(fieldVulnerability.area);
   if (tendency === 'pass-heavy') tags.push('shells', 'rotation', 'quickgame');
   if (tendency === 'run-heavy') tags.push('front', 'fit', 'alley');
-  return selectResource('tendency', tags, seedKey, { avoidBeginner: advancedTags.includes('advanced') });
+  if (Number(oppStats?.pass?.att || 0) > Number(oppStats?.rush?.att || 0) * 1.75) tags.push('pass-heavy', 'timing', 'coverage');
+  if (Number(oppStats?.rush?.att || 0) > Number(oppStats?.pass?.att || 0) * 1.25) tags.push('run-heavy', 'space', 'fit');
+  if (Number(oppStats?.rush?.yds || 0) > 0 && Number(oppStats?.pass?.att || 0) > 0) tags.push('balanced', 'overview');
+  return selectResource('tendency', tags, seedKey, {
+    avoidBeginner: advancedTags.includes('advanced'),
+    avoidUrls: options?.avoidUrls || [],
+  });
 }
 
 function resourceConceptLabel(resource = null) {
@@ -290,5 +555,14 @@ export function buildLearningStruggleNote(lane = 'offense', ownStats = {}, oppSt
 
 export function formatLearningResource(resource = null) {
   if (!resource?.url) return '';
-  return `${resource.label} — ${resource.source}\n${resource.url}`;
+  const kind = inferResourceKind(resource);
+  const kindLabel =
+    kind === 'video'
+      ? 'Video'
+      : kind === 'article'
+        ? 'Article'
+        : kind === 'community'
+          ? 'Community'
+          : 'Resource';
+  return `${kindLabel}: ${resource.label} — ${resource.source}\n${resource.url}`;
 }

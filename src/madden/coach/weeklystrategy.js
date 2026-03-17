@@ -2296,14 +2296,39 @@ async function execute(interaction) {
     const offenseSeedKey = `${ownTeamName}:${opponentTeamName}:${displayWeek}:offense:${offensiveProfile}:${offensiveFieldProfile?.area || 'none'}`;
     const defenseSeedKey = `${ownTeamName}:${opponentTeamName}:${displayWeek}:defense:${defensiveProfile}:${defensiveFieldVulnerability?.area || 'none'}:${defensiveMismatch?.type || 'none'}`;
     const tendencySeedKey = `${ownTeamName}:${opponentTeamName}:${displayWeek}:tendency:${relativeTendencyLabel(oppStats, leagueProfile)}:${defensiveFieldVulnerability?.area || 'none'}`;
-    const offenseResource = offenseGamePlanActive
-      ? pickOffenseLearningResource(offensiveProfile, offensiveFieldProfile, ownStats, oppStats, offenseSeedKey)
-      : '';
-    const defenseResource = defenseGamePlanActive
-      ? pickDefenseLearningResource(defensiveProfile, defensiveMismatch, defensiveFieldVulnerability, defenseSeedKey, ownStats, oppStats)
-      : '';
+    const chosenResourceUrls = [];
     const tendencyResource = tendencyBreakdownActive
-      ? pickTendencyLearningResource(relativeTendencyLabel(oppStats, leagueProfile), defensiveFieldVulnerability, tendencySeedKey, ownStats, oppStats)
+      ? pickTendencyLearningResource(
+          relativeTendencyLabel(oppStats, leagueProfile),
+          defensiveFieldVulnerability,
+          tendencySeedKey,
+          ownStats,
+          oppStats,
+          { avoidUrls: chosenResourceUrls },
+        )
+      : '';
+    if (tendencyResource?.url) chosenResourceUrls.push(tendencyResource.url);
+    const offenseResource = offenseGamePlanActive
+      ? pickOffenseLearningResource(
+          offensiveProfile,
+          offensiveFieldProfile,
+          ownStats,
+          oppStats,
+          offenseSeedKey,
+          { avoidUrls: chosenResourceUrls },
+        )
+      : '';
+    if (offenseResource?.url) chosenResourceUrls.push(offenseResource.url);
+    const defenseResource = defenseGamePlanActive
+      ? pickDefenseLearningResource(
+          defensiveProfile,
+          defensiveMismatch,
+          defensiveFieldVulnerability,
+          defenseSeedKey,
+          ownStats,
+          oppStats,
+          { avoidUrls: chosenResourceUrls },
+        )
       : '';
     const offenseStruggleNote = buildLearningStruggleNote('offense', ownStats, oppStats);
     const defenseStruggleNote = buildLearningStruggleNote('defense', ownStats, oppStats);

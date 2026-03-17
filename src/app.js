@@ -97,6 +97,14 @@ client.on('interactionCreate', async interaction => {
     // Lightweight command audit log
     console.log(`[CMD] ${interaction.user.tag} used /${interaction.commandName}`);
     try {
+      if (command.deferOnDispatch && !interaction.deferred && !interaction.replied) {
+        await interaction.deferReply(command.deferOnDispatch);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to defer command /${interaction.commandName}:`, error);
+      return;
+    }
+    try {
       if (interaction.commandName?.startsWith('madden-')) {
         recordRecognitionCommandUse({
           guildId: interaction.guildId,

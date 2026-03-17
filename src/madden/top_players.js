@@ -14,6 +14,61 @@ const AWARDS_FILE = path.join(process.cwd(), 'data', 'madden', 'awards.json');
 const TEAM_EMOJIS_FILE = path.join(process.cwd(), 'data', 'madden', 'team_emojis.json');
 const TEAM_EMOJIS = loadJson(TEAM_EMOJIS_FILE, {});
 
+function median(values = []) {
+  const nums = values
+    .map((value) => Number(value || 0))
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .sort((a, b) => a - b);
+  if (!nums.length) return 0;
+  const mid = Math.floor(nums.length / 2);
+  return nums.length % 2 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
+}
+
+function countWeeklyPlayers(wk) {
+  const buckets = [
+    wk?.passing?.playerPassingStatInfoList,
+    wk?.rushing?.playerRushingStatInfoList,
+    wk?.receiving?.playerReceivingStatInfoList,
+    wk?.defense?.playerDefensiveStatInfoList,
+  ];
+  return buckets.reduce((acc, bucket) => acc + (Array.isArray(bucket) ? bucket.length : 0), 0);
+}
+
+export function getLatestReliableRegularSeasonWeekIndex(snapshot, requestedWeekIndex = null) {
+  const stageOneWeeks = (snapshot?.weeklyStats || [])
+    .filter((entry) => Number(entry?.stage ?? entry?.stageIndex ?? 0) === 1)
+    .map((entry) => ({
+      weekIndex: Number(entry?.weekIndex),
+      playerCount: countWeeklyPlayers(entry),
+    }))
+    .filter((entry) => Number.isFinite(entry.weekIndex) && entry.playerCount > 0)
+    .sort((a, b) => a.weekIndex - b.weekIndex);
+
+  if (!stageOneWeeks.length) return null;
+
+  const cappedWeeks = requestedWeekIndex == null
+    ? stageOneWeeks
+    : stageOneWeeks.filter((entry) => entry.weekIndex <= Number(requestedWeekIndex));
+  if (!cappedWeeks.length) return null;
+
+  for (let idx = cappedWeeks.length - 1; idx >= 0; idx -= 1) {
+    const entry = cappedWeeks[idx];
+    const priorCounts = cappedWeeks
+      .slice(0, idx)
+      .map((value) => Number(value.playerCount || 0))
+      .filter((value) => value > 0)
+      .slice(-4);
+    const recentMedianCount = median(priorCounts);
+    const looksPartial =
+      recentMedianCount > 0 &&
+      Number(entry.playerCount || 0) < (recentMedianCount * 0.7) &&
+      idx > 0;
+    if (!looksPartial) return entry.weekIndex;
+  }
+
+  return cappedWeeks[cappedWeeks.length - 1]?.weekIndex ?? null;
+}
+
 function buildRichestPlayerEntries(snapshot) {
   const best = new Map();
   // Only lift non-stat metadata to avoid contaminating weekly numbers with other weeks.
@@ -1747,8 +1802,9 @@ function shouldDisplaySeasonTop100(snapshot, currentWeek) {
 async function updateTopPlayers(client, leagueId, snapshot, currentWeek, options = {}) {
   if (!snapshot || currentWeek === undefined || currentWeek === null) return;
   const { isWildcard = false, postChannelId = DEFAULT_POST_CHANNEL } = options;
-  // Use previous week's stats (as requested)
-  const targetWeekIdx = Math.max(0, Number(currentWeek) - 1);
+  const requestedWeekIdx = Math.max(0, Number(currentWeek) - 1);
+  const targetWeekIdx = getLatestReliableRegularSeasonWeekIndex(snapshot, requestedWeekIdx);
+  if (targetWeekIdx == null) return;
   const weekly = computeWeeklyList(snapshot, targetWeekIdx);
   const list = Array.isArray(weekly) ? weekly : (weekly?.top100 || []);
   const allGraded = Array.isArray(weekly?.allGraded) ? weekly.allGraded : list;

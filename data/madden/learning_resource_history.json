@@ -1,0 +1,36 @@
+{
+  "assignments": {
+    "tendency|Denver Broncos:Los Angeles Rams:6:tendency:pass-heavy:slot": {
+      "week": "6",
+      "url": "https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-catch-the-ball"
+    },
+    "offense|Denver Broncos:Los Angeles Rams:6:offense:slot:slot": {
+      "week": "6",
+      "url": "https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-hot-route-and-audible"
+    },
+    "defense|Denver Broncos:Los Angeles Rams:6:defense:pressure:slot:protection": {
+      "week": "6",
+      "url": "https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-defensive-tips"
+    }
+  },
+  "recentByScope": {
+    "tendency|Denver Broncos": [
+      {
+        "week": "6",
+        "url": "https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-catch-the-ball"
+      }
+    ],
+    "offense|Denver Broncos": [
+      {
+        "week": "6",
+        "url": "https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-how-to-hot-route-and-audible"
+      }
+    ],
+    "defense|Denver Broncos": [
+      {
+        "week": "6",
+        "url": "https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-defensive-tips"
+      }
+    ]
+  }
+}

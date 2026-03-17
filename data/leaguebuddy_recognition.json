@@ -8,7 +8,7 @@
               "activity": 126,
               "impact": 143,
               "legacy": 53,
-              "interactionCount": 294,
+              "interactionCount": 348,
               "currentStreak": 0,
               "bestStreak": 0,
               "lastFinalizedWeek": null,
@@ -30,9 +30,9 @@
                     "checklistBonus": false,
                     "gotwWin": false
                   },
-                  "commandCount": 115,
+                  "commandCount": 169,
                   "finalized": false,
-                  "updatedAt": 1773710544385
+                  "updatedAt": 1773774947736
                 }
               },
               "history": [
@@ -227,17 +227,17 @@
                 },
                 {
                   "tier": "impact",
-                  "amount": 43,
-                  "reason": "Staff reset: refunded all Week 6 perk purchases",
+                  "amount": 14,
+                  "reason": "Staff reset: cleared Week 6 perk spend and restored Impact for a fresh start",
                   "weekKey": "week_6",
-                  "ts": 1773711000000
+                  "ts": 1773712000000
                 },
                 {
                   "tier": "impact",
                   "amount": -14,
                   "reason": "Activated All Game Plan Bundle",
                   "weekKey": "week_6",
-                  "ts": 1773708549805
+                  "ts": 1773711281124
                 }
               ],
               "spent": {
@@ -255,10 +255,10 @@
               }
             },
             "670446898695503897": {
-              "activity": 4,
+              "activity": 5,
               "impact": 61,
               "legacy": 19,
-              "interactionCount": 7,
+              "interactionCount": 11,
               "currentStreak": 0,
               "bestStreak": 0,
               "lastFinalizedWeek": null,
@@ -267,22 +267,22 @@
                   "checklist": {
                     "strategy": true,
                     "stream": false,
-                    "frontOffice": false,
+                    "frontOffice": true,
                     "threadResponse": true,
                     "gameCompletedOnTime": false
                   },
                   "awards": {
                     "strategy": true,
                     "stream": false,
-                    "frontOffice": false,
+                    "frontOffice": true,
                     "threadResponse": true,
                     "gameCompletedOnTime": false,
                     "checklistBonus": false,
                     "gotwWin": false
                   },
-                  "commandCount": 3,
+                  "commandCount": 7,
                   "finalized": false,
-                  "updatedAt": 1773710512965
+                  "updatedAt": 1773772049730
                 },
                 "week_2": {
                   "checklist": {
@@ -516,6 +516,13 @@
                   "reason": "Recognition backfill: legacy economy reprice for current season results",
                   "weekKey": null,
                   "ts": 1773702987554
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Used front-office tool",
+                  "weekKey": "week_6",
+                  "ts": 1773711767388
                 }
               ],
               "spent": {
@@ -600,7 +607,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709789684
+                  "updatedAt": 1773773543844
                 }
               },
               "activePerks": {},
@@ -829,7 +836,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773710513851
+                  "updatedAt": 1773721105012
                 }
               },
               "activePerks": {},
@@ -908,7 +915,7 @@
                 "impact": 0,
                 "legacy": 0
               },
-              "interactionCount": 2,
+              "interactionCount": 3,
               "currentStreak": 0,
               "bestStreak": 0,
               "lastFinalizedWeek": null,
@@ -972,9 +979,9 @@
                     "checklistBonus": false,
                     "gotwWin": false
                   },
-                  "commandCount": 0,
+                  "commandCount": 1,
                   "finalized": false,
-                  "updatedAt": 1773710227482
+                  "updatedAt": 1773761985975
                 }
               },
               "activePerks": {},
@@ -1239,7 +1246,7 @@
               ]
             },
             "522832067843850251": {
-              "activity": 2,
+              "activity": 3,
               "impact": 46,
               "legacy": 0,
               "spent": {
@@ -1272,6 +1279,28 @@
                   "commandCount": 0,
                   "finalized": false,
                   "updatedAt": 1773649182948
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false,
+                    "legacyWeekly": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773774579555
                 }
               },
               "activePerks": {},
@@ -1317,6 +1346,13 @@
                   "reason": "Recognition backfill: current season profile",
                   "weekKey": null,
                   "ts": 1773649877812
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773713446942
                 }
               ]
             },
@@ -1603,7 +1639,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709662812
+                  "updatedAt": 1773773544144
                 }
               },
               "activePerks": {},
@@ -1811,7 +1847,7 @@
               ]
             },
             "422227963292155904": {
-              "activity": 6,
+              "activity": 7,
               "impact": 48,
               "legacy": 1,
               "spent": {
@@ -1844,6 +1880,28 @@
                   "commandCount": 0,
                   "finalized": false,
                   "updatedAt": 1773649182947
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false,
+                    "legacyWeekly": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773772055521
                 }
               },
               "activePerks": {},
@@ -1910,6 +1968,13 @@
                   "reason": "Recognition backfill: recent five-game profile and team output",
                   "weekKey": null,
                   "ts": 1773702741711
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773721089839
                 }
               ]
             },
@@ -1946,7 +2011,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709412524
+                  "updatedAt": 1773721106901
                 }
               },
               "activePerks": {},
@@ -2035,7 +2100,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709412403
+                  "updatedAt": 1773721106668
                 }
               },
               "activePerks": {},
@@ -2251,7 +2316,7 @@
               ]
             },
             "814341012754792460": {
-              "activity": 0,
+              "activity": 1,
               "impact": 48,
               "legacy": 2,
               "spent": {
@@ -2305,6 +2370,28 @@
                   "commandCount": 0,
                   "finalized": false,
                   "updatedAt": 1773649182948
+                },
+                "week_6": {
+                  "checklist": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false
+                  },
+                  "awards": {
+                    "strategy": false,
+                    "stream": false,
+                    "frontOffice": false,
+                    "threadResponse": true,
+                    "gameCompletedOnTime": false,
+                    "checklistBonus": false,
+                    "gotwWin": false,
+                    "legacyWeekly": false
+                  },
+                  "commandCount": 0,
+                  "finalized": false,
+                  "updatedAt": 1773766725147
                 }
               },
               "activePerks": {},
@@ -2357,6 +2444,13 @@
                   "reason": "Recognition backfill: recent five-game profile and team output",
                   "weekKey": null,
                   "ts": 1773702741711
+                },
+                {
+                  "tier": "activity",
+                  "amount": 1,
+                  "reason": "Responded in game thread",
+                  "weekKey": "week_6",
+                  "ts": 1773714861832
                 }
               ]
             },
@@ -2517,7 +2611,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709660090
+                  "updatedAt": 1773773542750
                 }
               },
               "activePerks": {},
@@ -2634,7 +2728,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709536428
+                  "updatedAt": 1773773536519
                 }
               },
               "activePerks": {},
@@ -3044,7 +3138,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709537894
+                  "updatedAt": 1773721113381
                 }
               },
               "activePerks": {},
@@ -3231,7 +3325,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709659292
+                  "updatedAt": 1773721114904
                 }
               },
               "activePerks": {},
@@ -3328,7 +3422,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709538018
+                  "updatedAt": 1773721113588
                 }
               },
               "activePerks": {},
@@ -3424,7 +3518,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709659412
+                  "updatedAt": 1773773540552
                 }
               },
               "activePerks": {},
@@ -3506,7 +3600,7 @@
                   },
                   "commandCount": 0,
                   "finalized": false,
-                  "updatedAt": 1773709413752
+                  "updatedAt": 1773721107831
                 }
               },
               "activePerks": {},

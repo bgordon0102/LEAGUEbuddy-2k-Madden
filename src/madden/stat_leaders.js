@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { getPinId, setPinId } from './pins_store.js';
+import { getLatestReliableRegularSeasonWeekIndex } from './top_players.js';
 import { Stage } from './ea_client.js';
 import { getFullTeamName } from '../shared/madden_team_names.js';
 
@@ -291,9 +292,13 @@ export async function updateStatLeaders(client, leagueId) {
   } else if (snapshot?.stage !== undefined) {
     stageForWeek = snapshot.stage;
   }
-  const inOffseason = (seasonInfo.offSeasonStage ?? 0) > 0;
+  let inOffseason = (seasonInfo.offSeasonStage ?? 0) > 0;
   const inPreseason = stageForWeek === Stage.PRESEASON || seasonWeekType === 0 || currentWeek <= 0;
   const inPostseason = currentWeek > 18;
+  // Madden exports can leave offSeasonStage populated even while a numbered regular-season week is active.
+  if (stageForWeek === Stage.SEASON && Number(currentWeek || 0) >= 1 && Number(currentWeek || 0) <= 18) {
+    inOffseason = false;
+  }
   if (inPreseason || inOffseason) {
     // Preseason/offseason: keep placeholders / don’t update
     await resetStatLeaders(client);
@@ -305,28 +310,16 @@ export async function updateStatLeaders(client, leagueId) {
   }
   const emojiMap = loadJson(TEAM_EMOJIS_FILE, {});
   const teams = teamMap(snapshot, emojiMap);
-  // Use all regular-season weeks through the latest completed one so the board matches its
-  // season-to-date title while still ignoring stale future/offseason buckets.
+  const latestReliableWeekIndex = getLatestReliableRegularSeasonWeekIndex(snapshot, Math.max(0, Number(currentWeek) - 1));
   const stage1Weeks = (snapshot?.weeklyStats || [])
-    .filter(w => Number(w?.stage ?? w?.stageIndex ?? 0) === 1)
-    .filter(w => {
-      const buckets = [
-        w?.passing?.playerPassingStatInfoList,
-        w?.rushing?.playerRushingStatInfoList,
-        w?.receiving?.playerReceivingStatInfoList,
-        w?.defense?.playerDefensiveStatInfoList,
-      ];
-      return buckets.some(b => Array.isArray(b) && b.length > 0);
-    });
-  const latestStage1 = stage1Weeks.length ? Math.max(...stage1Weeks.map(w => Number(w.weekIndex))) : null;
-  const weeklyStats = latestStage1 != null
-    ? stage1Weeks.filter(w => Number(w.weekIndex) <= latestStage1)
-    : stage1Weeks;
-  if (latestStage1 != null) {
-    const maxPass = Math.max(...weeklyStats.flatMap(w => (w.passing?.playerPassingStatInfoList || []).map(p => Number(p.passYds || 0))), 0);
-    console.log('[stat_leaders] using weeks 1-', latestStage1 + 1, 'entries', weeklyStats.length, 'maxPassYds', maxPass);
+    .filter((w) => Number(w?.stage ?? w?.stageIndex ?? 0) === 1)
+    .filter((w) => Number(w?.weekIndex ?? -1) <= Number(latestReliableWeekIndex));
+  const weeklyStats = latestReliableWeekIndex != null ? stage1Weeks : [];
+  if (latestReliableWeekIndex != null) {
+    const maxPass = Math.max(...weeklyStats.flatMap((w) => (w.passing?.playerPassingStatInfoList || []).map((p) => Number(p.passYds || 0))), 0);
+    console.log('[stat_leaders] using reliable weeks 1-', latestReliableWeekIndex + 1, 'entries', weeklyStats.length, 'maxPassYds', maxPass);
   } else {
-    console.log('[stat_leaders] no stage1 weeks with stats found');
+    console.log('[stat_leaders] no reliable regular-season weeks with stats found');
   }
   const fields = [];
 
@@ -359,7 +352,7 @@ export async function updateStatLeaders(client, leagueId) {
   const embed = {
     title: 'Madden Stat Leaders (Season-to-Date)',
     color: 0x00b0f4,
-    description: latestStage1 != null ? `Updated through Week ${latestStage1 + 1}.` : 'No regular-season stat data yet.',
+    description: latestReliableWeekIndex != null ? `Updated through Week ${latestReliableWeekIndex + 1}.` : 'No regular-season stat data yet.',
     fields,
     timestamp: new Date().toISOString(),
   };
@@ -367,7 +360,7 @@ export async function updateStatLeaders(client, leagueId) {
   try {
     const pinId = getPinId('stat_leaders');
     const msg = await ensureStatLeadersMessage(channel, embed, pinId);
-    console.log('[stat_leaders] updated', { channelId, messageId: msg.id, pinId, latestWeek: latestStage1 != null ? latestStage1 + 1 : null });
+    console.log('[stat_leaders] updated', { channelId, messageId: msg.id, pinId, latestWeek: latestReliableWeekIndex != null ? latestReliableWeekIndex + 1 : null });
   } catch (e) {
     console.warn('[stat_leaders] edit failed', e?.message || e);
   }

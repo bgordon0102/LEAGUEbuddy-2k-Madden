@@ -18,6 +18,7 @@ const SCOUT_POINTS_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_poin
 const SCOUT_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'scout_log.json');
 const ACTIVE_TRADES_PATH = path.join(process.cwd(), 'data', 'madden', 'active_trades.json');
 const TOP_PLAYERS_PATH = path.join(process.cwd(), 'data', 'madden', 'top_players.json');
+const WEEKLY_GAME_LOG_PATH = path.join(process.cwd(), 'data', 'madden', 'weekly_game_log.json');
 
 function safeReadJSON(file, fallback) {
   try {
@@ -57,6 +58,173 @@ function formatRecord(standing) {
   const losses = Number(standing.totalLosses || 0);
   const ties = Number(standing.totalTies || 0);
   return ties ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
+}
+
+function currentWeekIndex(league) {
+  const weekNumber = Number(
+    league?.currentWeek
+    ?? league?.info?.careerHubInfo?.seasonInfo?.displayWeek
+    ?? league?.info?.careerHubInfo?.seasonInfo?.seasonWeek
+    ?? 0,
+  );
+  return weekNumber > 0 ? weekNumber - 1 : -1;
+}
+
+function deriveRegularSeasonRecordFromSchedule(league, teamId) {
+  if (!league || teamId == null) return null;
+  const schedules = league?.schedule?.schedules || [];
+  const currentWeek = currentWeekIndex(league);
+  let totalWins = 0;
+  let totalLosses = 0;
+  let totalTies = 0;
+  let totalGames = 0;
+  let lastPlayedWeek = -1;
+
+  for (const game of schedules) {
+    if (Number(game?.stageIndex ?? game?.stage ?? -1) !== 1) continue;
+    const awayTeamId = Number(game?.awayTeamId);
+    const homeTeamId = Number(game?.homeTeamId);
+    if (awayTeamId !== Number(teamId) && homeTeamId !== Number(teamId)) continue;
+
+    const weekIndex = Number(game?.weekIndex ?? -1);
+    const awayScore = Number(game?.awayScore ?? 0);
+    const homeScore = Number(game?.homeScore ?? 0);
+    const scheduleStatus = Number(game?.status ?? 0);
+    const played = scheduleStatus >= 2 || awayScore > 0 || homeScore > 0;
+    if (!played) continue;
+    if (currentWeek >= 0 && weekIndex > currentWeek) continue;
+
+    const teamIsAway = awayTeamId === Number(teamId);
+    const teamScore = teamIsAway ? awayScore : homeScore;
+    const oppScore = teamIsAway ? homeScore : awayScore;
+
+    totalGames += 1;
+    lastPlayedWeek = Math.max(lastPlayedWeek, weekIndex);
+    if (teamScore > oppScore) totalWins += 1;
+    else if (teamScore < oppScore) totalLosses += 1;
+    else totalTies += 1;
+  }
+
+  return { totalWins, totalLosses, totalTies, totalGames, lastPlayedWeek };
+}
+
+function deriveRegularSeasonRecordFromWeeklyLog(league, teamId) {
+  const leagueId = String(league?.leagueId || league?.info?.leagueId || '');
+  if (!leagueId || teamId == null) return null;
+  const store = safeReadJSON(WEEKLY_GAME_LOG_PATH, {});
+  const leagueLog = store?.[leagueId];
+  const games = Array.isArray(leagueLog?.games) ? leagueLog.games : [];
+  const latestCompletedWeekRaw = Number(leagueLog?.latestCompletedWeek ?? leagueLog?.latestCompletedWeekByStage?.[1] ?? -1);
+  const latestCompletedWeekIndex = latestCompletedWeekRaw > 0 ? latestCompletedWeekRaw - 1 : -1;
+  if (!games.length) return null;
+
+  let totalWins = 0;
+  let totalLosses = 0;
+  let totalTies = 0;
+  let totalGames = 0;
+  let lastPlayedWeek = -1;
+
+  for (const game of games) {
+    if (Number(game?.stageIndex ?? -1) !== 1) continue;
+    const weekIndex = Number(game?.weekIndex ?? -1);
+    if (latestCompletedWeekIndex >= 0 && weekIndex > latestCompletedWeekIndex) continue;
+    const awayTeamId = Number(game?.awayTeamId);
+    const homeTeamId = Number(game?.homeTeamId);
+    if (awayTeamId !== Number(teamId) && homeTeamId !== Number(teamId)) continue;
+    if (game?.played !== true) continue;
+
+    const teamIsAway = awayTeamId === Number(teamId);
+    const teamScore = Number(teamIsAway ? game?.awayScore : game?.homeScore);
+    const oppScore = Number(teamIsAway ? game?.homeScore : game?.awayScore);
+    if (teamScore <= 0 && oppScore <= 0 && !game?.outcomeLabel) continue;
+
+    totalGames += 1;
+    lastPlayedWeek = Math.max(lastPlayedWeek, weekIndex);
+    if (teamScore > oppScore) totalWins += 1;
+    else if (teamScore < oppScore) totalLosses += 1;
+    else totalTies += 1;
+  }
+
+  return totalGames > 0 ? { totalWins, totalLosses, totalTies, totalGames, lastPlayedWeek } : null;
+}
+
+function resolveStandingRecord(league, standing) {
+  if (!standing) return standing;
+  const derivedFromLog = deriveRegularSeasonRecordFromWeeklyLog(league, standing.teamId);
+  if (derivedFromLog && derivedFromLog.totalGames > 0) {
+    return {
+      ...standing,
+      totalWins: derivedFromLog.totalWins,
+      totalLosses: derivedFromLog.totalLosses,
+      totalTies: derivedFromLog.totalTies,
+    };
+  }
+  const derived = deriveRegularSeasonRecordFromSchedule(league, standing.teamId);
+  if (!derived || derived.totalGames <= 0) return standing;
+
+  const standingGames = Number(standing.totalWins || 0) + Number(standing.totalLosses || 0) + Number(standing.totalTies || 0);
+  const preferDerived =
+    derived.totalGames > standingGames
+    || (derived.totalGames === standingGames && (
+      Number(standing.totalWins || 0) !== derived.totalWins
+      || Number(standing.totalLosses || 0) !== derived.totalLosses
+      || Number(standing.totalTies || 0) !== derived.totalTies
+    ));
+
+  if (!preferDerived) return standing;
+  return {
+    ...standing,
+    totalWins: derived.totalWins,
+    totalLosses: derived.totalLosses,
+    totalTies: derived.totalTies,
+  };
+}
+
+function cornerstoneScore(player = {}, usageStats = {}) {
+  const pos = String(player?.position || '').toUpperCase();
+  const ovr = playerOvr(player);
+  const age = Number(player?.age || 99);
+  const dev = playerDevTier(player);
+  const premiumWeights = {
+    QB: 26,
+    WR: 20,
+    TE: 14,
+    HB: 12,
+    LT: 18,
+    EDGE: 18,
+    LE: 16,
+    RE: 16,
+    DE: 16,
+    CB: 17,
+    FS: 12,
+    SS: 12,
+    DT: 12,
+  };
+  const usage = usageTotalForPlayer(usageStats);
+  return (
+    ovr * 2.4 +
+    (premiumWeights[pos] || 0) +
+    dev * 8 +
+    Math.max(0, 29 - age) * 1.1 +
+    usage * 0.18
+  );
+}
+
+function cornerstoneCandidates(rosterPlayers = [], live = null, teamId = null, limit = 3) {
+  const teamPlayers = (live?.currentPlayersByTeamId?.[Number(teamId)] || [])
+    .filter((player) => Number(player?.teamId) === Number(teamId));
+  const playerStatsByRosterId = live?.playerStatsByRosterId || {};
+  return rosterPlayers
+    .filter((player) => !['K', 'P', 'FB', 'LG', 'RG', 'C', 'RT'].includes(String(player?.position || '').toUpperCase()))
+    .map((player) => {
+      const usageStats = playerStatsByRosterId[player?.rosterId] || teamPlayers.find((entry) => Number(entry?.rosterId) === Number(player?.rosterId)) || {};
+      return {
+        ...player,
+        _cornerstoneScore: cornerstoneScore(player, usageStats),
+      };
+    })
+    .sort((a, b) => Number(b._cornerstoneScore || 0) - Number(a._cornerstoneScore || 0))
+    .slice(0, limit);
 }
 
 function formatNeedLabel(need) {
@@ -787,10 +955,11 @@ export function buildFranchiseProfile(ctx, teamName, options = {}) {
     return `cus_${String(Math.max(1, calendarYear - 2024)).padStart(2, '0')}`;
   })();
 
-  const standing = ctx.standingsById.get(teamId);
+  const standing = resolveStandingRecord(ctx.league, ctx.standingsById.get(teamId));
   const teamNeeds = ctx.needsByTeam[normalizeName(teamName)] || ['BPA'];
   const roster = ctx.league?.rosters?.teams?.[String(teamId)]?.rosterInfoList || [];
   const core = rosterCorePlayers(roster, 3);
+  const cornerstone = cornerstoneCandidates(roster, ctx.live, teamId, 3);
   const topPlayers = teamTopPlayers(ctx.top100, teamName, 3);
   const avgAge = average(roster.map((player) => player.age));
   const expiring = expiringCore(roster, 3);
@@ -839,7 +1008,9 @@ export function buildFranchiseProfile(ctx, teamName, options = {}) {
     bonus: 0,
   };
   const awardLine = awardRaceSignal(ctx.top100, teamName);
-  const buildAround = topPlayers[0]
+  const buildAround = cornerstone[0]
+    ? `${playerName(cornerstone[0])} (${cornerstone[0].position}) is still the clearest piece to build around.`
+    : topPlayers[0]
     ? `${topPlayers[0].name} (${topPlayers[0].position}) is still the cleanest piece to build around.`
     : core[0]
       ? `${core[0].split(' (')[0]} is still one of the clearest core pieces on the roster.`
@@ -906,6 +1077,7 @@ export function buildFranchiseProfile(ctx, teamName, options = {}) {
     buildAround,
     contractLine,
     core,
+    cornerstone: cornerstone.map((player) => formatActionPlayer(player, { includeContract: true })),
     needs: teamNeeds,
     pickInfo,
     tradeInfo,

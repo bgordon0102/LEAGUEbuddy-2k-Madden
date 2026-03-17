@@ -471,12 +471,30 @@ function compactFieldText(text, maxLen = 320) {
   return `${clean.slice(0, cut + 1).trim()}…`;
 }
 
+function compactFranchiseRead(text, maxSentences = 2, maxLen = 220) {
+  const clean = String(text || '').trim();
+  if (!clean) return 'No additional context.';
+  const sentences = clean
+    .split(/(?<=[.!?])\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const picked = sentences.slice(0, maxSentences).join(' ').trim();
+  return compactFieldText(picked || clean, maxLen);
+}
+
 function currentBetsSummary(card = null) {
   const bets = Array.isArray(card?.bets) ? card.bets.filter((bet) => String(bet?.status || 'open') === 'open') : [];
   if (!bets.length) return 'Current bets: none';
+  const linesByGameId = new Map(
+    (Array.isArray(card?.lines) ? card.lines : [])
+      .filter((line) => line?.gameId)
+      .map((line) => [String(line.gameId), line])
+  );
   const lines = bets.slice(0, 2).map((bet) => {
     const wager = formatImpactValue(Number(bet?.wager || 0)).replace(/\s*<:impact:[^>]+>/, ' impact');
-    return `- ${bet.matchupLabel || 'Unknown game'} • ${bet.betLabel || `${bet.market} ${bet.selection}`} • ${wager}`;
+    const line = linesByGameId.get(String(bet?.gameId || ''));
+    const matchupLabel = bet.matchupLabel || (line ? `${line.awayTeam} at ${line.homeTeam}` : 'Unknown game');
+    return `- ${matchupLabel} • ${bet.betLabel || `${bet.market} ${bet.selection}`} • ${wager}`;
   });
   if (bets.length > 2) lines.push(`- plus ${bets.length - 2} more open bet${bets.length - 2 === 1 ? '' : 's'}`);
   return ['Current bets:', ...lines].join('\n');
@@ -549,7 +567,7 @@ export async function execute(interaction) {
   const teamAllProSecond = allProSecond.filter((player) => normalizeName(player.team || '') === normalizeName(profile.teamName)).length;
   const showSeasonHonors = isOffseasonSnapshot(snapshot);
   const franchiseRead = profile.franchiseRead || profile.frontOfficeParagraph || profile.actionPlan || 'No additional franchise read was available.';
-  const franchiseReadShort = compactFieldText(franchiseRead, 330);
+  const franchiseReadShort = compactFranchiseRead(franchiseRead, 2, 220);
   const sportsbook = recognition.weekNumber
     ? getSportsbookUserCard({
         seasonKey: recognitionContext?.seasonKey,
@@ -569,11 +587,13 @@ export async function execute(interaction) {
     `Earn this week:\n${recognition.weeklyEarn}`,
     currentBetsSummary(sportsbook),
   ].filter(Boolean).join('\n\n');
+  const hubIntro = coachPanelIntro('franchiseHub', { teamName: profile.teamName });
 
   const embed = new EmbedBuilder()
     .setColor(0x00b0f4)
-    .setTitle(`${formatTeamLabelWithEmoji(profile.teamName)} — Franchise Hub`)
-    .setDescription(coachPanelIntro('franchiseHub', { teamName: profile.teamName }))
+    .setTitle(`${formatTeamLabelWithEmoji(profile.teamName)} — Franchise Hub`);
+  if (hubIntro) embed.setDescription(hubIntro);
+  embed
     .addFields(
       {
         name: 'Team Snapshot',
