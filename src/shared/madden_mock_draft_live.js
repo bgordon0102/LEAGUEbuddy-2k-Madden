@@ -1128,7 +1128,7 @@ function evaluatePickGrade(session, slot, prospect) {
   return {
     score,
     grade: gradeLabelFromScore(score),
-  synopsis: buildPickSynopsis({ teamName: slot.name, prospect, needRank, boardDelta: narrativeDelta, overall, group, session, avpDelta, avp }),
+    synopsis: buildPickSynopsis({ teamName: slot.name, prospect, needRank, boardDelta: narrativeDelta, overall, group, session, avpDelta, avp }),
   };
 }
 

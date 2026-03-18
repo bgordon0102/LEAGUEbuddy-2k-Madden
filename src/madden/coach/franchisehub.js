@@ -48,6 +48,38 @@ function findCoachTeam(member, snapshot) {
   return null;
 }
 
+function recordForTeam(snapshot, teamName) {
+  if (!snapshot || !teamName) return null;
+  const target = normalizeName(teamName);
+  const teams = snapshot?.teams?.leagueTeamInfoList || [];
+  const match = teams.find((team) => {
+    const full = getFullTeamName(team, `Team ${team.teamId}`);
+    const mascot = String(team.displayName || team.nickName || '').trim();
+    const city = String(team.cityName || '').trim();
+    const abbr = String(team.abbrName || '').trim();
+    return [full, mascot, city, abbr].some((value) => normalizeName(value) === target);
+  });
+  if (!match) return null;
+
+  const winFields = ['totalWins', 'wins', 'win', 'seasonWins', 'regularSeasonWins'];
+  const lossFields = ['totalLosses', 'losses', 'loss', 'seasonLosses', 'regularSeasonLosses'];
+  const tieFields = ['totalTies', 'ties', 'tie', 'seasonTies', 'regularSeasonTies'];
+
+  const hasAnyRecordField = [...winFields, ...lossFields, ...tieFields].some((key) => match?.[key] != null);
+  if (!hasAnyRecordField) return null;
+
+  const winsRaw = winFields.find((key) => match?.[key] != null);
+  const lossesRaw = lossFields.find((key) => match?.[key] != null);
+  const tiesRaw = tieFields.find((key) => match?.[key] != null);
+
+  const wins = Number(winsRaw ? match[winsRaw] : NaN);
+  const losses = Number(lossesRaw ? match[lossesRaw] : NaN);
+  const ties = Number(tiesRaw ? match[tiesRaw] : NaN);
+  if (!Number.isFinite(wins) || !Number.isFinite(losses)) return null;
+  const base = `${wins}-${losses}`;
+  return Number.isFinite(ties) && ties > 0 ? `${base}-${ties}` : base;
+}
+
 function scoutingLine(accountability) {
   const scouting = accountability?.scouting || {};
   const parts = [
@@ -263,11 +295,11 @@ function recognitionSummaryLines(guildId, userId, snapshot = null, teamName = nu
   });
   const sportsbook = context?.weekNumber
     ? getSportsbookUserCard({
-        seasonKey: context.seasonKey,
-        weekNumber: context.weekNumber,
-        userId,
-        guildId,
-      })
+      seasonKey: context.seasonKey,
+      weekNumber: context.weekNumber,
+      userId,
+      guildId,
+    })
     : null;
   const perkState = getRecognitionPerkState({
     guildId,
@@ -335,12 +367,12 @@ function recognitionSummaryLines(guildId, userId, snapshot = null, teamName = nu
     weeklyEarn,
     perks: activePerks.length
       ? activePerks.map((perk) => {
-          const emoji = RECOGNITION_EMOJIS[perk.tier] || '•';
-          const suffix = perk.key === 'doubleOrNothing' && perk.selectedTier
-            ? ` (${perk.selectedTier})`
-            : '';
-          return `${emoji} ${perk.label}${suffix}`;
-        }).join('\n')
+        const emoji = RECOGNITION_EMOJIS[perk.tier] || '•';
+        const suffix = perk.key === 'doubleOrNothing' && perk.selectedTier
+          ? ` (${perk.selectedTier})`
+          : '';
+        return `${emoji} ${perk.label}${suffix}`;
+      }).join('\n')
       : 'No perks active this week.',
     spend: [
       tierSpendStatusLine('activity', perkState),
@@ -570,11 +602,11 @@ export async function execute(interaction) {
   const franchiseReadShort = compactFranchiseRead(franchiseRead, 2, 220);
   const sportsbook = recognition.weekNumber
     ? getSportsbookUserCard({
-        seasonKey: recognitionContext?.seasonKey,
-        weekNumber: recognition.weekNumber,
-        userId: interaction.user.id,
-        guildId: interaction.guildId,
-      })
+      seasonKey: recognitionContext?.seasonKey,
+      weekNumber: recognition.weekNumber,
+      userId: interaction.user.id,
+      guildId: interaction.guildId,
+    })
     : null;
   const recognitionOverview = [
     recognition.header,
@@ -598,7 +630,7 @@ export async function execute(interaction) {
       {
         name: 'Team Snapshot',
         value: [
-          `${profile.record} • ${profile.tradePosture.short}`,
+          `${recordForTeam(snapshot, profile.teamName) || profile.record} • ${profile.tradePosture.short}`,
           ...(showSeasonHonors ? [`${teamTop100Count} Top 100 • ${teamAllProFirst} All-Pro 1st • ${teamAllProSecond} All-Pro 2nd`] : []),
         ].join('\n'),
       },
@@ -629,7 +661,7 @@ export async function execute(interaction) {
   if (recognition.weekNumber) {
     controls.addComponents(
       new ButtonBuilder()
-        .setCustomId(`madden_sportsbook_open|${recognition.weekNumber}|board|0`)
+        .setCustomId(`madden_sportsbook_board|${recognition.weekNumber}|breakdown|0`)
         .setLabel('Open Sportsbook')
         .setStyle(ButtonStyle.Primary),
     );

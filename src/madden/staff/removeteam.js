@@ -14,6 +14,21 @@ const ROLE_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_role_id
 const STAFF_ROLES = ['Ghost Legacy Commish', 'Ghost Legacy Co-Commish'];
 const ASSIGNABLE = ['Madden Trade Committe', 'Madden Trade Committee'];
 
+// Founder/test-protection: removing the founder's coach role for testing shouldn't wipe their state.
+// Add IDs here as needed.
+const PROTECTED_USER_IDS = new Set([
+  // biccboyyy (founder)
+  '1076243288056664234',
+]);
+
+function isProtectedCoachTarget(user) {
+  const id = String(user?.id || '');
+  if (id && PROTECTED_USER_IDS.has(id)) return true;
+  const tag = String(user?.tag || '').toLowerCase();
+  if (tag && tag.includes('biccboyy')) return true;
+  return false;
+}
+
 function loadRoleMap() {
   try {
     return JSON.parse(fs.readFileSync(ROLE_MAP_FILE, 'utf8'));
@@ -125,43 +140,47 @@ export async function execute(interaction) {
     const removedCoachRole = [/ coach$/i.test(r1.name), / coach$/i.test(r2?.name || '')].some(Boolean);
     let systemsResetMessage = null;
     if (removedCoachRole && refreshedMember && !hasAnyCoachRole(refreshedMember, roleMap)) {
-      const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
-      const snapshot = leagueId ? loadLeagueSnapshot(leagueId) : null;
-      const seasonKey = getMaddenSeasonKey(snapshot);
-      const resetReason = `Coach role removed via /madden-removerole (${[r1?.name, r2?.name].filter(Boolean).join(', ')})`;
-      const recognitionReset = resetRecognitionUserSeason({
-        guildId: interaction.guildId,
-        league: 'madden',
-        seasonKey,
-        userId: target.id,
-        reason: resetReason,
-      });
-      const sportsbookReset = resetSportsbookUserSeason({
-        seasonKey,
-        userId: target.id,
-        reason: resetReason,
-      });
-      systemsResetMessage = ' Current-season recognition and sportsbook state were refreshed because the user no longer has a coach role.';
-      appendMaddenStaffLog({
-        type: 'coach_role_removed_systems_reset',
-        guildId: interaction.guildId,
-        targetUserId: target.id,
-        targetTag: target.tag,
-        seasonKey,
-        recognitionReset: recognitionReset?.ok === true,
-        sportsbookReset: sportsbookReset?.ok === true,
-      });
-      await postMaddenStaffLog(
-        interaction.client,
-        interaction.guildId,
-        'Coach Systems Refreshed',
-        `${target.tag} no longer has a coach role, so current-season coach systems were refreshed.`,
-        [
-          { name: 'Recognition', value: recognitionReset?.ok ? 'reset' : 'no active state', inline: true },
-          { name: 'Sportsbook', value: sportsbookReset?.ok ? 'reset' : 'no active state', inline: true },
-          { name: 'Season', value: seasonKey, inline: true },
-        ],
-      ).catch(() => null);
+      if (isProtectedCoachTarget(target)) {
+        systemsResetMessage = ' Note: coach systems reset was skipped because this user is protected for testing.';
+      } else {
+        const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
+        const snapshot = leagueId ? loadLeagueSnapshot(leagueId) : null;
+        const seasonKey = getMaddenSeasonKey(snapshot);
+        const resetReason = `Coach role removed via /madden-removerole (${[r1?.name, r2?.name].filter(Boolean).join(', ')})`;
+        const recognitionReset = resetRecognitionUserSeason({
+          guildId: interaction.guildId,
+          league: 'madden',
+          seasonKey,
+          userId: target.id,
+          reason: resetReason,
+        });
+        const sportsbookReset = resetSportsbookUserSeason({
+          seasonKey,
+          userId: target.id,
+          reason: resetReason,
+        });
+        systemsResetMessage = ' Current-season recognition and sportsbook state were refreshed because the user no longer has a coach role.';
+        appendMaddenStaffLog({
+          type: 'coach_role_removed_systems_reset',
+          guildId: interaction.guildId,
+          targetUserId: target.id,
+          targetTag: target.tag,
+          seasonKey,
+          recognitionReset: recognitionReset?.ok === true,
+          sportsbookReset: sportsbookReset?.ok === true,
+        });
+        await postMaddenStaffLog(
+          interaction.client,
+          interaction.guildId,
+          'Coach Systems Refreshed',
+          `${target.tag} no longer has a coach role, so current-season coach systems were refreshed.`,
+          [
+            { name: 'Recognition', value: recognitionReset?.ok ? 'reset' : 'no active state', inline: true },
+            { name: 'Sportsbook', value: sportsbookReset?.ok ? 'reset' : 'no active state', inline: true },
+            { name: 'Season', value: seasonKey, inline: true },
+          ],
+        ).catch(() => null);
+      }
     }
     await interaction.editReply({ content: `Removed ${r2 ? `"${r1.name}" and "${r2.name}"` : `"${r1.name}"`} from ${target.tag}.${systemsResetMessage || ''}` });
     try {

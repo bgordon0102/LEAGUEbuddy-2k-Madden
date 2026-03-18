@@ -41,8 +41,13 @@ import {
 } from '../shared/madden_mock_draft_live.js';
 import { getCoachAssignmentMap } from '../shared/madden_coach_assignments.js';
 
-export const customId = /^madden_mockdraft_.*\|/;
+export const customId = /^madden_mockdraft(_live)?\|/;
 const SCOUTING_HUB_CHANNEL_ID = '1460288930946482299';
+const INVITE_REPLY_TTL_MS = 1000 * 60 * 20;
+
+function inviteKey(sessionId, userId) {
+  return `${sessionId}:${userId}`;
+}
 
 function privatePayload(content) {
   return { content, flags: 64 };
@@ -68,11 +73,23 @@ async function sendMockDraftInviteDM(client, session, member) {
   const roomLink = sessionLink(session);
   const assignedTeams = coachTeamsForMember(member);
   const teamText = assignedTeams.length ? assignedTeams.join(', ') : 'your league team';
+
+  const inviteRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`madden_mockdraft_live|invite_accept|${session.id}`)
+      .setLabel('Accept Invite')
+      .setStyle(3),
+    new ButtonBuilder()
+      .setCustomId(`madden_mockdraft_live|invite_decline|${session.id}`)
+      .setLabel('Decline')
+      .setStyle(4),
+  );
+
   const embed = new EmbedBuilder()
     .setTitle(`Private Mock Draft Invite • ${session.draftYear}`)
     .setColor(0x5865f2)
     .setDescription(
-      `You were added to a private LEAGUEbuddy mock draft in scouting hub.${roomLink ? `\n\nOpen room: ${roomLink}` : `\n\nRoom: <#${session.channelId}>`}`
+      `You’ve been invited to a private LEAGUEbuddy mock draft in scouting hub.${roomLink ? `\n\nOpen room: ${roomLink}` : `\n\nRoom: <#${session.channelId}>`}\n\nPress **Accept Invite** to join, or **Decline** to ignore it.`
     )
     .addFields(
       { name: 'Your Team', value: teamText, inline: false },
@@ -87,8 +104,40 @@ async function sendMockDraftInviteDM(client, session, member) {
         inline: false,
       },
     );
-  await user.send({ embeds: [embed] }).catch(() => null);
+
+  await user.send({ embeds: [embed], components: [inviteRow] }).catch(() => null);
   return true;
+}
+
+function pendingInviteFor(session, userId) {
+  session.pendingInvites = session.pendingInvites || {};
+  const key = String(userId);
+  const invite = session.pendingInvites[key];
+  if (!invite) return null;
+  if (invite.expiresAt && Date.now() > invite.expiresAt) {
+    delete session.pendingInvites[key];
+    return null;
+  }
+  return invite;
+}
+
+function setPendingInvite(session, userId, hostId) {
+  session.pendingInvites = session.pendingInvites || {};
+  session.pendingInvites[String(userId)] = {
+    hostId: String(hostId),
+    createdAt: Date.now(),
+    expiresAt: Date.now() + INVITE_REPLY_TTL_MS,
+  };
+}
+
+function clearPendingInvite(session, userId) {
+  if (!session?.pendingInvites) return;
+  delete session.pendingInvites[String(userId)];
+}
+
+async function notifyHostInviteResult(client, session, hostId, message) {
+  const host = await client.users.fetch(hostId).catch(() => null);
+  await host?.send?.({ embeds: [new EmbedBuilder().setColor(0x5865f2).setTitle('Mock Draft Invite Update').setDescription(message)] }).catch(() => null);
 }
 
 async function sendMockDraftSummaryDMs(client, sessionId) {
@@ -451,8 +500,167 @@ function buildInvitePickerPayload(session, inviteOptions = [], page = 0, content
   };
 }
 
+async function handleInviteSelect(interaction) {
+  const [, sessionId, pageRaw] = String(interaction.customId || '').split('|');
+  const session = sessionId ? getMockDraftSession(sessionId) : null;
+  if (!session) {
+    await interaction.reply(privatePayload('That mock draft session is no longer active.'));
+    return;
+  }
+  if (interaction.user.id !== session.hostId) {
+    await interaction.reply(privatePayload('Only the mock draft host can invite coaches.'));
+    return;
+  }
+
+  const guild = interaction.guild;
+  const page = Number.isFinite(Number(pageRaw)) ? Number(pageRaw) : 0;
+  const selectedIds = Array.from(new Set(interaction.values || [])).filter(Boolean);
+  if (!selectedIds.length) {
+    await interaction.reply(privatePayload('No coaches selected.'));
+    return;
+  }
+
+  await interaction.deferReply({ flags: 64 }).catch(() => null);
+
+  let alreadyInRoom = 0;
+  let alreadyPending = 0;
+  let invited = 0;
+  let dmFailed = 0;
+
+  for (const userId of selectedIds) {
+    const freshSession = getMockDraftSession(sessionId);
+    if (!freshSession) break;
+
+    const alreadyJoined = freshSession.participants?.some((p) => p.userId === userId);
+    if (alreadyJoined) {
+      alreadyInRoom += 1;
+      continue;
+    }
+
+    const pending = pendingInviteFor(freshSession, userId);
+    if (pending) {
+      alreadyPending += 1;
+      continue;
+    }
+
+    updateMockDraftSession(sessionId, (live) => {
+      setPendingInvite(live, userId, live.hostId);
+      return live;
+    });
+
+    const member = guild?.members?.cache?.get(userId) || await guild?.members?.fetch?.(userId).catch(() => null);
+    if (!member) {
+      dmFailed += 1;
+      updateMockDraftSession(sessionId, (live) => {
+        clearPendingInvite(live, userId);
+        return live;
+      });
+      continue;
+    }
+
+    const ok = await sendMockDraftInviteDM(interaction.client, freshSession, member);
+
+    if (ok) {
+      invited += 1;
+    } else {
+      dmFailed += 1;
+      updateMockDraftSession(sessionId, (live) => {
+        clearPendingInvite(live, userId);
+        return live;
+      });
+    }
+  }
+
+  const inviteOptions = await buildCoachInviteOptions(guild, getMockDraftSession(sessionId) || session);
+  await interaction.editReply({
+    ...buildInvitePickerPayload(session, inviteOptions, page),
+    content: [
+      invited ? `Invited: **${invited}**` : null,
+      alreadyPending ? `Already pending: **${alreadyPending}**` : null,
+      alreadyInRoom ? `Already in room: **${alreadyInRoom}**` : null,
+      dmFailed ? `DM failed: **${dmFailed}** (check their DM privacy settings)` : null,
+    ].filter(Boolean).join(' • ') || 'No invites sent.',
+  }).catch(() => null);
+}
+
 async function handleButton(interaction) {
   const [, action, sessionId, pageRaw] = interaction.customId.split('|');
+  const baseSession = sessionId ? getMockDraftSession(sessionId) : null;
+
+  if (action === 'invite_prev' || action === 'invite_next') {
+    if (!baseSession) {
+      await interaction.reply(privatePayload('That mock draft session is no longer active.'));
+      return;
+    }
+    if (interaction.user.id !== baseSession.hostId) {
+      await interaction.reply(privatePayload('Only the mock draft host can edit invites.'));
+      return;
+    }
+    const currentPage = Number.isFinite(Number(pageRaw)) ? Number(pageRaw) : 0;
+    const inviteOptions = await buildCoachInviteOptions(interaction.guild, baseSession);
+    const totalPages = Math.max(1, Math.ceil(inviteOptions.length / 25));
+    const nextPage = action === 'invite_next'
+      ? Math.min(totalPages - 1, currentPage + 1)
+      : Math.max(0, currentPage - 1);
+    await interaction.update(buildInvitePickerPayload(baseSession, inviteOptions, nextPage)).catch(() => null);
+    return;
+  }
+
+  if (action === 'invite_accept' || action === 'invite_decline') {
+    if (!baseSession) {
+      await interaction.reply(privatePayload('That invite is no longer active.'));
+      return;
+    }
+    const pending = pendingInviteFor(baseSession, interaction.user.id);
+    if (!pending) {
+      await interaction.reply(privatePayload('That invite is no longer pending (it may have expired).'));
+      return;
+    }
+
+    if (action === 'invite_decline') {
+      updateMockDraftSession(sessionId, (live) => {
+        clearPendingInvite(live, interaction.user.id);
+        return live;
+      });
+      await interaction.update({
+        embeds: [new EmbedBuilder().setColor(0xe74c3c).setTitle('Invite Declined').setDescription('No worries — you can ignore this mock draft invite.')],
+        components: [],
+      });
+      await notifyHostInviteResult(
+        interaction.client,
+        baseSession,
+        pending.hostId,
+        `<@${interaction.user.id}> declined the mock draft invite for ${baseSession.draftYear}.`,
+      );
+      return;
+    }
+
+    const joined = joinMockDraftSession(sessionId, interaction.user.id);
+    updateMockDraftSession(sessionId, (live) => {
+      clearPendingInvite(live, interaction.user.id);
+      return live;
+    });
+
+    await interaction.update({
+      embeds: [
+        new EmbedBuilder()
+          .setColor(0x2ecc71)
+          .setTitle('Invite Accepted')
+          .setDescription(`You’re in. Open <#${baseSession.channelId}> to follow the mock and make picks when you’re on the clock.`),
+      ],
+      components: [],
+    });
+
+    await notifyHostInviteResult(
+      interaction.client,
+      baseSession,
+      pending.hostId,
+      `<@${interaction.user.id}> accepted the invite and joined the mock draft room.`,
+    );
+
+    await syncMockDraftSessionMessage(interaction.client, joined).catch(() => null);
+    return;
+  }
 
   if (action === 'create') {
     await interaction.deferReply({ flags: 64 });

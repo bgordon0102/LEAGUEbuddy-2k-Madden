@@ -354,14 +354,8 @@ client.once('clientReady', (readyClient) => {
     updateFairSimBoard(client, guild.id).catch((e) => {
       console.warn('[fairsim_board] startup refresh failed', guild.id, e?.message || e);
     });
-    // Sportsbook: on startup we only want *one* live header (the current week).
-    // Re-posting older settled weeks (e.g. week 6) creates duplicate buttons every reboot.
-    ensureSportsbookWeekPosted({ client, guild, mode: 'currentOnly' }).catch((e) => {
-      console.warn('[sportsbook] startup ensure failed', guild.id, e?.message || e);
-    });
-    refreshSportsbookHeaders({ client, guild, mode: 'currentOnly' }).catch((e) => {
-      console.warn('[sportsbook] header refresh failed', guild.id, e?.message || e);
-    });
+    // Sportsbook channel is deprecated (Franchise Hub is the entry point), so we no longer
+    // post or refresh public sportsbook headers on startup.
     backfillRecognitionThreadReplies(client, guild).catch((e) => {
       console.warn('[recognition] thread reply backfill failed', guild.id, e?.message || e);
     });

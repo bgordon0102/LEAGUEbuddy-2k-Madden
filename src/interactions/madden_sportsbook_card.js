@@ -11,16 +11,20 @@ export async function execute(interaction) {
   const weekNumber = Number(parts[1] || 0);
   const rawMode = parts[2] || 'board';
   const mode = action === 'board'
-    ? 'leaderboard'
+    ? (rawMode === 'breakdown' ? 'breakdown' : 'leaderboard')
     : action === 'card'
       ? 'card'
       : rawMode === 'tab_board' || rawMode === 'page_prev' || rawMode === 'page_next'
         ? 'board'
-        : rawMode === 'tab_card'
-          ? 'card'
-          : rawMode === 'tab_leaderboard'
-            ? 'leaderboard'
-            : rawMode;
+        : rawMode === 'breakdown_prev' || rawMode === 'breakdown_next'
+          ? 'breakdown'
+          : rawMode === 'tab_breakdown'
+            ? 'breakdown'
+            : rawMode === 'tab_card'
+              ? 'card'
+              : rawMode === 'tab_leaderboard'
+                ? 'leaderboard'
+                : rawMode;
   const index = Number(parts[3] || 0);
   const context = inferRecognitionContext('madden', interaction.guildId);
   const seasonKey = context?.seasonKey;
@@ -28,6 +32,13 @@ export async function execute(interaction) {
     await interaction.reply({ content: 'Sportsbook season context is not ready yet.', flags: 64 });
     return;
   }
+
+  // Always acknowledge quickly so Discord doesn't expire the interaction
+  // ("Unknown interaction" happens when we respond after the 3s window).
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply({ flags: 64 });
+  }
+
   const payload = await buildSportsbookPrivateView({
     seasonKey,
     weekNumber,
@@ -38,9 +49,7 @@ export async function execute(interaction) {
     index,
   });
 
-  // Privacy: the public sportsbook header button should open a private (ephemeral) board.
-  // We *do not* want to replace the public channel message with someone's private bankroll/bets.
-  await interaction.reply({ ...payload, flags: 64 });
+  await interaction.editReply(payload);
 }
 
 export default { customId, execute };

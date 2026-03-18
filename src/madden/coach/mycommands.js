@@ -40,6 +40,7 @@ async function execute(interaction) {
       { name: '/madden-auth', value: 'Link EA account for league data' },
       { name: '/madden-activitycheck', value: 'Post activity check with countdown' },
       { name: '/madden-leagues', value: 'List linked leagues' },
+      { name: '/madden-onboard', value: 'Assign a coach to a team + DM onboarding pack' },
       { name: '/madden-assignrole', value: 'Assign a Madden coach role' },
       { name: '/madden-removerole', value: 'Remove a Madden coach role' },
       { name: '/madden-availableteams', value: 'Show and refresh the available teams board' },
@@ -47,7 +48,13 @@ async function execute(interaction) {
       { name: '/madden-creategamethreads', value: 'Create weekly/playoff game threads' },
       { name: '/madden-deletegamethreads', value: 'Delete weekly/playoff game threads' },
       { name: '/madden-awards', value: 'Run or post weekly awards' },
-      { name: '/madden-draftexport', value: 'Export the draft results file' }
+      { name: '/madden-draftexport', value: 'Export the draft results file' },
+      { name: '/madden-matchuppicture', value: 'Post the weekly matchup picture' },
+      { name: '/madden-clearstrikes', value: 'Clear strike tracking (staff utility)' },
+      { name: '/madden-clearrumors', value: 'Clear rumor data (staff utility)' },
+      { name: '/madden-health', value: 'Bot/league health check (staff utility)' },
+      { name: '/madden-allprotest', value: 'All-pro test/tooling (staff utility)' },
+      { name: '/madden-testmatchup', value: 'Create a single test matchup thread (staff utility)' }
     )
     .setFooter({ text: coachVoiceFooter('staffOnly', 'Testing and maintenance-only commands are hidden from this menu.') });
 

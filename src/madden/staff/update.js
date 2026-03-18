@@ -23,7 +23,7 @@ import { buildStoryContext, buildWeeklyRecapData } from '../storytelling.js';
 import { queueMaddenContentReview } from '../../shared/madden_content_review_queue.js';
 import { brandText, brandTitle } from '../../shared/madden_branding.js';
 import { appendMaddenStaffLog } from '../../shared/madden_staff_ops.js';
-import { finalizeRecognitionWeek, RECOGNITION_ECONOMY, resolveRecognitionDoubleOrNothing, resolveRecognitionGameOfWeek, resolveRecognitionWeeklyLegacy } from '../../shared/league_recognition.js';
+import { finalizeRecognitionWeek, getRecognitionGameOfWeek, RECOGNITION_ECONOMY, resolveRecognitionDoubleOrNothing, resolveRecognitionGameOfWeek, resolveRecognitionWeeklyLegacy, setRecognitionGameOfWeek } from '../../shared/league_recognition.js';
 import { settleSportsbookWeek } from '../../shared/madden_sportsbook.js';
 import { getFullTeamName } from '../../shared/madden_team_names.js';
 import { getCoachAssignmentMap, setCoachAssignment } from '../../shared/madden_coach_assignments.js';
@@ -191,6 +191,109 @@ function addBackfillAward(bucket, userId, tier, amount, reason, weekKey = null) 
     amount: points,
     reason,
     weekKey,
+  });
+}
+
+function safeResolveWeekNumber(snapshot, weekOverride) {
+  const snapWeek = Number(snapshot?.currentWeek ?? snapshot?.info?.careerHubInfo?.seasonInfo?.displayWeek ?? snapshot?.info?.careerHubInfo?.seasonInfo?.seasonWeek ?? 0);
+  const overrideWeek = Number(weekOverride || 0);
+  return overrideWeek > 0 ? overrideWeek : (snapWeek > 0 ? snapWeek : null);
+}
+
+async function ensureAutoGameOfWeek({ guild, guildId, seasonKey, weekNumber, snap, roleMap }) {
+  if (!guildId || !seasonKey || !weekNumber) return null;
+  const weekKey = `week_${Number(weekNumber)}`;
+  const existing = getRecognitionGameOfWeek({ guildId, league: 'madden', seasonKey, weekKey });
+  if (existing) return existing;
+
+  // Reuse the same selection formula used by `/madden-creategamethreads`.
+  const standingsList = snap?.standings?.teamStandingInfoList || [];
+  const standings = {};
+  for (const s of standingsList) standings[Number(s.teamId)] = s;
+
+  const values = {};
+  // Minimal values map: weekly update already has access to snapshot; fall back to standings if stat fields are missing.
+  for (const s of standingsList) {
+    const teamId = Number(s.teamId);
+    values[teamId] = {
+      offPtsPerG: Number(s.pointsFor ?? s.totalPointsFor ?? 0),
+      defPtsPerG: Number(s.pointsAgainst ?? s.ptsAllowed ?? 0),
+    };
+  }
+
+  const scoreGame = (game) => {
+    const awayStanding = standings[game.awayTeamId] || {};
+    const homeStanding = standings[game.homeTeamId] || {};
+    const awayWins = Number(awayStanding.totalWins || 0);
+    const homeWins = Number(homeStanding.totalWins || 0);
+    const awayLosses = Number(awayStanding.totalLosses || 0);
+    const homeLosses = Number(homeStanding.totalLosses || 0);
+    const awayGames = Math.max(1, awayWins + awayLosses + Number(awayStanding.totalTies || 0));
+    const homeGames = Math.max(1, homeWins + homeLosses + Number(homeStanding.totalTies || 0));
+    const awayPct = awayWins / awayGames;
+    const homePct = homeWins / homeGames;
+    const combinedStrength = awayPct + homePct;
+    const closeness = 1 - Math.min(1, Math.abs(awayPct - homePct));
+    const combinedWins = awayWins + homeWins;
+    const bothCompetitive = awayPct >= 0.35 && homePct >= 0.35;
+    const bothRelevant = awayPct >= 0.45 && homePct >= 0.45;
+    const oneHopeless = awayPct <= 0.2 || homePct <= 0.2;
+    const awayOff = Number(values[game.awayTeamId]?.offPtsPerG || 0);
+    const homeOff = Number(values[game.homeTeamId]?.offPtsPerG || 0);
+    const awayDef = Number(values[game.awayTeamId]?.defPtsPerG || 0);
+    const homeDef = Number(values[game.homeTeamId]?.defPtsPerG || 0);
+    const projectedPoints = awayOff + homeOff;
+    const defensiveResistance = 70 - Math.min(70, awayDef + homeDef);
+    const lateSeason = Number(weekNumber || 1) >= 11;
+    const playoffImplicationBoost = lateSeason
+      ? (bothRelevant ? 10 : bothCompetitive ? 5 : 0)
+      : 0;
+    const badGamePenalty =
+      (combinedWins <= 2 ? 12 : combinedWins <= 4 ? 6 : 0) +
+      (oneHopeless ? 8 : 0);
+    const score =
+      (combinedStrength * 18) +
+      (closeness * 12) +
+      Math.min(12, projectedPoints / 4) +
+      Math.max(0, defensiveResistance / 10) +
+      playoffImplicationBoost -
+      badGamePenalty;
+    return { score, awayWins, awayLosses, homeWins, homeLosses };
+  };
+
+  const targetWeekIdx = Number(weekNumber) - 1;
+  const candidates = (snap?.schedule?.schedules || [])
+    .filter((g) => Number(g.stageIndex ?? g.stage ?? 1) === 1)
+    .filter((g) => Number(g.weekIndex ?? g.seasonWeekIndex ?? g.seasonWeek ?? -1) === targetWeekIdx)
+    .filter((g) => g.awayTeamId && g.homeTeamId)
+    .map((game) => ({ game, ...scoreGame(game) }))
+    .sort((a, b) => b.score - a.score);
+
+  const top = candidates[0];
+  if (!top) return null;
+
+  const teamsById = (snap?.teams?.leagueTeamInfoList || []).reduce((acc, t) => {
+    acc[Number(t.teamId)] = t?.displayName || t?.teamName || t?.cityName || null;
+    return acc;
+  }, {});
+
+  const awayTeam = teamsById[top.game.awayTeamId] || `Team ${top.game.awayTeamId}`;
+  const homeTeam = teamsById[top.game.homeTeamId] || `Team ${top.game.homeTeamId}`;
+
+  const coachIndex = await buildCoachAssignmentIndex(guild, roleMap, snap);
+  const awayUserIds = coachIndex.resolveByTeam(top.game.awayTeamId, awayTeam);
+  const homeUserIds = coachIndex.resolveByTeam(top.game.homeTeamId, homeTeam);
+
+  return setRecognitionGameOfWeek({
+    guildId,
+    league: 'madden',
+    seasonKey,
+    weekKey,
+    awayTeam,
+    homeTeam,
+    awayUserIds,
+    homeUserIds,
+    label: `${awayTeam} vs ${homeTeam}`,
   });
 }
 
@@ -1071,7 +1174,8 @@ async function execute(interaction) {
     }
     if (weeklyGameLog && !statsPartial && Number(stageForWeek) === Stage.SEASON && Number(effectiveCurrentWeekUsed || 0) > 0) {
       try {
-        const weekKey = `week_${Number(effectiveCurrentWeekUsed)}`;
+        const resolvedWeekNumber = safeResolveWeekNumber(snap, effectiveCurrentWeekUsed);
+        const weekKey = `week_${Number(resolvedWeekNumber)}`;
         const coachIndex = await buildCoachAssignmentIndex(interaction.guild, roleMap, snap);
         const leagueAwards = safeReadJSON(AWARDS_FILE, {})?.[String(leagueId)] || {};
         const teamAwardTotals = new Map();
@@ -1163,6 +1267,16 @@ async function execute(interaction) {
           seasonKey: getMaddenSeasonKey(snap),
           weekKey,
         });
+
+        await ensureAutoGameOfWeek({
+          guild: interaction.guild,
+          guildId: interaction.guildId,
+          seasonKey: getMaddenSeasonKey(snap),
+          weekNumber: resolvedWeekNumber,
+          snap,
+          roleMap,
+        });
+
         resolveRecognitionWeeklyLegacy({
           guildId: interaction.guildId,
           league: 'madden',

@@ -1243,6 +1243,7 @@ function prospectGroup(player) {
   if (['LT', 'RT'].includes(pos)) return 'OT';
   if (['LG', 'RG', 'C'].includes(pos)) return 'IOL';
   if (['LE', 'RE', 'EDGE', 'EDG', 'LEDG', 'REDG', 'DE', 'RDE', 'LDE'].includes(pos)) return 'EDGE';
+  if (['DT', 'NT', 'IDL', 'IDL1', 'IDL2', 'IDL3'].includes(pos)) return 'DT';
   if (['MLB', 'ILB', 'LB', 'LOLB', 'ROLB', 'OLB', 'SAM', 'MIKE', 'WILL'].includes(pos)) return 'LB';
   if (pos === 'CB') return 'CB';
   if (['FS', 'SS'].includes(pos)) return 'S';

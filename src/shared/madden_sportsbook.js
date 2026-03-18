@@ -13,7 +13,7 @@ import { brandTitle } from './madden_branding.js';
 import { awardRecognitionPoints, consumeRecognitionPerk, getRecognitionGameOfWeek, getRecognitionPerkState, hasRecognitionPerk } from './league_recognition.js';
 import { getCoachAssignmentMap } from './madden_coach_assignments.js';
 import { loadLeagueSnapshot, resolveLeagueIdWithConfig } from '../../madden/madden_data.js';
-import { getMaddenSnapshotContext, loadMaddenChannelMap } from './madden_metadata.js';
+import { getMaddenSnapshotContext } from './madden_metadata.js';
 
 const STORE_PATH = path.join(process.cwd(), 'data', 'madden', 'sportsbook.json');
 const CHANNEL_MAP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_channel_ids.json');
@@ -28,6 +28,11 @@ const IMPACT_EMOJI = '<:impact:1482989570185363466>';
 const GAME_OF_WEEK_BET_BONUS = 2;
 const FIRST_BET_BOOST_MULTIPLIER = 2;
 const FIRST_BET_BOOST_MAX_EXTRA = 10;
+
+// Founder/test protection: prevent role-removal testing from wiping founder sportsbook state.
+const PROTECTED_SPORTSBOOK_USER_IDS = new Set([
+  '1076243288056664234',
+]);
 
 function safeReadJSON(file, fallback = {}) {
   try {
@@ -48,10 +53,6 @@ function loadStore() {
 
 function saveStore(store) {
   saveJSON(STORE_PATH, store);
-}
-
-function loadChannelMap() {
-  return loadMaddenChannelMap();
 }
 
 function loadRoleMap() {
@@ -112,10 +113,18 @@ function buildSportsbookIntel(lines = [], gotw = null) {
     };
   }
 
+  const gotwGameId = gotw?.awayTeam && gotw?.homeTeam
+    ? (lines.find((line) =>
+      normalizeName(line.awayTeam) === normalizeName(gotw.awayTeam)
+      && normalizeName(line.homeTeam) === normalizeName(gotw.homeTeam)
+    )?.gameId || null)
+    : null;
+
   const strongestSide = [...lines].sort((a, b) => Number(b.spread || 0) - Number(a.spread || 0))[0];
   const highestTotal = [...lines].sort((a, b) => Number(b.total || 0) - Number(a.total || 0))[0];
   const trapCandidate = [...lines]
     .filter((line) => Math.abs(Number(line.spread || 0)) <= 3.5)
+    .filter((line) => !gotwGameId || String(line.gameId) !== String(gotwGameId))
     .sort((a, b) => {
       const aGap = Math.abs(recordWins(a.homeRecord) - recordWins(a.awayRecord));
       const bGap = Math.abs(recordWins(b.homeRecord) - recordWins(b.awayRecord));
@@ -123,6 +132,8 @@ function buildSportsbookIntel(lines = [], gotw = null) {
     })[0];
   const stayAwayLine = [...lines]
     .filter((line) => String(line?.gameId || '') !== String(trapCandidate?.gameId || ''))
+    .filter((line) => String(line?.gameId || '') !== String(strongestSide?.gameId || ''))
+    .filter((line) => !gotwGameId || String(line.gameId) !== String(gotwGameId))
     .sort((a, b) => {
       const aSpread = Math.abs(Number(a.spread || 0) - 1.5);
       const bSpread = Math.abs(Number(b.spread || 0) - 1.5);
@@ -145,6 +156,78 @@ function buildSportsbookIntel(lines = [], gotw = null) {
     featured: gotw
       ? `Featured game: ${gotw.label} • winning bets add +${GAME_OF_WEEK_BET_BONUS} ${IMPACT_EMOJI}`
       : 'Featured game: not set yet.',
+  };
+}
+
+function resolveRecognitionSeasonKeyForGuild(guildId, fallbackSeasonKey) {
+  if (!guildId) return fallbackSeasonKey;
+  try {
+    const leagueId = resolveLeagueIdWithConfig(guildId);
+    if (!leagueId) return fallbackSeasonKey;
+    const snapshot = loadLeagueSnapshot(leagueId);
+    const year = snapshot?.info?.careerHubInfo?.seasonInfo?.calendarYear
+      || snapshot?.info?.calendarYear
+      || new Date().getFullYear();
+    return `year_${year}`;
+  } catch {
+    return fallbackSeasonKey;
+  }
+}
+
+function gotwLabelFromRecognition(gotw = null) {
+  if (!gotw) return null;
+  if (gotw.label) return String(gotw.label);
+  const away = gotw.awayTeam ? String(gotw.awayTeam) : '';
+  const home = gotw.homeTeam ? String(gotw.homeTeam) : '';
+  if (away && home) return `${away} at ${home}`;
+  return null;
+}
+
+function featuredGameLabelFromSnapshot(snapshot = null, weekNumber) {
+  const featured = snapshot?.info?.careerHubInfo?.featuredGame || snapshot?.info?.featuredGame || null;
+  if (!featured) return null;
+  const week = Number(featured?.week ?? featured?.weekNumber ?? featured?.weekIndex != null ? Number(featured.weekIndex) + 1 : NaN);
+  if (Number.isFinite(week) && weekNumber && Number(weekNumber) !== Number(week)) return null;
+  const away = featured?.awayTeam || featured?.awayTeamName || featured?.visitorTeam || featured?.awayDisplayName || '';
+  const home = featured?.homeTeam || featured?.homeTeamName || featured?.homeDisplayName || '';
+  if (away && home) return `${away} at ${home}`;
+  const label = featured?.label || featured?.gameLabel || '';
+  return label ? String(label) : null;
+}
+
+function mostPopularLineFromBoard(lines = []) {
+  if (!Array.isArray(lines) || !lines.length) return null;
+  // If we haven't collected any bet meta yet, just surface "best line" as the default popular lean.
+  const strongestSide = [...lines].sort((a, b) => Number(b.spread || 0) - Number(a.spread || 0))[0];
+  if (!strongestSide) return null;
+  return {
+    matchupLabel: `${strongestSide.awayTeam} at ${strongestSide.homeTeam}`,
+    label: `Spread ${favoriteLabel(strongestSide)}`,
+    count: 0,
+  };
+}
+
+function mostPopularBetForWeek(weekStore = {}) {
+  const bets = (weekStore?.bets || []).filter((bet) => {
+    const status = String(bet?.status || '');
+    return status && status !== 'void';
+  });
+  if (!bets.length) return null;
+  const counts = new Map();
+  for (const bet of bets) {
+    const key = [bet.gameId, bet.market, bet.selection].map((v) => String(v ?? '')).join('|');
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const [topKey, count] = sorted[0] || [];
+  if (!topKey || !count) return null;
+  const [gameId, market, selection] = String(topKey).split('|');
+  const sample = bets.find((bet) => String(bet.gameId) === String(gameId) && String(bet.market) === String(market) && String(bet.selection) === String(selection));
+  if (!sample) return null;
+  return {
+    label: sample.betLabel || `${market} ${selection}`,
+    matchupLabel: sample.matchupLabel || 'Game',
+    count,
   };
 }
 
@@ -766,34 +849,12 @@ function headerRows(weekNumber) {
 }
 
 export async function postSportsbookWeek({ client, guild, seasonKey, weekNumber, snapshot, games = [], teamsById = {} }) {
-  const channelMap = loadChannelMap();
-  const channelId = channelMap['LB Sportsbook'] || channelMap['lb-sportsbook'] || null;
-  if (!channelId) return null;
-  const channel = await client.channels.fetch(channelId).catch(() => null);
-  if (!channel?.isTextBased()) return null;
-
+  // Sportsbook channel is deprecated. The board is accessed privately via Franchise Hub.
+  // We still persist weekly lines here so the private view has something to render.
   const store = loadStore();
   const seasonStore = ensureSeason(store, seasonKey);
   const weekKey = `week_${weekNumber}`;
   const weekStore = ensureWeek(seasonStore, weekKey);
-
-  // Keep the sportsbook channel clean: only the latest posted week's header should remain.
-  // If older weeks have stored headerMessageIds, delete those messages and clear the pointers.
-  for (const [otherWeekKey, otherWeekStore] of Object.entries(seasonStore.weeks || {})) {
-    if (otherWeekKey === weekKey) continue;
-    const otherWeekNumber = Number(String(otherWeekKey).replace(/^week_/, ''));
-    if (!Number.isFinite(otherWeekNumber)) continue;
-    if (otherWeekNumber >= Number(weekNumber)) continue;
-    const otherHeaderId = otherWeekStore?.posts?.headerMessageId;
-    const otherChannelId = otherWeekStore?.posts?.channelId;
-    if (otherChannelId !== channelId || !otherHeaderId) continue;
-    await channel.messages.delete(otherHeaderId).catch(() => null);
-    const staleGameIds = Object.values(otherWeekStore?.posts?.gameMessageIds || {}).filter(Boolean);
-    for (const messageId of staleGameIds) {
-      await channel.messages.delete(messageId).catch(() => null);
-    }
-    otherWeekStore.posts = null;
-  }
   const lines = buildLinesForGames(snapshot, games, teamsById, weekNumber);
   const gotw = getRecognitionGameOfWeek({
     guildId: guild?.id,
@@ -801,43 +862,9 @@ export async function postSportsbookWeek({ client, guild, seasonKey, weekNumber,
     seasonKey,
     weekKey,
   });
-  const intel = buildSportsbookIntel(lines, gotw);
   weekStore.lines = lines;
-  if (weekStore.posts?.headerMessageId) {
-    const existing = await channel.messages.fetch(weekStore.posts.headerMessageId).catch(() => null);
-    if (existing) {
-      const staleGameIds = Object.values(weekStore.posts?.gameMessageIds || {}).filter(Boolean);
-      for (const messageId of staleGameIds) {
-        await channel.messages.delete(messageId).catch(() => null);
-      }
-      await existing.edit({
-        content: existing.content || null,
-        embeds: [sportsbookHeaderEmbed(weekNumber, seasonKey, intel)],
-        components: headerRows(weekNumber),
-        allowedMentions: { parse: [] },
-      }).catch(() => null);
-      weekStore.posts.gameMessageIds = {};
-      saveStore(store);
-      return weekStore;
-    }
-    weekStore.posts = null;
-  }
-
-  const roleMap = loadRoleMap();
-  const ghostRoleId = roleMap['Ghost Legacy'];
-  const header = await channel.send({
-    content: ghostRoleId ? `<@&${ghostRoleId}>` : null,
-    embeds: [sportsbookHeaderEmbed(weekNumber, seasonKey, intel)],
-    components: headerRows(weekNumber),
-    allowedMentions: ghostRoleId ? { roles: [ghostRoleId], parse: [] } : { parse: [] },
-  }).catch(() => null);
-
-  weekStore.posts = {
-    channelId,
-    headerMessageId: header?.id || null,
-    gameMessageIds: {},
-    postedAt: Date.now(),
-  };
+  // Clear any legacy channel post pointers so they don't get refreshed/recreated.
+  weekStore.posts = null;
   saveStore(store);
   return weekStore;
 }
@@ -868,45 +895,8 @@ export async function ensureSportsbookWeekPosted({ client, guild, mode = 'all' }
 }
 
 export async function refreshSportsbookHeaders({ client, guild, mode = 'all' } = {}) {
-  if (!client || !guild) return null;
-  const store = loadStore();
-  const context = getSportsbookContextForGuild(guild.id);
-  const seasonKey = context?.seasonKey;
-  if (!seasonKey) return null;
-  const seasonStore = store?.[seasonKey];
-  if (!seasonStore?.weeks) return null;
-
-  let updated = 0;
-  for (const [weekKey, weekStore] of Object.entries(seasonStore.weeks || {})) {
-    if (mode === 'currentOnly') {
-      const currentWeekKey = context?.weekNumber ? `week_${context.weekNumber}` : null;
-      if (currentWeekKey && weekKey !== currentWeekKey) continue;
-      // Don't waste calls updating historical settled weeks on startup.
-      if (weekStore?.settled) continue;
-    }
-    const channelId = weekStore?.posts?.channelId;
-    const headerMessageId = weekStore?.posts?.headerMessageId;
-    if (!channelId || !headerMessageId) continue;
-    const channel = await client.channels.fetch(channelId).catch(() => null);
-    if (!channel?.isTextBased()) continue;
-    const message = await channel.messages.fetch(headerMessageId).catch(() => null);
-    if (!message) continue;
-    const weekNumber = Number(String(weekKey).replace(/^week_/, ''));
-    const gotw = getRecognitionGameOfWeek({
-      guildId: guild.id,
-      league: 'madden',
-      seasonKey,
-      weekKey,
-    });
-    const intel = buildSportsbookIntel(weekStore.lines || [], gotw);
-    await message.edit({
-      embeds: [sportsbookHeaderEmbed(weekNumber, seasonKey, intel)],
-      components: headerRows(weekNumber),
-      allowedMentions: { parse: [] },
-    }).catch(() => null);
-    updated += 1;
-  }
-  return { updated };
+  // No-op: sportsbook channel headers are deprecated.
+  return { updated: 0 };
 }
 
 export function sportsbookModal(customId, line) {
@@ -1183,9 +1173,17 @@ function userOwnsSportsbookGame({ guildId, userId, line }) {
 
 function viewNavRow(weekNumber, mode, index, hasBoard = true) {
   return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`madden_sportsbook_view|${weekNumber}|tab_breakdown|0`).setLabel('Week Breakdown').setStyle(mode === 'breakdown' ? ButtonStyle.Primary : ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId(`madden_sportsbook_view|${weekNumber}|tab_board|${index}`).setLabel('Board').setStyle(mode === 'board' ? ButtonStyle.Primary : ButtonStyle.Secondary).setDisabled(!hasBoard),
     new ButtonBuilder().setCustomId(`madden_sportsbook_view|${weekNumber}|tab_card|0`).setLabel('My Card').setStyle(mode === 'card' ? ButtonStyle.Primary : ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId(`madden_sportsbook_view|${weekNumber}|tab_leaderboard|0`).setLabel('Leaderboard').setStyle(mode === 'leaderboard' ? ButtonStyle.Primary : ButtonStyle.Secondary),
+  );
+}
+
+function breakdownPagerRow(weekNumber, index, total) {
+  return new ActionRowBuilder().addComponents(
+    new ButtonBuilder().setCustomId(`madden_sportsbook_view|${weekNumber}|breakdown_prev|${Math.max(0, index - 1)}`).setLabel('Prev Game').setStyle(ButtonStyle.Secondary).setDisabled(index <= 0),
+    new ButtonBuilder().setCustomId(`madden_sportsbook_view|${weekNumber}|breakdown_next|${Math.min(total - 1, index + 1)}`).setLabel('Next Game').setStyle(ButtonStyle.Secondary).setDisabled(index >= total - 1),
   );
 }
 
@@ -1247,6 +1245,56 @@ export async function buildSportsbookPrivateView({ seasonKey, weekNumber, userId
   const lines = card.lines || [];
   const safeIndex = lines.length ? Math.max(0, Math.min(lines.length - 1, Number(index || 0))) : 0;
   const components = [viewNavRow(weekNumber, mode, safeIndex, lines.length > 0)];
+
+  if (mode === 'breakdown') {
+    const store = loadStore();
+    const weekStore = store?.[seasonKey]?.weeks?.[`week_${weekNumber}`] || {};
+    const gotwSeasonKey = resolveRecognitionSeasonKeyForGuild(guildId, seasonKey);
+    const gotw = getRecognitionGameOfWeek({
+      guildId,
+      league: 'madden',
+      seasonKey: gotwSeasonKey,
+      weekKey: `week_${weekNumber}`,
+    });
+    const intel = buildSportsbookIntel(weekStore?.lines || [], gotw);
+    const popular = mostPopularBetForWeek(weekStore) || mostPopularLineFromBoard(weekStore?.lines || lines);
+    const openOpp = getSportsbookOpenBetOpportunity({ seasonKey, userId, weekNumber, guildId });
+
+    const featuredFallbackLabel = featuredGameLabelFromSnapshot(openOpp?.snapshot, weekNumber);
+    const featuredLabel = gotwLabelFromRecognition(gotw) || featuredFallbackLabel;
+
+    if (lines.length) {
+      components.push(breakdownPagerRow(weekNumber, safeIndex, lines.length));
+    }
+
+    const focusLine = lines[safeIndex] || null;
+    const focusLabel = focusLine
+      ? `${focusLine.awayTeam} at ${focusLine.homeTeam} • line: ${favoriteLabel(focusLine)} • O/U ${focusLine.total}`
+      : null;
+
+    const embed = new EmbedBuilder()
+      .setColor(0x2ecc71)
+      .setTitle(`LB Sportsbook • Week Breakdown • Week ${weekNumber}`)
+      .setDescription([
+        `Impact available to bet: **${formatImpactValue(openOpp?.bankroll?.balance || 0)}**`,
+        openOpp?.count ? `Open bets: **${openOpp.count}** • live max profit: **${formatImpactValue(openOpp.total || 0)}**` : 'Open bets: **0**',
+        focusLabel ? `\n**Current matchup:** ${focusLabel}` : null,
+        '',
+        `**Best Line:** ${intel?.bestSide || 'Not available yet.'}`,
+        `**Most Popular Bet:** ${popular ? `**${popular.matchupLabel}** • ${popular.label}${popular.count ? ` (${popular.count})` : ''}` : 'No bets placed yet.'}`,
+        `**Trap Line:** ${intel?.trapLine || 'Not available yet.'}`,
+        `**Stay Away:** ${intel?.stayAway || 'Not available yet.'}`,
+        '',
+        '**Game of the Week Bonus**',
+        featuredLabel
+          ? `${featuredLabel}${gotwLabelFromRecognition(gotw) ? '' : ' *(featured game)*'}\nWinning bets on this matchup add **+${GAME_OF_WEEK_BET_BONUS} ${IMPACT_EMOJI}** profit.`
+          : 'Not set yet.',
+      ].filter(Boolean).join('\n'))
+      .setFooter({ text: 'Private view • start here each week, then browse the book' })
+      .setTimestamp();
+
+    return { embeds: [embed], components };
+  }
 
   if (mode === 'card') {
     const buyoutActive = Boolean(hasRecognitionPerk({
@@ -1315,7 +1363,8 @@ export async function buildSportsbookPrivateView({ seasonKey, weekNumber, userId
   const limits = getSportsbookLimits(card.bankroll.balance || STARTING_BANKROLL);
   const priceGuide = payoutBreakdown(5, SPREAD_PRICE);
   const ownGameBlocked = userOwnsSportsbookGame({ guildId, userId, line });
-  const gotw = guildId ? getRecognitionGameOfWeek({ guildId, league: 'madden', seasonKey, weekKey: `week_${weekNumber}` }) : null;
+  const gotwSeasonKey = resolveRecognitionSeasonKeyForGuild(guildId, seasonKey);
+  const gotw = guildId ? getRecognitionGameOfWeek({ guildId, league: 'madden', seasonKey: gotwSeasonKey, weekKey: `week_${weekNumber}` }) : null;
   const gotwMatch = gotw && normalizeName(gotw.awayTeam) === normalizeName(line.awayTeam) && normalizeName(gotw.homeTeam) === normalizeName(line.homeTeam);
   const embed = new EmbedBuilder()
     .setColor(0x5865f2)
@@ -1416,6 +1465,9 @@ export function buyoutSportsbookBet({ guildId, seasonKey, weekNumber, userId, ga
 
 export function resetSportsbookUserSeason({ seasonKey, userId, reason = 'Coach role removed' }) {
   if (!seasonKey || !userId) return { ok: false, message: 'Missing sportsbook reset context.' };
+  if (PROTECTED_SPORTSBOOK_USER_IDS.has(String(userId))) {
+    return { ok: false, protected: true, message: 'Sportsbook reset skipped for protected user.' };
+  }
   const store = loadStore();
   const seasonStore = ensureSeason(store, seasonKey);
   const userKey = String(userId);
@@ -1514,10 +1566,11 @@ export async function settleSportsbookWeek({ client, guildId, seasonKey, weekNum
       bankroll.profit += Number(outcome.profit || 0);
       bankroll.balance += Number(bet.wager || 0) + Number(outcome.profit || 0);
       let impactAward = Math.max(1, Math.round(Number(outcome.profit || 0)));
+      const gotwSeasonKey = resolveRecognitionSeasonKeyForGuild(guildId, seasonKey);
       const gotw = getRecognitionGameOfWeek({
         guildId,
         league: 'madden',
-        seasonKey,
+        seasonKey: gotwSeasonKey,
         weekKey: `week_${weekNumber}`,
       });
       if (
@@ -1550,44 +1603,56 @@ export async function settleSportsbookWeek({ client, guildId, seasonKey, weekNum
   weekStore.settledAt = Date.now();
   saveStore(store);
 
-  const channelMap = loadChannelMap();
-  const channelId = channelMap['LB Sportsbook'] || channelMap['lb-sportsbook'] || null;
-  if (client && channelId) {
-    const channel = await client.channels.fetch(channelId).catch(() => null);
-    if (channel?.isTextBased()) {
-      const board = sportsbookLeaderboard(seasonKey, 5);
-      const impactWinners = (weekStore.bets || [])
-        .filter((bet) => bet.status === 'win' && Number(bet.impactAward || 0) > 0)
-        .sort((a, b) => Number(b.impactAward || 0) - Number(a.impactAward || 0))
-        .slice(0, 8);
-      const embed = new EmbedBuilder()
-        .setColor(0x2ecc71)
-        .setTitle(brandTitle(`LB Sportsbook Results • Week ${weekNumber}`))
-        .setDescription(`Week ${weekNumber} betting has been settled. Winning slips have returned Impact to bet and bonus ${IMPACT_EMOJI}.`)
-        .addFields(
-          {
-            name: `${IMPACT_EMOJI} Payouts`,
-            value: impactWinners.length
-              ? impactWinners.map((bet) => {
-                const totalReturn = Number(bet.wager || 0) + Number(bet.profit || 0);
-                const user = bet.userId ? `<@${String(bet.userId)}>` : 'Unknown user';
-                return `${user} ${bet.market} ${bet.selection} • stake ${formatImpactValue(bet.wager || 0)} • won ${formatImpactValue(bet.profit || 0)} • return ${formatImpactValue(totalReturn)} • ${formatImpactDelta(bet.impactAward || 0)}`;
-              }).join('\n')
-              : 'No winning slips paid out this week.',
-          },
-          {
-            name: 'Top Impact To Bet',
-            value: board.length
-              ? board.map((row, idx) => {
-                const user = row.userId ? `<@${String(row.userId)}>` : 'Unknown user';
-                return `${idx + 1}. ${user} — ${formatImpactValue(row.balance)}`;
-              }).join('\n')
-              : 'No sportsbook action yet.',
-          },
-        )
-        .setTimestamp();
-      await channel.send({ embeds: [embed] }).catch(() => null);
+  // With the sportsbook channel being optional, always DM coaches their personal results.
+  if (client) {
+    const settledByUser = new Map();
+    for (const bet of weekStore.bets || []) {
+      if (!bet?.userId) continue;
+      if (!['win', 'loss', 'push', 'buyout'].includes(String(bet.status || ''))) continue;
+      const list = settledByUser.get(String(bet.userId)) || [];
+      list.push(bet);
+      settledByUser.set(String(bet.userId), list);
     }
+
+    await Promise.all(
+      [...settledByUser.entries()].map(async ([userId, bets]) => {
+        const user = await client.users.fetch(String(userId)).catch(() => null);
+        if (!user) return;
+        const wins = (bets || []).filter((bet) => bet.status === 'win');
+        const totalProfit = Math.round((bets || []).reduce((sum, bet) => sum + Number(bet?.profit || 0), 0) * 10) / 10;
+
+        const embed = new EmbedBuilder()
+          .setColor(wins.length ? 0x2ecc71 : 0xe67e22)
+          .setTitle(brandTitle(`Sportsbook Slip Results • Week ${weekNumber}`))
+          .setDescription(
+            [
+              wins.length
+                ? `You had **${wins.length}** winning bet(s). Your bankroll + Impact earnings are updated in Franchise Hub.`
+                : `Your bets are settled. Your bankroll is updated in Franchise Hub.`,
+              `Net profit: ${formatImpactValue(totalProfit)}`,
+              '',
+              (bets || [])
+                .slice(0, 10)
+                .map((bet) => {
+                  const resultLabel = String(bet.status || '').toUpperCase();
+                  const profit = Number(bet.profit || 0);
+                  const award = Number(bet.impactAward || 0);
+                  const awardText = award > 0 ? ` • ${formatImpactDelta(award)}` : '';
+                  const buyoutText = bet.status === 'buyout' ? ` • buyout refund ${formatImpactValue(bet.refund || 0)}` : '';
+                  return `• **${resultLabel}** — ${bet.matchupLabel || 'Game'}\n  ${bet.betLabel || `${bet.market} ${bet.selection}`} • stake ${formatImpactValue(bet.wager || 0)} • profit ${formatImpactValue(profit)}${awardText}${buyoutText}`;
+                })
+                .join('\n'),
+              (bets || []).length > 10 ? `\n…and ${bets.length - 10} more slip(s).` : null,
+              `\nOpen **/madden-franchisehub** → **Open Sportsbook** to review the board + your card anytime.`,
+            ].filter(Boolean).join('\n'),
+          )
+          .setFooter({ text: 'Private DM • results are reflected in Franchise Hub' })
+          .setTimestamp();
+
+        await user.send({ embeds: [embed] }).catch(() => null);
+      }),
+    );
   }
+
   return summary;
 }

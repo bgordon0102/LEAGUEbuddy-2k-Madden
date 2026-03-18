@@ -57,6 +57,12 @@ const POINTS = RECOGNITION_ECONOMY.points;
 const PERK_COSTS = RECOGNITION_ECONOMY.perks;
 const DRAFT_SCOUT_PHASED_PERKS = new Set([]);
 
+// Founder/test protection. These users' recognition state should not be wiped by role-removal tooling.
+// (Primary guard is in staff commands, but this is a safety net.)
+const PROTECTED_RECOGNITION_USER_IDS = new Set([
+  '1076243288056664234',
+]);
+
 export function getRecognitionPerkCatalog() {
   return { ...PERK_COSTS };
 }
@@ -1077,6 +1083,9 @@ export function setRecognitionDoubleOrNothingTier({ guildId, league, seasonKey, 
 
 export function resetRecognitionUserSeason({ guildId, league, seasonKey, userId, reason = 'Coach role removed' }) {
   if (!guildId || !league || !seasonKey || !userId) return { ok: false, message: 'Missing recognition reset context.' };
+  if (PROTECTED_RECOGNITION_USER_IDS.has(String(userId))) {
+    return { ok: false, protected: true, message: 'Recognition reset skipped for protected user.' };
+  }
   const store = loadStore();
   const seasonRoot = ensureRoot(store, String(guildId), league, seasonKey);
   const userKey = String(userId);
