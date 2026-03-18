@@ -1,17 +1,13 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { hasStaffRole, loadRoleMap } from './staffUtils.js';
-import { buildProjectedOutcome, hydrateThreadStateFromLiveThread, listThreadStates } from '../../shared/madden_thread_notifier.js';
+import { buildProjectedOutcome, collectParticipation, hydrateThreadStateFromLiveThread, listThreadStates } from '../../shared/madden_thread_notifier.js';
 import { postMaddenStaffDecision } from '../../shared/madden_staff_ops.js';
 import { getMaddenSnapshotContext, loadMaddenChannelMap } from '../../shared/madden_metadata.js';
+import { formatTeamEmoji, loadTeamEmojis } from '../coach/mockdraft.js';
 
 const data = new SlashCommandBuilder()
   .setName('madden-matchuppicture')
   .setDescription('Show the current weekly matchup and strike picture (staff only).')
-  .addBooleanOption((option) =>
-    option
-      .setName('post_to_staff')
-      .setDescription('Post the report to the staff channel instead of only replying privately.')
-      .setRequired(false))
   .setDefaultMemberPermissions(null);
 
 function deadlineLabel(deadlineAt) {
@@ -46,6 +42,102 @@ function projectedLabel(projected = {}) {
   return 'No determined strike';
 }
 
+function recommendedLabel(projected = {}) {
+  const label = projected?.recommended?.label;
+  return label ? `Recommended: ${label}` : null;
+}
+
+function weeklyButtonLabel(entry) {
+  if (!entry) return 'Review matchup';
+  const away = entry.info?.awayTeam || 'Away';
+  const home = entry.info?.homeTeam || 'Home';
+  const recType = String(entry?.projected?.recommended?.type || 'unknown');
+  const actionable = ['fair_sim', 'force_win_home', 'force_win_away', 'cpu'].includes(recType);
+  if (actionable && String(entry?.status || 'pending') === 'pending') {
+    return `Apply: ${away} vs ${home}`.slice(0, 80);
+  }
+  return `Review: ${away} vs ${home}`.slice(0, 80);
+}
+
+function outcomeLabel(entry) {
+  const status = String(entry?.status || 'pending').toLowerCase();
+  if (status !== 'pending') {
+    // These status values map to the same labels used in the game status buttons handler.
+    return `LOG ${statusLabel(status)}`;
+  }
+  const rec = entry?.projected?.recommended;
+  if (rec?.type === 'no_strikes') {
+    const state = String(entry?.participation?.conversationState || '').trim();
+    if (state) return `REC OK (${state})`;
+    return 'REC OK (talking)';
+  }
+  if (rec?.type === 'force_win_home') return `REC FW ${entry?.info?.homeTeam || 'Home'}`;
+  if (rec?.type === 'force_win_away') return `REC FW ${entry?.info?.awayTeam || 'Away'}`;
+  if (rec?.label) return `REC ${rec.label}`;
+  if (entry?.projected?.strikeAway || entry?.projected?.strikeHome) return 'REC Determined';
+  return 'REC Review';
+}
+
+function strikeMarker(entry) {
+  if (String(entry?.status || 'pending').toLowerCase() !== 'pending') return '';
+  const away = String(entry?.info?.awayTeam || 'Away').trim() || 'Away';
+  const home = String(entry?.info?.homeTeam || 'Home').trim() || 'Home';
+
+  // Determined strike projection (silence-based).
+  const a = Boolean(entry?.projected?.strikeAway);
+  const h = Boolean(entry?.projected?.strikeHome);
+  if (a || h) {
+    if (a && h) return ` [S:${away}+${home}]`;
+    if (a) return ` [S:${away}]`;
+    return ` [S:${home}]`;
+  }
+
+  // If the recommendation is a force win, the implied non-play strike is typically on the losing side.
+  const recType = String(entry?.projected?.recommended?.type || '').toLowerCase();
+  if (recType === 'force_win_home') return ` [S:${away}]`;
+  if (recType === 'force_win_away') return ` [S:${home}]`;
+
+  return '';
+}
+
+function safeThreadMention(threadId) {
+  const id = String(threadId || '');
+  if (!/^[0-9]{6,20}$/.test(id)) return '';
+  return ` <#${id}>`;
+}
+
+function clampLinesToEmbed(lines, maxChars = 1024) {
+  const output = [];
+  let total = 0;
+  for (const line of lines) {
+    const next = (output.length ? 1 : 0) + line.length;
+    if (total + next > maxChars) break;
+    output.push(line);
+    total += next;
+  }
+  return output;
+}
+
+function chunkLines(lines, maxChars = 1024) {
+  const chunks = [];
+  let current = [];
+  let total = 0;
+
+  for (const line of lines) {
+    const next = (current.length ? 1 : 0) + line.length;
+    if (current.length && total + next > maxChars) {
+      chunks.push(current);
+      current = [];
+      total = 0;
+    }
+    current.push(line);
+    total += (current.length > 1 ? 1 : 0) + line.length;
+  }
+
+  if (current.length) chunks.push(current);
+  return chunks;
+}
+
 function riskScore(entry) {
   if (entry.status === 'pending' && entry.projected?.strikeAway && entry.projected?.strikeHome) return 0;
   if (entry.status === 'pending' && (entry.projected?.strikeAway || entry.projected?.strikeHome)) return 1;
@@ -73,6 +165,45 @@ function matchupLabel(entry) {
 
 function normalizeName(name = '') {
   return String(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function resolveEmojiKey(teamName = '') {
+  const raw = String(teamName || '').trim();
+  const norm = normalizeName(raw);
+  const aliasMap = {
+    niners: '49ers',
+    fourtyniners: '49ers',
+    fortyniners: '49ers',
+    forty9ers: '49ers',
+    fourty9ers: '49ers',
+    sf: '49ers',
+    sanfrancisco: '49ers',
+    // keep canonical too
+    '49ers': '49ers',
+
+    pats: 'Patriots',
+    patriots: 'Patriots',
+
+    jags: 'Jaguars',
+    jaguars: 'Jaguars',
+
+    bucs: 'Buccaneers',
+    buccaneers: 'Buccaneers',
+
+    fins: 'Dolphins',
+    phins: 'Dolphins',
+    dolphins: 'Dolphins',
+
+    commies: 'Commanders',
+    commanders: 'Commanders',
+
+    bolts: 'Chargers',
+    chargers: 'Chargers',
+
+    hawks: 'Seahawks',
+    seahawks: 'Seahawks',
+  };
+  return aliasMap[norm] || raw;
 }
 
 function buildCoachStatusByTeam(snapshot) {
@@ -165,70 +296,8 @@ async function resolveTrackedThread(interaction, threadId, cache = null, threadL
   return null;
 }
 
-async function buildRoleUserCache(guild, entries = []) {
-  const roleUserIds = new Map();
-  const roleIds = [...new Set(entries.flatMap((info) => [ ...(info?.awayRoleIds || []), ...(info?.homeRoleIds || []) ]).filter(Boolean))];
-  for (const roleId of roleIds) {
-    const role = guild.roles.cache.get(roleId) || await guild.roles.fetch(roleId).catch(() => null);
-    if (!role) {
-      roleUserIds.set(String(roleId), new Set());
-      continue;
-    }
-    const members = role.members?.size
-      ? [...role.members.keys()]
-      : [...guild.members.cache.values()].filter((member) => member.roles?.cache?.has(roleId)).map((member) => member.id);
-    roleUserIds.set(String(roleId), new Set(members.map(String)));
-  }
-  return roleUserIds;
-}
-
-async function collectParticipationForReport(thread, info, roleUserCache) {
-  const messages = await thread.messages.fetch({ limit: 100 }).catch(() => null);
-  if (!messages) {
-    return {
-      awayCount: 0,
-      homeCount: 0,
-      totalCoachMessages: 0,
-      awayResponderIds: [],
-      homeResponderIds: [],
-      awayAfterReminder: 0,
-      homeAfterReminder: 0,
-    };
-  }
-  const awayUsers = new Set((info.awayRoleIds || []).flatMap((roleId) => [...(roleUserCache.get(String(roleId)) || new Set())]));
-  const homeUsers = new Set((info.homeRoleIds || []).flatMap((roleId) => [...(roleUserCache.get(String(roleId)) || new Set())]));
-  let awayCount = 0;
-  let homeCount = 0;
-  let awayAfterReminder = 0;
-  let homeAfterReminder = 0;
-  const awayResponderIds = new Set();
-  const homeResponderIds = new Set();
-  const reminderCutoff = Number(info?.lastReminder || 0);
-  for (const message of messages.values()) {
-    if (message.author?.bot) continue;
-    const authorId = String(message.author.id);
-    const createdAt = Number(message.createdTimestamp || 0);
-    if (awayUsers.has(authorId)) {
-      awayCount += 1;
-      awayResponderIds.add(authorId);
-      if (createdAt > reminderCutoff) awayAfterReminder += 1;
-    }
-    if (homeUsers.has(authorId)) {
-      homeCount += 1;
-      homeResponderIds.add(authorId);
-      if (createdAt > reminderCutoff) homeAfterReminder += 1;
-    }
-  }
-  return {
-    awayCount,
-    homeCount,
-    totalCoachMessages: awayCount + homeCount,
-    awayResponderIds: [...awayResponderIds],
-    homeResponderIds: [...homeResponderIds],
-    awayAfterReminder,
-    homeAfterReminder,
-  };
-}
+// NOTE: matchuppicture uses shared collectParticipation() from madden_thread_notifier
+// so its strike picture lines up exactly with the notifier’s “Determined Strike Outcome” embed.
 
 export { data };
 
@@ -351,16 +420,27 @@ export async function execute(interaction) {
       diagnostics.fetched += 1;
       const resolvedThreadId = String(thread.id || storedInfo.threadId || '');
       if (resolvedThreadId && !interaction.client.channels.cache.has(resolvedThreadId)) diagnostics.resolvedArchived += 1;
-      const info = hydrateThreadStateFromLiveThread(thread, storedInfo) || storedInfo;
-      if (info?.seasonKey !== seasonKey) continue;
+      // Hydrate can be async (it may fetch starter message to infer deadlineAt), so await it.
+      const infoHydrated = await hydrateThreadStateFromLiveThread(thread, storedInfo).catch(() => null);
+      const info = infoHydrated || storedInfo;
+
+      // Be forgiving when stored seasonKey/weekIndex are missing; fall back to inferred values.
+      // (Older registrations sometimes omitted these, which would otherwise filter everything out.)
+      const effectiveSeasonKey = info?.seasonKey || seasonKey;
+      if (effectiveSeasonKey !== seasonKey) continue;
       diagnostics.currentSeason += 1;
+
       const inferredWeekIndex = Number.isFinite(Number(info?.weekIndex))
         ? Number(info.weekIndex)
         : parseWeekIndexFromThreadName(thread.name || '');
-      if (currentWeekIndex != null && inferredWeekIndex !== currentWeekIndex) continue;
+      if (currentWeekIndex != null && inferredWeekIndex != null && inferredWeekIndex !== currentWeekIndex) continue;
       diagnostics.currentWeek += 1;
       candidateInfos.push({
-        info,
+        info: {
+          ...info,
+          seasonKey: effectiveSeasonKey,
+          weekIndex: Number.isFinite(Number(info?.weekIndex)) ? Number(info.weekIndex) : inferredWeekIndex,
+        },
         thread,
         status: String(info.status || 'pending'),
       });
@@ -371,24 +451,10 @@ export async function execute(interaction) {
       currentWeek: diagnostics.currentWeek,
       candidateInfos: candidateInfos.length,
     });
-    const roleUserCache = await buildRoleUserCache(interaction.guild, candidateInfos.map((entry) => entry.info));
-    logStep('role_cache_ready', { roles: roleUserCache.size });
+    // Participation is collected using the shared logic from the notifier module.
     const participationStartedAt = Date.now();
     for (const baseEntry of candidateInfos) {
-      let participation = null;
-      try {
-        participation = await collectParticipationForReport(baseEntry.thread, baseEntry.info, roleUserCache);
-      } catch {
-        participation = {
-          awayCount: 0,
-          homeCount: 0,
-          totalCoachMessages: 0,
-          awayAfterReminder: 0,
-          homeAfterReminder: 0,
-          awayResponderIds: [],
-          homeResponderIds: [],
-        };
-      }
+      const participation = await collectParticipation(baseEntry.thread, baseEntry.info);
       diagnostics.participationRead += 1;
       const projected = buildProjectedOutcome(baseEntry.info, participation);
       const entry = {
@@ -507,28 +573,71 @@ export async function execute(interaction) {
         },
       )
       .setTimestamp();
-    await interaction.editReply({ embeds: [briefingEmbed] });
 
-    if (interaction.options.getBoolean('post_to_staff') === true) {
-      const fields = entries.slice(0, 8).map((entry) => ({
-        name: `${entry.info.awayTeam || 'Away'} vs ${entry.info.homeTeam || 'Home'}`,
-        value: [
-          `${statusLabel(entry.status)} • ${projectedLabel(entry.projected)}`,
-          `Comm: ${entry.participation.awayCount}-${entry.participation.homeCount}`,
-          `After reminder: ${entry.participation.awayAfterReminder}-${entry.participation.homeAfterReminder}`,
-          `Deadline: ${deadlineLabel(entry.info.deadlineAt)}`,
-          `Thread: <#${entry.info.threadId}>`,
-        ].join('\n'),
-        inline: true,
-      }));
-      await postMaddenStaffDecision(
-        interaction.client,
-        interaction.guildId,
-        `Matchup Picture${currentWeek > 0 ? ` - Week ${currentWeek}` : ''}`,
-        `${determinedEntries.length} matchup(s) currently project at least one determined strike. ${silentEntries.length} pending matchup(s) still have a silent side.`,
-        fields,
-      ).catch(() => null);
+    // Always show the toddler-simple outcome board privately, with one Apply All button.
+    const emojiMap = loadTeamEmojis();
+    const outcomeLines = entries.map((entry, idx) => {
+      const away = entry.info?.awayTeam || 'Away';
+      const home = entry.info?.homeTeam || 'Home';
+      const threadId = entry.info?.threadId;
+      const awayEmoji = formatTeamEmoji(resolveEmojiKey(away), emojiMap);
+      const homeEmoji = formatTeamEmoji(resolveEmojiKey(home), emojiMap);
+      const n = String(idx + 1).padStart(2, '0');
+      const left = `${awayEmoji ? `${awayEmoji} ` : ''}${away}`;
+      const right = `${homeEmoji ? `${homeEmoji} ` : ''}${home}`;
+      return `${n}. ${left} @ ${right} — ${outcomeLabel(entry)}${strikeMarker(entry)}${safeThreadMention(threadId)}`;
+    });
+
+    const outcomeChunks = chunkLines(outcomeLines);
+
+    const baseBoardEmbed = new EmbedBuilder()
+      .setColor(0x2ecc71)
+      .setTitle(`Outcome Board${currentWeek > 0 ? ` - Week ${currentWeek}` : ''}`)
+      .setDescription(`Games: ${entries.length} • Determined-risk: ${determinedEntries.length} • Silent-side: ${silentEntries.length}`)
+      .setTimestamp();
+
+    // Discord limits per embed:
+    // - 25 fields per embed
+    // - 1024 chars per field value
+    // We'll split "Every game" across multiple fields, and if we exceed 25 fields we spill into a second embed.
+    const embeds = [baseBoardEmbed];
+
+    const fieldSets = [];
+    let remaining = [...outcomeChunks];
+    while (remaining.length) {
+      fieldSets.push(remaining.splice(0, 25));
     }
+
+    fieldSets.forEach((chunkSet, embedIdx) => {
+      const embed = embedIdx === 0
+        ? embeds[0]
+        : new EmbedBuilder()
+          .setColor(0x2ecc71)
+          .setTitle(`Outcome Board (cont.)${currentWeek > 0 ? ` - Week ${currentWeek}` : ''}`)
+          .setTimestamp();
+
+      chunkSet.forEach((chunk, idx) => {
+        const label = chunkSet.length === 1
+          ? 'Every game'
+          : (idx === 0 ? 'Every game' : '…');
+        embed.addFields({
+          name: label,
+          value: chunk.join('\n') || '—',
+        });
+      });
+
+      if (embedIdx > 0) embeds.push(embed);
+    });
+
+    const applyAllButton = new ButtonBuilder()
+      .setCustomId(`madden_apply_all_week|${seasonKey}|${currentWeekIndex != null ? String(currentWeekIndex) : 'unknown'}`)
+      .setLabel('APPLY ALL (confirm)')
+      .setStyle(ButtonStyle.Danger);
+
+    await interaction.editReply({
+      embeds,
+      components: [new ActionRowBuilder().addComponents(applyAllButton)],
+    });
   } catch (e) {
     await interaction.editReply({ content: `Weekly picture failed: ${e?.message || e}` });
   }

@@ -62,7 +62,8 @@ const interactionsPath = join(process.cwd(), 'src', 'interactions');
 const interactionFiles = readdirSync(interactionsPath).filter(f => f.endsWith('.js'));
 for (const file of interactionFiles) {
   const filePath = join(interactionsPath, file);
-  const handler = await import(pathToFileURL(filePath).href);
+  const handlerModule = await import(pathToFileURL(filePath).href);
+  const handler = handlerModule.default || handlerModule;
   // Register main button/select handlers
   if (handler.customId && typeof handler.execute === 'function') {
     client.interactionHandlers.push({ customId: handler.customId, execute: handler.execute });
@@ -91,7 +92,7 @@ client.on('interactionCreate', async interaction => {
     const command = client.commands.get(interaction.commandName);
     if (!command) {
       console.error(`❌ No command handler found for /${interaction.commandName}`);
-      await interaction.reply({ content: 'Command not found.', ephemeral: true });
+      await interaction.reply({ content: 'Command not found.', flags: 64 });
       return;
     }
     // Lightweight command audit log
@@ -139,7 +140,7 @@ client.on('interactionCreate', async interaction => {
         if (interaction.replied || interaction.deferred) {
           await interaction.editReply({ content: 'There was an error while executing this command!' });
         } else {
-          await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+          await interaction.reply({ content: 'There was an error while executing this command!', flags: 64 });
         }
       } catch (replyError) {
         console.error('❌ Failed to send error message:', replyError);
@@ -251,6 +252,10 @@ client.on('interactionCreate', async interaction => {
       await foundHandler.execute(interaction);
     } catch (error) {
       console.error(`❌ Error executing interaction ${interaction.customId}:`, error);
+      // If Discord says the interaction is unknown/expired, we can't respond.
+      if (error?.code === 10062) {
+        return;
+      }
       try {
         if (interaction.replied || interaction.deferred) {
           await interaction.editReply({ content: 'There was an error while executing this interaction!' });
@@ -258,7 +263,10 @@ client.on('interactionCreate', async interaction => {
           await interaction.reply({ content: 'There was an error while executing this interaction!', flags: 64 });
         }
       } catch (replyError) {
-        console.error('❌ Failed to send error message:', replyError);
+        // Avoid noisy follow-up errors when the interaction was already acknowledged/expired.
+        if (replyError?.code !== 40060 && replyError?.code !== 10062) {
+          console.error('❌ Failed to send error message:', replyError);
+        }
       }
     }
     return;
@@ -269,7 +277,7 @@ client.on('messageCreate', async (message) => {
   if (!message.guild || message.author?.bot || !message.channel?.isThread?.()) return;
   let info = getThreadState(message.channel.id);
   if (!info || info.status !== 'pending') return;
-  info = hydrateThreadStateFromLiveThread(message.channel, info) || info;
+  info = (await hydrateThreadStateFromLiveThread(message.channel, info).catch(() => null)) || info;
   const member = message.member || await message.guild.members.fetch(message.author.id).catch(() => null);
   if (!member) return;
   const roleIds = new Set(member.roles?.cache?.keys?.() || []);
@@ -305,7 +313,7 @@ async function backfillRecognitionThreadReplies(client, guild) {
   for (const info of threadStates) {
     const thread = await client.channels.fetch(info.threadId).catch(() => null);
     if (!thread?.isThread?.() || thread.guildId !== guild.id) continue;
-    const hydratedInfo = hydrateThreadStateFromLiveThread(thread, info) || info;
+    const hydratedInfo = (await hydrateThreadStateFromLiveThread(thread, info).catch(() => null)) || info;
     const seasonKey = hydratedInfo.seasonKey || context?.seasonKey || null;
     const weekKey = Number.isFinite(Number(hydratedInfo?.weekIndex))
       ? `week_${Number(hydratedInfo.weekIndex) + 1}`
@@ -346,10 +354,12 @@ client.once('clientReady', (readyClient) => {
     updateFairSimBoard(client, guild.id).catch((e) => {
       console.warn('[fairsim_board] startup refresh failed', guild.id, e?.message || e);
     });
-    ensureSportsbookWeekPosted({ client, guild }).catch((e) => {
+    // Sportsbook: on startup we only want *one* live header (the current week).
+    // Re-posting older settled weeks (e.g. week 6) creates duplicate buttons every reboot.
+    ensureSportsbookWeekPosted({ client, guild, mode: 'currentOnly' }).catch((e) => {
       console.warn('[sportsbook] startup ensure failed', guild.id, e?.message || e);
     });
-    refreshSportsbookHeaders({ client, guild }).catch((e) => {
+    refreshSportsbookHeaders({ client, guild, mode: 'currentOnly' }).catch((e) => {
       console.warn('[sportsbook] header refresh failed', guild.id, e?.message || e);
     });
     backfillRecognitionThreadReplies(client, guild).catch((e) => {

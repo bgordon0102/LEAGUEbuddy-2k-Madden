@@ -66,6 +66,16 @@ const RAW_RESOURCES = [
   { lane: 'defense', tags: ['general', 'playbook', 'scheme'], label: 'Resource: top 5 defensive playbooks', url: 'https://www.ea.com/games/madden-nfl/madden-nfl-26/tips-and-tricks-hub/m26-top-5-defensive-playbooks', source: 'EA' },
   { lane: 'defense', tags: ['general', 'defense'], label: 'Resource: Madden 26 defensive tips hub', url: 'https://www.madden-school.com/category/madden-26-defensive-tips/', source: 'Madden School' },
   { lane: 'defense', tags: ['outside', 'quarters', 'boundary'], label: 'Search: Madden 26 Quarters outside leverage', url: 'https://www.youtube.com/results?search_query=madden+26+quarters+outside+leverage', source: 'YouTube search' },
+  { lane: 'defense', tags: ['quickgame', 'timing', 'coverage', 'hooks', 'flats'], label: 'Search: Madden 26 defend quick game (hooks/flats)', url: 'https://www.youtube.com/results?search_query=madden+26+defend+quick+game+hooks+flats', source: 'YouTube search' },
+  { lane: 'defense', tags: ['quickgame', 'stick', 'spacing', 'coverage'], label: 'Search: Madden 26 stop stick / spacing concepts', url: 'https://www.youtube.com/results?search_query=madden+26+stop+stick+spacing+concept', source: 'YouTube search' },
+  { lane: 'defense', tags: ['quickgame', 'slants', 'man', 'press'], label: 'Search: Madden 26 stop slants (press/man tips)', url: 'https://www.youtube.com/results?search_query=madden+26+stop+slants+press+man', source: 'YouTube search' },
+  { lane: 'defense', tags: ['vertical', 'deep', 'shotplay', 'quarters'], label: 'Search: Madden 26 defend shot plays (Quarters rules)', url: 'https://www.youtube.com/results?search_query=madden+26+defend+shot+plays+quarters+rules', source: 'YouTube search' },
+  { lane: 'defense', tags: ['vertical', 'deep', 'shotplay', 'cover9'], label: 'Search: Madden 26 Cover 9 vs deep shots', url: 'https://www.youtube.com/results?search_query=madden+26+cover+9+vs+deep+shots', source: 'YouTube search' },
+  { lane: 'defense', tags: ['vertical', 'deep', 'shade', 'leverage'], label: 'Search: Madden 26 outside leverage vs fades/posts', url: 'https://www.youtube.com/results?search_query=madden+26+outside+leverage+vs+fades+posts', source: 'YouTube search' },
+  { lane: 'defense', tags: ['runfit', 'inside', 'front', 'duo', 'insidezone'], label: 'Search: Madden 26 defend inside zone / duo (run fits)', url: 'https://www.youtube.com/results?search_query=madden+26+defend+inside+zone+duo+run+fits', source: 'YouTube search' },
+  { lane: 'defense', tags: ['runfit', 'outside', 'stretch', 'widezone', 'edge'], label: 'Search: Madden 26 defend outside zone / stretch (edge fits)', url: 'https://www.youtube.com/results?search_query=madden+26+defend+outside+zone+stretch+edge+fits', source: 'YouTube search' },
+  { lane: 'defense', tags: ['runfit', 'toss', 'perimeter', 'force'], label: 'Search: Madden 26 defend toss / perimeter runs (force rules)', url: 'https://www.youtube.com/results?search_query=madden+26+defend+toss+perimeter+runs+force+rules', source: 'YouTube search' },
+  { lane: 'defense', tags: ['runfit', 'counter', 'cutback', 'discipline'], label: 'Search: Madden 26 defend counter / cutbacks', url: 'https://www.youtube.com/results?search_query=madden+26+defend+counter+cutback', source: 'YouTube search' },
   { lane: 'defense', tags: ['slot', 'nickel', 'inside'], label: 'Search: Madden 26 nickel slot defense', url: 'https://www.youtube.com/results?search_query=madden+26+nickel+slot+defense', source: 'YouTube search' },
   { lane: 'defense', tags: ['pressure', 'doublemug', 'sim'], label: 'Search: Madden 26 Nickel Double Mug sim pressure', url: 'https://www.youtube.com/results?search_query=madden+26+nickel+double+mug+sim+pressure', source: 'YouTube search' },
   { lane: 'defense', tags: ['pressure', 'singlemug', 'sim'], label: 'Search: Madden 26 Nickel Single Mug pressure', url: 'https://www.youtube.com/results?search_query=madden+26+nickel+single+mug+pressure', source: 'YouTube search' },
@@ -468,6 +478,17 @@ export function pickOffenseLearningResource(profileTag = 'balanced', fieldProfil
 export function pickDefenseLearningResource(profileTag = 'balanced', defensiveMismatch = null, fieldVulnerability = null, seedKey = '', ownStats = {}, oppStats = {}, options = {}) {
   const advancedTags = advancedPerformanceTags(ownStats, 'defense');
   const tags = [profileTag, ...advancedTags, ...defensiveStruggleTags(ownStats, oppStats)];
+
+  // Add inferred opponent pass-style tags so we can pick more specific learning links (quick game vs shot plays).
+  // This is intentionally light-weight: we only use stats already provided to this function.
+  const oppGames = Math.max(1, Number(oppStats?.games || 0));
+  const oppPassYpg = Number(oppStats?.pass?.yds || 0) / oppGames;
+  const oppPassAtt = Number(oppStats?.pass?.att || 0) / oppGames;
+  const oppComp = Number(oppStats?.pass?.comp || 0) / oppGames;
+  const oppYpa = oppPassAtt > 0 ? (oppPassYpg / oppPassAtt) : 0;
+  const oppCompPct = oppPassAtt > 0 ? ((oppComp / oppPassAtt) * 100) : 0;
+  if (oppYpa >= 8.8) tags.push('vertical', 'deep');
+  if (oppCompPct >= 67 && oppYpa <= 7.2) tags.push('quickgame', 'timing');
   if (defensiveMismatch?.type === 'protection') tags.push('pressure', 'sim', 'showblitz');
   if (defensiveMismatch?.type === 'scramble') tags.push('contain', 'mobileqb', 'scramble');
   if (defensiveMismatch?.type === 'coverage') tags.push('switchstick', 'coverage', 'user');

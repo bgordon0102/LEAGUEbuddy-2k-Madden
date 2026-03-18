@@ -781,6 +781,10 @@ export async function updateAwards(client, leagueId, weekOverride = null, option
     return { map, idFor };
   })();
 
+  // `gradedAwardsAvailable` is referenced below as the signal that week-grade derived winners are present.
+  // It must be defined in this broader scope (not only inside the earlier normalization block).
+  const gradedAwardsAvailable = !!(winners && (winners.afc_offense || winners.nfc_offense || winners.afc_defense || winners.nfc_defense));
+
   // Use the graded weekly list only as a fallback when raw weekly stats failed to produce a winner.
   if (!gradedAwardsAvailable && weeklyTopList.length) {
     if (!winners.afc_offense) winners.afc_offense = pickTopFromGrades('AFC', offensePositionsSet, false) || winners.afc_offense;

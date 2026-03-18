@@ -963,7 +963,9 @@ export function activateRecognitionPerk({ guildId, league, seasonKey, weekKey, u
   const spent = Number(userState.spent?.[perk.tier] || 0);
   const balance = Math.max(0, earned - spent);
   userState.activePerks[weekKey] = userState.activePerks[weekKey] || {};
-  if (perkIsActive(userState.activePerks[weekKey][perkKey])) {
+  // If this activation affects multiple perk flags (bundle), treat any already-active impacted flag as "already active".
+  // This prevents false positives where the bundle itself is not set but one of the included flags is.
+  if (impactedPerkKeys.some((key) => perkIsActive(userState.activePerks?.[weekKey]?.[key]))) {
     return { ok: false, message: `${perk.label} is already active for this week.` };
   }
   if (!phaseGate.open) {
@@ -982,6 +984,24 @@ export function activateRecognitionPerk({ guildId, league, seasonKey, weekKey, u
   if (balance < perk.cost) {
     return { ok: false, message: `You need ${perk.cost} ${perk.tier} to activate ${perk.label}.` };
   }
+
+  if (process.env.RECOGNITION_DEBUG === '1') {
+    console.log('[recognition] activateRecognitionPerk', {
+      guildId: String(guildId),
+      league,
+      seasonKey,
+      weekKey,
+      userId: String(userId),
+      perkKey,
+      tier: perk.tier,
+      cost: perk.cost,
+      phase: context?.phase,
+      impactedPerkKeys,
+      balance,
+      activePerksWeek: Object.keys(userState.activePerks?.[weekKey] || {}),
+    });
+  }
+
   userState.spent[perk.tier] = spent + perk.cost;
   for (const key of impactedPerkKeys) {
     userState.activePerks[weekKey][key] = key === 'doubleOrNothing'

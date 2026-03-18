@@ -92,6 +92,14 @@ function parseWeekIndex(threadName = '') {
   return Number.isFinite(weekNumber) && weekNumber > 0 ? weekNumber - 1 : null;
 }
 
+function parseDeadlineFromText(text = '') {
+  const match = String(text || '').match(/\bDeadline\s*:?\s*<t:(\d{9,})\b/i);
+  if (!match) return null;
+  const sec = Number(match[1]);
+  if (!Number.isFinite(sec) || sec <= 0) return null;
+  return sec * 1000;
+}
+
 function saveThreadState() {
   saveState(state);
 }
@@ -218,7 +226,7 @@ function analyzeThreadConversation(messages = [], awayUsers = new Set(), homeUse
 }
 
 export async function collectParticipation(thread, info) {
-  const hydratedInfo = hydrateThreadStateFromLiveThread(thread, info) || info || {};
+  const hydratedInfo = await hydrateThreadStateFromLiveThread(thread, info) || info || {};
   const messages = await thread.messages.fetch({ limit: 100 }).catch(() => null);
   if (!messages) {
     return {
@@ -380,9 +388,9 @@ function buildTailoredReminder(threadInfo, participation, now = Date.now()) {
           ? ` The thread already reads like ${activeTeam} are waiting on an answer.`
           : participation.conversationState === 'scheduled_next_day'
             ? ` The thread reads like tomorrow is already the working plan, so the main thing now is making sure ${silentTeam} confirms cleanly and the game gets closed before sim.`
-          : participation.conversationState === 'one_side_carrying'
-            ? ` The thread reads like ${activeTeam} are doing the scheduling work and still need a clear answer back.`
-            : '';
+            : participation.conversationState === 'one_side_carrying'
+              ? ` The thread reads like ${activeTeam} are doing the scheduling work and still need a clear answer back.`
+              : '';
     return {
       key: awaySilent ? 'away_silent' : 'home_silent',
       mention: targetMention,
@@ -396,17 +404,17 @@ function buildTailoredReminder(threadInfo, participation, now = Date.now()) {
         ? ' The thread reads like the game may already be finished, so this is mainly an outcome-button reminder.'
         : participation.conversationState === 'locked_time'
           ? ' The thread reads like both sides already have a real time on the table, so this is just a reminder to finish it and close the thread cleanly.'
-        : participation.conversationState === 'scheduled_next_day'
-          ? ' The thread reads like both sides already pushed this to tomorrow, so this is just a gentle nudge to get it played and closed before sim.'
-        : participation.conversationState === 'time_proposed'
-          ? ' A time looks like it has already been proposed, so the next step is either play it or lock the reschedule cleanly.'
-        : participation.conversationState === 'reschedule'
-            ? ' The thread reads like a reschedule is in progress, so make sure the final time lands clearly in-thread.'
-            : participation.conversationState === 'soft_availability'
-              ? ' The thread has availability talk in it, but it still needs a locked time and a clean finish.'
-              : participation.conversationState === 'connection_issue'
-                ? ' The thread reads like connection/setup friction may be part of the delay, so keep the status clear here.'
-                : '';
+          : participation.conversationState === 'scheduled_next_day'
+            ? ' The thread reads like both sides already pushed this to tomorrow, so this is just a gentle nudge to get it played and closed before sim.'
+            : participation.conversationState === 'time_proposed'
+              ? ' A time looks like it has already been proposed, so the next step is either play it or lock the reschedule cleanly.'
+              : participation.conversationState === 'reschedule'
+                ? ' The thread reads like a reschedule is in progress, so make sure the final time lands clearly in-thread.'
+                : participation.conversationState === 'soft_availability'
+                  ? ' The thread has availability talk in it, but it still needs a locked time and a clean finish.'
+                  : participation.conversationState === 'connection_issue'
+                    ? ' The thread reads like connection/setup friction may be part of the delay, so keep the status clear here.'
+                    : '';
     return {
       key: 'outcome_needed',
       mention: buildCoachMention(threadInfo),
@@ -431,17 +439,11 @@ export function buildProjectedOutcome(info, participation) {
     return {
       reason: 'CPU matchup or missing coach assignment. No determined strike language should apply here.',
       lines: ['No determined strikes: this thread should be closed with the correct game outcome instead.'],
-      strikeAway: false,
-      strikeHome: false,
-    };
-  }
-  const conversationBlocksStrikePicture =
-    participation?.activeBackAndForth ||
-    ['game_complete_signal', 'scheduled_next_day', 'locked_time', 'soft_availability', 'connection_issue', 'off_topic_conflict'].includes(participation?.conversationState);
-  if (conversationBlocksStrikePicture && Number(participation?.awayCount || 0) === 0 && Number(participation?.homeCount || 0) === 0) {
-    return {
-      reason: 'The thread has activity in it, but the coach-side attribution is not clean enough to support determined strike language from this reminder alone.',
-      lines: ['No determined strikes right now: the thread needs a cleaner coach-side scheduling trail or a recorded outcome button.'],
+      recommended: {
+        type: 'cpu',
+        label: 'CPU',
+        guidance: 'Use the CPU button (or log the played result) to close the thread.',
+      },
       strikeAway: false,
       strikeHome: false,
     };
@@ -449,31 +451,69 @@ export function buildProjectedOutcome(info, participation) {
   const awaySilent = participation.awayCount === 0;
   const homeSilent = participation.homeCount === 0;
   const bothCommunicated = participation.awayCount > 0 && participation.homeCount > 0;
-  const awayColdAfterReminder = bothCommunicated && participation.awayAfterReminder === 0 && participation.homeAfterReminder > 0;
-  const homeColdAfterReminder = bothCommunicated && participation.homeAfterReminder === 0 && participation.awayAfterReminder > 0;
 
-  const strikeAway = awaySilent || awayColdAfterReminder;
-  const strikeHome = homeSilent || homeColdAfterReminder;
+  // Fairness-first: if both coaches have communicated or the thread shows real scheduling evidence,
+  // do not attribute determined strikes from the reminder alone. Push toward outcome-button closure.
+  const schedulingEvidence =
+    participation?.activeBackAndForth ||
+    ['locked_time', 'scheduled_next_day', 'time_proposed', 'time_proposed_waiting', 'reschedule', 'soft_availability', 'connection_issue'].includes(participation?.conversationState);
+  if (bothCommunicated || schedulingEvidence) {
+    return {
+      reason: 'Both coaches have communicated or the thread shows scheduling progress, but no outcome button has been recorded.',
+      lines: ['No determined strikes right now. Finish the game (or log CPU/Fair Sim/forfeit) and press the correct outcome button before deadline.'],
+      recommended: {
+        type: 'no_strikes',
+        label: 'No determined strikes (communication exists)',
+        guidance: 'This thread should be closed via an outcome button (Completed / FW / Fair Sim / CPU). Determined strikes are not recommended based on the thread evidence.',
+      },
+      strikeAway: false,
+      strikeHome: false,
+    };
+  }
+
+  // True nonresponse scenarios only.
+  const strikeAway = awaySilent;
+  const strikeHome = homeSilent;
   const lines = [];
   if (awaySilent) lines.push(`${info.awayTeam || 'Away'} determined strike.`);
-  else if (awayColdAfterReminder) lines.push(`${info.awayTeam || 'Away'} leaning strike: no follow-up after the latest reminder.`);
   if (homeSilent) lines.push(`${info.homeTeam || 'Home'} determined strike.`);
-  else if (homeColdAfterReminder) lines.push(`${info.homeTeam || 'Home'} leaning strike: no follow-up after the latest reminder.`);
-  if (!lines.length && bothCommunicated) lines.push('Staff review: both sides communicated, but no outcome button was used.');
+  if (!lines.length) lines.push('No determined strikes.');
+
+  const recommended = (() => {
+    if (strikeAway && strikeHome) {
+      return {
+        type: 'fair_sim',
+        label: 'Fair Sim (recommended)',
+        guidance: 'Both sides appear non-responsive. If no outcome is logged, the fairest default is typically a Fair Sim. If your league policy differs, override accordingly.',
+      };
+    }
+    if (strikeAway && !strikeHome) {
+      return {
+        type: 'force_win_home',
+        label: `FW ${info.homeTeam || 'Home'} (recommended)`,
+        guidance: `Home appears responsive while ${info.awayTeam || 'Away'} is silent. Recommend a force win for ${info.homeTeam || 'Home'} and a non-play strike to ${info.awayTeam || 'Away'}.`,
+      };
+    }
+    if (!strikeAway && strikeHome) {
+      return {
+        type: 'force_win_away',
+        label: `FW ${info.awayTeam || 'Away'} (recommended)`,
+        guidance: `Away appears responsive while ${info.homeTeam || 'Home'} is silent. Recommend a force win for ${info.awayTeam || 'Away'} and a non-play strike to ${info.homeTeam || 'Home'}.`,
+      };
+    }
+    return {
+      type: 'unknown',
+      label: 'Outcome unknown',
+      guidance: 'Use the correct outcome button (Completed / FW / Fair Sim / CPU) based on what actually happened in the matchup.',
+    };
+  })();
 
   const reason = awaySilent && homeSilent
     ? 'No coach communication logged in the thread and no outcome button has been used.'
     : awaySilent || homeSilent
       ? 'One side has not communicated in the thread and no outcome button has been used.'
-      : awayColdAfterReminder || homeColdAfterReminder
-        ? 'Both sides spoke at some point, but one side stopped responding after reminders and no outcome button was used.'
-        : 'Both sides communicated, but there is still no recorded outcome button.';
-  return {
-    reason,
-    lines,
-    strikeAway,
-    strikeHome,
-  };
+      : 'Thread needs an outcome button.';
+  return { reason, lines, recommended, strikeAway, strikeHome };
 }
 
 const state = loadState();
@@ -573,7 +613,7 @@ async function buildLiveStartupThreadEntries(client, { debugDecisions = false } 
     const threadId = String(thread.id);
     const existing = state.threads?.[threadId] || { threadId, status: 'pending' };
     if (existing.status && existing.status !== 'pending') continue;
-    const hydrated = hydrateThreadStateFromLiveThread(thread, existing) || existing;
+    const hydrated = await hydrateThreadStateFromLiveThread(thread, existing) || existing;
     const context = getMaddenSnapshotContext(thread.guildId, { leagueId: hydrated.leagueId || null }) || null;
     const currentWeekIndex = Number.isFinite(Number(context?.weekIndex)) ? Number(context.weekIndex) : null;
     const threadWeekIndex = Number.isFinite(Number(hydrated.weekIndex)) ? Number(hydrated.weekIndex) : null;
@@ -628,7 +668,7 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
         logNotifierDecision({ enabled: debugDecisions, threadId, info, decision: 'skip', reason: 'thread_not_accessible' });
         continue;
       }
-      const hydratedInfo = hydrateThreadStateFromLiveThread(thread, info) || info;
+      const hydratedInfo = await hydrateThreadStateFromLiveThread(thread, info) || info;
       const trackedInfo = persistThreadRuntimeState(threadId, {
         ...hydratedInfo,
         status: hydratedInfo.status || 'pending',
@@ -684,7 +724,7 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
             timestamp: new Date().toISOString(),
           }],
           allowedMentions: coachMention ? { parse: ['roles'] } : { parse: [] },
-        }).catch(() => {});
+        }).catch(() => { });
         persistThreadRuntimeState(threadId, { warnedCompletionPromptAt: now });
         try {
           appendMaddenStaffLog({
@@ -695,7 +735,7 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
             homeTeam: trackedInfo.homeTeam,
             recentCoachSample: participation.recentCoachSample || null,
           });
-        } catch {}
+        } catch { }
         logNotifierDecision({ enabled: debugDecisions, threadId, info: trackedInfo, participation, decision: 'sent', reason: 'game_complete_prompt' });
       }
       if (!trackedInfo.warnedTwentyFourAt && sinceCreated >= TWENTY_FOUR_HOURS) {
@@ -719,7 +759,7 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
               timestamp: new Date().toISOString(),
             }],
             allowedMentions: coachMention ? { parse: ['roles'] } : { parse: [] },
-          }).catch(() => {});
+          }).catch(() => { });
           persistThreadRuntimeState(threadId, { warnedTwentyFourAt: now });
           try {
             appendMaddenStaffLog({
@@ -729,7 +769,7 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
               awayTeam: trackedInfo.awayTeam,
               homeTeam: trackedInfo.homeTeam,
             });
-          } catch {}
+          } catch { }
           logNotifierDecision({ enabled: debugDecisions, threadId, info: trackedInfo, participation, decision: 'sent', reason: '24h_cpu_game_check' });
         } else if (shouldUseStrikePicture) {
           const coachMention = buildCoachMention(trackedInfo);
@@ -760,7 +800,7 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
               timestamp: new Date().toISOString(),
             }],
             allowedMentions: coachMention ? { parse: ['roles'] } : { parse: [] },
-          }).catch(() => {});
+          }).catch(() => { });
           persistThreadRuntimeState(threadId, { warnedNoResponseAt: now, warnedTwentyFourAt: now });
           try {
             appendMaddenStaffLog({
@@ -772,7 +812,7 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
               awayCount: participation.awayCount,
               homeCount: participation.homeCount,
             });
-          } catch {}
+          } catch { }
           const silentRoleIds =
             participation.awayCount === 0 && participation.homeCount === 0
               ? [...(trackedInfo.awayRoleIds || []), ...(trackedInfo.homeRoleIds || [])]
@@ -819,7 +859,7 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
               timestamp: new Date().toISOString(),
             }],
             allowedMentions: coachMention ? { parse: ['roles'] } : { parse: [] },
-          }).catch(() => {});
+          }).catch(() => { });
           persistThreadRuntimeState(threadId, { warnedTwentyFourAt: now });
           try {
             appendMaddenStaffLog({
@@ -831,13 +871,19 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
               awayCount: participation.awayCount,
               homeCount: participation.homeCount,
             });
-          } catch {}
+          } catch { }
           logNotifierDecision({ enabled: debugDecisions, threadId, info: trackedInfo, participation, decision: 'sent', reason: '24h_game_check' });
         }
       }
       if (coachState === 'coach_both' && !trackedInfo.warnedDeadlineAt && deadlineAt && deadlineAt > now && deadlineAt - now <= ONE_HOUR) {
         const coachAndStaffMention = buildCoachAndStaffMention(trackedInfo);
         const projected = buildProjectedOutcome(trackedInfo, participation);
+        const recommendedLine = projected?.recommended?.label
+          ? `Recommended outcome: **${projected.recommended.label}**`
+          : null;
+        const guidanceLine = projected?.recommended?.guidance
+          ? `Guidance: ${projected.recommended.guidance}`
+          : null;
         await thread.send({
           content: coachAndStaffMention || '',
           embeds: [{
@@ -846,6 +892,9 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
               `Advance deadline is in less than 1 hour and no outcome button has been recorded.`,
               projected.reason,
               '',
+              ...(recommendedLine ? [recommendedLine] : []),
+              ...(guidanceLine ? [guidanceLine] : []),
+              ...(recommendedLine || guidanceLine ? [''] : []),
               projected.lines.join('\n') || 'No determined strikes.',
               '',
               'Staff can use the button below to apply the determined strikes.',
@@ -859,16 +908,16 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
           }],
           components: projected.strikeAway || projected.strikeHome
             ? [
-                new ActionRowBuilder().addComponents(
-                  new ButtonBuilder()
-                    .setCustomId(`madden_apply_determined_strikes|${threadId}`)
-                    .setLabel('Apply Determined Strikes')
-                    .setStyle(ButtonStyle.Danger),
-                ),
-              ]
+              new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                  .setCustomId(`madden_apply_determined_strikes|${threadId}`)
+                  .setLabel('Apply Determined Strikes')
+                  .setStyle(ButtonStyle.Danger),
+              ),
+            ]
             : [],
           allowedMentions: coachAndStaffMention ? { parse: ['roles'] } : { parse: [] },
-        }).catch(() => {});
+        }).catch(() => { });
         persistThreadRuntimeState(threadId, { warnedDeadlineAt: now });
         try {
           appendMaddenStaffLog({
@@ -881,13 +930,13 @@ export async function runNotifierCycle(client, { forceImmediate = false, debugDe
             homeCount: participation.homeCount,
             projected,
           });
-        } catch {}
+        } catch { }
         runReminderSideEffects([
           () => postMaddenStaffDecision(
             client,
             thread.guildId,
-              'Determined Strike Outcome',
-              `${trackedInfo.awayTeam || 'Away'} vs ${trackedInfo.homeTeam || 'Home'} is under 1 hour from deadline with no outcome recorded.`,
+            'Determined Strike Outcome',
+            `${trackedInfo.awayTeam || 'Away'} vs ${trackedInfo.homeTeam || 'Home'} is under 1 hour from deadline with no outcome recorded.`,
             [
               { name: 'Determined', value: projected.lines.join('\n') || 'No determined strikes.' },
               { name: 'Thread', value: `<#${threadId}>` },
@@ -978,7 +1027,7 @@ export async function backfillAndRunPendingThreadReminders(client) {
 export function initNotifier(client) {
   setInterval(() => {
     runNotifierCycle(client).catch(() => null);
-  }, 60 * 60 * 1000); // check hourly
+  }, 5 * 60 * 1000); // check every 5 minutes (keeps 1-hour window reminders close to T-60)
 }
 
 export function registerThread(threadId, payload = '') {
@@ -1020,7 +1069,7 @@ export function updateThreadState(threadId, patch = {}) {
   return state.threads[threadId];
 }
 
-export function hydrateThreadStateFromLiveThread(thread, existing = null) {
+export async function hydrateThreadStateFromLiveThread(thread, existing = null) {
   if (!thread?.id || !thread?.guildId) return existing;
   const info = existing || getThreadState(thread.id) || {};
   const liveCreatedAt = Number.isFinite(Number(thread.createdTimestamp)) ? Number(thread.createdTimestamp) : null;
@@ -1052,9 +1101,23 @@ export function hydrateThreadStateFromLiveThread(thread, existing = null) {
   if (!homeRoleIds.length && mappedHomeRole) homeRoleIds = [mappedHomeRole];
   if (!awayRoleIds.length && mentionRoleIds.length === 2) awayRoleIds = [mentionRoleIds[0]];
   if (!homeRoleIds.length && mentionRoleIds.length === 2) homeRoleIds = [mentionRoleIds[1]];
+
+  // Deadline hydration: older thread registrations sometimes missed persisting deadlineAt.
+  // If we don't have it, read the thread starter embed for "Deadline: <t:...>".
+  let deadlineAt = Number.isFinite(Number(info.deadlineAt)) ? Number(info.deadlineAt) : null;
+  if (!deadlineAt) {
+    const starter = thread.fetchStarterMessage ? await thread.fetchStarterMessage().catch(() => null) : null;
+    const starterText = [
+      starter?.content || '',
+      starter?.embeds?.[0]?.description || '',
+      ...(starter?.embeds?.[0]?.fields || []).map((f) => `${f?.name || ''}\n${f?.value || ''}`),
+    ].filter(Boolean).join('\n');
+    deadlineAt = parseDeadlineFromText(starterText);
+  }
   const patched = {
     created: liveCreatedAt || (Number.isFinite(Number(info.created)) ? Number(info.created) : Date.now()),
     leagueId,
+    deadlineAt: deadlineAt || null,
     seasonKey: info.seasonKey || inferredSeasonKey || null,
     stageIndex: Number.isFinite(Number(info.stageIndex)) ? Number(info.stageIndex) : (Number.isFinite(Number(snapshot?.stage)) ? Number(snapshot.stage) : null),
     weekIndex: Number.isFinite(Number(info.weekIndex))
@@ -1070,6 +1133,7 @@ export function hydrateThreadStateFromLiveThread(thread, existing = null) {
   const needsSave =
     patched.created !== (Number.isFinite(Number(info.created)) ? Number(info.created) : null) ||
     patched.leagueId !== (info.leagueId || null) ||
+    patched.deadlineAt !== (Number.isFinite(Number(info.deadlineAt)) ? Number(info.deadlineAt) : null) ||
     patched.seasonKey !== (info.seasonKey || null) ||
     patched.stageIndex !== (Number.isFinite(Number(info.stageIndex)) ? Number(info.stageIndex) : null) ||
     patched.weekIndex !== (Number.isFinite(Number(info.weekIndex)) ? Number(info.weekIndex) : null) ||

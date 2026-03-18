@@ -136,8 +136,8 @@ async function buildCoachAssignmentIndex(guild, roleMap = {}, snap = null) {
     const cachedRoleMembers = [...(role?.members?.keys?.() || [])].map(String);
     const scannedRoleMembers = guild?.members?.cache
       ? [...guild.members.cache.values()]
-          .filter((member) => member?.roles?.cache?.has?.(roleId))
-          .map((member) => String(member.id))
+        .filter((member) => member?.roles?.cache?.has?.(roleId))
+        .map((member) => String(member.id))
       : [];
     const userIds = [...new Set([...cachedRoleMembers, ...scannedRoleMembers])];
     if (!userIds.length) continue;
@@ -1254,27 +1254,44 @@ async function execute(interaction) {
     }
     // Weekly awards (derived locally) — skip offseason and preseason
     try {
+      // If the target week looks partial, post awards for the most recent *reliable* completed week instead.
+      // This keeps awards flowing even when the export has advanced but weekly stats for the new week aren't complete yet.
+      const reliableAwardsWeekIndex = getLatestReliableRegularSeasonWeekIndex(snap, Number(targetWeekIdx));
+      const awardsWeekToPost =
+        statsPartial && reliableAwardsWeekIndex != null
+          ? reliableAwardsWeekIndex + 1
+          : effectiveCurrentWeekUsed;
+
       const canPostAwards =
         hasWeeklyPlayersEffective &&
         (
           forceAwardsOnce ||
           (
+            // Normal mode: only post when the target week is complete.
             !statsPartial &&
-            (!backfillOnlyAwards && !inOffseason && !inPreseason && seasonInfo.isWeeklyAwardsPeriodActive !== false && effectiveCurrentWeekUsed && effectiveCurrentWeekUsed <= 23)
+            // Backfill runs set `backfillOnlyAwards=true`, so don't block awards on that flag.
+            (!inOffseason && !inPreseason && seasonInfo.isWeeklyAwardsPeriodActive !== false && effectiveCurrentWeekUsed && effectiveCurrentWeekUsed <= 23)
           )
         );
       if (canPostAwards) {
-        await updateAwards(interaction.client, leagueId, effectiveCurrentWeekUsed);
+        await updateAwards(interaction.client, leagueId, awardsWeekToPost);
         if (forceAwardsOnce) {
           if (weeklyUpdateOverrides[leagueId]) {
             delete weeklyUpdateOverrides[leagueId].forceAwardsOnce;
             if (!Object.keys(weeklyUpdateOverrides[leagueId]).length) delete weeklyUpdateOverrides[leagueId];
             saveWeeklyUpdateOverrides(weeklyUpdateOverrides);
           }
-          console.log('[madden-weeklyupdate] consumed one-time awards override', { leagueId, week: effectiveCurrentWeekUsed });
+          console.log('[madden-weeklyupdate] consumed one-time awards override', { leagueId, week: awardsWeekToPost });
         }
       } else if (statsPartial) {
-        console.warn('[madden-weeklyupdate] awards skipped: target week still partial');
+        if (reliableAwardsWeekIndex != null) {
+          console.warn('[madden-weeklyupdate] awards: target week partial; will post latest reliable week', {
+            reliableWeek: reliableAwardsWeekIndex + 1,
+            requestedWeek: effectiveCurrentWeekUsed,
+          });
+        } else {
+          console.warn('[madden-weeklyupdate] awards skipped: target week still partial');
+        }
       } else if (!hasWeeklyPlayersEffective) {
         console.warn('[madden-weeklyupdate] awards skipped: no player stats found for requested week');
       } else {
@@ -1283,6 +1300,7 @@ async function execute(interaction) {
     } catch (e) {
       criticalFailures.push('Awards');
       console.warn('[madden-weeklyupdate] awards update skipped:', e?.message || e);
+      if (e?.stack) console.warn('[madden-weeklyupdate] awards stack:', e.stack);
     }
     // Debug: report which weeks have player stats
     try {

@@ -41,18 +41,96 @@ function truncateSentence(text = '', max = 1000) {
 function buildPremiumFieldValue(baseText = '', bridgeText = '', max = 1000, mode = 'sentence') {
   const base = String(baseText || '').trim();
   const bridge = String(bridgeText || '').trim();
-  const applyClip = (text, limit) => (mode === 'sentence' ? truncateSentence(text, limit) : truncate(text, limit));
-  if (!bridge) return applyClip(base, max);
-  const combined = mode === 'sentence' ? `${base} ${bridge}` : `${base}\n${bridge}`;
-  if (combined.length <= max) return combined;
-
-  const targetBase = Math.max(Math.floor(max * 0.62), max - Math.min(220, bridge.length + 2));
-  const clippedBase = applyClip(base, targetBase);
   const separator = mode === 'sentence' ? ' ' : '\n';
-  const remaining = max - clippedBase.length - separator.length;
-  if (remaining < 48) return clippedBase;
-  const clippedBridge = truncateSentence(bridge, remaining);
-  return `${clippedBase}${separator}${clippedBridge}`;
+  if (!bridge) {
+    return base;
+  }
+  const combined = mode === 'sentence' ? `${base} ${bridge}` : `${base}\n${bridge}`;
+  return combined;
+}
+
+function splitEmbedFieldValue(text = '', maxLen = 1024) {
+  const value = String(text || '').trim();
+  if (!value) return [''];
+  const safeMax = Math.max(32, Math.min(1024, Number(maxLen) || 1024));
+  if (value.length <= safeMax) return [value];
+
+  // Prefer splitting on line breaks and sentence boundaries while respecting Discord's 1024 char limit.
+  const parts = [];
+  let remaining = value;
+  while (remaining.length > safeMax) {
+    const chunk = remaining.slice(0, safeMax);
+    const cut = Math.max(
+      chunk.lastIndexOf('\n'),
+      chunk.lastIndexOf('. '),
+      chunk.lastIndexOf('! '),
+      chunk.lastIndexOf('? '),
+      chunk.lastIndexOf(' '),
+    );
+    const take = cut > Math.floor(safeMax * 0.6) ? cut + (remaining[cut] === '\n' ? 0 : 1) : safeMax;
+    parts.push(remaining.slice(0, take).trim());
+    remaining = remaining.slice(take).trim();
+  }
+  if (remaining) parts.push(remaining);
+  return parts.length ? parts : [''];
+
+}
+
+function truncateToBudget(text = '', max = 1024) {
+  const value = String(text || '').trim();
+  if (!value) return '—';
+  if (value.length <= max) return value;
+  return truncateSentence(value, max);
+}
+
+function capPlanToSentences(text = '', maxSentences = 3) {
+  const value = String(text || '').trim();
+  if (!value) return '';
+  // Split on sentence boundaries; keep it robust for coach-voice strings.
+  const sentences = value
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (sentences.length <= maxSentences) return value;
+  return sentences.slice(0, maxSentences).join(' ');
+}
+
+function capBulletLines(text = '', maxLines = 5) {
+  const value = String(text || '').trim();
+  if (!value) return '';
+  const lines = value.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  return lines.slice(0, maxLines).join('\n');
+}
+
+function maxedEmbedFieldValue(text = '') {
+  const value = String(text || '').trim();
+  if (!value) return '—';
+  // 1024 is Discord hard limit per field value.
+  return value.length > 1024 ? `${value.slice(0, 1023)}…` : value;
+}
+
+function buildStrategyEmbeds({
+  ownTeamName,
+  opponentTeamName,
+  phaseLabel,
+  fields,
+}) {
+  // Discord embed hard limits:
+  // - max 25 fields per embed
+  // - each field value max 1024 chars
+  // We want to avoid any "(cont.)" field names.
+  const normalizedFields = (fields || []).slice(0, 25).map((f) => ({
+    name: String(f?.name || '').slice(0, 256) || '—',
+    value: maxedEmbedFieldValue(f?.value || ''),
+    inline: Boolean(f?.inline),
+  }));
+  return [
+    new EmbedBuilder()
+      .setColor(0x2b6cb0)
+      .setTitle(`Madden Game Strategy — ${ownTeamName} vs ${opponentTeamName}`)
+      .setDescription(`${phaseLabel} scouting report.`)
+      .addFields(...normalizedFields),
+  ];
 }
 
 function teamMap(snapshot) {
@@ -1195,8 +1273,8 @@ function findBoxMismatch(ownRoster = [], oppRoster = []) {
     .sort((a, b) => (
       (speedRating(b) * 2.1) + (accelRating(b) * 1.4) + (agilityRating(b) * 1.1)
     ) - (
-      (speedRating(a) * 2.1) + (accelRating(a) * 1.4) + (agilityRating(a) * 1.1)
-    ))
+        (speedRating(a) * 2.1) + (accelRating(a) * 1.4) + (agilityRating(a) * 1.1)
+      ))
     .slice(0, 3);
   const defenders = oppRoster.filter((player) => ['MLB', 'ROLB', 'LOLB', 'SS', 'FS'].includes(String(player?.position || '').toUpperCase()))
     .sort((a, b) => frontSevenSpaceLiabilityScore(b) - frontSevenSpaceLiabilityScore(a))
@@ -1852,6 +1930,32 @@ function buildOffensiveGamePlan({
   oppInjuryPlayers = [],
   ownAdjustmentLine = '',
 }) {
+  const buildPremiumOffenseOpener = () => {
+    const oppGames = Math.max(1, Number(oppStats?.games || 0));
+    const ownGames = Math.max(1, Number(ownStats?.games || 0));
+    const oppRushAllowed = average(oppStats?.def?.rushYdsAllowed, oppGames);
+    const ownPassYpg = average(ownStats?.pass?.yds, ownGames);
+    const ownRushYpg = average(ownStats?.rush?.yds, ownGames);
+    const passRateOwn = passRateValue(ownStats);
+    const ownPassBand = percentileStyleTag(ownPassYpg, leagueProfile?.passOff, false, { high: 'top-quartile', mid: 'mid-tier', low: 'bottom-quartile' });
+    const ownRushBand = percentileStyleTag(ownRushYpg, leagueProfile?.rushOff, false, { high: 'top-quartile', mid: 'mid-tier', low: 'bottom-quartile' });
+    const oppRushDefBand = percentileStyleTag(oppRushAllowed, leagueProfile?.rushDef, true, { high: 'top-tier', mid: 'mid-tier', low: 'bottom-tier' });
+    const seed = hashSeed(ownTeamName, opponentTeamName, oppRushDefBand, (passRateOwn * 100).toFixed(1));
+
+    const canLeanRun = oppRushAllowed >= 112 || Number(oppRanks?.rushDefRank || 0) >= 22 || oppRushDefBand === 'bottom-tier';
+    if (canLeanRun && passRateOwn <= 0.65) {
+      return pickVariant(seed, [
+        `${ownTeamName} should open by leaning on the run game and forcing ${opponentTeamName} to fit and tackle for four quarters. Their rush defense profile has been ${oppRushDefBand}${oppRanks?.rushDefRank ? ` (${ordinal(oppRanks.rushDefRank)})` : ''}, so make them prove they're disciplined before you chase explosives.`,
+        `Start by testing ${opponentTeamName} on the ground. Their run defense has been ${oppRushDefBand}${oppRanks?.rushDefRank ? ` (${ordinal(oppRanks.rushDefRank)})` : ''}, so stack efficient carries and let play-action build the shot menu naturally.`,
+      ]);
+    }
+
+    return pickVariant(seed, [
+      `${ownTeamName} are living closer to a ${(passRateOwn * 100).toFixed(1)}% pass rate with a ${ownPassBand} pass profile and a ${ownRushBand} run profile—attack the cleanest space instead of forcing balance for its own sake.`,
+      `Your baseline pulse is ${(passRateOwn * 100).toFixed(1)}% pass with a ${ownPassBand} passing profile—keep the QB on rhythm early, then build the explosives once ${opponentTeamName} start leaning.`,
+    ]);
+  };
+
   const coverageMismatch = findCoverageMismatch(ownRoster, oppRoster);
   const runMismatch = findRunMismatch(ownRoster, oppRoster);
   const protectionAlert = findProtectionMismatch(oppRoster, ownRoster, ownStats);
@@ -1860,7 +1964,7 @@ function buildOffensiveGamePlan({
   const profileTag = offensiveProfileTag(fieldProfile, oppStats, oppRanks, leagueProfile);
   const availabilityLine = buildAvailabilityLine({ ownInjuryPlayers, oppInjuryPlayers, ownRoster, oppRoster, mode: 'offense' });
   const lines = [
-    { key: 'identity', text: buildOffensiveIdentityLine(ownTeamName, opponentTeamName, ownStats, oppStats, ownRanks, oppRanks, leagueProfile) },
+    { key: 'identity', text: buildPremiumOffenseOpener() },
     { key: 'mismatch', text: buildOffensiveMismatchLine(coverageMismatch, runMismatch) },
     { key: 'field', text: buildOffensiveFieldAttackLine(fieldProfile, oppStats) },
     { key: 'protection', text: buildProtectionAlertLine(protectionAlert, ownAdjustmentLine) },
@@ -1881,6 +1985,134 @@ function buildOffensiveGamePlan({
 }
 
 function buildDefensiveIdentityLine(opponentTeamName, oppStats = {}, oppRanks = {}, ownStats = {}, leagueProfile = null) {
+  const buildPremiumDefenseOpener = () => {
+    const oppGames = Math.max(1, Number(oppStats?.games || 0));
+    const oppPassYpg = average(oppStats?.pass?.yds, oppGames);
+    const oppRushYpg = average(oppStats?.rush?.yds, oppGames);
+    const tendency = relativeTendencyLabel(oppStats, leagueProfile);
+
+    const oppPassAtt = average(oppStats?.pass?.att, oppGames);
+    const oppCompPct = (() => {
+      const oppComp = average(oppStats?.pass?.comp, oppGames);
+      const att = Math.max(1, Number(oppPassAtt || 0));
+      return (Number(oppComp || 0) / att) * 100;
+    })();
+    const oppYpa = (() => {
+      const att = Math.max(1, Number(oppPassAtt || 0));
+      return Number(oppPassYpg || 0) / att;
+    })();
+
+    const oppAirYpg = average(oppStats?.pass?.airYds, oppGames);
+    const oppAirYpa = (() => {
+      const att = Math.max(1, Number(oppPassAtt || 0));
+      return (Number(oppAirYpg || 0) / att);
+    })();
+
+    const oppRushAtt = average(oppStats?.rush?.att, oppGames);
+    const oppYpc = (() => {
+      const att = Math.max(1, Number(oppRushAtt || 0));
+      return Number(oppRushYpg || 0) / att;
+    })();
+
+    const passPhrase = relativeStatPhrase(oppPassYpg, leagueProfile?.passOff, 'pass production');
+    const rushPhrase = relativeStatPhrase(oppRushYpg, leagueProfile?.rushOff, 'rush production');
+
+    const sacksTaken = average(oppStats?.pass?.sacksTaken, oppGames);
+    const sackTag = percentileStyleTag(sacksTaken, leagueProfile?.sacksAllowed, false, {
+      high: 'pressure-sensitive',
+      mid: 'average under pressure',
+      low: 'clean-pocket',
+    });
+
+    // If one receiver is dominating the air yards, call it out as the defensive "spine".
+    // NOTE: We don't have oppPlayers in this function signature, so we lean on oppRanks + pass profile here.
+    // The deeper "bracket their alpha" content is still handled in mismatch/call lines.
+    const seed = hashSeed(opponentTeamName, tendency, sackTag, oppPassYpg.toFixed(1));
+
+    const passStyleTag = (() => {
+      // We can’t truly know route tree, but we can infer the *style* of the pass game:
+      // - higher YPA/airYPA -> more vertical/shot-driven
+      // - lower YPA with high comp% -> quick game / rhythm throws
+      // - middle-of-road -> balanced (mix of quick + intermediate)
+      const ypa = Number.isFinite(oppYpa) ? oppYpa : 0;
+      const airYpa = Number.isFinite(oppAirYpa) ? oppAirYpa : 0;
+      const comp = Number.isFinite(oppCompPct) ? oppCompPct : 0;
+      if (airYpa >= 7.8 || ypa >= 8.8) return 'shot-driven';
+      if (comp >= 67 && ypa <= 7.2) return 'quick-game';
+      if (ypa >= 7.4 && ypa <= 8.7) return 'intermediate-mix';
+      return 'mixed-pass';
+    })();
+
+    const runStyleTag = (() => {
+      // Infer inside vs perimeter intent from efficiency + volume; it's imperfect, but reads well.
+      // - strong YPC with decent volume -> outside zone / perimeter stress is likely in the menu
+      // - low YPC but high volume -> inside grind / duo/iso
+      const ypc = Number.isFinite(oppYpc) ? oppYpc : 0;
+      const att = Number.isFinite(oppRushAtt) ? oppRushAtt : 0;
+      if (att >= 20 && ypc <= 4.0) return 'inside-grind';
+      if (ypc >= 4.6) return 'perimeter-stress';
+      return 'mixed-run';
+    })();
+
+    const passStyleClause = (() => {
+      if (passStyleTag === 'shot-driven') return `They’re built to take vertical chunks (about ${oppYpa.toFixed(1)} Y/A), so your first win is keeping two-high answers intact and making explosives feel expensive.`;
+      if (passStyleTag === 'quick-game') return `They live on rhythm/quick throws (${oppCompPct.toFixed(0)}% completions, ~${oppYpa.toFixed(1)} Y/A), so your first win is reroutes + flat defenders—make the QB hold it an extra beat.`;
+      if (passStyleTag === 'intermediate-mix') return `They’re an intermediate chain-mover profile (~${oppYpa.toFixed(1)} Y/A), so your first win is muddying the middle windows and making them throw outside the numbers.`;
+      return `They mix it up through the air (~${oppYpa.toFixed(1)} Y/A), so your first win is changing the post-snap picture and forcing a late decision.`;
+    })();
+
+    const runStyleClause = (() => {
+      if (runStyleTag === 'inside-grind') return `On the ground it’s an inside-grind menu (${oppYpc.toFixed(1)} Y/C on ~${oppRushAtt.toFixed(1)} rushes/game): tighten A/B gaps, spill late, and make every carry bounce.`;
+      if (runStyleTag === 'perimeter-stress') return `On the ground they can stress edges (${oppYpc.toFixed(1)} Y/C): set hard edges, fit outside zone/stretches fast, and tackle like you’re defending screens.`;
+      return `On the ground it’s more mixed (${oppYpc.toFixed(1)} Y/C): keep fits clean and don’t over-chase one look.`;
+    })();
+
+    if (tendency === 'pass-heavy' || Number(oppRanks?.passOffRank || 99) <= 10) {
+      const pressureClause = (sackTag === 'pressure-sensitive' || sacksTaken >= 2.2)
+        ? `They've shown cracks vs pressure (${sacksTaken.toFixed(1)} sacks allowed per game), so disguise + heat can flip drives fast.`
+        : `They've been relatively ${sackTag} (${sacksTaken.toFixed(1)} sacks allowed per game), so you need coverage leverage first and pressure second.`;
+
+      const coachingClause = (() => {
+        if (passStyleTag === 'quick-game') {
+          return `Coach it like a quick-game problem: show press, reroute #1, and keep hard flats/clouds alive so slants, sticks, spacing, and HB swings don't turn into free 5-yard completions.`;
+        }
+        if (passStyleTag === 'shot-driven') {
+          return `Coach it like a shot-play problem: keep two-high integrity, don't let the post safety get held by eye candy, and force them to stack completions underneath before you trigger pressure.`;
+        }
+        if (passStyleTag === 'intermediate-mix') {
+          return `Coach it like a middle-window problem: take away seams/digs first, collision inside releases, and make the QB live on boundary throws instead of easy in-breakers.`;
+        }
+        return `Coach it like a disguise problem: change the post-snap picture, deny the first read, and make them win on the 3rd answer.`;
+      })();
+
+      return pickVariant(seed, [
+        `${opponentTeamName} want to live through the air at ${oppPassYpg.toFixed(1)} pass yards per game (${passPhrase}). ${passStyleClause} ${coachingClause} ${pressureClause}`,
+        `This is a pass-driven opponent (${oppPassYpg.toFixed(1)} pass ypg, ${passPhrase}). ${passStyleClause} ${coachingClause} Start with late rotations and bracket rules on money downs, then layer pressure once their answers get predictable. ${pressureClause}`,
+      ]);
+    }
+
+    if (tendency === 'run-heavy' || Number(oppRanks?.rushOffRank || 99) <= 10) {
+      const coachingClause = (() => {
+        if (runStyleTag === 'inside-grind') {
+          return `Coach it like an A/B-gap game: pinch the interior, crash down vs Duo/Inside Zone looks, and rally the safety fits so 2nd-and-5 doesn't become their whole offense.`;
+        }
+        if (runStyleTag === 'perimeter-stress') {
+          return `Coach it like a perimeter game: set hard edges, widen force players, and keep a safety/OLB ready to fit outside zone, stretch, and toss without late alley bubbles.`;
+        }
+        return `Coach it like a fits discipline game: keep the front sound, don't overrun cutbacks, and make them win on contested 3-yard carries.`;
+      })();
+      return pickVariant(seed, [
+        `${opponentTeamName} lean on the run game at ${oppRushYpg.toFixed(1)} rush yards per game (${rushPhrase}). ${runStyleClause} ${coachingClause} Win early downs, spill the ball, and make their dropback game carry the scoring load.`,
+        `Expect a run-first script (${oppRushYpg.toFixed(1)} rush ypg, ${rushPhrase}). ${runStyleClause} ${coachingClause} Set the edge, fit fast from depth, and force 2nd-and-long so they can't hide behind easy carries.`,
+      ]);
+    }
+
+    return pickVariant(seed, [
+      `${opponentTeamName} are closer to balanced at ${oppPassYpg.toFixed(1)} pass yards and ${oppRushYpg.toFixed(1)} rush yards per game. Start by winning the hidden downs—no cheap explosives, no short fields, and make them finish drives the hard way.`,
+      `They play more balanced ball (${oppPassYpg.toFixed(1)} pass ypg / ${oppRushYpg.toFixed(1)} rush ypg). Protect the explosives first, tackle underneath, and don't let one mistake turn into a two-score swing.`,
+    ]);
+  };
+
   const ownGames = Math.max(1, Number(ownStats?.games || 0));
   const oppGames = Math.max(1, Number(oppStats?.games || 0));
   const oppPassYpg = average(oppStats?.pass?.yds, oppGames);
@@ -1891,6 +2123,11 @@ function buildDefensiveIdentityLine(opponentTeamName, oppStats = {}, oppRanks = 
   const passPhrase = relativeStatPhrase(oppPassYpg, leagueProfile?.passOff, 'pass production');
   const rushPhrase = relativeStatPhrase(oppRushYpg, leagueProfile?.rushOff, 'rush production');
   const ownPassDefPhrase = relativeStatPhrase(ownPassAllowed, leagueProfile?.passDef, 'pass defense allowed');
+  // Premium opener (more varied + pressure-aware). Kept inside this function to avoid changing call sites.
+  const premium = buildPremiumDefenseOpener();
+  if (premium) return premium;
+
+  // Fallback (should rarely hit)
   if (tendency === 'pass-heavy') {
     return `${opponentTeamName} are one of the more pass-forward offenses in this league at ${oppPassYpg.toFixed(1)} pass yards per game, which is ${passPhrase}, so the job is taking away explosives and forcing them to work the hard yards underneath.`;
   }
@@ -1935,6 +2172,29 @@ function buildDevStressLine(player = null, role = 'threat') {
 }
 
 function buildDefensiveCallLine(defensiveMismatch = null, oppStats = {}) {
+  const oppGames = Math.max(1, Number(oppStats?.games || 0));
+  const oppPassYpg = average(oppStats?.pass?.yds, oppGames);
+  const oppRushYpg = average(oppStats?.rush?.yds, oppGames);
+  const passAtt = average(oppStats?.pass?.att, oppGames);
+  const rushAtt = average(oppStats?.rush?.att, oppGames);
+  const comp = average(oppStats?.pass?.comp, oppGames);
+  const ypa = passAtt > 0 ? (oppPassYpg / Math.max(1, passAtt)) : 0;
+  const compPct = passAtt > 0 ? ((comp / Math.max(1, passAtt)) * 100) : 0;
+  const ypc = rushAtt > 0 ? (oppRushYpg / Math.max(1, rushAtt)) : 0;
+
+  const overallTag = passAtt > rushAtt * 1.5 ? 'pass-heavy' : (rushAtt > passAtt * 1.25 ? 'run-heavy' : 'balanced');
+  const passStyleTag = (() => {
+    if (ypa >= 8.8) return 'shot-driven';
+    if (compPct >= 67 && ypa <= 7.2) return 'quick-game';
+    if (ypa >= 7.4 && ypa <= 8.7) return 'intermediate-mix';
+    return 'mixed-pass';
+  })();
+  const runStyleTag = (() => {
+    if (rushAtt >= 20 && ypc <= 4.0) return 'inside-grind';
+    if (ypc >= 4.6) return 'perimeter-stress';
+    return 'mixed-run';
+  })();
+
   if (defensiveMismatch?.type === 'protection') {
     const sacksTaken = average(oppStats?.pass?.sacksTaken, Math.max(1, Number(oppStats?.games || 0)));
     const pressureTag = sacksTaken >= 2.0
@@ -1948,6 +2208,20 @@ function buildDefensiveCallLine(defensiveMismatch = null, oppStats = {}) {
   if (defensiveMismatch?.type === 'run') {
     return `Use your front to squeeze the run picture before it starts. Spill the ball wide, fit it from depth, and make the back handle tighter boxes and late-rotating safeties instead of clean downhill reads.`;
   }
+
+  if (overallTag === 'pass-heavy' && passStyleTag === 'quick-game') {
+    return `Anchor the calls in quick-game answers: press/inside shade where you can, keep hard flats/clouds alive, and rotate late so slants, sticks, spacing, and HB swings don't turn into free 5-yard completions. Mix Cover 3 Cloud, Cover 2 hard flats, and match looks that collide inside releases.`;
+  }
+  if (overallTag === 'pass-heavy' && passStyleTag === 'shot-driven') {
+    return `Call it like a shot-play week: start two-high, live in Quarters/Cover 9 families, and make them stack completions underneath. Only bring pressure once you've shown you're not giving up explosive posts/corners for free.`;
+  }
+  if (overallTag === 'run-heavy' && runStyleTag === 'inside-grind') {
+    return `Call it like an inside-run week: pinch the front, tighten A/B gaps, and let the safeties be aggressive in the fit. Your win is 2nd-and-8, not 2nd-and-4.`;
+  }
+  if (overallTag === 'run-heavy' && runStyleTag === 'perimeter-stress') {
+    return `Call it like a perimeter-run week: set hard edges, widen force players, and keep a fast alley fit for outside zone/stretch/toss. Don't let crack blocks steal your leverage.`;
+  }
+
   return `Build the coverage menu from disguise first and pressure second. The point is forcing post-snap decisions, not handing them an obvious answer before the snap.`;
 }
 
@@ -1955,6 +2229,30 @@ function buildDefensiveCounterLine(defensiveMismatch = null, oppStats = {}, oppS
   if (defensiveMismatch?.type === 'protection') {
     return `If they start sliding help to ${playerLabel(defensiveMismatch.blocker)} or keeping the TE or HB in, come off the heat and make the extra protector meaningless by rallying in Quarters, Cover 9, Double Bracket, or 1 Double WR1.`;
   }
+
+  const oppGames = Math.max(1, Number(oppStats?.games || 0));
+  const oppPassYpg = average(oppStats?.pass?.yds, oppGames);
+  const passAtt = average(oppStats?.pass?.att, oppGames);
+  const comp = average(oppStats?.pass?.comp, oppGames);
+  const ypa = passAtt > 0 ? (oppPassYpg / Math.max(1, passAtt)) : 0;
+  const compPct = passAtt > 0 ? ((comp / Math.max(1, passAtt)) * 100) : 0;
+  const passStyleTag = (() => {
+    if (ypa >= 8.8) return 'shot-driven';
+    if (compPct >= 67 && ypa <= 7.2) return 'quick-game';
+    if (ypa >= 7.4 && ypa <= 8.7) return 'intermediate-mix';
+    return 'mixed-pass';
+  })();
+
+  const alpha = oppStars?.[0] || null;
+  const alphaPos = String(alpha?.position || '').toUpperCase();
+  const alphaName = alpha ? playerLabel(alpha) : null;
+  if (alphaName && (alphaPos === 'WR' || alphaPos === 'TE') && passStyleTag === 'shot-driven') {
+    return `When they lean into explosives, treat ${alphaName} like the shot trigger: bracket him on money downs, keep two-high over the top, and force the QB to take underneath completions. If they accept checkdowns, tighten up in the red zone and make them finish drives.`;
+  }
+  if (alphaName && (alphaPos === 'WR' || alphaPos === 'TE') && passStyleTag === 'quick-game') {
+    return `If the quick game starts snowballing, reroute ${alphaName} and crowd the first window—hard flats, hook drops, and match rules that collide inside releases. Make them prove they can hold protection long enough to throw outside.`;
+  }
+
   if (fieldVulnerability?.area === 'slot' && fieldVulnerability?.detail?.target) {
     return `If they start feeding ${playerLabel(fieldVulnerability.detail.target)} inside, stop treating it like normal zone traffic. Push help into the slot, reroute him early, and force the ball to the boundary.`;
   }
@@ -2106,6 +2404,26 @@ function buildOpponentTendencyReport({
   const rushYpg = average(oppStats?.rush?.yds, games);
   const passRate = passRateValue(oppStats);
   const sacksTaken = average(oppStats?.pass?.sacksTaken, games);
+  const passAttempts = Number(oppStats?.pass?.att || 0);
+  const rushAttempts = Number(oppStats?.rush?.att || 0);
+  const ypa = passAttempts > 0 ? Number(oppStats?.pass?.yds || 0) / Math.max(1, passAttempts) : 0;
+  const ypc = rushAttempts > 0 ? Number(oppStats?.rush?.yds || 0) / Math.max(1, rushAttempts) : 0;
+  const teamCompPct = passAttempts > 0
+    ? (Number(oppStats?.pass?.comp || 0) / Math.max(1, passAttempts)) * 100
+    : 0;
+  const passStyleTag = (() => {
+    // mirrors defensive style inference so the "coach read" uses the same scouting lens
+    if (ypa >= 8.8) return 'shot-driven';
+    if (teamCompPct >= 67 && ypa <= 7.2) return 'quick-game';
+    if (ypa >= 7.4 && ypa <= 8.7) return 'intermediate-mix';
+    return 'mixed-pass';
+  })();
+  const runStyleTag = (() => {
+    if (rushAttempts >= 120 && ypc >= 4.7) return 'perimeter-stress';
+    if (ypc <= 4.0 && rushAttempts >= 110) return 'inside-grind';
+    if (ypc >= 4.8) return 'explosive-run';
+    return 'mixed-run';
+  })();
   const sackRate = Number(oppStats?.pass?.att || 0) > 0
     ? (Number(oppStats?.pass?.sacksTaken || 0) / Math.max(1, Number(oppStats?.pass?.att || 0) + Number(oppStats?.pass?.sacksTaken || 0))) * 100
     : 0;
@@ -2130,18 +2448,43 @@ function buildOpponentTendencyReport({
   const injury = findImpactInjury(oppInjuryPlayers, oppStars);
   const targetShare = teamReceiverShare(oppPlayers, Number(oppStats?.pass?.yds || 0));
   const lines = [];
+  const seed = hashSeed(opponentTeamName, tendency, String(mainThreat?.position || ''), fieldVulnerability?.area || 'none');
+
+  const styleAddOn = (() => {
+    if (tendency === 'pass-heavy') {
+      if (passStyleTag === 'shot-driven') return `Pass style: shot/explosives (about ${ypa.toFixed(1)} Y/A).`;
+      if (passStyleTag === 'quick-game') return `Pass style: quick-game/timing (about ${ypa.toFixed(1)} Y/A).`;
+      if (passStyleTag === 'intermediate-mix') return `Pass style: intermediate mix (about ${ypa.toFixed(1)} Y/A).`;
+      return `Pass style: mixed (about ${ypa.toFixed(1)} Y/A).`;
+    }
+    if (tendency === 'run-heavy') {
+      if (runStyleTag === 'perimeter-stress') return `Run style: perimeter stress (about ${ypc.toFixed(1)} Y/C).`;
+      if (runStyleTag === 'inside-grind') return `Run style: inside grind (about ${ypc.toFixed(1)} Y/C).`;
+      if (runStyleTag === 'explosive-run') return `Run style: explosive run profile (about ${ypc.toFixed(1)} Y/C).`;
+      return `Run style: mixed run (about ${ypc.toFixed(1)} Y/C).`;
+    }
+    // balanced: show both in compact form
+    return `Style: ${passStyleTag.replace('-', ' ')}, ${runStyleTag.replace('-', ' ')}.`;
+  })();
 
   if (tendency === 'pass-heavy') {
-    lines.push(`• Identity: ${(passRate * 100).toFixed(1)}% pass rate, ${passYpg.toFixed(1)} pass ypg (${passBand}), ${rushYpg.toFixed(1)} rush ypg (${rushBand}).`);
+    lines.push(`• Identity: ${(passRate * 100).toFixed(1)}% pass, ${passYpg.toFixed(1)} pass ypg (${passBand}), ${rushYpg.toFixed(1)} rush ypg (${rushBand}). ${styleAddOn}`);
   } else if (tendency === 'run-heavy') {
-    lines.push(`• Identity: ${(passRate * 100).toFixed(1)}% pass rate, ${rushYpg.toFixed(1)} rush ypg (${rushBand}), ${passYpg.toFixed(1)} pass ypg (${passBand}).`);
+    lines.push(`• Identity: ${(passRate * 100).toFixed(1)}% pass, ${rushYpg.toFixed(1)} rush ypg (${rushBand}), ${passYpg.toFixed(1)} pass ypg (${passBand}). ${styleAddOn}`);
   } else {
-    lines.push(`• Identity: ${(passRate * 100).toFixed(1)}% pass rate, ${passYpg.toFixed(1)} pass ypg (${passBand}), ${rushYpg.toFixed(1)} rush ypg (${rushBand}).`);
+    lines.push(`• Identity: ${(passRate * 100).toFixed(1)}% pass, ${passYpg.toFixed(1)} pass ypg (${passBand}), ${rushYpg.toFixed(1)} rush ypg (${rushBand}). ${styleAddOn}`);
   }
 
   if (mainThreat && String(mainThreat?.position || '').toUpperCase() === 'QB') {
     const pct = completionPct(mainThreat);
-    lines.push(`• QB profile: ${playerLabel(mainThreat)} — ${Number(mainThreat?.passTDs || 0)} TD, ${Number(mainThreat?.passInts || 0)} INT, ${pct.toFixed(1)}% completions, ${sacksTaken.toFixed(1)} sacks/g, ${sackRate.toFixed(1)}% sack rate (${pressureBand}).`);
+    const qbRead = passStyleTag === 'shot-driven'
+      ? 'wants explosives off play-action/shot looks'
+      : passStyleTag === 'quick-game'
+        ? 'lives on 1–2 step rhythm throws'
+        : passStyleTag === 'intermediate-mix'
+          ? 'works the middle windows more than pure bombs'
+          : 'has a mixed menu';
+    lines.push(`• QB profile: ${playerLabel(mainThreat)} — ${Number(mainThreat?.passTDs || 0)} TD, ${Number(mainThreat?.passInts || 0)} INT, ${pct.toFixed(1)}% comp, ${sacksTaken.toFixed(1)} sacks/g (${pressureBand}), ${qbRead}.`);
   } else if (mainThreat) {
     lines.push(`• Engine: ${playerLabel(mainThreat)} is the player their script keeps coming back to first.`);
   } else {
@@ -2158,18 +2501,72 @@ function buildOpponentTendencyReport({
     lines.push(`• Availability: ${playerLabel(injury.player)} is out; expect the first adjustment to show up in touch distribution or protection usage.`);
   }
 
+  // "Coach read" line: compressed, but more actionable than the old generic counter text.
+  const coachRead = (() => {
+    const pressureNote = buildOpponentPressureResponseLine(oppStats, leagueProfile);
+    if (tendency === 'pass-heavy') {
+      if (passStyleTag === 'quick-game') {
+        return `• Coach read: expect rhythm + RPO/quick outs to keep them ahead of schedule. Jam releases, hard flats, and force the QB to throw outside the first window. ${pressureNote}`;
+      }
+      if (passStyleTag === 'shot-driven') {
+        return `• Coach read: expect early play-action and shot attempts after efficient runs. Keep two-high answers available, don’t bite the first crosser, and rally to checkdowns. ${pressureNote}`;
+      }
+      return `• Coach read: they’ll probe coverage until you show a tell, then spam the stress point. Rotate late and make them win post-snap. ${pressureNote}`;
+    }
+    if (tendency === 'run-heavy') {
+      if (runStyleTag === 'perimeter-stress') {
+        return `• Coach read: they want to run to space and force missed force/alley fits. Set hard edges, keep contain, and make them win inside. ${pressureNote}`;
+      }
+      if (runStyleTag === 'inside-grind') {
+        return `• Coach read: expect inside volume to stay “on schedule” until you prove you can fit A/B gaps. Pinch fronts on early downs and punish cutbacks. ${pressureNote}`;
+      }
+      return `• Coach read: they’ll run until you overcommit, then throw behind the fit. Win 1st down and make them throw in obvious dropback. ${pressureNote}`;
+    }
+    return `• Coach read: balanced menu, but the coach will chase the easiest matchup once he sees it. Take away the first comfort call and force a 2nd adjustment. ${pressureNote}`;
+  })();
+  lines.push(coachRead);
+
   if (fieldVulnerability?.area === 'slot' && fieldVulnerability?.detail?.target && fieldVulnerability?.detail?.defender) {
-    lines.push(`• Tendency attack: close the slot access first. ${playerLabel(fieldVulnerability.detail.target)} into ${playerLabel(fieldVulnerability.detail.defender)} is the inside chain-mover, so reroute early, squeeze in-breakers, and force throws to the boundary.`);
+    lines.push(pickVariant(seed, [
+      `• Tendency attack: choke off the slot first. ${playerLabel(fieldVulnerability.detail.target)} into ${playerLabel(fieldVulnerability.detail.defender)} is their inside rhythm lane, so reroute early and force the ball to the boundary.`,
+      `• Tendency attack: win the hashes. ${playerLabel(fieldVulnerability.detail.target)} vs ${playerLabel(fieldVulnerability.detail.defender)} is where they keep the chains on schedule, so squeeze in-breakers and make them live outside.`,
+    ]));
   } else if (fieldVulnerability?.area === 'outside' && fieldVulnerability?.detail?.target && fieldVulnerability?.detail?.defender) {
-    lines.push(`• Tendency attack: sit on the boundary shot and make them win inside. ${playerLabel(fieldVulnerability.detail.target)} on ${playerLabel(fieldVulnerability.detail.defender)} is the explosive lane they want to live on.`);
+    lines.push(pickVariant(seed, [
+      `• Tendency attack: sit on the boundary shot and make them earn yards inside. ${playerLabel(fieldVulnerability.detail.target)} on ${playerLabel(fieldVulnerability.detail.defender)} is their explosive lane.`,
+      `• Tendency attack: keep the corner leveraged and eliminate the go-ball. ${playerLabel(fieldVulnerability.detail.target)} vs ${playerLabel(fieldVulnerability.detail.defender)} is the matchup they want on repeat.`,
+    ]));
   } else if (fieldVulnerability?.area === 'box' && fieldVulnerability?.detail?.back && fieldVulnerability?.detail?.defender) {
-    lines.push(`• Tendency attack: close the alley early. ${playerLabel(fieldVulnerability.detail.back)} on ${playerLabel(fieldVulnerability.detail.defender)} is the space matchup that keeps them on schedule.`);
-  } else if (tendency === 'pass-heavy') {
-    lines.push(`• Tendency attack: force checkdowns and second-window throws. Make the QB throw outside structure instead of living on rhythm.`);
-  } else if (tendency === 'run-heavy') {
-    lines.push(`• Tendency attack: win first down and make the QB carry the script in long-yardage dropback situations.`);
+    lines.push(pickVariant(seed, [
+      `• Tendency attack: close the alley and force it inside-out. ${playerLabel(fieldVulnerability.detail.back)} onto ${playerLabel(fieldVulnerability.detail.defender)} is the space play that keeps them ahead of schedule.`,
+      `• Tendency attack: set the edge, rally fast, and tackle clean. ${playerLabel(fieldVulnerability.detail.back)} vs ${playerLabel(fieldVulnerability.detail.defender)} is the run-space matchup that fuels their tempo.`,
+    ]));
   } else {
-    lines.push(`• Tendency attack: take away the first menu item and make the coach play left-handed after the first adjustment.`);
+    const threatPos = String(mainThreat?.position || '').toUpperCase();
+    if (threatPos === 'QB') {
+      lines.push(pickVariant(seed, [
+        `• Tendency attack: change the pre-snap picture and speed the clock up. Make the QB win after the snap, not before it.`,
+        `• Tendency attack: live in late rotations and force full-field reads. If he starts escaping, set the edge and make him climb into traffic.`,
+      ]));
+    } else if (['HB', 'RB', 'FB'].includes(threatPos) || tendency === 'run-heavy') {
+      lines.push(pickVariant(seed, [
+        `• Tendency attack: win first down and spill the run. Make the script lean on dropback throws instead of easy carries.`,
+        `• Tendency attack: clamp the run fits early and force 2nd-and-long. If they want points, make them throw for it.`,
+      ]));
+    } else if (['WR', 'TE'].includes(threatPos) || tendency === 'pass-heavy') {
+      const pressureNote = sackRate >= 10
+        ? ` (they've been leaky vs pressure at ${sackRate.toFixed(1)}% sack rate)`
+        : '';
+      lines.push(pickVariant(seed, [
+        `• Tendency attack: reroute the primary and crowd his first window. Make secondary targets win in traffic${pressureNote}.`,
+        `• Tendency attack: take away the first read and tackle checkdowns. If they want explosives, make them earn it with second-window throws${pressureNote}.`,
+      ]));
+    } else {
+      lines.push(pickVariant(seed, [
+        `• Tendency attack: take away the first menu item and force a second adjustment before halftime.`,
+        `• Tendency attack: make them prove they can win outside their comfort script—no free rhythm early.`,
+      ]));
+    }
   }
 
   if (oppStanding) {
@@ -2178,11 +2575,14 @@ function buildOpponentTendencyReport({
     lines.push(`• Context: ${wins}-${losses} record. Expect a normal opening script unless score pressure forces them off tendency.`);
   }
 
-  return lines.filter(Boolean).slice(0, 5).join('\n');
+  // Embed safety: keep this report inside a single field value budget.
+  // (We intentionally cap to 5 lines and then hard-trim to 980 chars as a final guardrail.)
+  const out = lines.filter(Boolean).slice(0, 5).join('\n');
+  return out.length > 980 ? `${out.slice(0, 977).trimEnd()}…` : out;
 }
 
 async function execute(interaction) {
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: 64 });
   try {
     const leagueId = resolveLeagueIdWithConfig(interaction.guildId);
     if (!leagueId) throw new Error('No Madden league is configured for this server.');
@@ -2192,12 +2592,12 @@ async function execute(interaction) {
     const recognitionContext = inferRecognitionContext('madden', interaction.guildId);
     const perkState = recognitionContext?.seasonKey
       ? getRecognitionPerkState({
-          guildId: interaction.guildId,
-          league: 'madden',
-          seasonKey: recognitionContext.seasonKey,
-          userId: interaction.user.id,
-          weekKey: recognitionContext.weekKey,
-        })
+        guildId: interaction.guildId,
+        league: 'madden',
+        seasonKey: recognitionContext.seasonKey,
+        userId: interaction.user.id,
+        weekKey: recognitionContext.weekKey,
+      })
       : null;
 
     const matchup = findWeeklyOpponent(snapshot, ownTeam.teamId);
@@ -2244,54 +2644,54 @@ async function execute(interaction) {
     const tendencyBreakdownActive = Boolean(perkState?.perks?.tendencyBreakdown || perkState?.perks?.allGamePlanBundle);
     const offensiveGamePlan = offenseGamePlanActive
       ? buildOffensiveGamePlan({
-          ownTeamName,
-          opponentTeamName,
-          ownStats,
-          oppStats,
-          ownRanks,
-          oppRanks,
-          leagueProfile,
-          ownRoster,
-          oppRoster,
-          ownStars,
-          ownInjuryPlayers,
-          oppInjuryPlayers,
-          ownAdjustmentLine,
-        })
+        ownTeamName,
+        opponentTeamName,
+        ownStats,
+        oppStats,
+        ownRanks,
+        oppRanks,
+        leagueProfile,
+        ownRoster,
+        oppRoster,
+        ownStars,
+        ownInjuryPlayers,
+        oppInjuryPlayers,
+        ownAdjustmentLine,
+      })
       : null;
     const offensiveFieldProfile = buildFieldAttackProfile(ownRoster, oppRoster, ownStats, oppStats);
     const offensiveProfile = offensiveProfileTag(offensiveFieldProfile, oppStats, oppRanks, leagueProfile);
     const defensiveGamePlan = defenseGamePlanActive
       ? buildDefensiveGamePlan({
-          opponentTeamName,
-          ownStats,
-          oppStats,
-          oppRanks,
-          leagueProfile,
-          ownRoster,
-          oppRoster,
-          ownInjuryPlayers,
-          oppInjuryPlayers,
-          oppStars,
-          keyOppStress,
-        })
+        opponentTeamName,
+        ownStats,
+        oppStats,
+        oppRanks,
+        leagueProfile,
+        ownRoster,
+        oppRoster,
+        ownInjuryPlayers,
+        oppInjuryPlayers,
+        oppStars,
+        keyOppStress,
+      })
       : null;
     const defensiveFieldVulnerability = findDefensiveFieldVulnerability(oppRoster, ownRoster, oppStats);
     const defensiveProfile = defensiveProfileTag(defensiveMismatch, defensiveFieldVulnerability, oppStats, oppRanks, leagueProfile);
     const tendencyBreakdown = tendencyBreakdownActive
       ? buildOpponentTendencyReport({
-          opponentTeamName,
-          oppStanding,
-          oppStats,
-          oppRanks,
-          leagueProfile,
-          ownRoster,
-          oppRoster,
-          oppPlayers,
-          oppStars,
-          keyOppStress,
-          oppInjuryPlayers,
-        })
+        opponentTeamName,
+        oppStanding,
+        oppStats,
+        oppRanks,
+        leagueProfile,
+        ownRoster,
+        oppRoster,
+        oppPlayers,
+        oppStars,
+        keyOppStress,
+        oppInjuryPlayers,
+      })
       : null;
     const offenseSeedKey = `${ownTeamName}:${opponentTeamName}:${displayWeek}:offense:${offensiveProfile}:${offensiveFieldProfile?.area || 'none'}`;
     const defenseSeedKey = `${ownTeamName}:${opponentTeamName}:${displayWeek}:defense:${defensiveProfile}:${defensiveFieldVulnerability?.area || 'none'}:${defensiveMismatch?.type || 'none'}`;
@@ -2299,36 +2699,36 @@ async function execute(interaction) {
     const chosenResourceUrls = [];
     const tendencyResource = tendencyBreakdownActive
       ? pickTendencyLearningResource(
-          relativeTendencyLabel(oppStats, leagueProfile),
-          defensiveFieldVulnerability,
-          tendencySeedKey,
-          ownStats,
-          oppStats,
-          { avoidUrls: chosenResourceUrls },
-        )
+        relativeTendencyLabel(oppStats, leagueProfile),
+        defensiveFieldVulnerability,
+        tendencySeedKey,
+        ownStats,
+        oppStats,
+        { avoidUrls: chosenResourceUrls },
+      )
       : '';
     if (tendencyResource?.url) chosenResourceUrls.push(tendencyResource.url);
     const offenseResource = offenseGamePlanActive
       ? pickOffenseLearningResource(
-          offensiveProfile,
-          offensiveFieldProfile,
-          ownStats,
-          oppStats,
-          offenseSeedKey,
-          { avoidUrls: chosenResourceUrls },
-        )
+        offensiveProfile,
+        offensiveFieldProfile,
+        ownStats,
+        oppStats,
+        offenseSeedKey,
+        { avoidUrls: chosenResourceUrls },
+      )
       : '';
     if (offenseResource?.url) chosenResourceUrls.push(offenseResource.url);
     const defenseResource = defenseGamePlanActive
       ? pickDefenseLearningResource(
-          defensiveProfile,
-          defensiveMismatch,
-          defensiveFieldVulnerability,
-          defenseSeedKey,
-          ownStats,
-          oppStats,
-          { avoidUrls: chosenResourceUrls },
-        )
+        defensiveProfile,
+        defensiveMismatch,
+        defensiveFieldVulnerability,
+        defenseSeedKey,
+        ownStats,
+        oppStats,
+        { avoidUrls: chosenResourceUrls },
+      )
       : '';
     const offenseStruggleNote = buildLearningStruggleNote('offense', ownStats, oppStats);
     const defenseStruggleNote = buildLearningStruggleNote('defense', ownStats, oppStats);
@@ -2356,82 +2756,104 @@ async function execute(interaction) {
       oppInjuries[0] ? `${opponentTeamName}: ${oppInjuries[0]}` : null,
     ].filter(Boolean).join('\n') || 'No major injuries in the current export.';
 
-    const premiumSectionCount = [tendencyBreakdown, offensiveGamePlan, defensiveGamePlan].filter(Boolean).length;
-    const premiumFieldLimit = premiumSectionCount >= 3 ? 700 : premiumSectionCount === 2 ? 800 : 900;
+    // Single-embed rule: this command must never post follow-up long blocks.
+    // Keep everything inside one embed by budgeting each field value to <= 1024 chars.
 
-    const embed = new EmbedBuilder()
-      .setColor(0x2b6cb0)
-      .setTitle(`Madden Game Strategy — ${ownTeamName} vs ${opponentTeamName}`)
-      .setDescription(`${phaseLabel} scouting report.`)
-      .addFields(
-        {
-          name: 'Records',
-          value: `${ownTeamName}: ${recordLabel(ownStanding)}\n${opponentTeamName}: ${recordLabel(oppStanding)}`,
-          inline: false,
-        },
-        {
-          name: 'Quick Read',
-          value: truncate(quickRead || 'Play your cleaner game, protect the ball, and make them earn long drives.', 600),
-          inline: false,
-        },
-        ...(tendencyBreakdown ? [{
-          name: 'Opponent Tendency Report',
-          value: buildPremiumFieldValue(tendencyBreakdown, tendencyBridge, premiumFieldLimit, 'bullet'),
-          inline: false,
-        }] : []),
-        ...(tendencyResource ? [{
-          name: 'Tendency Resource',
-          value: truncate(formatLearningResource(tendencyResource), 320),
-          inline: false,
-        }] : []),
-        ...(offensiveGamePlan ? [{
-          name: 'Offensive Game Plan',
-          value: buildPremiumFieldValue(offensiveGamePlan, offenseBridge, premiumFieldLimit, 'sentence'),
-          inline: false,
-        }] : []),
-        ...(offenseResource ? [{
-          name: 'Offense Resource',
-          value: truncate(formatLearningResource(offenseResource), 320),
-          inline: false,
-        }] : []),
-        ...(defensiveGamePlan ? [{
-          name: 'Defensive Game Plan',
-          value: buildPremiumFieldValue(defensiveGamePlan, defenseBridge, premiumFieldLimit, 'sentence'),
-          inline: false,
-        }] : []),
-        ...(defenseResource ? [{
-          name: 'Defense Resource',
-          value: truncate(formatLearningResource(defenseResource), 320),
-          inline: false,
-        }] : []),
-        ...((offenseGamePlanActive || defenseGamePlanActive) ? [{
-          name: 'Key Players',
-          value: truncate(buildKeyNotes({
-            ownStars,
-            oppStars,
-            keyOppStress,
-            ownTeamName,
-            opponentTeamName,
-            oppInjuryPlayers,
-            oppRanks,
-            oppStats,
-            ownRoster,
-            oppRoster,
-          }) || 'No extra player notes in the current export.', 650),
-          inline: false,
-        }] : []),
-        {
-          name: 'Injury Watch',
-          value: truncate(injuryBlock, 350),
-          inline: false,
-        },
-      )
-      .setFooter({ text: coachVoiceFooter('strategy', 'Built from live weekly stats, roster state, injuries, standings, and matchup data.') });
+    const fields = [];
+    fields.push({
+      name: 'Records',
+      value: `${ownTeamName}: ${recordLabel(ownStanding)}\n${opponentTeamName}: ${recordLabel(oppStanding)}`,
+      inline: false,
+    });
+    fields.push({
+      name: 'Quick Read',
+      value: truncate(quickRead || 'Play your cleaner game, protect the ball, and make them earn long drives.', 600),
+      inline: false,
+    });
 
-    await interaction.editReply({ embeds: [embed] });
+    if (tendencyBreakdown) {
+      const combined = buildPremiumFieldValue(tendencyBreakdown, tendencyBridge, 900, 'bullet');
+      fields.push({ name: 'Opponent Tendency Report', value: maxedEmbedFieldValue(combined), inline: false });
+    }
+    if (tendencyResource) {
+      fields.push({
+        name: 'Tendency Resource',
+        value: truncate(formatLearningResource(tendencyResource), 220),
+        inline: false,
+      });
+    }
+    if (offensiveGamePlan) {
+      const combined = buildPremiumFieldValue(offensiveGamePlan, offenseBridge, 900, 'sentence');
+      fields.push({ name: 'Offensive Game Plan', value: maxedEmbedFieldValue(combined), inline: false });
+    }
+    if (offenseResource) {
+      fields.push({
+        name: 'Offense Resource',
+        value: truncate(formatLearningResource(offenseResource), 220),
+        inline: false,
+      });
+    }
+    if (defensiveGamePlan) {
+      const combined = buildPremiumFieldValue(defensiveGamePlan, defenseBridge, 900, 'sentence');
+      fields.push({ name: 'Defensive Game Plan', value: maxedEmbedFieldValue(combined), inline: false });
+    }
+    if (defenseResource) {
+      fields.push({
+        name: 'Defense Resource',
+        value: truncate(formatLearningResource(defenseResource), 220),
+        inline: false,
+      });
+    }
+    if (offenseGamePlanActive || defenseGamePlanActive) {
+      fields.push({
+        name: 'Key Players',
+        value: truncate(buildKeyNotes({
+          ownStars,
+          oppStars,
+          keyOppStress,
+          ownTeamName,
+          opponentTeamName,
+          oppInjuryPlayers,
+          oppRanks,
+          oppStats,
+          ownRoster,
+          oppRoster,
+        }) || 'No extra player notes in the current export.', 650),
+        inline: false,
+      });
+    }
+    fields.push({
+      name: 'Injury Watch',
+      value: truncate(injuryBlock, 350),
+      inline: false,
+    });
+
+    const embeds = buildStrategyEmbeds({
+      ownTeamName,
+      opponentTeamName,
+      phaseLabel,
+      fields,
+    });
+    if (embeds.length) {
+      embeds[embeds.length - 1].setFooter({
+        text: coachVoiceFooter('strategy', 'Built from live weekly stats, roster state, injuries, standings, and matchup data.'),
+      });
+    }
+
+    await interaction.editReply({ embeds });
   } catch (error) {
     await interaction.editReply({ content: `Failed to build weekly strategy: ${error.message}` });
   }
 }
 
 export default { data, execute };
+
+// Debug-only exports (no runtime impact on Discord command). Used for local inspection/scripts.
+export const __debug = {
+  buildOffensiveGamePlan,
+  buildDefensiveGamePlan,
+  buildOpponentTendencyReport,
+  buildLeagueProfile,
+  teamRankBundle,
+  playerImpact,
+};

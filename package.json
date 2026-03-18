@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node app.js",
     "deploy-commands": "node deploy-commands.js",
+    "madden:avp": "node scripts/generate-madden-avp.js",
     "madden:sync": "node scripts/madden-import.js",
     "madden:export:upload": "node scripts/madden-upload-export.js",
     "madden:roles": "node scripts/create-madden-roles.js"

@@ -37,7 +37,23 @@ function buildSoS(league) {
     }])
   );
 
-  const regGames = schedule.filter(g => g.status === 1 && g.stageIndex === 1); // regular season
+  // Madden's draft-order tie breaks are based on games played so far (not future schedule).
+  // At the beginning of week N, we only want games through week N-1.
+  const currentWeek = Number(league?.currentWeek ?? league?.info?.careerHubInfo?.seasonInfo?.seasonWeek ?? NaN);
+  const weekLimitIdx = Number.isFinite(currentWeek) ? Math.max(0, currentWeek - 1) : null; // schedule weekIndex is 0-based
+  const isCompleted = (g) => {
+    // Prefer explicit played signals when present.
+    const hs = Number(g?.homeScore ?? 0);
+    const as = Number(g?.awayScore ?? 0);
+    if (hs > 0 || as > 0) return true;
+    // Some exports mark completed games with status===1.
+    if (Number(g?.status ?? 0) === 1) return true;
+    return false;
+  };
+  const regGames = schedule
+    .filter(g => Number(g?.stageIndex ?? g?.stage ?? 1) === 1)
+    .filter(g => weekLimitIdx == null || Number(g?.weekIndex ?? -1) < weekLimitIdx)
+    .filter(isCompleted);
   const gamesByTeam = {};
   for (const g of regGames) {
     const { homeTeamId: h, awayTeamId: a, homeScore: hs, awayScore: as } = g;
@@ -628,7 +644,7 @@ function applyPickTrades(order, seasonYear = currentCalendarYear) {
   overrides.forEach(o => {
     const key = normalizeTeamKey(o.from || o.owner || '');
     if (!key) return;
-    map.set(key, { owner: o.to || o.owner, via: o.via || (o.from && o.from.slice(0,3).toUpperCase()) });
+    map.set(key, { owner: o.to || o.owner, via: o.via || (o.from && o.from.slice(0, 3).toUpperCase()) });
   });
 
   return order.map(pick => {
@@ -977,34 +993,34 @@ function deriveTeamNeedsDetailed(league) {
         qbNeed = false; qbSeverity = 25; // depth flag only
       } else {
 
-      // Franchise lockouts (young/prime starters with term)
-      if (bestOvr >= 88 && yearsLeft >= 2 && age <= 31) {
-        qbNeed = false; qbSeverity = 0;
-      } else if (bestOvr >= 85 && yearsLeft >= 2 && age <= 30 && secondOvr >= 68) {
-        qbNeed = false; qbSeverity = 20; // depth only
-      } else if (bestOvr >= 83 && yearsLeft >= 2 && age <= 31 && secondOvr >= 70) {
-        qbNeed = false; qbSeverity = 30; // depth only
-      } else if (bestOvr >= 82 && yearsLeft >= 2 && age <= 33 && secondOvr >= 72) {
-        qbNeed = false; qbSeverity = 35; // depth only
-      } else if (bestOvr >= 80 && yearsLeft >= 2 && age <= 33 && secondOvr >= 70) {
-        qbNeed = false; qbSeverity = 40; // depth only
-      } else if (bestOvr >= 78 && yearsLeft >= 3 && age <= 25 && secondOvr >= 68) {
-        qbNeed = false; qbSeverity = 25; // young starter with runway; depth only
-      } else {
-        // Solid starter but thin depth (keep QB as depth need, not top)
-        if (bestOvr >= 82 && yearsLeft >= 2 && age <= 30) {
-          qbNeed = false; qbSeverity = 45; // depth flag
+        // Franchise lockouts (young/prime starters with term)
+        if (bestOvr >= 88 && yearsLeft >= 2 && age <= 31) {
+          qbNeed = false; qbSeverity = 0;
+        } else if (bestOvr >= 85 && yearsLeft >= 2 && age <= 30 && secondOvr >= 68) {
+          qbNeed = false; qbSeverity = 20; // depth only
+        } else if (bestOvr >= 83 && yearsLeft >= 2 && age <= 31 && secondOvr >= 70) {
+          qbNeed = false; qbSeverity = 30; // depth only
+        } else if (bestOvr >= 82 && yearsLeft >= 2 && age <= 33 && secondOvr >= 72) {
+          qbNeed = false; qbSeverity = 35; // depth only
+        } else if (bestOvr >= 80 && yearsLeft >= 2 && age <= 33 && secondOvr >= 70) {
+          qbNeed = false; qbSeverity = 40; // depth only
+        } else if (bestOvr >= 78 && yearsLeft >= 3 && age <= 25 && secondOvr >= 68) {
+          qbNeed = false; qbSeverity = 25; // young starter with runway; depth only
         } else {
-        // Needs or aging/weak depth scenarios
-        qbNeed = true;
-        qbSeverity = 70;
-        if (bestOvr < 75) qbSeverity += 20;
-        if (secondOvr < 70) qbSeverity += 15;
-        if (yearsLeft <= 1) qbSeverity += 25; // expiring deal elevates urgency
-        if (age >= 32) qbSeverity += 10;
-        qbSeverity = Math.min(100, qbSeverity);
+          // Solid starter but thin depth (keep QB as depth need, not top)
+          if (bestOvr >= 82 && yearsLeft >= 2 && age <= 30) {
+            qbNeed = false; qbSeverity = 45; // depth flag
+          } else {
+            // Needs or aging/weak depth scenarios
+            qbNeed = true;
+            qbSeverity = 70;
+            if (bestOvr < 75) qbSeverity += 20;
+            if (secondOvr < 70) qbSeverity += 15;
+            if (yearsLeft <= 1) qbSeverity += 25; // expiring deal elevates urgency
+            if (age >= 32) qbSeverity += 10;
+            qbSeverity = Math.min(100, qbSeverity);
+          }
         }
-      }
       }
     }
 
@@ -1182,20 +1198,20 @@ function deriveTeamNeedsDetailed(league) {
     // Sort by highest need (lowest avgOvr, lowest count, QB lockout)
     needScores.sort((a, b) => b.score - a.score);
     // Take top 5 needs
-  let needs = needScores.slice(0, 5).map(n => n.group);
-  // If QB is present but not #1 and QB score is close to top, consider moving it up (avoid QB buried by edge depth tweaks)
-  const qbEntry = needScores.find(n => n.group === 'QB');
-  if (qbEntry && needs[0] !== 'QB') {
-    const topScore = needScores[0].score;
-    if (qbEntry.score >= topScore - 8) {
-      // promote QB to top
-      const filtered = needs.filter(n => n !== 'QB');
-      filtered.unshift('QB');
-      while (filtered.length < 5) filtered.push('BPA');
-      needs.length = 0;
-      needs.push(...filtered.slice(0,5));
+    let needs = needScores.slice(0, 5).map(n => n.group);
+    // If QB is present but not #1 and QB score is close to top, consider moving it up (avoid QB buried by edge depth tweaks)
+    const qbEntry = needScores.find(n => n.group === 'QB');
+    if (qbEntry && needs[0] !== 'QB') {
+      const topScore = needScores[0].score;
+      if (qbEntry.score >= topScore - 8) {
+        // promote QB to top
+        const filtered = needs.filter(n => n !== 'QB');
+        filtered.unshift('QB');
+        while (filtered.length < 5) filtered.push('BPA');
+        needs.length = 0;
+        needs.push(...filtered.slice(0, 5));
+      }
     }
-  }
     // Normalize team name for consistent lookup
     const teamNameNorm = (nameById[tid] || tidStr).toLowerCase().replace(/[^a-z0-9]/g, '');
     const info = teamInfoById[tid] || {};
@@ -1283,7 +1299,12 @@ export async function execute(interaction) {
   const draftYear = isRegularOrPost
     ? Number(currentCalendarYear) + 1
     : Number(currentCalendarYear || 2025);
-  const officialOrder = loadOfficialDraftOrderOverride(league, draftYear);
+
+  // Madden's in-season mock draft order updates as standings change.
+  // Our override file is a calibration reference (and can be used in offseason),
+  // but during the regular season we should always compute the live order.
+  const isRegularSeason = weekType === 1;
+  const officialOrder = isRegularSeason ? null : loadOfficialDraftOrderOverride(league, draftYear);
   const rawOrder = officialOrder || draftOrder(league);
   const order = officialOrder || applyPickTrades(rawOrder, draftYear);
   const needProfiles = deriveTeamNeedsDetailed(league);
@@ -1303,7 +1324,7 @@ export async function execute(interaction) {
   let pickNumber = 1;
   let qbTop5Count = 0;
   const unmetNeedsMap = new Map(); // track remaining needs per team across multiple 1st-rounders
-   // Track positions already taken in R1 for each team to avoid double-dip unless forced
+  // Track positions already taken in R1 for each team to avoid double-dip unless forced
   const pickedGroupsMap = new Map();
   for (const team of order) {
     const teamNameNorm = normalizeName(team.name || '');
@@ -1339,10 +1360,10 @@ export async function execute(interaction) {
     const bpaOnly = teamNeeds.length === 1 && teamNeeds[0] === 'BPA';
     const boardWindow =
       pickNumber <= 5 ? 15 :
-      pickNumber <= 10 ? 18 :
-      pickNumber <= 16 ? 22 :
-      pickNumber <= 24 ? 28 :
-      32;
+        pickNumber <= 10 ? 18 :
+          pickNumber <= 16 ? 22 :
+            pickNumber <= 24 ? 28 :
+              32;
 
     const candidateIndices = [];
     const firstQBIndex = available.findIndex(p => prospectGroup(p) === 'QB');
@@ -1494,10 +1515,10 @@ export async function execute(interaction) {
     const school = chosen?.school || chosen?.College || chosen?.college || 'N/A';
     const via = team.via ? ` (via ${team.via})` : '';
     const line = `${picks.length + 1}. ${emoji ? emoji + ' ' : ''}${team.name}${via} — ${pos || 'POS'} ${chosen?.name || 'TBD'} — ${school}`;
-      picks.push(line);
-      pickNumber += 1;
+    picks.push(line);
+    pickNumber += 1;
 
-    }
+  }
 
   const embed = new EmbedBuilder()
     .setTitle('Madden Mock Draft (Picks 1–32)')

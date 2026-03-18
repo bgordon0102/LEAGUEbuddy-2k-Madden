@@ -37,10 +37,9 @@ export async function execute(interaction) {
     mode,
     index,
   });
-  if (action === 'view') {
-    await interaction.update(payload);
-    return;
-  }
+
+  // Privacy: the public sportsbook header button should open a private (ephemeral) board.
+  // We *do not* want to replace the public channel message with someone's private bankroll/bets.
   await interaction.reply({ ...payload, flags: 64 });
 }
 

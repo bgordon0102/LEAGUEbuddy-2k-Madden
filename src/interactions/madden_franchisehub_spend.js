@@ -148,8 +148,8 @@ function buildSpendPanel({ tier, perkState, weekKey }) {
     const perk = perkState?.perkStatus?.[perkKey] || costMap[perkKey];
     const status = perk.activeNow
       ? (perkKey === 'doubleOrNothing'
-          ? `active now${perk.selectedTier ? ` • armed on ${perk.selectedTier}` : ' • lane not picked yet'}`
-          : 'active now')
+        ? `active now${perk.selectedTier ? ` • armed on ${perk.selectedTier}` : ' • lane not picked yet'}`
+        : 'active now')
       : perk.usedThisWeek
         ? 'used this week'
         : perk.availableThisWeek
@@ -339,8 +339,32 @@ export async function execute(interaction) {
     return;
   }
 
+  // Confirm is the only remaining action path.
+  if (action !== 'confirm') return;
+
+  // All confirm buttons MUST be: madden_franchisehub_confirm|<tier>|<perkKey>
+  // Don't try to "recover" from broken customIds here — it can activate the wrong perk.
   const tier = value;
   const perkKey = extra;
+  if (!tier || !['activity', 'impact', 'legacy'].includes(String(tier))) {
+    await interaction.reply({ content: 'That purchase confirmation is missing tier details. Re-open Franchise Hub and try again.', flags: 64 });
+    return;
+  }
+  if (!perkKey || !PERK_CATALOG?.[perkKey]) {
+    await interaction.reply({ content: 'That purchase confirmation is missing perk details. Re-open Franchise Hub and try again.', flags: 64 });
+    return;
+  }
+
+  if (process.env.RECOGNITION_DEBUG === '1') {
+    console.log('[recognition] franchisehub confirm', {
+      rawCustomId: raw,
+      tier,
+      perkKey,
+      weekKey: context.weekKey,
+      seasonKey: context.seasonKey,
+      userId: interaction.user.id,
+    });
+  }
 
   const result = activateRecognitionPerk({
     guildId: interaction.guildId,

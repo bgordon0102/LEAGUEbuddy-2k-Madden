@@ -79,7 +79,7 @@ export async function postMaddenStaffDecision(client, guildId, title, descriptio
     .setDescription(description)
     .setTimestamp();
   if (fields.length) embed.addFields(fields);
-  await channel.send({ embeds: [embed] }).catch(() => null);
+  return await channel.send({ embeds: [embed] }).catch(() => null);
 }
 
 export async function postLeagueStaffOpsSnapshot(client, guildId, reason = 'update') {
@@ -214,7 +214,7 @@ function saveRecentRumorHistory(scheduler = {}, guildId, items = []) {
 
 export async function queueScheduledRumorMill(client, guildId, force = false) {
   const scheduler = safeReadJSON(SCHEDULER_FILE, {});
-  const postRumorStatus = async () => {};
+  const postRumorStatus = async () => { };
 
   const guild = client.guilds.cache.get(guildId) || await client.guilds.fetch(guildId).catch(() => null);
   if (!guild) {

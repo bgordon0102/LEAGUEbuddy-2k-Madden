@@ -776,6 +776,24 @@ export async function postSportsbookWeek({ client, guild, seasonKey, weekNumber,
   const seasonStore = ensureSeason(store, seasonKey);
   const weekKey = `week_${weekNumber}`;
   const weekStore = ensureWeek(seasonStore, weekKey);
+
+  // Keep the sportsbook channel clean: only the latest posted week's header should remain.
+  // If older weeks have stored headerMessageIds, delete those messages and clear the pointers.
+  for (const [otherWeekKey, otherWeekStore] of Object.entries(seasonStore.weeks || {})) {
+    if (otherWeekKey === weekKey) continue;
+    const otherWeekNumber = Number(String(otherWeekKey).replace(/^week_/, ''));
+    if (!Number.isFinite(otherWeekNumber)) continue;
+    if (otherWeekNumber >= Number(weekNumber)) continue;
+    const otherHeaderId = otherWeekStore?.posts?.headerMessageId;
+    const otherChannelId = otherWeekStore?.posts?.channelId;
+    if (otherChannelId !== channelId || !otherHeaderId) continue;
+    await channel.messages.delete(otherHeaderId).catch(() => null);
+    const staleGameIds = Object.values(otherWeekStore?.posts?.gameMessageIds || {}).filter(Boolean);
+    for (const messageId of staleGameIds) {
+      await channel.messages.delete(messageId).catch(() => null);
+    }
+    otherWeekStore.posts = null;
+  }
   const lines = buildLinesForGames(snapshot, games, teamsById, weekNumber);
   const gotw = getRecognitionGameOfWeek({
     guildId: guild?.id,
@@ -824,10 +842,20 @@ export async function postSportsbookWeek({ client, guild, seasonKey, weekNumber,
   return weekStore;
 }
 
-export async function ensureSportsbookWeekPosted({ client, guild }) {
+export async function ensureSportsbookWeekPosted({ client, guild, mode = 'all' } = {}) {
   if (!client || !guild) return null;
   const context = getSportsbookContextForGuild(guild.id);
   if (!context?.seasonKey || !context?.weekNumber || !context?.games?.length) return null;
+
+  // Startup safety: only ensure the *current* board exists. This prevents old weeks
+  // (like a settled Week 6) from being recreated if their stored message IDs went stale.
+  if (mode === 'currentOnly') {
+    const store = loadStore();
+    const seasonStore = store?.[context.seasonKey];
+    const currentWeekKey = `week_${context.weekNumber}`;
+    const weekStore = seasonStore?.weeks?.[currentWeekKey];
+    if (weekStore?.settled) return null;
+  }
   return postSportsbookWeek({
     client,
     guild,
@@ -839,7 +867,7 @@ export async function ensureSportsbookWeekPosted({ client, guild }) {
   });
 }
 
-export async function refreshSportsbookHeaders({ client, guild }) {
+export async function refreshSportsbookHeaders({ client, guild, mode = 'all' } = {}) {
   if (!client || !guild) return null;
   const store = loadStore();
   const context = getSportsbookContextForGuild(guild.id);
@@ -850,6 +878,12 @@ export async function refreshSportsbookHeaders({ client, guild }) {
 
   let updated = 0;
   for (const [weekKey, weekStore] of Object.entries(seasonStore.weeks || {})) {
+    if (mode === 'currentOnly') {
+      const currentWeekKey = context?.weekNumber ? `week_${context.weekNumber}` : null;
+      if (currentWeekKey && weekKey !== currentWeekKey) continue;
+      // Don't waste calls updating historical settled weeks on startup.
+      if (weekStore?.settled) continue;
+    }
     const channelId = weekStore?.posts?.channelId;
     const headerMessageId = weekStore?.posts?.headerMessageId;
     if (!channelId || !headerMessageId) continue;
@@ -1042,7 +1076,7 @@ function buildTeamsByIdFromStoreOrSnapshot(lines = [], guildId = null) {
       const label = String(team?.displayName || team?.nickName || team?.longName || '').trim();
       if (Number.isFinite(teamId) && label) map.set(teamId, label);
     }
-  } catch {}
+  } catch { }
   return map;
 }
 
@@ -1111,20 +1145,20 @@ function openBetsForGame(bets = [], gameId) {
 function cardLinesForUser(bets = [], lines = [], guildId = null) {
   return bets.length
     ? bets
-        .slice()
-        .sort((a, b) => Number(b.placedAt || 0) - Number(a.placedAt || 0))
-        .slice(0, 8)
-        .map((bet) => {
-          const matchupLabel = resolveBetMatchupLabel(bet, lines, guildId);
-          const baseLabel = bet.betLabel || `${bet.market} ${bet.selection}`;
-          const oddsLabel = Number.isFinite(Number(bet?.price || 0)) && Number(bet?.price || 0) !== 0 && !String(baseLabel).includes(formatSigned(Number(bet.price || 0)))
-            ? ` @ ${formatSigned(Number(bet.price || 0))}`
-            : '';
-          if (bet.status === 'buyout') {
-            return `${matchupLabel} • ${baseLabel}${oddsLabel} • ${formatImpactValue(bet.wager)} • buyout for ${formatImpactValue(bet.refund || 0)}`;
-          }
-          return `${matchupLabel} • ${baseLabel}${oddsLabel} • ${formatImpactValue(bet.wager)} • ${bet.status}`;
-        })
+      .slice()
+      .sort((a, b) => Number(b.placedAt || 0) - Number(a.placedAt || 0))
+      .slice(0, 8)
+      .map((bet) => {
+        const matchupLabel = resolveBetMatchupLabel(bet, lines, guildId);
+        const baseLabel = bet.betLabel || `${bet.market} ${bet.selection}`;
+        const oddsLabel = Number.isFinite(Number(bet?.price || 0)) && Number(bet?.price || 0) !== 0 && !String(baseLabel).includes(formatSigned(Number(bet.price || 0)))
+          ? ` @ ${formatSigned(Number(bet.price || 0))}`
+          : '';
+        if (bet.status === 'buyout') {
+          return `${matchupLabel} • ${baseLabel}${oddsLabel} • ${formatImpactValue(bet.wager)} • buyout for ${formatImpactValue(bet.refund || 0)}`;
+        }
+        return `${matchupLabel} • ${baseLabel}${oddsLabel} • ${formatImpactValue(bet.wager)} • ${bet.status}`;
+      })
     : ['No bets placed for this week.'];
 }
 
@@ -1535,15 +1569,19 @@ export async function settleSportsbookWeek({ client, guildId, seasonKey, weekNum
             name: `${IMPACT_EMOJI} Payouts`,
             value: impactWinners.length
               ? impactWinners.map((bet) => {
-                  const totalReturn = Number(bet.wager || 0) + Number(bet.profit || 0);
-                  return `${String(bet.userId)} ${bet.market} ${bet.selection} • stake ${formatImpactValue(bet.wager || 0)} • won ${formatImpactValue(bet.profit || 0)} • return ${formatImpactValue(totalReturn)} • ${formatImpactDelta(bet.impactAward || 0)}`;
-                }).join('\n')
+                const totalReturn = Number(bet.wager || 0) + Number(bet.profit || 0);
+                const user = bet.userId ? `<@${String(bet.userId)}>` : 'Unknown user';
+                return `${user} ${bet.market} ${bet.selection} • stake ${formatImpactValue(bet.wager || 0)} • won ${formatImpactValue(bet.profit || 0)} • return ${formatImpactValue(totalReturn)} • ${formatImpactDelta(bet.impactAward || 0)}`;
+              }).join('\n')
               : 'No winning slips paid out this week.',
           },
           {
             name: 'Top Impact To Bet',
             value: board.length
-              ? board.map((row, idx) => `${idx + 1}. ${String(row.userId)} — ${formatImpactValue(row.balance)}`).join('\n')
+              ? board.map((row, idx) => {
+                const user = row.userId ? `<@${String(row.userId)}>` : 'Unknown user';
+                return `${idx + 1}. ${user} — ${formatImpactValue(row.balance)}`;
+              }).join('\n')
               : 'No sportsbook action yet.',
           },
         )

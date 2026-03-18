@@ -178,7 +178,9 @@ export async function execute(interaction) {
         assigned = true;
       }
       if (roleId) {
-        const role = interaction.guild.roles.cache.get(roleId) || null;
+        // Don't rely purely on cached role.members which can lag if roles were just assigned.
+        // Fetch the role fresh so last-second assignments don't cause the whole league to appear open.
+        const role = await interaction.guild.roles.fetch(String(roleId)).catch(() => null);
         const count = role?.members?.size ?? 0;
         assigned = assigned || count > 0;
       }
@@ -242,7 +244,7 @@ export async function execute(interaction) {
     if (interaction.deferred || interaction.replied) {
       await safeEditReply(interaction, { content: msg });
     } else {
-      await interaction.reply({ content: msg, ephemeral: true }).catch(() => {});
+      await interaction.reply({ content: msg, ephemeral: true }).catch(() => { });
     }
   }
 }

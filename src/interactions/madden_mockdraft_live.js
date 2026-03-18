@@ -31,6 +31,7 @@ import {
   leaveMockDraftSession,
   listUserAssignedSlots,
   makeMockDraftPick,
+  simulateMockDraftPick,
   setMockDraftParticipantTeams,
   setMockDraftTickerActive,
   sessionLink,
@@ -40,7 +41,7 @@ import {
 } from '../shared/madden_mock_draft_live.js';
 import { getCoachAssignmentMap } from '../shared/madden_coach_assignments.js';
 
-export const customId = /^madden_mockdraft_(live|pick|invite|search)\|/;
+export const customId = /^madden_mockdraft_.*\|/;
 const SCOUTING_HUB_CHANNEL_ID = '1460288930946482299';
 
 function privatePayload(content) {
@@ -61,15 +62,42 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function sendMockDraftInviteDM(client, session, member) {
+  const user = member?.user || await client.users.fetch(member?.id || '').catch(() => null);
+  if (!user) return false;
+  const roomLink = sessionLink(session);
+  const assignedTeams = coachTeamsForMember(member);
+  const teamText = assignedTeams.length ? assignedTeams.join(', ') : 'your league team';
+  const embed = new EmbedBuilder()
+    .setTitle(`Private Mock Draft Invite • ${session.draftYear}`)
+    .setColor(0x5865f2)
+    .setDescription(
+      `You were added to a private LEAGUEbuddy mock draft in scouting hub.${roomLink ? `\n\nOpen room: ${roomLink}` : `\n\nRoom: <#${session.channelId}>`}`
+    )
+    .addFields(
+      { name: 'Your Team', value: teamText, inline: false },
+      {
+        name: 'How It Works',
+        value: 'The room carries the full first-round mock. CPU runs non-user picks. When your team is up, make your pick there or use `Sim My Pick`.',
+        inline: false,
+      },
+      {
+        name: 'What To Do',
+        value: '1. Open the private room\n2. Follow the board as it moves\n3. Make your pick when your team is on the clock',
+        inline: false,
+      },
+    );
+  await user.send({ embeds: [embed] }).catch(() => null);
+  return true;
+}
+
 async function sendMockDraftSummaryDMs(client, sessionId) {
   const session = getMockDraftSession(sessionId);
+  console.log(`[MockDraft] handleButton: sessionId=${sessionId}, session=`, session);
   if (!session || session.summarySentAt) return;
+  // Show all picks for DM summary
   const allResults = (session.picks || [])
-    .map((pick) => `${pick.pickNumber}. ${pick.teamName} — ${pick.prospectName} (${pick.position})${pick.userId !== 'auto' && pick.grade ? ` • ${pick.grade}` : ''}`)
-    .join('\n') || 'No picks were made.';
-  const topOfBoard = (session.picks || [])
-    .slice(0, 8)
-    .map((pick) => `${pick.pickNumber}. ${pick.teamName} — ${pick.prospectName} (${pick.position})${pick.userId !== 'auto' && pick.grade ? ` • ${pick.grade}` : ''}`)
+    .map((pick) => `Pick ${pick.pickNumber}: ${pick.teamName} — ${pick.prospectName} (${pick.position})${pick.userId !== 'auto' && pick.grade ? ` • ${pick.grade}` : ''}`)
     .join('\n') || 'No picks were made.';
 
   for (const participant of session.participants || []) {
@@ -90,7 +118,6 @@ async function sendMockDraftSummaryDMs(client, sessionId) {
       .addFields(
         { name: 'Your Picks', value: userPicks, inline: false },
         { name: 'Your Pick Recaps', value: userRecaps.slice(0, 1024), inline: false },
-        { name: 'Top Of The Mock', value: topOfBoard, inline: false },
       );
     const fullResultsEmbed = new EmbedBuilder()
       .setTitle(`Full First Round • ${session.draftYear}`)
@@ -107,6 +134,7 @@ async function sendMockDraftSummaryDMs(client, sessionId) {
 
 async function cleanupPrivateDraftRoom(client, sessionId, reason = 'Mock draft complete.') {
   const session = getMockDraftSession(sessionId);
+  console.log(`[MockDraft] handlePickSelect: sessionId=${sessionId}, session=`, session);
   if (!session || session.roomType !== 'private') {
     deleteMockDraftSession(sessionId);
     return;
@@ -137,22 +165,59 @@ async function runMockDraftTicker(client, sessionId, { forceCpu = false } = {}) 
       if (!session || session.status !== 'live') break;
       const currentOwner = session.pickOwners?.[String(session.currentPickIndex)] || null;
       if (currentOwner && !forceCpu) {
+        // Public suspense: announce who's on the clock
         const onClockPayload = {
-          content: `<@${currentOwner}> you are on the clock. Make your pick in this room.`,
+          content: `<@${currentOwner}> is on the clock! Please prepare your pick.`,
           embeds: [buildMockDraftOnClockEmbed(session)],
-          components: [
-            ...buildPickMenu(session),
-            ...buildPickControlComponents(session.id),
-          ],
+          components: buildOnClockAnnouncementComponents(session.id),
         };
         await channel?.send?.(onClockPayload).catch(() => null);
+        // Private suspense: open pick panel for the coach
+        // Optimize: use cached member if available
+        const guild = client.guilds.cache.get(session.guildId) || await client.guilds.fetch(session.guildId).catch(() => null);
+        const member = guild?.members.cache.get(currentOwner) || (guild ? await guild.members.fetch(currentOwner).catch(() => null) : null);
+        // Do NOT send DM for pick panel. Only send ephemeral/private pick panel in main channel.
         break;
       }
       await delay(900);
       const next = autoPickMockDraft(sessionId, session.hostId);
       const madePick = next?.picks?.[next.picks.length - 1];
       if (!madePick) break;
-      await channel?.send?.({ embeds: [buildMockDraftPickEmbed(next, madePick)] }).catch(() => null);
+      if (!next) {
+        console.error('[MockDraft] runMockDraftTicker: next (session) is undefined before embed send.', {
+          sessionId,
+          madePick,
+          channel: channel?.id
+        });
+        await channel?.send?.({
+          embeds: [
+            new EmbedBuilder()
+              .setTitle('Pick Failed')
+              .setColor(0xe74c3c)
+              .setDescription('Pick failed due to an internal error (missing draft state).\nSessionId: ' + sessionId)
+          ]
+        });
+        break;
+      }
+      // Detailed logging before embed send
+      console.log('[MockDraft] runMockDraftTicker: About to send embed. Session:', {
+        id: next.id,
+        status: next.status,
+        currentPickIndex: next.currentPickIndex,
+        picks: next.picks,
+        channelId: next.channelId,
+        leagueId: next.leagueId
+      });
+      console.log('[MockDraft] runMockDraftTicker: About to send embed. Pick:', madePick);
+      try {
+        await channel?.send?.({ embeds: [buildMockDraftPickEmbed(next, madePick)] });
+      } catch (err) {
+        console.error('[MockDraft] Error sending embed:', {
+          next,
+          madePick,
+          error: err
+        });
+      }
       await syncMockDraftSessionMessage(client, next);
       if (next.status === 'done') break;
     }
@@ -178,27 +243,83 @@ async function runMockDraftTicker(client, sessionId, { forceCpu = false } = {}) 
   }
 }
 
-function buildPickControlComponents(sessionId) {
-  return [
+function buildPickControlComponents(sessionId, interaction) {
+  // Only show 'Finish Draft With CPU' and 'End Here' to the host
+  const session = getMockDraftSession(sessionId);
+  const isHost = interaction && interaction.user && interaction.user.id === session?.hostId;
+  const controls = [
     new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId(`madden_mockdraft_live|continuelive|${sessionId}`)
-        .setLabel('Continue Live')
-        .setStyle(3),
+        .setCustomId(`madden_mockdraft_live|simmypick|${sessionId}`)
+        .setLabel('Sim My Pick')
+        .setStyle(2),
       new ButtonBuilder()
         .setCustomId(`madden_mockdraft_live|search|${sessionId}`)
         .setLabel('Search Player')
         .setStyle(2),
-      new ButtonBuilder()
-        .setCustomId(`madden_mockdraft_live|finishcpu|${sessionId}`)
-        .setLabel('Finish Draft With CPU')
-        .setStyle(1),
-      new ButtonBuilder()
-        .setCustomId(`madden_mockdraft_live|endhere|${sessionId}`)
-        .setLabel('End Here')
-        .setStyle(4),
     ),
   ];
+  if (isHost) {
+    controls.push(
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`madden_mockdraft_live|finishcpu|${sessionId}`)
+          .setLabel('Finish Draft With CPU')
+          .setStyle(1),
+        new ButtonBuilder()
+          .setCustomId(`madden_mockdraft_live|endhere|${sessionId}`)
+          .setLabel('End Here')
+          .setStyle(4),
+      )
+    );
+  }
+  return controls;
+}
+
+function buildOnClockAnnouncementComponents(sessionId) {
+  return [
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`madden_mockdraft_live|pick|${sessionId}`)
+        .setLabel('Open Private Pick Panel')
+        .setStyle(1),
+      new ButtonBuilder()
+        .setCustomId(`madden_mockdraft_live|myteams|${sessionId}`)
+        .setLabel('My Team Picks')
+        .setStyle(2),
+    ),
+  ];
+}
+
+function buildPostPickControlComponents(sessionId) {
+  return (interaction) => {
+    const session = getMockDraftSession(sessionId);
+    const isHost = interaction && interaction.user && interaction.user.id === session?.hostId;
+    if (!isHost) {
+      // Non-hosts get no controls
+      return [];
+    }
+    return [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`madden_mockdraft_live|continuelive|${sessionId}`)
+          .setLabel('Continue Live')
+          .setStyle(3),
+        new ButtonBuilder()
+          .setCustomId(`madden_mockdraft_live|search|${sessionId}`)
+          .setLabel('Search Player')
+          .setStyle(2),
+        new ButtonBuilder()
+          .setCustomId(`madden_mockdraft_live|finishcpu|${sessionId}`)
+          .setLabel('Finish Draft With CPU')
+          .setStyle(1),
+        new ButtonBuilder()
+          .setCustomId(`madden_mockdraft_live|endhere|${sessionId}`)
+          .setLabel('End Here')
+          .setStyle(4),
+      ),
+    ];
+  };
 }
 
 function buildSearchModal(sessionId) {
@@ -334,27 +455,6 @@ async function handleButton(interaction) {
   const [, action, sessionId, pageRaw] = interaction.customId.split('|');
 
   if (action === 'create') {
-    await interaction.reply({
-      embeds: [
-        new EmbedBuilder()
-          .setTitle('Start Mock Draft')
-          .setColor(0x5865f2)
-          .setDescription('This mock draft now runs in one private-prep mode only.\n\nIt creates a clean private draft room in the scouting hub, no matter where you launch it. Flow: create room, invite coaches, start draft, then the room self-cleans after the draft ends.'),
-      ],
-      components: [
-        {
-          type: 1,
-          components: [
-            { type: 2, style: 1, custom_id: 'madden_mockdraft_live|create_private', label: 'Create Private Draft Room' },
-          ],
-        },
-      ],
-      flags: 64,
-    });
-    return;
-  }
-
-  if (action === 'create_private') {
     await interaction.deferReply({ flags: 64 });
     const scoutingHub = interaction.guild.channels.cache.get(SCOUTING_HUB_CHANNEL_ID)
       || await interaction.guild.channels.fetch(SCOUTING_HUB_CHANNEL_ID).catch(() => null);
@@ -445,7 +545,8 @@ async function handleButton(interaction) {
 
   const session = getMockDraftSession(sessionId);
   if (!session) {
-    await interaction.reply(privatePayload('That mock draft session is no longer available.'));
+    console.error(`[MockDraft] Session not found for sessionId: ${sessionId} (action: ${action})`);
+    await interaction.reply(privatePayload('That mock draft session is no longer available. If you believe this is an error, please try again or contact support.'));
     return;
   }
 
@@ -485,11 +586,12 @@ async function handleButton(interaction) {
         await interaction.reply(privatePayload('Only the host can send invites for this mock draft.'));
         return;
       }
+      await interaction.deferReply({ flags: 64 });
       const inviteOptions = await buildCoachInviteOptions(interaction.guild, session);
       const content = inviteOptions.length
         ? 'Choose the league coaches you want to add to the private draft room.'
         : 'No league coaches were found from current assignments yet. Make sure coach assignments are current, then try again.';
-      await interaction.reply({ ...buildInvitePickerPayload(session, inviteOptions, 0, content), flags: 64 });
+      await interaction.editReply(buildInvitePickerPayload(session, inviteOptions, 0, content));
       return;
     }
     if (action === 'invite_prev' || action === 'invite_next') {
@@ -539,19 +641,41 @@ async function handleButton(interaction) {
     }
     if (action === 'pick') {
       const currentOwner = session.pickOwners?.[String(session.currentPickIndex)];
+      if (!currentOwner) {
+        console.error(`[MockDraft] No currentOwner found for pick index: ${session.currentPickIndex} in session: ${sessionId}`);
+        await interaction.reply(privatePayload('No team is currently on the clock. Please wait for your turn or contact support if this persists.'));
+        return;
+      }
       if (currentOwner !== interaction.user.id) {
         await interaction.reply(privatePayload(`It is not your team on the clock right now. The current GM is <@${currentOwner}>.`));
         return;
       }
       await interaction.reply({
-        content: 'Choose from the top of the current board. The draft will auto-sim forward again after your pick.',
-        components: [...buildPickMenu(session), ...buildPickControlComponents(session.id)],
+        content: 'Your private pick panel is open. This selection is only visible to you. Choose from the top of the board, search for a player, or let CPU simulate your pick.',
+        components: [...buildPickMenu(session, currentOwner === interaction.user.id), ...buildPickControlComponents(session.id, interaction)],
         flags: 64,
       });
       return;
     }
     if (action === 'search') {
       await interaction.showModal(buildSearchModal(sessionId));
+      return;
+    }
+    if (action === 'simmypick') {
+      const next = simulateMockDraftPick(sessionId, interaction.user.id);
+      await syncMockDraftSessionMessage(interaction.client, next);
+      const madePick = next?.picks?.[next.picks.length - 1];
+      const channel = await interaction.client.channels.fetch(next.channelId).catch(() => null);
+      await channel?.send?.({ embeds: [buildMockDraftPickEmbed(next, madePick)] }).catch(() => null);
+      await interaction.update({
+        embeds: [
+          new EmbedBuilder()
+            .setTitle('Pick Simulated')
+            .setColor(0x5865f2)
+            .setDescription(`CPU made your pick: **${madePick.pickNumber}. ${madePick.teamName} — ${madePick.prospectName} (${madePick.position})**.\n\nChoose whether to continue the live mock, finish the rest with CPU, or end it here.`),
+        ],
+        components: buildPostPickControlComponents(sessionId),
+      });
       return;
     }
     if (action === 'auto') {
@@ -594,7 +718,12 @@ async function handleButton(interaction) {
       return;
     }
   } catch (error) {
-    await interaction.reply(privatePayload(error?.message || 'Mock draft action failed.'));
+    const payload = privatePayload(error?.message || 'Mock draft action failed.');
+    if (interaction.deferred || interaction.replied) {
+      await interaction.editReply(payload).catch(() => null);
+      return;
+    }
+    await interaction.reply(payload).catch(() => null);
   }
 }
 
@@ -602,8 +731,31 @@ async function handlePickSelect(interaction) {
   const [, sessionId] = interaction.customId.split('|');
   const prospectId = interaction.values?.[0];
   const session = getMockDraftSession(sessionId);
+  // Defer immediately. If we miss Discord's acknowledgement window we'll get 10062 (Unknown interaction).
+  // In that case there's nothing we can send back to the user, so just log and return.
+  try {
+    await interaction.deferUpdate();
+  } catch (err) {
+    if (err?.code === 10062) {
+      console.warn('[MockDraft] PickSelect: interaction expired before deferUpdate()', { sessionId, prospectId, userId: interaction.user?.id });
+      return;
+    }
+    throw err;
+  }
   if (!session) {
-    await interaction.update({ content: 'That mock draft session is no longer available.', embeds: [], components: [] });
+    console.error(`[MockDraft] PickSelect: Session not found for sessionId: ${sessionId}`);
+    await interaction.editReply({
+      embeds: [
+        new EmbedBuilder()
+          .setTitle('Pick Failed')
+          .setColor(0xe74c3c)
+          .setDescription(
+            'This pick could not be submitted because the mock draft session is no longer active or has expired.'
+            + '\nSessionId: ' + sessionId
+          ),
+      ],
+      components: [],
+    }).catch(() => null);
     return;
   }
   try {
@@ -612,25 +764,38 @@ async function handlePickSelect(interaction) {
     const madePick = next.picks[next.picks.length - 1];
     const channel = await interaction.client.channels.fetch(next.channelId).catch(() => null);
     await channel?.send?.({ embeds: [buildMockDraftPickEmbed(next, madePick)] }).catch(() => null);
-    await interaction.update({
+    const isHost = interaction && interaction.user && interaction.user.id === next.hostId;
+    await interaction.editReply({
       embeds: [
         new EmbedBuilder()
           .setTitle('Pick Submitted')
           .setColor(0x5865f2)
-          .setDescription(`Pick ${madePick.pickNumber} is locked in: **${madePick.teamName} — ${madePick.prospectName} (${madePick.position})**.\n\nChoose whether to continue the live mock, finish the rest with CPU, or end it here.`),
+          .setDescription(`Pick ${madePick.pickNumber} is locked in: **${madePick.teamName} — ${madePick.prospectName} (${madePick.position})**.`),
       ],
-      components: buildPickControlComponents(sessionId),
-    });
+      components: isHost ? buildPostPickControlComponents(sessionId)(interaction) : [],
+    }).catch(() => null);
+    // Only prompt host to continue/end, others auto-advance
+    if (!isHost) {
+      void runMockDraftTicker(interaction.client, sessionId);
+    }
   } catch (error) {
-    await interaction.update({
+    const message = error?.message || 'That pick could not be submitted.';
+    console.error('[MockDraft] handlePickSelect error', {
+      sessionId,
+      prospectId,
+      userId: interaction.user?.id,
+      name: error?.name,
+      message: error?.message,
+    });
+    await interaction.editReply({
       embeds: [
         new EmbedBuilder()
           .setTitle('Pick Failed')
           .setColor(0xe74c3c)
-          .setDescription(error?.message || 'That pick could not be submitted.'),
+          .setDescription(message + '\nSessionId: ' + sessionId)
       ],
       components: [],
-    });
+    }).catch(() => null);
   }
 }
 
@@ -669,55 +834,12 @@ async function handleSearchModal(interaction) {
           .setPlaceholder('Choose a matching prospect')
           .addOptions(matches),
       ),
-      ...buildPickControlComponents(sessionId),
+      ...buildPickControlComponents(sessionId, interaction),
     ],
-    flags: 64,
   });
 }
 
-async function handleInviteSelect(interaction) {
-  const [, sessionId, pageRaw] = interaction.customId.split('|');
-  const session = getMockDraftSession(sessionId);
-  if (!session) {
-    await interaction.update({ content: 'That mock draft session is no longer available.', embeds: [], components: [] });
-    return;
-  }
-  if (session.hostId !== interaction.user.id) {
-    await interaction.update({ content: 'Only the host can invite coaches into this room.', embeds: [], components: [] });
-    return;
-  }
-  const channel = await interaction.client.channels.fetch(session.channelId).catch(() => null);
-  if (session.roomType !== 'private_inline' && !channel?.members?.add) {
-    await interaction.update({ content: 'This draft room is not accepting invites right now.', embeds: [], components: [] });
-    return;
-  }
-  const allowedCoachIds = new Set((await buildCoachInviteOptions(interaction.guild, session)).map((option) => option.data.value));
-  const invited = [];
-  for (const userId of interaction.values || []) {
-    if (!allowedCoachIds.has(userId)) continue;
-    try {
-      if (session.roomType !== 'private_inline') {
-        await channel.members.add(userId);
-      }
-      joinMockDraftSession(sessionId, userId);
-      setMockDraftParticipantTeams(sessionId, userId, coachTeamsForMember(await interaction.guild.members.fetch(userId).catch(() => null)));
-      invited.push(`<@${userId}>`);
-    } catch {}
-  }
-  const refreshed = getMockDraftSession(sessionId);
-  const inviteOptions = await buildCoachInviteOptions(interaction.guild, refreshed);
-  const page = Number(pageRaw || 0);
-  await interaction.update({
-    content: invited.length
-      ? session.roomType === 'private'
-        ? `Added ${invited.join(', ')} to <#${session.channelId}>. Start the draft from inside that room when you are ready.`
-        : `Invited ${invited.join(', ')} to <#${session.channelId}>. They can press \`Join\` inside the room when they are ready.`
-      : 'No invites were sent.',
-    ...buildInvitePickerPayload(refreshed, inviteOptions, page),
-  });
-}
-
-export async function execute(interaction) {
+async function execute(interaction) {
   if (interaction instanceof ButtonInteraction) {
     await handleButton(interaction);
     return;
@@ -732,7 +854,9 @@ export async function execute(interaction) {
       return;
     }
     await handlePickSelect(interaction);
+    return;
   }
+  await interaction.reply(privatePayload('That action is not supported in this mock draft.'));
 }
 
 export default { customId, execute };

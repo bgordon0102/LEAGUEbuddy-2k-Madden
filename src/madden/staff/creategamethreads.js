@@ -23,11 +23,36 @@ async function safeEditReply(interaction, payload) {
   } catch (err) {
     // If the interaction webhook token is invalid/expired or unknown, fall back to channel send.
     if ([50027, 10015, 10062].includes(err?.code) && interaction.channel?.isTextBased()) {
-      await interaction.channel.send(typeof payload === 'string' ? payload : { ...payload, ephemeral: false });
+      await interaction.channel.send(typeof payload === 'string' ? payload : payload);
       return;
     }
     throw err;
   }
+}
+
+function coachRoleIds(teamName, roleMap) {
+  if (!teamName || !roleMap) return [];
+  const norm = str => (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const target = norm(teamName);
+  const mascotTarget = norm(String(teamName).split(/\s+/).pop());
+
+  const roleEntries = Object.entries(roleMap || {})
+    .filter(([name]) => name.toLowerCase().endsWith('coach'))
+    .map(([name, id]) => {
+      const base = norm(name.replace(/\s*coach$/i, ''));
+      const mascot = norm(name.replace(/\s*coach$/i, '').split(/\s+/).pop());
+      return { base, mascot, id };
+    });
+
+  const hits = roleEntries.filter(e =>
+    e.base === target ||
+    e.base === mascotTarget ||
+    target.includes(e.base) ||
+    e.base.includes(target) ||
+    mascotTarget === e.mascot
+  );
+
+  return [...new Set(hits.map(h => h.id).filter(Boolean))];
 }
 
 function normalizeName(name) {
@@ -649,7 +674,7 @@ function pairFromSeeds(seeds, roundName) {
 }
 
 async function execute(interaction) {
-  await interaction.deferReply({ ephemeral: true });
+  await interaction.deferReply({ flags: 64 });
   const roleMap = loadJson(ROLE_MAP_FILE);
   const channelMap = loadJson(CHANNEL_MAP_FILE);
   const member = await interaction.guild.members.fetch(interaction.user.id);

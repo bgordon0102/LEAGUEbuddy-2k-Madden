@@ -22,8 +22,20 @@ import {
 } from '../madden/coach/mockdraft.js';
 
 const STORE_FILE = path.join(process.cwd(), 'data', 'madden', 'mock_draft_sessions.json');
+const AVP_FILE = path.join(process.cwd(), 'data', 'madden', 'madden_avp.json');
 const MAX_SELECT_OPTIONS = 25;
 const SESSION_MAX_IDLE_MS = 1000 * 60 * 60 * 6;
+
+function loadAvpStore() {
+  try {
+    if (!fs.existsSync(AVP_FILE)) return null;
+    const raw = fs.readFileSync(AVP_FILE, 'utf8');
+    const data = JSON.parse(raw);
+    return data && typeof data === 'object' ? data : null;
+  } catch {
+    return null;
+  }
+}
 
 function seededRand(seedStr, salt, max) {
   const str = `${seedStr}|${salt}`;
@@ -142,6 +154,187 @@ function findNeedsForTeam(teamName, needsMap, altName) {
   return ['BPA'];
 }
 
+function buildNeedsContext(session, slot, prospectGroupName) {
+  const needs = findNeedsForTeam(slot?.name, session?.teamNeeds || {}, slot?.nick);
+  const needRank = Math.max(-1, needs.indexOf(prospectGroupName));
+  const topNeeds = (needs || []).slice(0, 3);
+  const isTopNeed = needRank === 0;
+  const isInTopNeeds = needRank >= 0 && needRank <= 2;
+  const isOffNeed = needRank === -1;
+  return {
+    needs,
+    needRank,
+    topNeeds,
+    isTopNeed,
+    isInTopNeeds,
+    isOffNeed,
+  };
+}
+
+function extractTeamStrengths(league) {
+  // Snapshot roster-driven strength signals per team.
+  // Keep it compact and safe for JSON persistence.
+  const teamInfo = league?.teams?.leagueTeamInfoList || [];
+  const rosters = league?.rosters?.teams || {};
+
+  const getTeamName = (t) => (
+    t?.displayName
+    || `${t?.cityName || ''} ${t?.nickName || ''}`.trim()
+    || t?.nickName
+    || `Team ${t?.teamId}`
+  );
+
+  const getMetricOvr = (p) => Number(
+    p?.playerBestOvr
+    ?? p?.teamSchemeOvr
+    ?? p?.overallRating
+    ?? p?.playerSchemeOvr
+    ?? p?.ovr
+    ?? p?.overall
+    ?? 0
+  ) || 0;
+
+  const strengths = {};
+  for (const t of teamInfo) {
+    const teamId = Number(t?.teamId);
+    if (!Number.isFinite(teamId)) continue;
+    const roster = rosters?.[teamId] || rosters?.[String(teamId)] || {};
+    const players = roster?.rosterInfoList || [];
+
+    const positionGroup = (pos = '') => {
+      const p = String(pos || '').toUpperCase();
+      if (p === 'QB') return 'QB';
+      if (['LT', 'RT'].includes(p)) return 'OT';
+      if (['LG', 'C', 'RG'].includes(p)) return 'IOL';
+      if (p.includes('EDGE') || ['LE', 'RE', 'EDGE', 'EDG', 'LEDG', 'REDG', 'LEDGE', 'REDGE', 'DE', 'RDE', 'LDE'].includes(p)) return 'EDGE';
+      if (['DT', 'NT', 'IDL', 'IDL1', 'IDL2', 'IDL3'].includes(p)) return 'DT';
+      if (['MLB', 'ILB', 'LB', 'LOLB', 'ROLB', 'OLB', 'SAM', 'MIKE', 'WILL'].includes(p)) return 'LB';
+      if (p === 'CB') return 'CB';
+      if (['FS', 'SS'].includes(p)) return 'S';
+      if (p === 'WR') return 'WR';
+      if (p === 'TE') return 'TE';
+      if (['HB', 'RB', 'FB'].includes(p)) return 'RB';
+      return 'OTHER';
+    };
+
+    const groupTop = (group, n = 2) => players
+      .filter((p) => positionGroup(p?.position) === group)
+      .map((p) => ({
+        ovr: getMetricOvr(p),
+        age: Number(p?.age ?? p?.playerAge ?? 0) || 0,
+        yearsLeft: Number(p?.contractYearsLeft ?? p?.contractLength ?? 0) || 0,
+      }))
+      .sort((a, b) => b.ovr - a.ovr)
+      .slice(0, n);
+
+    const qbs = players
+      .filter((p) => String(p?.position || '').toUpperCase() === 'QB')
+      .map((p) => ({
+        ovr: getMetricOvr(p),
+        age: Number(p?.age ?? p?.playerAge ?? 0) || 0,
+        yearsPro: Number(p?.yearsPro ?? p?.experience ?? p?.playerExperience ?? p?.playerYearsPro ?? 0) || 0,
+        yearsLeft: Number(p?.contractYearsLeft ?? p?.contractLength ?? 0) || 0,
+      }))
+      .sort((a, b) => b.ovr - a.ovr);
+
+    const key = normalizeTeamKey(getTeamName(t));
+    strengths[key] = {
+      qb: {
+        starterOvr: qbs[0]?.ovr ?? 0,
+        backupOvr: qbs[1]?.ovr ?? 0,
+        count: qbs.length,
+        starterAge: qbs[0]?.age ?? 0,
+        starterYearsLeft: qbs[0]?.yearsLeft ?? 0,
+      },
+      groups: {
+        OT: groupTop('OT'),
+        IOL: groupTop('IOL'),
+        EDGE: groupTop('EDGE'),
+        DT: groupTop('DT'),
+        LB: groupTop('LB'),
+        CB: groupTop('CB'),
+        S: groupTop('S'),
+        WR: groupTop('WR'),
+        TE: groupTop('TE'),
+        RB: groupTop('RB'),
+      },
+    };
+  }
+  return strengths;
+}
+
+function getTeamStrength(session, teamName, altName = '') {
+  const map = session?.teamStrengths || {};
+  const keys = teamAliasKeys(teamName, altName);
+  for (const k of keys) {
+    if (map[k]) return map[k];
+  }
+  return null;
+}
+
+function strengthVerdict(session, teamName, group) {
+  // Conservative thresholds: only call "strength" when the room is clearly stable.
+  const st = getTeamStrength(session, teamName);
+  if (!st) return { strong: false, detail: null };
+
+  if (group === 'QB') {
+    const qb = st?.qb;
+    if (!qb) return { strong: false, detail: null };
+    const strongStarter = qb.starterOvr >= 84 && qb.starterYearsLeft >= 2 && qb.starterAge <= 33;
+    const stableStarter = qb.starterOvr >= 82 && qb.starterYearsLeft >= 1 && qb.starterAge <= 34;
+    const hasBackup = qb.count >= 2 && qb.backupOvr >= 70;
+    const strong = strongStarter || (stableStarter && hasBackup);
+    const detail = strong
+      ? `They’re already set at QB (starter ${qb.starterOvr} OVR, ${qb.starterYearsLeft} yrs left${hasBackup ? `, backup ${qb.backupOvr}` : ''}).`
+      : null;
+    return { strong, detail };
+  }
+
+  const top = st?.groups?.[group];
+  if (!Array.isArray(top) || !top.length) return { strong: false, detail: null };
+  const top1 = top[0] || { ovr: 0, yearsLeft: 0 };
+  const top2 = top[1] || { ovr: 0, yearsLeft: 0 };
+  const starter = top1.ovr >= 84 && top1.yearsLeft >= 1;
+  const strong2 = top2.ovr >= 80 && top2.yearsLeft >= 1;
+  const solid2 = top2.ovr >= 77 && top2.yearsLeft >= 1;
+
+  // Depth expectations by group.
+  let strong = false;
+  if (group === 'WR' || group === 'CB') {
+    // Need two legit starters to call it a strength.
+    strong = starter && solid2;
+  } else if (group === 'OT' || group === 'IOL' || group === 'EDGE' || group === 'DT') {
+    // Trenches: one strong starter is enough to not be "screaming", but call it strength only with a strong #2.
+    strong = starter && strong2;
+  } else if (group === 'S' || group === 'LB') {
+    strong = starter && solid2;
+  } else if (group === 'TE' || group === 'RB') {
+    // Skill non-premium: only call it strength if the starter is clearly above average.
+    strong = top1.ovr >= 86 && top1.yearsLeft >= 1;
+  }
+
+  const detail = strong
+    ? `${group} wasn’t a fire-drill (top ${group}: ${top1.ovr}${top2?.ovr ? ` / ${top2.ovr}` : ''} OVR).`
+    : null;
+  return { strong, detail };
+}
+
+function isStrongAtPosition(session, teamName, group) {
+  // Prefer roster-driven strength if present; fall back to needs heuristics.
+  const verdict = strengthVerdict(session, teamName, group);
+  if (verdict.strong) return true;
+
+  const needs = findNeedsForTeam(teamName, session?.teamNeeds || {}, null);
+  const idx = (needs || []).indexOf(group);
+  if (group === 'QB') return idx === -1;
+  return idx === -1 || idx >= 4;
+}
+
+function seededPickOne(seedStr, salt, arr) {
+  if (!Array.isArray(arr) || !arr.length) return null;
+  return arr[seededRand(seedStr, salt, arr.length)];
+}
+
 function normalizeCoachTeamName(name = '') {
   return normalizeTeamKey(String(name || '').replace(/ Coach$/, ''));
 }
@@ -212,11 +405,12 @@ function buildLobbyEmbed(session) {
   const embed = new EmbedBuilder()
     .setTitle(`Live Mock Draft Lobby • ${session.draftYear}`)
     .setColor(0x1e90ff)
-    .setDescription('Join the room, then start a fast first-round mock. Coaches only control their own team picks, and the rest of the board auto-sims forward.')
+    .setDescription('This is a fast first-round mock. Coaches only control their own team picks, and the rest of the board auto-sims forward.')
     .addFields(
       { name: 'Host', value: `<@${session.hostId}>`, inline: true },
       { name: 'Participants', value: session.participants.length ? session.participants.map((p) => participantLabel(p)).join('\n') : 'No coaches joined yet.', inline: true },
       { name: 'Format', value: 'Round 1 only • current draft order • current class • your team pick only • auto-sim between live coach selections', inline: false },
+      { name: 'Controls', value: 'Only the host can start or cancel the draft. Invited coaches just need to be in the room before the draft starts.', inline: false },
     );
   if (session.startedAt) {
     embed.addFields({ name: 'Status', value: 'Already started.', inline: false });
@@ -244,21 +438,36 @@ function recentPickLines(session, limit = 6) {
 }
 
 export function buildMockDraftPickEmbed(session, pick) {
+  if (!session || !pick) {
+    return new EmbedBuilder()
+      .setTitle('Pick Failed')
+      .setColor(0xe74c3c)
+      .setDescription('Pick failed: session or pick is not defined.');
+  }
   const emojiMap = loadTeamEmojis();
   const emoji = formatTeamEmoji(pick?.teamName, emojiMap);
+
+  const headline = `${emoji ? `${emoji} ` : ''}${pick.teamName} select **${pick.prospectName}**`;
+  const details = [
+    pick.position ? `**Pos:** ${pick.position}` : null,
+    pick.school ? `**School:** ${pick.school}` : null,
+    typeof pick.via === 'string' && pick.via ? `**Via:** ${pick.via}` : null,
+    pick.actorLabel ? `**GM:** ${pick.actorLabel}` : (pick.userId ? `**GM:** <@${pick.userId}>` : null),
+  ].filter(Boolean);
+
   const embed = new EmbedBuilder()
-    .setTitle(`Pick ${pick?.pickNumber || '?'} • ${pick?.teamName || 'Unknown Team'}`)
+    .setTitle(`Pick ${pick.pickNumber} • ${pick.teamName}`)
     .setColor(0x5865f2)
-    .setDescription(
-      `${emoji ? `${emoji} ` : ''}${pick?.teamName || 'Unknown Team'} select **${pick?.prospectName || 'Unknown Player'}**`
-      + `${pick?.position ? ` (${pick.position}` : ''}${pick?.school ? `, ${pick.school}` : ''}${pick?.position ? ')' : ''}.`
-    );
-  if (pick?.userId !== 'auto' && pick?.grade) {
-    embed.addFields(
-      { name: 'Grade', value: pick.grade, inline: true },
-      { name: 'Review', value: pick?.synopsis || 'No review available.', inline: false },
-    );
+    .setDescription([headline, details.length ? details.join(' • ') : null].filter(Boolean).join('\n'));
+
+  if (pick.userId !== 'auto' && pick.grade) {
+    embed.addFields({ name: 'Grade', value: pick.grade, inline: true });
+    if (pick.gradeScore != null) {
+      embed.addFields({ name: 'Score', value: String(pick.gradeScore), inline: true });
+    }
+    embed.addFields({ name: 'Review', value: pick.synopsis || 'No review available.', inline: false });
   }
+
   return embed;
 }
 
@@ -318,9 +527,9 @@ function buildLiveEmbed(session) {
 function buildLobbyComponents(session) {
   return [
     new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId(`madden_mockdraft_live|start|${session.id}`).setLabel('Start Draft').setStyle(ButtonStyle.Primary),
+      new ButtonBuilder().setCustomId(`madden_mockdraft_live|start|${session.id}`).setLabel('Host Start Draft').setStyle(ButtonStyle.Primary),
       new ButtonBuilder().setCustomId(`madden_mockdraft_live|invite|${session.id}`).setLabel('Invite Coaches').setStyle(ButtonStyle.Secondary),
-      new ButtonBuilder().setCustomId(`madden_mockdraft_live|cancel|${session.id}`).setLabel('Cancel').setStyle(ButtonStyle.Danger),
+      new ButtonBuilder().setCustomId(`madden_mockdraft_live|cancel|${session.id}`).setLabel('Host Cancel Draft').setStyle(ButtonStyle.Danger),
     ),
   ];
 }
@@ -418,16 +627,16 @@ export function buildMockDraftHostPanel(session, inviteOptions = [], page = 0) {
     );
   }
   components.push(
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`madden_mockdraft_live|invite|${session.id}`)
-          .setLabel('Invite Coaches')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId(`madden_mockdraft_live|start|${session.id}`)
-          .setLabel('Start Draft')
-          .setStyle(ButtonStyle.Primary)
-          .setDisabled(session.status !== 'lobby'),
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`madden_mockdraft_live|invite|${session.id}`)
+        .setLabel('Invite Coaches')
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId(`madden_mockdraft_live|start|${session.id}`)
+        .setLabel('Start Draft')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(session.status !== 'lobby'),
       new ButtonBuilder()
         .setCustomId(`madden_mockdraft_live|cancel|${session.id}`)
         .setLabel('Cancel')
@@ -478,39 +687,323 @@ function gradeLabelFromScore(score) {
   if (score >= 72) return 'C';
   if (score >= 68) return 'C-';
   if (score >= 64) return 'D+';
-  if (score >= 60) return 'D';
+  if (score >= 55) return 'D';
   return 'F';
 }
 
-function buildPickSynopsis({ teamName, prospect, needRank, boardDelta, overall, group }) {
+function normalizeProspectIdForAvp(id) {
+  if (!id) return null;
+  const raw = String(id);
+  // Session ids often look like: "2_jamesrodriquez_sam" (rank_prefix + name + pos)
+  // AVP keys are generated like:  "jamesrodriquez_SAM" (name + POS)
+  const m = raw.match(/^(?:\d+_)?(.+?)_([A-Za-z0-9]+)$/);
+  if (!m) return raw;
+  const namePart = m[1].replace(/[^a-z0-9]/gi, '').toLowerCase();
+  const posPart = String(m[2]).toUpperCase();
+  return `${namePart}_${posPart}`;
+}
+
+function avpForProspect(session, prospect) {
+  // AVP is loaded once per call-site (menu + grade). Don't crash grading if file is missing.
+  const avpStore = session?.__avpStore || loadAvpStore();
+  if (session && !session.__avpStore) session.__avpStore = avpStore;
+  if (!avpStore?.prospects || !prospect) return null;
+
+  const direct = avpStore.prospects?.[prospect.id]?.avp;
+  if (direct != null) return direct;
+
+  const normalizedId = normalizeProspectIdForAvp(prospect.id);
+  const normalized = normalizedId ? avpStore.prospects?.[normalizedId]?.avp : null;
+  if (normalized != null) return normalized;
+
+  const legacyKey = prospect?.name && prospect?.position
+    ? `${String(prospect.name).replace(/[^a-z0-9]/gi, '').toLowerCase()}_${String(prospect.position).toUpperCase()}`
+    : null;
+  return legacyKey ? avpStore.prospects?.[legacyKey]?.avp ?? null : null;
+}
+
+function buildPickSynopsis({ teamName, prospect, needRank, boardDelta, overall, group, session = null, avpDelta = null, avp = null }) {
   const fitText =
     needRank === 0 ? 'a direct hit on their top need' :
-    needRank === 1 ? 'a strong answer near the top of their board' :
-    needRank === 2 ? 'a sensible need-based swing' :
-    needRank >= 3 ? 'more of a secondary-need bet' :
-    'more of a value-over-fit swing';
-  const boardText =
-    boardDelta >= 8 ? 'They got clear value versus where the board expected him to go.' :
-    boardDelta >= 3 ? 'It comes in as a mild value pick against the board.' :
-    boardDelta <= -8 ? 'It is a real reach compared with the current board.' :
-    boardDelta <= -3 ? 'It is a little early versus the current board.' :
-    'It lands about where the board says it should.';
+      needRank === 1 ? 'a strong answer near the top of their board' :
+        needRank === 2 ? 'a sensible need-based swing' :
+          needRank >= 3 ? 'more of a secondary-need bet' :
+            'more of a value-over-fit swing';
+  const delta = avpDelta != null ? Number(avpDelta) : Number(boardDelta || 0);
+  // delta = expectedPick - actualPick
+  // positive => picked earlier than expected (reach)
+  // negative => picked later than expected (value/steal)
+  const tier =
+    delta <= -14 ? 'steal' :
+      delta <= -8 ? 'value' :
+        delta <= -3 ? 'mild_value' :
+          delta >= 14 ? 'major_reach' :
+            delta >= 8 ? 'reach' :
+              delta >= 3 ? 'mild_reach' :
+                'as_expected';
+
+  const absDelta = Math.abs(Number(delta || 0));
+  // delta = expectedPick - actualPick
+  // positive: player was expected later, so taking him now is EARLY
+  // negative: player was expected earlier, so getting him now is LATE
+  const spotsText =
+    absDelta >= 2
+      ? delta > 0
+        ? `(about ${Number(absDelta.toFixed(1))} spots earlier than expected)`
+        : `(about ${Number(absDelta.toFixed(1))} spots later than expected)`
+      : '';
+
+  const consensusLabel = avp != null ? `consensus (AVP ${Number(avp).toFixed(1)})` : 'board expectation';
+
+  const valueText =
+    tier === 'steal' ? `Steal vs ${consensusLabel}` :
+      tier === 'value' ? `Value vs ${consensusLabel}` :
+        tier === 'mild_value' ? `Slight value vs ${consensusLabel}` :
+          tier === 'major_reach' ? `Massive reach vs ${consensusLabel}` :
+            tier === 'reach' ? `Reach vs ${consensusLabel}` :
+              tier === 'mild_reach' ? `Slight reach vs ${consensusLabel}` :
+                (avp != null ? `In range (AVP ${Number(avp).toFixed(1)})` : 'In range');
+
+  const eliteTier =
+    overall >= 90 ? 'generational' :
+      overall >= 86 ? 'elite' :
+        overall >= 82 ? 'high' :
+          overall >= 78 ? 'solid' :
+            overall >= 74 ? 'ok' :
+              'low';
+
+  const isTopBoardPlayer = Number(prospect?.rank || 999) === 1;
+  const isPremium = premiumPositionValue(group) >= 7;
+
+  const needsCtx = session ? buildNeedsContext(session, { name: teamName }, group) : null;
+  const strongVerdict = session ? strengthVerdict(session, teamName, group) : { strong: false, detail: null };
+  const strongAtPos = session ? (strongVerdict?.strong || isStrongAtPosition(session, teamName, group)) : false;
+  const offNeedStrength = strongAtPos && (needsCtx?.isOffNeed ?? (needRank === -1));
+
+  function findBestPremiumStillOnBoard() {
+    if (!session || !Array.isArray(session.availableProspects)) return [];
+    const pool = session.availableProspects
+      .filter((p) => p && p.id !== prospect?.id)
+      .map((p) => {
+        const g = prospectGroup(p);
+        return {
+          id: p.id,
+          name: p.name,
+          rank: Number(p.rank || 999),
+          group: g,
+          position: p.position,
+          premium: premiumPositionValue(g),
+        };
+      })
+      .filter((p) => p.premium >= 7)
+      .sort((a, b) => (a.rank - b.rank) || (b.premium - a.premium));
+
+    // Return up to 2 best premium names (keeps blurbs tight)
+    return pool.slice(0, 2);
+  }
+
   const talentText =
-    overall >= 84 ? 'The talent level is obvious.' :
-    overall >= 80 ? 'The overall profile is still strong enough to buy.' :
-    premiumPositionValue(group) >= 7 ? 'The premium position helps the pick hold up.' :
-    'The room will need the development curve to justify it.';
-  return `${teamName} took ${prospect.name} as ${fitText} ${boardText} ${talentText}`.trim();
+    eliteTier === 'generational' ? 'Franchise-caliber talent at the top of the class.' :
+      eliteTier === 'elite' ? 'Legit elite talent—difference-maker profile.' :
+        eliteTier === 'high' ? 'High-end profile with starter traits.' :
+          eliteTier === 'solid' ? 'Solid overall profile if the development hits.' :
+            premiumPositionValue(group) >= 7 ? 'The position value keeps it from being a total disaster.' :
+              'Development curve will need to justify it.';
+
+  // RB/TE in the top half of round 1 is usually bad process unless it's a true blue-chip AND a clear need.
+  const earlyRBSmellTest = ['RB', 'TE'].includes(group);
+  const earlySkillPenaltyText =
+    earlyRBSmellTest
+      ? 'RB/TE this early is usually bad process unless it’s a true blue-chip and a top need.'
+      : null;
+
+  const topBoardProcessText =
+    isTopBoardPlayer
+      ? `Process: taking the top player on the board is a clean, high-floor decision.`
+      : null;
+
+  const valueRegardlessOfNeedText =
+    !isTopBoardPlayer && delta <= -10
+      ? `Process: a fall like this can justify value over perfect need.`
+      : null;
+
+  const passOnPremiumValueText =
+    (() => {
+      if (isPremium) return null;
+      if (!(tier === 'as_expected' || tier === 'mild_reach' || tier === 'reach' || tier === 'major_reach')) return null;
+      const best = findBestPremiumStillOnBoard();
+      if (!best.length) return 'Passing on premium-position talent for a lower-value slot raises the bar for the outcome.';
+      const names = best.map((p) => `${p.name} (#${p.rank} ${p.group})`).join(' or ');
+      return `Passing on premium-position talent (${names}) for a lower-value slot raises the bar for the outcome.`;
+    })();
+  // Find positional rank
+  let posRank = 1;
+  if (prospect && session && Array.isArray(session.availableProspects)) {
+    const samePos = session.availableProspects.filter((p) => p.position === prospect.position);
+    posRank = samePos.findIndex((p) => p.id === prospect.id) + 1;
+    if (posRank < 1) posRank = 1;
+  }
+  // Board rank
+  const boardRank = prospect.rank || 1;
+
+  const severity =
+    tier === 'major_reach' ? 'ugly' :
+      tier === 'reach' ? 'bad' :
+        tier === 'mild_reach' ? 'shaky' :
+          tier === 'steal' ? 'great' :
+            tier === 'value' ? 'good' :
+              tier === 'mild_value' ? 'fine' :
+                'neutral';
+
+  const headline =
+    severity === 'ugly' ? 'This is a rough one.' :
+      severity === 'bad' ? 'This one’s hard to love.' :
+        severity === 'shaky' ? 'There’s some risk baked in.' :
+          severity === 'great' ? 'That’s a steal.' :
+            severity === 'good' ? 'Good value.' :
+              severity === 'fine' ? 'Solid value.' :
+                'Solid process.';
+
+  const boardLine = `#${boardRank} overall (No. ${posRank} ${group})`;
+  const consensusLine = avp != null ? `AVP ${Number(avp).toFixed(1)}` : null;
+  const valueLine = `${valueText}${spotsText ? ` ${spotsText}` : ''}`;
+
+  const processClose =
+    tier === 'major_reach'
+      ? 'That’s a lot of draft capital to spend for a player the room expects much later.'
+      : tier === 'reach'
+        ? 'They’re paying a premium here, and the margin for error shrinks fast.'
+        : tier === 'mild_reach'
+          ? 'It’s a touch aggressive, so the pick needs to hit early.'
+          : tier === 'steal'
+            ? 'When someone falls like this, you take the value and figure out the fit later.'
+            : tier === 'value'
+              ? 'When the board gives you value like this, you take it.'
+              : tier === 'mild_value'
+                ? 'Solid value without overthinking it.'
+                : 'It’s a straightforward selection if the evaluation is right.';
+
+  const needReachCallout =
+    (needRank >= 0 && (tier === 'reach' || tier === 'major_reach'))
+      ? 'Even if it fills a real need, overdrafting here is how you lose value at the top of the round.'
+      : null;
+
+  const strengthWarning =
+    offNeedStrength
+      ? seededPickOne(session?.variantSeed || session?.id || 'seed', `strength:${teamName}:${group}:${prospect?.name}`, [
+        strongVerdict?.detail || null,
+        `This is a luxury pick at a spot that wasn’t screaming for help.`,
+        `The roster was already stable at ${group}, so the value has to be undeniable to justify it.`,
+        `They’re drafting into a room that already looks "fine," which makes the opportunity cost sting.`,
+        `It’s hard to sell taking ${group} when the bigger holes are still sitting on the board.`,
+      ].filter(Boolean))
+      : null;
+
+  const qbStrengthWarning =
+    group === 'QB' && offNeedStrength
+      ? seededPickOne(session?.variantSeed || session?.id || 'seed', `qb_strength:${teamName}:${prospect?.name}`, [
+        strongVerdict?.detail || null,
+        `With the starter situation not looking desperate, this feels like a misuse of premium capital.`,
+        `If you already trust your QB, spending a first-rounder here is how you fall behind building the rest of the roster.`,
+        `Unless the plan is a long-term reset, doubling down at quarterback right now is a questionable use of resources.`,
+      ].filter(Boolean))
+      : null;
+
+  // Keep to 2 max for readability.
+  const notes = [
+    topBoardProcessText,
+    valueRegardlessOfNeedText,
+    passOnPremiumValueText,
+    earlySkillPenaltyText,
+    qbStrengthWarning,
+    strengthWarning,
+  ].filter(Boolean).slice(0, 2);
+
+  const noteText = notes.length
+    ? ` ${notes
+      .map((n) => String(n).trim().replace(/\s+/g, ' '))
+      .map((n) => (/[.!?]$/.test(n) ? n : `${n}.`))
+      .join(' ')}`
+    : '';
+
+  const fitClause =
+    tier === 'major_reach'
+      ? `It lines up as ${fitText}, but it’s a major overdraft.`
+      : tier === 'reach'
+        ? `It lines up as ${fitText}, but it’s an overdraft.`
+        : tier === 'mild_reach'
+          ? `It makes sense as ${fitText}, but it’s a little early.`
+          : `It feels like ${fitText}.`;
+
+  const talentClause = `${talentText.charAt(0).toLowerCase()}${talentText.slice(1)}`;
+
+  // Keep the ending non-repetitive: we don't want 3 different sentences that all say "this is a reach".
+  const closingLine =
+    [
+      tier === 'major_reach' || tier === 'reach' ? needReachCallout : null,
+      processClose,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+  const paragraph =
+    `${teamName} are taking ${prospect.name} (${group}). ${headline} ` +
+    `He’s ${boardLine}${consensusLine ? ` (AVP ${Number(avp).toFixed(1)})` : ''}. ` +
+    `${valueLine}. ` +
+    `${fitClause} ${talentClause} ${closingLine}${noteText}`;
+
+  return String(paragraph)
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/\s+\./g, '.')
+    .replace(/\s+,/g, ',')
+    .replace(/\.\s+([a-z])/g, (m, c) => `. ${String(c).toUpperCase()}`);
 }
 
 function evaluatePickGrade(session, slot, prospect) {
-  const needs = findNeedsForTeam(slot.name, session.teamNeeds || {}, slot.nick);
   const group = prospectGroup(prospect);
-  const needRank = Math.max(-1, needs.indexOf(group));
+  const needsCtx = buildNeedsContext(session, slot, group);
+  const { needs, needRank, isOffNeed } = needsCtx;
   const boardExpectation = Number(session.currentPickIndex || 0) + 1;
   const boardRank = Number(prospect.rank || boardExpectation);
   const boardDelta = boardRank - boardExpectation;
+  const avp = avpForProspect(session, prospect);
+  // expectedPick - actualPick: positive => reach (picked early), negative => value (fell)
+  const avpDelta = avp != null ? Number(avp) - boardExpectation : null;
+  const consensusDelta = avpDelta != null ? avpDelta : boardDelta;
   const overall = Number(prospect.overall || 0);
+  const premium = premiumPositionValue(group);
+
+  const strongAtPos = isStrongAtPosition(session, slot?.name, group);
+
+  // Put a name on the situation (drives both score + blurb via boardDelta)
+  // consensusDelta = expectedPick - actualPick
+  // positive => reach (picked earlier than expected)
+  // negative => value/steal (fell)
+  const reachTier =
+    consensusDelta >= 14 ? 'major_reach' :
+      consensusDelta >= 8 ? 'reach' :
+        consensusDelta >= 3 ? 'mild_reach' :
+          consensusDelta <= -14 ? 'steal' :
+            consensusDelta <= -8 ? 'value' :
+              consensusDelta <= -3 ? 'mild_value' :
+                'as_expected';
+
+  const talentTier =
+    overall >= 90 ? 'generational' :
+      overall >= 86 ? 'elite' :
+        overall >= 82 ? 'high' :
+          overall >= 78 ? 'solid' :
+            overall >= 74 ? 'ok' :
+              'low';
+
+  // Board tier (used for "blue chip" context) — early picks should care about who was still available.
+  const boardTier =
+    boardRank <= 3 ? 'blue_chip' :
+      boardRank <= 8 ? 'elite_board' :
+        boardRank <= 16 ? 'top_16' :
+          boardRank <= 32 ? 'round_1' :
+            'day_2';
 
   let score = 78;
   if (needRank === 0) score += 14;
@@ -519,41 +1012,105 @@ function evaluatePickGrade(session, slot, prospect) {
   else if (needRank >= 3) score += 2;
   else score -= 4;
 
-  if (boardDelta >= 12) score += 12;
-  else if (boardDelta >= 7) score += 9;
-  else if (boardDelta >= 3) score += 5;
-  else if (boardDelta >= 1) score += 2;
-  else if (boardDelta <= -12) score -= 18;
-  else if (boardDelta <= -7) score -= 12;
-  else if (boardDelta <= -3) score -= 7;
-  else if (boardDelta <= -1) score -= 3;
+  // AVP/board value / reach: heavier penalties for big reaches, stronger reward for true steals.
+  // AVP is treated as "consensus" when present; boardRank is our fallback.
+  // Keep value rewards meaningful, but not enough to turn a non-premium pick at 1.01 into an A by itself.
+  if (reachTier === 'steal') score += 14;
+  else if (reachTier === 'value') score += 10;
+  else if (reachTier === 'mild_value') score += 6;
+  else if (reachTier === 'mild_reach') score -= 7;
+  else if (reachTier === 'reach') score -= 14;
+  else if (reachTier === 'major_reach') score -= 22;
+  else score += 2; // as expected gets a small stability bump
 
-  score += Math.min(8, premiumPositionValue(group));
-  if (overall >= 86) score += 6;
-  else if (overall >= 82) score += 4;
-  else if (overall >= 78) score += 2;
-  else if (overall <= 72) score -= 5;
+  // Extra calibration: if AVP exists and you're taking someone expected in the 20s in the top-5,
+  // it's a reach in process terms even if our internal board likes the player.
+  // This penalty is intentionally heavy to keep these outcomes in the B/B- range.
+  if (avp != null && boardExpectation <= 5) {
+    if (avpDelta >= 18) score -= 14;
+    else if (avpDelta >= 12) score -= 10;
+    else if (avpDelta >= 8) score -= 6;
+  }
 
-  if (['RB', 'TE'].includes(group) && boardExpectation <= 16 && needRank > 0) score -= 5;
+  // Positional value: premium positions should matter, but cap it so it doesn't dominate
+  score += Math.min(10, premium);
+
+  // Top-of-draft process: at the very top, passing on premium positions for low-premium spots is usually a miss.
+  // This is intentionally harsh so picks like S at 1.01 don't get A grades.
+  const pickNumber = boardExpectation;
+  const isLowPremium = premium <= 5; // S/LB/IOL/DT bucket
+  const isTopOfDraft = pickNumber <= 5;
+  const isTrueBlueChipBoard = boardTier === 'blue_chip';
+  if (isTopOfDraft && isLowPremium && !isTrueBlueChipBoard) {
+    score -= 18;
+  } else if (isTopOfDraft && isLowPremium && isTrueBlueChipBoard) {
+    // Even if they're #1-3 on the board, low-premium still carries opportunity cost.
+    score -= 8;
+  }
+
+  // Talent tier: landing elite talent should lift the grade even if it's a "non-need"
+  // Only give the biggest talent bumps when the player is also an elite board asset.
+  // (Prevents a mid-board RB from getting "elite" treatment because of OVR alone.)
+  if (talentTier === 'generational') score += boardTier === 'blue_chip' ? 14 : boardTier === 'elite_board' ? 10 : 6;
+  else if (talentTier === 'elite') score += boardTier === 'blue_chip' ? 11 : boardTier === 'elite_board' ? 8 : 4;
+  else if (talentTier === 'high') score += boardTier === 'blue_chip' ? 8 : boardTier === 'elite_board' ? 6 : 3;
+  else if (talentTier === 'solid') score += 2;
+  else if (talentTier === 'low') score -= 6;
+
+  // Early RB/TE: it can still be a need, but process should be driven by board value + positional value.
+  // If you're passing on elite tackles/EDGE/CB/WR/QB assets to take RB/TE, the grade should reflect that.
+  if (['RB', 'TE'].includes(group) && boardExpectation <= 16) {
+    const isTrueBlueChip = boardTier === 'blue_chip' || boardTier === 'elite_board';
+    if (isTrueBlueChip && needRank === 0 && ['elite', 'generational'].includes(talentTier)) {
+      // Best-case: rare prospect + top need. Still a positional value ding.
+      score -= 8;
+    } else if (needRank === 0) {
+      // Need, but not a blue-chip board asset.
+      score -= 18;
+    } else {
+      // Not a top need.
+      score -= 24;
+    }
+  }
   if (group === 'QB' && needRank === -1) score -= 10;
   if (group === 'QB' && needRank === 0) score += 6;
 
-  score = Math.max(45, Math.min(99, score));
+  // Needs vs strength: if the team is already strong at the drafted position, treat it as a "luxury" move.
+  // This is intentionally harsher for QB because it blocks value at other premium positions.
+  if (isOffNeed && strongAtPos) {
+    if (group === 'QB') {
+      score -= boardExpectation <= 10 ? 18 : 10;
+    } else if (['RB', 'TE'].includes(group)) {
+      score -= boardExpectation <= 16 ? 10 : 6;
+    } else {
+      score -= boardExpectation <= 16 ? 8 : 4;
+    }
+  }
+
+  // If it's an elite/generational prospect, soften "non-need" penalties (teams can justify it)
+  if (needRank === -1 && ['elite', 'generational'].includes(talentTier)) score += 5;
+
+  // Reaches hurt a bit less if you're drafting a true premium position with elite talent
+  if (['reach', 'major_reach'].includes(reachTier) && premium >= 7 && ['elite', 'generational'].includes(talentTier)) score += 4;
+
+  score = Math.max(55, Math.min(99, score));
   return {
     score,
     grade: gradeLabelFromScore(score),
-    synopsis: buildPickSynopsis({ teamName: slot.name, prospect, needRank, boardDelta, overall, group }),
+    synopsis: buildPickSynopsis({ teamName: slot.name, prospect, needRank, boardDelta, overall, group, session, avpDelta, avp }),
   };
 }
 
-function applyPick(session, userId, prospect) {
+export function applyPick(session, userId, prospect, options = {}) {
   const currentPickIndex = Number(session.currentPickIndex || 0);
   const slot = session.order[currentPickIndex];
-  if (!slot || !prospect) return session;
+  if (!slot || !prospect) {
+    return session;
+  }
   const isCpuPick = userId === 'auto';
   const review = isCpuPick ? null : evaluatePickGrade(session, slot, prospect);
   session.availableProspects = session.availableProspects.filter((item) => item.id !== prospect.id);
-  session.picks.push({
+  const pick = {
     pickNumber: currentPickIndex + 1,
     teamName: slot.name,
     teamNick: slot.nick,
@@ -566,9 +1123,10 @@ function applyPick(session, userId, prospect) {
     grade: review?.grade || null,
     gradeScore: review?.score || null,
     synopsis: review?.synopsis || null,
-    actorLabel: userId === 'auto' ? 'Auto' : `<@${userId}>`,
+    actorLabel: options.actorLabel || (userId === 'auto' ? 'Auto' : `<@${userId}>`),
     madeAt: Date.now(),
-  });
+  };
+  session.picks.push(pick);
   session.currentPickIndex = currentPickIndex + 1;
   if (session.currentPickIndex >= session.order.length) {
     session.status = 'done';
@@ -593,11 +1151,32 @@ export function listUserAssignedSlots(session, userId) {
 }
 
 export function buildPickMenu(session) {
+  const avpStore = loadAvpStore();
+
+  const avpFor = (prospect) => {
+    if (!avpStore?.prospects) return null;
+    const direct = avpStore.prospects?.[prospect?.id]?.avp;
+    if (direct != null) return direct;
+
+    const normalizedId = normalizeProspectIdForAvp(prospect?.id);
+    const normalized = normalizedId ? avpStore.prospects?.[normalizedId]?.avp : null;
+    if (normalized != null) return normalized;
+
+    // Last resort: sometimes callers may have legacy ids that match AVP keys by name+pos.
+    const legacyKey = prospect?.name && prospect?.position
+      ? `${String(prospect.name).replace(/[^a-z0-9]/gi, '').toLowerCase()}_${String(prospect.position).toUpperCase()}`
+      : null;
+    return legacyKey ? avpStore.prospects?.[legacyKey]?.avp ?? null : null;
+  };
   const options = (session.availableProspects || []).slice(0, MAX_SELECT_OPTIONS).map((prospect) =>
-    new StringSelectMenuOptionBuilder()
-      .setLabel(`#${prospect.rank} ${prospect.name}`.slice(0, 100))
-      .setDescription(`${prospect.position} • ${prospect.school}`.slice(0, 100))
-      .setValue(prospect.id),
+    (() => {
+      const avp = avpFor(prospect);
+      const avpText = avp != null ? ` • AVP ${Number(avp).toFixed(1)}` : '';
+      return new StringSelectMenuOptionBuilder()
+        .setLabel(`#${prospect.rank} ${prospect.name}`.slice(0, 100))
+        .setDescription(`${prospect.position} • ${prospect.school}${avpText}`.slice(0, 100))
+        .setValue(prospect.id);
+    })(),
   );
   const row = new ActionRowBuilder().addComponents(
     new StringSelectMenuBuilder()
@@ -633,7 +1212,16 @@ export function createMockDraftSessionWithRoom({ guildId, channelId, hostId, roo
   const league = leagueId ? loadLeagueSnapshot(leagueId) : null;
   if (!league) throw new Error('League snapshot is not ready.');
   const draftYear = currentDraftYear(league);
-  const officialOrder = loadOfficialDraftOrderOverride(league, draftYear);
+
+  // Match `/madden-mockdraft` behavior:
+  // - In regular season, compute the live order from standings/tiebreaks (do NOT freeze to overrides).
+  // - In offseason, allow official overrides (calibration / real draft order file).
+  const seasonInfo = league?.info?.careerHubInfo?.seasonInfo || {};
+  const weekTypeRaw = seasonInfo.seasonWeekType ?? seasonInfo.seasonWeekTypeId ?? seasonInfo.weekType;
+  const weekType = Number.isFinite(Number(weekTypeRaw)) ? Number(weekTypeRaw) : 1;
+  const inRegularSeason = weekType === 1;
+
+  const officialOrder = inRegularSeason ? null : loadOfficialDraftOrderOverride(league, draftYear);
   const rawOrder = officialOrder || draftOrder(league);
   const order = (officialOrder || applyPickTrades(rawOrder, draftYear)).slice(0, 32);
   const prospects = loadDraftClass().map(trimProspect);
@@ -655,6 +1243,7 @@ export function createMockDraftSessionWithRoom({ guildId, channelId, hostId, roo
     order,
     availableProspects: prospects,
     teamNeeds: deriveTeamNeeds(league),
+    teamStrengths: extractTeamStrengths(league),
     picks: [],
     currentPickIndex: 0,
     pickOwners: {},
@@ -757,6 +1346,17 @@ export function makeMockDraftPick(sessionId, userId, prospectId) {
   });
 }
 
+export function simulateMockDraftPick(sessionId, userId) {
+  return updateMockDraftSession(sessionId, (session) => {
+    if (session.status !== 'live') throw new Error('This mock draft is not live yet.');
+    const currentOwner = session.pickOwners?.[String(session.currentPickIndex)];
+    if (currentOwner !== userId) throw new Error('It is not your pick right now.');
+    const prospect = autoPickProspect(session);
+    if (!prospect) throw new Error('No prospects are available.');
+    return applyPick(session, userId, prospect, { actorLabel: `Sim by <@${userId}>` });
+  });
+}
+
 export function autoPickMockDraft(sessionId, userId) {
   return updateMockDraftSession(sessionId, (session) => {
     if (session.status !== 'live') throw new Error('This mock draft is not live yet.');
@@ -766,8 +1366,10 @@ export function autoPickMockDraft(sessionId, userId) {
     }
     const prospect = autoPickProspect(session);
     if (!prospect) throw new Error('No prospects are available.');
-    const effectiveUserId = currentOwner || userId;
-    return applyPick(session, effectiveUserId === session.hostId ? 'auto' : effectiveUserId, prospect);
+    if (currentOwner) {
+      return applyPick(session, currentOwner, prospect, { actorLabel: `CPU for <@${currentOwner}>` });
+    }
+    return applyPick(session, 'auto', prospect);
   });
 }
 

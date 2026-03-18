@@ -307,6 +307,42 @@ export async function execute(interaction) {
   const commishMention = Array.from(new Set(COMMISH_ROLE_IDS)).map(id => `<@&${id}>`).join(' ');
   const baseEmbed = new EmbedBuilder().setTimestamp(new Date());
 
+  // CPU action should be fast and should not rely on potentially slow guild-wide member fetches.
+  if (action === 'cpu') {
+    try {
+      baseEmbed.setTitle('CPU Game Logged').setColor(0x5865F2).setDescription(`Marked by ${interaction.user}. No strikes applied.`);
+      markThreadDone(threadId, 'cpu');
+      try { await disableButtons(interaction); } catch { }
+      try {
+        await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
+      } catch (e) {
+        console.warn('[game_status] cpu thread.send failed', e?.message || e);
+      }
+      try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
+      appendMaddenStaffLog({
+        type: 'cpu_game',
+        guildId: interaction.guildId,
+        threadId,
+        away,
+        home,
+        byUser: interaction.user.id,
+      });
+      await respond(interaction, { content: 'Logged as CPU matchup. No sim strikes applied.' });
+      clearPendingFair(threadId);
+      return;
+    } catch (e) {
+      console.error('[game_status] cpu action failed', {
+        threadId,
+        away,
+        home,
+        user: interaction.user.id,
+        message: e?.message || e,
+      });
+      await respond(interaction, { content: `CPU failed: ${e?.message || e}` });
+      return;
+    }
+  }
+
   // Fair sim / force wins (also used for complete/cpu/staffstrike after userIds are resolved)
   const seasonKey = (() => {
     try {
@@ -369,7 +405,7 @@ export async function execute(interaction) {
       const names = over.map(id => `<@${id}>`).join(', ');
       const msg = `Strike denied: ${names} already at ${STRIKE_LIMIT}/5 weighted strike points. All remaining games must be played.`;
       await respond(interaction, { content: msg });
-      try { await thread.send({ content: `${commishMention} ${msg}`.trim(), allowedMentions: { parse: ['roles'] } }); } catch {}
+      try { await thread.send({ content: `${commishMention} ${msg}`.trim(), allowedMentions: { parse: ['roles'] } }); } catch { }
       return;
     }
     if (!targetUsers.length) {
@@ -410,7 +446,7 @@ export async function execute(interaction) {
     const seasonDataAfter = ensureSeason(fairData, seasonKey);
     const remaining = remainingFair(targetUsers, seasonDataAfter);
     const remLine = targetUsers.length
-      ? Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem,0)}/5 weighted strike room left this season`).join('\n')
+      ? Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem, 0)}/5 weighted strike room left this season`).join('\n')
       : 'Team strike recorded (no coach role members found).';
     const label = action === 'staffstrikeaway' ? 'Determined Strike (Away)' : 'Determined Strike (Home)';
     baseEmbed
@@ -427,7 +463,7 @@ export async function execute(interaction) {
     }
     await maybeQueueRemovalReview(interaction.client, interaction.guild, seasonKey, targetTeam, action === 'staffstrikeaway' ? awayCoachRoles : homeCoachRoles, targetUsers);
     try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
-    try { await disableButtons(interaction); } catch {}
+    try { await disableButtons(interaction); } catch { }
     appendMaddenStaffLog({
       type: 'determined_strike',
       guildId: interaction.guildId,
@@ -477,7 +513,7 @@ export async function execute(interaction) {
       const otherMentions = await buildCoachMentions(interaction.guild, otherTeam, roleMap);
       const mentionText = [...otherMentions].join(' ');
       const coachPrompt = `${mentionText} Your opponent marked the game complete. Press **Game Completed** too if the game is finished so the thread can fully close.`.trim();
-      try { await thread.send({ content: coachPrompt, allowedMentions: { parse: ['roles', 'users'] } }); } catch {}
+      try { await thread.send({ content: coachPrompt, allowedMentions: { parse: ['roles', 'users'] } }); } catch { }
       return;
     }
     clearPendingFair(threadId + ':complete');
@@ -490,7 +526,7 @@ export async function execute(interaction) {
     trackRecognitionOutcome(true);
     baseEmbed.setTitle('Game Completed').setColor(0x57F287).setDescription(`Marked by ${interaction.user}`);
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
-    try { await disableButtons(interaction); } catch {}
+    try { await disableButtons(interaction); } catch { }
     appendMaddenStaffLog({
       type: 'game_completed',
       guildId: interaction.guildId,
@@ -503,24 +539,7 @@ export async function execute(interaction) {
     return;
   }
 
-  if (action === 'cpu') {
-    baseEmbed.setTitle('CPU Game Logged').setColor(0x5865F2).setDescription(`Marked by ${interaction.user}. No strikes applied.`);
-    markThreadDone(threadId, 'cpu');
-    try { await disableButtons(interaction); } catch {}
-    await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
-    try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
-    appendMaddenStaffLog({
-      type: 'cpu_game',
-      guildId: interaction.guildId,
-      threadId,
-      away,
-      home,
-      byUser: interaction.user.id,
-    });
-    await respond(interaction, { content: 'Logged as CPU matchup. No sim strikes applied.' });
-    clearPendingFair(threadId);
-    return;
-  }
+  // ...remaining actions (complete / fairsim / force wins / staff strikes) below...
 
   if (action === 'fairsim') {
     // Everyone (staff too) must two-step confirm
@@ -538,7 +557,7 @@ export async function execute(interaction) {
       const otherMentions = await buildCoachMentions(interaction.guild, otherTeam, roleMap);
       const mentionText = [...otherMentions].join(' ');
       const coachPrompt = `${mentionText} Your opponent requested **Fair Sim**. Press **Fair Sim** too only if both sides agree the game will not be played.`.trim();
-      try { await thread.send({ content: coachPrompt, allowedMentions: { parse: ['roles', 'users'] } }); } catch {}
+      try { await thread.send({ content: coachPrompt, allowedMentions: { parse: ['roles', 'users'] } }); } catch { }
       return;
     }
     clearPendingFair(threadId);
@@ -546,7 +565,7 @@ export async function execute(interaction) {
     if (over.length) {
       const names = over.map(id => `<@${id}>`).join(', ');
       await respond(interaction, { content: `Fair sim denied: ${names} are already at ${STRIKE_LIMIT}/5 weighted strike points this season. They must play the game.` });
-      try { await thread.send({ content: `${commishMention || ''} Fair sim denied: ${names} are already at the weighted limit. Game must be played.`.trim() }); } catch {}
+      try { await thread.send({ content: `${commishMention || ''} Fair sim denied: ${names} are already at the weighted limit. Game must be played.`.trim() }); } catch { }
       return;
     }
     if (!awayUserIds.length || !homeUserIds.length) {
@@ -585,7 +604,7 @@ export async function execute(interaction) {
     markThreadDone(threadId, 'fairsim');
     trackRecognitionOutcome(false);
     const remaining = remainingFair(userIds, ensureSeason(fairData, seasonKey));
-    const remLine = Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem,0)}/5 weighted strike room left`).join('\n');
+    const remLine = Object.entries(remaining).map(([u, rem]) => `<@${u}> has ${Math.max(rem, 0)}/5 weighted strike room left`).join('\n');
     baseEmbed.setTitle('Fair Sim Logged').setColor(0xFEE75C).setDescription(`Confirmed by both coaches\nTeams: ${away || 'Away'} vs ${home || 'Home'}`).addFields(
       { name: 'Weighted strike room', value: remLine || 'N/A', inline: false },
       ...(fairSimProtected.length ? [{ name: 'Activity Protection', value: `${fairSimProtected.map((id) => `<@${id}>`).join(', ')} used Fair Sim Credit and avoided the fair-sim strike.`, inline: false }] : []),
@@ -594,7 +613,7 @@ export async function execute(interaction) {
     await sendWarnings(thread, userIds, ensureSeason(fairData, seasonKey), commishMention);
     // Refresh fair-sim board (best effort)
     try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
-    try { await disableButtons(interaction); } catch {}
+    try { await disableButtons(interaction); } catch { }
     appendMaddenStaffLog({
       type: 'fair_sim',
       guildId: interaction.guildId,
@@ -635,7 +654,7 @@ export async function execute(interaction) {
     if (over.length) {
       const names = over.map(id => `<@${id}>`).join(', ');
       await respond(interaction, { content: `Force win denied: ${names} are already at ${STRIKE_LIMIT}/5 weighted strike points this season. They must play the game.` });
-      try { await thread.send({ content: `${commishMention || ''} Force win denied: ${names} are already at the weighted limit. Game must be played.`.trim() }); } catch {}
+      try { await thread.send({ content: `${commishMention || ''} Force win denied: ${names} are already at the weighted limit. Game must be played.`.trim() }); } catch { }
       return;
     }
     if (!chargeUsers.length) {
@@ -653,7 +672,7 @@ export async function execute(interaction) {
     await thread.send({ content: commishMention || null, embeds: [baseEmbed], allowedMentions: { parse: ['roles'] } });
     await sendWarnings(thread, chargeUsers, ensureSeason(fairData, seasonKey), commishMention);
     try { await updateFairSimBoard(interaction.client, interaction.guildId); } catch (e) { console.warn('[game_status] updateFairSimBoard failed', e?.message || e); }
-    try { await disableButtons(interaction); } catch {}
+    try { await disableButtons(interaction); } catch { }
     appendMaddenStaffLog({
       type: 'force_win',
       guildId: interaction.guildId,
