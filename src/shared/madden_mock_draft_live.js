@@ -753,7 +753,7 @@ function buildPickSynopsis({ teamName, prospect, needRank, boardDelta, overall, 
         : `(about ${Number(absDelta.toFixed(1))} spots later than expected)`
       : '';
 
-  const consensusLabel = avp != null ? `consensus (AVP ${Number(avp).toFixed(1)})` : 'board expectation';
+  const consensusLabel = avp != null ? `market (AVP ${Number(avp).toFixed(1)})` : 'board expectation';
 
   const valueText =
     tier === 'steal' ? `Steal vs ${consensusLabel}` :
@@ -970,7 +970,29 @@ function evaluatePickGrade(session, slot, prospect) {
   const avp = avpForProspect(session, prospect);
   // expectedPick - actualPick: positive => reach (picked early), negative => value (fell)
   const avpDelta = avp != null ? Number(avp) - boardExpectation : null;
-  const consensusDelta = avpDelta != null ? avpDelta : boardDelta;
+  // Consensus is a blend of AVP (community expectation) + board rank (our class board).
+  // This prevents AVP alone from over-penalizing picks that are basically "on the board".
+  const boardBasedDelta = boardDelta * 1.0;
+  const avpBasedDelta = avpDelta != null ? avpDelta * 1.0 : null;
+  // Weight AVP more early (markets are tighter), then fade it slightly deeper into the round.
+  const avpWeight = avpBasedDelta == null
+    ? 0
+    : boardExpectation <= 10
+      ? 0.65
+      : boardExpectation <= 20
+        ? 0.55
+        : 0.45;
+  const gradeDelta = avpBasedDelta == null
+    ? boardBasedDelta
+    : (avpBasedDelta * avpWeight) + (boardBasedDelta * (1 - avpWeight));
+
+  // Guardrail: if you're basically drafting "on the board" (within 2 spots of board rank),
+  // don't let AVP/market noise classify it as a true reach/major reach.
+  // This still allows mild reach/value labels but prevents D/F grades for a normal board-aligned pick.
+  const onBoard = Math.abs(Number(boardDelta || 0)) <= 2;
+  // For narrative, only lean on AVP when it meaningfully disagrees with the board.
+  // If you're within 2 spots of board rank, we describe it as "in range" (or mild) instead of a market reach.
+  const narrativeDelta = avpDelta != null && !onBoard ? avpDelta : boardDelta;
   const overall = Number(prospect.overall || 0);
   const premium = premiumPositionValue(group);
 
@@ -980,14 +1002,17 @@ function evaluatePickGrade(session, slot, prospect) {
   // consensusDelta = expectedPick - actualPick
   // positive => reach (picked earlier than expected)
   // negative => value/steal (fell)
+  // Use the blended consensusDelta for scoring and tier naming.
+  // If you're on-board, cap the penalty tier at mild_reach.
   const reachTier =
-    consensusDelta >= 14 ? 'major_reach' :
-      consensusDelta >= 8 ? 'reach' :
-        consensusDelta >= 3 ? 'mild_reach' :
-          consensusDelta <= -14 ? 'steal' :
-            consensusDelta <= -8 ? 'value' :
-              consensusDelta <= -3 ? 'mild_value' :
-                'as_expected';
+    (onBoard && gradeDelta >= 8) ? 'mild_reach' :
+      gradeDelta >= 14 ? 'major_reach' :
+        gradeDelta >= 8 ? 'reach' :
+          gradeDelta >= 3 ? 'mild_reach' :
+            gradeDelta <= -14 ? 'steal' :
+              gradeDelta <= -8 ? 'value' :
+                gradeDelta <= -3 ? 'mild_value' :
+                  'as_expected';
 
   const talentTier =
     overall >= 90 ? 'generational' :
@@ -1041,11 +1066,17 @@ function evaluatePickGrade(session, slot, prospect) {
   const isLowPremium = premium <= 5; // S/LB/IOL/DT bucket
   const isTopOfDraft = pickNumber <= 5;
   const isTrueBlueChipBoard = boardTier === 'blue_chip';
-  if (isTopOfDraft && isLowPremium && !isTrueBlueChipBoard) {
-    score -= 18;
-  } else if (isTopOfDraft && isLowPremium && isTrueBlueChipBoard) {
+  if (isTopOfDraft && isLowPremium) {
     // Even if they're #1-3 on the board, low-premium still carries opportunity cost.
-    score -= 8;
+    // But if it's a true blue-chip AND it fills a top need, don't bury the grade.
+    const topNeedHit = needRank === 0 || needRank === 1;
+    if (isTrueBlueChipBoard && topNeedHit) {
+      score -= 2;
+    } else if (isTrueBlueChipBoard) {
+      score -= 8;
+    } else {
+      score -= 18;
+    }
   }
 
   // Talent tier: landing elite talent should lift the grade even if it's a "non-need"
@@ -1097,7 +1128,7 @@ function evaluatePickGrade(session, slot, prospect) {
   return {
     score,
     grade: gradeLabelFromScore(score),
-    synopsis: buildPickSynopsis({ teamName: slot.name, prospect, needRank, boardDelta, overall, group, session, avpDelta, avp }),
+  synopsis: buildPickSynopsis({ teamName: slot.name, prospect, needRank, boardDelta: narrativeDelta, overall, group, session, avpDelta, avp }),
   };
 }
 
